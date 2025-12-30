@@ -1,6 +1,6 @@
-# Ghostty Visual Signals for Claude Code
+# Terminal Agent Visual Signals
 
-> Visual terminal state indicators for Claude Code sessions in [Ghostty](https://ghostty.org/)
+> Visual terminal state indicators for Claude Code sessions using OSC escape sequences
 
 <!-- TODO: Add GIF demos after recording -->
 <!-- GIF 1: All States (12 terminals grid showing all colors) -->
@@ -17,25 +17,48 @@ When running multiple Claude Code sessions (12+ terminals side by side), you nee
 | 🟣 Purple | 🟣 | **Idle** — Waiting for input (60+ seconds) |
 | 🟢 Green | 🟢 | **Done** — Task completed |
 
+## Compatible Terminals
+
+This script uses standard OSC escape sequences supported by many modern terminals:
+
+| Terminal | Background | Reset | Title | Status |
+|----------|-----------|-------|-------|--------|
+| Ghostty | ✅ | ✅ | ✅ | Fully tested |
+| Kitty | ✅ | ✅ | ✅ | Supported |
+| WezTerm | ✅ | ✅ | ✅ | Supported |
+| iTerm2 | ✅ | ✅ | ✅ | Supported |
+| VS Code / Cursor | ✅ | ✅ | ✅ | Tested |
+| GNOME Terminal | ✅ | ✅ | ✅ | Supported |
+| Windows Terminal | ✅ | ✅ | ✅ | 2025+ |
+| Foot | ✅ | ✅ | ✅ | Supported |
+| Alacritty | ⚠️ | ⚠️ | ✅ | Untested |
+| macOS Terminal.app | ❌ | ❌ | ✅ | No OSC 11 |
+
+**Test your terminal:**
+```bash
+./test-terminal.sh
+```
+
 ## Features
 
 - **Background color changes** based on Claude Code state
 - **Tab title prefixes** with emoji indicators (🔴 🟠 🟣 🟢)
 - **Optimized performance** — ~1 external process vs ~12-15 (uses bash builtins)
 - **Configurable** — enable/disable individual states, customize colors
+- **Multi-terminal support** — works with most modern terminal emulators
 
 ## Quick Start
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/cstelmach/ghostty-claude-signals.git ~/.claude/hooks/ghostty-claude-signals
+git clone https://github.com/cstelmach/terminal-agent-visual-signals.git ~/.claude/hooks/terminal-agent-visual-signals
 ```
 
 ### 2. Make executable
 
 ```bash
-chmod +x ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh
 ```
 
 ### 3. Add hooks to `~/.claude/settings.json`
@@ -48,41 +71,41 @@ If you have existing hooks, **merge** these entries into your config.
   "hooks": {
     "UserPromptSubmit": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing",
         "type": "command"
       }]
     }],
     "PermissionRequest": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh permission",
         "type": "command"
       }],
       "matcher": "*"
     }],
     "PostToolUse": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing",
         "type": "command"
       }],
       "matcher": "*"
     }],
     "Stop": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh complete",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh complete",
         "type": "command"
       }]
     }],
     "Notification": [
       {
         "hooks": [{
-          "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission",
+          "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh permission",
           "type": "command"
         }],
         "matcher": "permission_prompt"
       },
       {
         "hooks": [{
-          "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh idle",
+          "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh idle",
           "type": "command"
         }],
         "matcher": "idle_prompt"
@@ -90,13 +113,13 @@ If you have existing hooks, **merge** these entries into your config.
     ],
     "SessionStart": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh reset",
         "type": "command"
       }]
     }],
     "SessionEnd": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset",
+        "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh reset",
         "type": "command"
       }]
     }]
@@ -110,7 +133,7 @@ The visual signals will activate on your next session.
 
 ## Configuration
 
-Edit the top of `ghostty-signal.sh` to customize:
+Edit the top of `claude-code-visual-signal.sh` to customize:
 
 ```bash
 # Feature toggles
@@ -152,11 +175,11 @@ COLOR_IDLE="#E2D9F3"
 
 ```bash
 # Test each state
-~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing  # 🟠 Orange
-~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission  # 🔴 Red
-~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh complete    # 🟢 Green
-~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh idle        # 🟣 Purple
-~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset       # Default
+~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing  # 🟠 Orange
+~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh permission  # 🔴 Red
+~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh complete    # 🟢 Green
+~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh idle        # 🟣 Purple
+~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh reset       # Default
 ```
 
 ## How It Works
@@ -191,16 +214,16 @@ Stop → complete (green) or reset
 
 ### Colors not appearing
 
-1. **Verify you're using Ghostty** — This won't work in iTerm2, Terminal.app, or other terminals
+1. **Test your terminal** — Run `./test-terminal.sh` to verify OSC support
 2. **Check the script path** — Ensure paths in `settings.json` match your install location
-3. **Test manually** — Run `~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing`
+3. **Test manually** — Run `~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing`
 4. **Check TTY detection** — The script needs to find the parent process TTY
 
 ### Permission errors
 
 ```bash
 # Ensure script is executable
-chmod +x ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh
 ```
 
 ### Title not updating
@@ -229,7 +252,7 @@ Optimized using bash builtins instead of external commands:
 
 ## Requirements
 
-- [Ghostty](https://ghostty.org/) terminal v1.0+
+- A [compatible terminal](#compatible-terminals) with OSC 11/111 support
 - [Claude Code](https://claude.ai/code) CLI
 - Bash 3.2+ (macOS default works)
 - macOS or Linux
@@ -244,7 +267,7 @@ This script sanitizes `$PWD` before writing to the terminal to prevent [terminal
 
 ## Contributing
 
-Issues and PRs welcome! If you've tested on Linux or have alternative color schemes to share, please contribute.
+Issues and PRs welcome! If you've tested on additional terminals or have alternative color schemes to share, please contribute.
 
 ## License
 

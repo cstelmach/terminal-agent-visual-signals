@@ -1,20 +1,24 @@
 #!/bin/bash
 # ==============================================================================
-# Ghostty Visual Signal Controller for Claude Code
+# Terminal Visual Signal Controller for Claude Code
 # ==============================================================================
 #
-# Changes Ghostty terminal background color and tab title based on Claude Code
-# state, making it easy to identify which terminals need attention.
+# Changes terminal background color and tab title based on Claude Code state,
+# making it easy to identify which terminals need attention.
 #
-# Repository: https://github.com/cstelmach/ghostty-claude-signals
+# Repository: https://github.com/cstelmach/terminal-agent-visual-signals
 # License:    MIT
 #
+# Compatible Terminals:
+#   Ghostty, Kitty, WezTerm, iTerm2, VS Code, Cursor, GNOME Terminal,
+#   Windows Terminal (2025+), Foot, and others with OSC 11/111 support.
+#
 # Requirements:
-#   - Ghostty terminal (v1.0+)
+#   - Terminal with OSC 11/111 support
 #   - Claude Code CLI
 #   - Bash 3.2+ (macOS default)
 #
-# Usage: ghostty-signal.sh {permission|idle|complete|processing|reset}
+# Usage: claude-code-visual-signal.sh {permission|idle|complete|processing|reset}
 #
 # Performance: Optimized to spawn ~1 external process (vs ~12-15 previously)
 #              using bash builtins and parameter expansion.
