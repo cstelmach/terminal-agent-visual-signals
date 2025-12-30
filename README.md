@@ -29,13 +29,13 @@ When running multiple Claude Code sessions (12+ terminals side by side), you nee
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/cstelmach/ghostty-claude-signals.git ~/.claude/hooks/ghostty-visual-signals
+git clone https://github.com/cstelmach/ghostty-claude-signals.git ~/.claude/hooks/ghostty-claude-signals
 ```
 
 ### 2. Make executable
 
 ```bash
-chmod +x ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh
+chmod +x ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh
 ```
 
 ### 3. Add hooks to `~/.claude/settings.json`
@@ -48,41 +48,41 @@ If you have existing hooks, **merge** these entries into your config.
   "hooks": {
     "UserPromptSubmit": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh processing",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing",
         "type": "command"
       }]
     }],
     "PermissionRequest": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh permission",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission",
         "type": "command"
       }],
       "matcher": "*"
     }],
     "PostToolUse": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh processing",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing",
         "type": "command"
       }],
       "matcher": "*"
     }],
     "Stop": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh complete",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh complete",
         "type": "command"
       }]
     }],
     "Notification": [
       {
         "hooks": [{
-          "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh permission",
+          "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission",
           "type": "command"
         }],
         "matcher": "permission_prompt"
       },
       {
         "hooks": [{
-          "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh idle",
+          "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh idle",
           "type": "command"
         }],
         "matcher": "idle_prompt"
@@ -90,13 +90,13 @@ If you have existing hooks, **merge** these entries into your config.
     ],
     "SessionStart": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh reset",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset",
         "type": "command"
       }]
     }],
     "SessionEnd": [{
       "hooks": [{
-        "command": "bash ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh reset",
+        "command": "bash ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset",
         "type": "command"
       }]
     }]
@@ -152,11 +152,11 @@ COLOR_IDLE="#E2D9F3"
 
 ```bash
 # Test each state
-~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh processing  # 🟠 Orange
-~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh permission  # 🔴 Red
-~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh complete    # 🟢 Green
-~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh idle        # 🟣 Purple
-~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh reset       # Default
+~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing  # 🟠 Orange
+~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh permission  # 🔴 Red
+~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh complete    # 🟢 Green
+~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh idle        # 🟣 Purple
+~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh reset       # Default
 ```
 
 ## How It Works
@@ -193,14 +193,14 @@ Stop → complete (green) or reset
 
 1. **Verify you're using Ghostty** — This won't work in iTerm2, Terminal.app, or other terminals
 2. **Check the script path** — Ensure paths in `settings.json` match your install location
-3. **Test manually** — Run `~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh processing`
+3. **Test manually** — Run `~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh processing`
 4. **Check TTY detection** — The script needs to find the parent process TTY
 
 ### Permission errors
 
 ```bash
 # Ensure script is executable
-chmod +x ~/.claude/hooks/ghostty-visual-signals/ghostty-signal.sh
+chmod +x ~/.claude/hooks/ghostty-claude-signals/ghostty-signal.sh
 ```
 
 ### Title not updating
@@ -233,6 +233,14 @@ Optimized using bash builtins instead of external commands:
 - [Claude Code](https://claude.ai/code) CLI
 - Bash 3.2+ (macOS default works)
 - macOS or Linux
+
+## Security
+
+This script sanitizes `$PWD` before writing to the terminal to prevent [terminal escape sequence injection](https://dgl.cx/2023/09/ansi-terminal-security).
+
+**Threat model:** On Unix, directory names can contain escape bytes (0x1B). A malicious directory name could inject OSC sequences to manipulate clipboard (OSC 52) or spoof UI.
+
+**Mitigation:** The `sanitize_for_terminal()` function strips all ASCII control characters (0x00-0x1F, 0x7F) while preserving Unicode for international path support.
 
 ## Contributing
 

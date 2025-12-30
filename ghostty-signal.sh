@@ -55,9 +55,21 @@ fi
 # Exit silently if no TTY
 [[ -z "$TTY_DEVICE" ]] && exit 0
 
+# === SECURITY: Sanitize input for terminal output ===
+# Strips control characters (0x00-0x1F, 0x7F) to prevent terminal escape injection
+# Preserves Unicode characters for international path support
+# See: https://dgl.cx/2023/09/ansi-terminal-security
+sanitize_for_terminal() {
+    local input="$1"
+    # Remove ASCII control characters (0x00-0x1F and 0x7F)
+    # This prevents injection of ESC (0x1B), BEL (0x07), and other control sequences
+    printf '%s' "${input//[$'\x00'-$'\x1f'$'\x7f']/}"
+}
+
 # === HELPER: Get short CWD (optimized - no external commands) ===
 get_short_cwd() {
-    local cwd="$PWD"
+    local cwd
+    cwd=$(sanitize_for_terminal "$PWD")
     cwd="${cwd/#$HOME/\~}"
 
     # Count slashes with pure bash (no tr/wc pipeline)
