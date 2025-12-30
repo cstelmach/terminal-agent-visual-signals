@@ -1,0 +1,25 @@
+# Editor files
+*.swp
+*.swo
+*~
+.*.swp
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.backup

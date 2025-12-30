@@ -2,10 +2,22 @@
 # ==============================================================================
 # Ghostty Visual Signal Controller for Claude Code
 # ==============================================================================
-# Optimized for minimal external process spawns (~1 vs ~12-15 previously)
-# Uses bash builtins and parameter expansion instead of external commands
+#
+# Changes Ghostty terminal background color and tab title based on Claude Code
+# state, making it easy to identify which terminals need attention.
+#
+# Repository: https://github.com/cstelmach/ghostty-claude-signals
+# License:    MIT
+#
+# Requirements:
+#   - Ghostty terminal (v1.0+)
+#   - Claude Code CLI
+#   - Bash 3.2+ (macOS default)
 #
 # Usage: ghostty-signal.sh {permission|idle|complete|processing|reset}
+#
+# Performance: Optimized to spawn ~1 external process (vs ~12-15 previously)
+#              using bash builtins and parameter expansion.
 # ==============================================================================
 
 # === CONFIGURATION ===
