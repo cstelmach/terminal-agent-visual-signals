@@ -18,7 +18,7 @@
 #   - Claude Code CLI
 #   - Bash 3.2+ (macOS default)
 #
-# Usage: claude-code-visual-signal.sh {permission|idle|complete|processing|reset}
+# Usage: claude-code-visual-signal.sh {permission|idle|complete|processing|compacting|reset}
 #
 # Performance: Optimized to spawn ~1 external process (vs ~12-15 previously)
 #              using bash builtins and parameter expansion.
@@ -32,16 +32,77 @@ ENABLE_PROCESSING=true
 ENABLE_PERMISSION=true
 ENABLE_COMPLETE=true
 ENABLE_IDLE=true
+ENABLE_COMPACTING=true
 
 COLOR_PROCESSING="#473D2F"
 COLOR_PERMISSION="#4A2021"
 COLOR_COMPLETE="#3E3046" #"#2B4636"
 COLOR_IDLE="#3E3046"
+COLOR_COMPACTING="#43452F"  # Blue/cyan tint for compaction
 
 EMOJI_PROCESSING="🟠"
 EMOJI_PERMISSION="🔴"
 EMOJI_COMPLETE="🟢"
 EMOJI_IDLE="🟣"
+EMOJI_COMPACTING="🔄"
+
+# === STATE PRIORITY SYSTEM ===
+# Prevents race conditions where lower-priority states override higher-priority ones
+# Higher priority states (permission) won't be overwritten by lower (processing)
+STATE_FILE="/tmp/claude-visual-signal.state"
+STATE_GRACE_PERIOD=2  # Seconds to protect high-priority states
+
+# Get priority for a state (Bash 3.2 compatible - no associative arrays)
+# Higher = more important, harder to override
+get_state_priority() {
+    case "$1" in
+        permission) echo 100 ;;
+        idle)       echo 90 ;;
+        compacting) echo 50 ;;
+        processing) echo 30 ;;
+        complete)   echo 20 ;;
+        reset)      echo 10 ;;
+        *)          echo 0 ;;
+    esac
+}
+
+# Check if state change should proceed based on priority
+# Returns 0 (true) if change allowed, 1 (false) if blocked
+should_change_state() {
+    local new_state="$1"
+    local new_priority
+    new_priority=$(get_state_priority "$new_state")
+
+    # Always allow if no state file exists
+    [[ ! -f "$STATE_FILE" ]] && return 0
+
+    # Read current state: "state priority timestamp"
+    local current_state current_priority current_time
+    read -r current_state current_priority current_time < "$STATE_FILE" 2>/dev/null || return 0
+
+    # Always allow same or higher priority
+    [[ $new_priority -ge $current_priority ]] && return 0
+
+    # For lower priority: check if grace period has passed
+    local now
+    now=$(date +%s)
+    local elapsed=$((now - current_time))
+
+    # Block if within grace period
+    [[ $elapsed -lt $STATE_GRACE_PERIOD ]] && return 1
+
+    return 0
+}
+
+# Record current state with priority and timestamp
+record_state() {
+    local state="$1"
+    local priority
+    priority=$(get_state_priority "$state")
+    local now
+    now=$(date +%s)
+    echo "$state $priority $now" > "$STATE_FILE" 2>/dev/null
+}
 
 # === GRADUATED IDLE TIMER CONFIGURATION ===
 IDLE_LOCK_DIR="/tmp/claude-idle-timer.lock"
@@ -170,6 +231,8 @@ STATE="${1:-}"
 
 case "$STATE" in
     processing)
+        # Check priority - don't override higher-priority states (e.g., permission)
+        should_change_state "$STATE" || exit 0
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_PROCESSING" > "$TTY_DEVICE"
@@ -178,16 +241,21 @@ case "$STATE" in
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        record_state "$STATE"
         ;;
     permission)
+        # Permission is high priority - always proceeds, records state
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_PERMISSION" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_PERMISSION" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        record_state "$STATE"
         # Permission fallback: do nothing (stay in current state)
         ;;
     complete)
+        # Check priority - don't override higher-priority states
+        should_change_state "$STATE" || exit 0
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_COMPLETE" > "$TTY_DEVICE"
@@ -196,8 +264,10 @@ case "$STATE" in
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        record_state "$STATE"
         ;;
     idle)
+        # Idle is high priority - always proceeds
         kill_idle_timer  # Kill any existing timer first
 
         if [[ "$ENABLE_IDLE" == "true" ]]; then
@@ -213,14 +283,27 @@ case "$STATE" in
             echo $! > "$IDLE_LOCK_DIR/pid"
             disown  # Prevent job control messages
         fi
+        record_state "$STATE"
+        ;;
+    compacting)
+        # Check priority - don't override higher-priority states
+        should_change_state "$STATE" || exit 0
+        kill_idle_timer  # Cancel any graduated idle timer
+        if [[ "$ENABLE_COMPACTING" == "true" ]]; then
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_COMPACTING" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_COMPACTING" "$(get_short_cwd)" > "$TTY_DEVICE"
+        fi
+        record_state "$STATE"
         ;;
     reset)
+        # Reset always proceeds and clears state
         kill_idle_timer  # Cancel any graduated idle timer
         [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
         [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
+        record_state "$STATE"
         ;;
     *)
-        echo "Usage: $0 {permission|idle|complete|processing|reset}" >&2
+        echo "Usage: $0 {permission|idle|complete|processing|compacting|reset}" >&2
         exit 1
         ;;
 esac
