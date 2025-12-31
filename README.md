@@ -26,7 +26,7 @@ This script uses standard OSC escape sequences supported by many modern terminal
 | Ghostty | ✅ | ✅ | ✅ | Fully tested |
 | Kitty | ✅ | ✅ | ✅ | Supported |
 | WezTerm | ✅ | ✅ | ✅ | Supported |
-| iTerm2 | ✅ | ✅ | ✅ | Supported |
+| iTerm2 | ✅ | ✅ | ✅ | Tested |
 | VS Code / Cursor | ✅ | ✅ | ✅ | Tested |
 | GNOME Terminal | ✅ | ✅ | ✅ | Supported |
 | Windows Terminal | ✅ | ✅ | ✅ | 2025+ |
