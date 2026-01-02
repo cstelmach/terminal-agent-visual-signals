@@ -1,11 +1,12 @@
 {
   "name": "terminal-visual-signals",
+  "owner": "cstelmach",
   "description": "Visual terminal state indicators for Claude Code sessions",
   "plugins": [
     {
       "name": "terminal-visual-signals",
       "description": "Changes terminal background color and tab title based on Claude Code state (processing, permission, idle, complete, compacting)",
-      "source": "."
+      "source": "./"
     }
   ]
 }
