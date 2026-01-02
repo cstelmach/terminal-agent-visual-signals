@@ -62,124 +62,37 @@ This script uses standard OSC escape sequences supported by many modern terminal
 
 ## Quick Start
 
-### 1. Clone the repository
+### Option 1: Plugin Install (Recommended)
+
+Install directly as a Claude Code plugin:
+
+```
+/plugin install cstelmach/terminal-agent-visual-signals
+```
+
+That's it! The visual signals are now active. Restart Claude Code to apply.
+
+### Option 2: Manual Install
+
+If you prefer manual setup or need to customize hooks:
+
+**1. Clone the repository:**
 
 ```bash
 git clone https://github.com/cstelmach/terminal-agent-visual-signals.git ~/.claude/hooks/terminal-agent-visual-signals
 ```
 
-### 2. Make executable
+**2. Make executable:**
 
 ```bash
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
 ```
 
-### 3. Add hooks to `~/.claude/settings.json`
+**3. Add hooks to `~/.claude/settings.json`:**
 
-If you don't have existing hooks, create a `settings.json` with this content.
-If you have existing hooks, **merge** these entries into your config.
+Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path: `~/.claude/hooks/terminal-agent-visual-signals`.
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh compacting"
-          }
-        ],
-        "matcher": "mcp__memory__compact"
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh permission"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh processing"
-          }
-        ],
-        "matcher": "*"
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh complete"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh permission"
-          }
-        ],
-        "matcher": "permission_prompt"
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh idle"
-          }
-        ],
-        "matcher": "idle_prompt"
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh reset"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh reset"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### 4. Restart Claude Code
+**4. Restart Claude Code**
 
 The visual signals will activate on your next session.
 
@@ -246,7 +159,7 @@ BELL_ON_RESET=false
 
 ## Configuration Reference
 
-Edit the top of `claude-code-visual-signal.sh` to customize:
+Edit the top of `scripts/claude-code-visual-signal.sh` to customize:
 
 ### Feature Toggles
 
@@ -312,12 +225,12 @@ COLOR_COMPACTING="#D1ECF1"
 
 ```bash
 # Test each state
-./claude-code-visual-signal.sh processing   # 🟠 Orange
-./claude-code-visual-signal.sh permission   # 🔴 Red
-./claude-code-visual-signal.sh complete     # 🟢 Green
-./claude-code-visual-signal.sh idle         # 🟣 Purple (starts timer)
-./claude-code-visual-signal.sh compacting   # 🔄 Teal
-./claude-code-visual-signal.sh reset        # Default background
+./scripts/claude-code-visual-signal.sh processing   # 🟠 Orange
+./scripts/claude-code-visual-signal.sh permission   # 🔴 Red
+./scripts/claude-code-visual-signal.sh complete     # 🟢 Green
+./scripts/claude-code-visual-signal.sh idle         # 🟣 Purple (starts timer)
+./scripts/claude-code-visual-signal.sh compacting   # 🔄 Teal
+./scripts/claude-code-visual-signal.sh reset        # Default background
 ```
 
 ---
@@ -379,14 +292,14 @@ A consolidated state file (`/tmp/claude-visual-signals.state`) tracks all active
 
 1. **Test your terminal** — Run `./test-terminal.sh` to verify OSC support
 2. **Check the script path** — Ensure paths in `settings.json` match your install location
-3. **Test manually** — Run `./claude-code-visual-signal.sh processing`
+3. **Test manually** — Run `./scripts/claude-code-visual-signal.sh processing`
 4. **Check TTY detection** — The script needs to find the parent process TTY
 
 ### Permission errors
 
 ```bash
 # Ensure script is executable
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
 ```
 
 ### Title not updating
