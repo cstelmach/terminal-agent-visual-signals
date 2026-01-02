@@ -1,12 +1,22 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "terminal-visual-signals",
-  "owner": "cstelmach",
-  "description": "Visual terminal state indicators for Claude Code sessions",
+  "owner": {
+    "name": "cstelmach",
+    "email": "chrisp.stel@gmail.com"
+  },
+  "metadata": {
+    "description": "Visual terminal state indicators for Claude Code sessions",
+    "version": "1.1.0"
+  },
   "plugins": [
     {
       "name": "terminal-visual-signals",
       "description": "Changes terminal background color and tab title based on Claude Code state (processing, permission, idle, complete, compacting)",
-      "source": "./"
+      "version": "1.1.0",
+      "source": "./",
+      "category": "productivity",
+      "keywords": ["hooks", "terminal", "visual", "ghostty", "notifications", "osc", "background-color", "catppuccin"]
     }
   ]
 }
