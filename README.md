@@ -64,13 +64,19 @@ This script uses standard OSC escape sequences supported by many modern terminal
 
 ### Option 1: Plugin Install (Recommended)
 
-Install directly as a Claude Code plugin:
+Install as a Claude Code plugin in two steps:
 
-```
-/plugin install cstelmach/terminal-agent-visual-signals
+**Step 1:** Add the marketplace (one-time setup)
+```bash
+claude plugin marketplace add cstelmach/terminal-agent-visual-signals
 ```
 
-That's it! The visual signals are now active. Restart Claude Code to apply.
+**Step 2:** Install the plugin
+```bash
+claude plugin install terminal-visual-signals@terminal-visual-signals
+```
+
+That's it! Restart Claude Code to apply the visual signals.
 
 ### Option 2: Manual Install
 
