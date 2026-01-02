@@ -159,10 +159,15 @@ IDLE_COLORS=("#443147" "#423148" "#3f3248" "#3a3348" "#373348" "reset")  # Stage
 
 # Stage emojis - shows progression visually in title
 # Final stage has empty emoji (back to normal title)
-IDLE_EMOJIS=("🟣" "🟣1" "🟣2" "🟣3" "🟣4" "")  # Stage 0-5
+IDLE_EMOJIS=("🟣" "🟣" "🟣" "🟣" "🟣" "")  # Stage 0-5
 
 # Duration in seconds to stay at each stage before transitioning to next
-IDLE_STAGE_DURATIONS=(5 5 5 5 5 5)  # 5 sec each for testing
+IDLE_STAGE_DURATIONS=(120 120 120 120 120 120)  # durations of phases in seconds
+
+# How often the timer checks for stage transitions (in seconds)
+# Should be <= shortest stage duration to ensure smooth transitions
+# Testing: 2-5s | Production: 60s (when using 180s stage durations)
+IDLE_CHECK_INTERVAL=30
 
 # === TTY RESOLUTION (optimized) ===
 # Uses $PPID built-in instead of ps -o ppid= call
@@ -219,23 +224,21 @@ get_short_cwd() {
 # === GRADUATED IDLE TIMER FUNCTIONS ===
 
 # Calculate current stage from elapsed seconds using cumulative durations
-# Returns stage number (0 to N) or N+1 if past all stages (time for reset)
+# Sets RESULT_STAGE to stage number (0 to N) or N+1 if past all stages (time for reset)
+# Uses global variable return to avoid subshell overhead
 get_idle_stage() {
     local elapsed=$1
     local cumulative=0
-    local stage=0
+    RESULT_STAGE=0
 
     for duration in "${IDLE_STAGE_DURATIONS[@]}"; do
         cumulative=$((cumulative + duration))
         if [[ $elapsed -lt $cumulative ]]; then
-            echo $stage
             return
         fi
-        stage=$((stage + 1))
+        RESULT_STAGE=$((RESULT_STAGE + 1))
     done
-
-    # Past all stages - return final stage number (triggers reset)
-    echo $stage
+    # Past all stages - RESULT_STAGE now equals final stage number (triggers reset)
 }
 
 # Kill any existing idle timer process (reads PID from consolidated state file)
@@ -249,13 +252,15 @@ kill_idle_timer() {
 # Background timer process for graduated idle color decay
 # Runs as subprocess, checks every 60 seconds, updates color at stage boundaries
 # Debug log: /tmp/claude-idle-timer.log (remove IDLE_DEBUG=1 to disable)
-IDLE_DEBUG="${IDLE_DEBUG:-1}"  # Set to 0 to disable debug logging
+IDLE_DEBUG="${IDLE_DEBUG:-0}"  # Set to 1 to enable debug logging
 IDLE_DEBUG_LOG="/tmp/claude-idle-timer.log"
 
 idle_timer_worker() {
     local tty_device="$1"
-    local start_time
-    start_time=$(date +%s)
+    local start_seconds=$SECONDS  # Use builtin instead of $(date +%s)
+
+    # Signal trap for clean shutdown - close fd3 on termination
+    trap 'exec 3>&-; exit 0' TERM INT
 
     # Get actual subshell PID (Bash 3.2 compatible - $$ returns parent PID in subshells)
     local my_pid
@@ -264,14 +269,18 @@ idle_timer_worker() {
     # Open TTY as file descriptor 3 for explicit management
     exec 3>"$tty_device"
 
+    # Cache SHORT_CWD once at start - PWD doesn't change during timer lifetime
+    local SHORT_CWD
+    SHORT_CWD=$(get_short_cwd)
+
     # CRITICAL: Timer writes its own PID to state file immediately
     # This is more reliable than relying on parent's $! capture
     write_session_state "idle" "$my_pid"
 
-    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Timer started, tty=$tty_device, pid=$my_pid, wrote own PID to state" >> "$IDLE_DEBUG_LOG"
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Timer started, tty=$tty_device, pid=$my_pid, cwd=$SHORT_CWD" >> "$IDLE_DEBUG_LOG"
 
     while true; do
-        sleep 5  # Check every 5 seconds (was 60 for production)
+        sleep "$IDLE_CHECK_INTERVAL"  # Configurable check interval
 
         # NO VOLUNTARY EXITS - timer only dies when killed by SIGTERM
         # This prevents the bell that occurs on voluntary exit
@@ -280,9 +289,9 @@ idle_timer_worker() {
         # Skip processing if TTY invalid (terminal closed) - but don't exit
         [[ ! -w "$tty_device" ]] && continue
 
-        local elapsed=$(( $(date +%s) - start_time ))
-        local stage
-        stage=$(get_idle_stage $elapsed)
+        local elapsed=$(( SECONDS - start_seconds ))  # Pure bash, no subprocess
+        get_idle_stage $elapsed  # Sets RESULT_STAGE (avoids subshell)
+        local stage=$RESULT_STAGE
 
         [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] elapsed=${elapsed}s, stage=$stage, max=${#IDLE_COLORS[@]}" >> "$IDLE_DEBUG_LOG"
 
@@ -316,13 +325,13 @@ idle_timer_worker() {
             printf "\033]11;%s\033\\\\" "$stage_color" >&3
         fi
 
-        # Apply title with or without emoji
+        # Apply title with or without emoji (uses cached SHORT_CWD)
         if [[ -n "$stage_emoji" && "$ENABLE_IDLE_STAGE_INDICATORS" == "true" ]]; then
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 with emoji" >> "$IDLE_DEBUG_LOG"
-            printf "\033]0;%s %s\033\\\\" "$stage_emoji" "$(get_short_cwd)" >&3
+            printf "\033]0;%s %s\033\\\\" "$stage_emoji" "$SHORT_CWD" >&3
         else
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 without emoji" >> "$IDLE_DEBUG_LOG"
-            printf "\033]0;%s\033\\\\" "$(get_short_cwd)" >&3
+            printf "\033]0;%s\033\\\\" "$SHORT_CWD" >&3
         fi
 
         [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $stage complete" >> "$IDLE_DEBUG_LOG"
@@ -377,11 +386,12 @@ case "$STATE" in
         kill_idle_timer  # Kill any existing timer first
 
         if [[ "$ENABLE_IDLE" == "true" ]]; then
-            # Set initial idle color (stage 0) - uses ST (\033\\) to avoid audible bell
+            # Set initial idle color and emoji (stage 0) - uses ST (\033\\) to avoid audible bell
+            # Use IDLE_EMOJIS[0] for consistency with timer stages (not generic EMOJI_IDLE)
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && \
                 printf "\033]11;%s\033\\\\" "${IDLE_COLORS[0]}" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && \
-                printf "\033]0;%s %s\033\\\\" "$EMOJI_IDLE" "$(get_short_cwd)" > "$TTY_DEVICE"
+                printf "\033]0;%s %s\033\\\\" "${IDLE_EMOJIS[0]}" "$(get_short_cwd)" > "$TTY_DEVICE"
 
             # Spawn background timer for graduated color fade
             # Timer will write its own PID to state file (more reliable than $! capture)
