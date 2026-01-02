@@ -36,9 +36,9 @@ ENABLE_COMPACTING=true
 
 COLOR_PROCESSING="#473D2F"
 COLOR_PERMISSION="#4A2021"
-COLOR_COMPLETE="#3E3046" #"#2B4636"
-COLOR_IDLE="#3E3046"
-COLOR_COMPACTING="#43452F"  # Blue/cyan tint for compaction
+COLOR_COMPLETE="#473046" #"#2B4639"
+COLOR_IDLE="#473046"
+COLOR_COMPACTING="#2B4645"  
 
 EMOJI_PROCESSING="🟠"
 EMOJI_PERMISSION="🔴"
@@ -46,14 +46,38 @@ EMOJI_COMPLETE="🟢"
 EMOJI_IDLE="🟣"
 EMOJI_COMPACTING="🔄"
 
-# === STATE PRIORITY SYSTEM ===
-# Prevents race conditions where lower-priority states override higher-priority ones
-# Higher priority states (permission) won't be overwritten by lower (processing)
-STATE_FILE="/tmp/claude-visual-signal.state"
+# === BELL CONFIGURATION ===
+# Enable/disable audible bell for each state (separate from visual changes)
+BELL_ON_PROCESSING=false
+BELL_ON_PERMISSION=true     # Alert: Claude needs permission
+BELL_ON_COMPLETE=true       # Alert: Claude finished responding
+BELL_ON_IDLE=false          # No bell for idle transitions
+BELL_ON_COMPACTING=false
+BELL_ON_RESET=false
+
+# Helper function to send bell if enabled for a state
+send_bell_if_enabled() {
+    local state="$1"
+    local should_bell=false
+    case "$state" in
+        processing) [[ "$BELL_ON_PROCESSING" == "true" ]] && should_bell=true ;;
+        permission) [[ "$BELL_ON_PERMISSION" == "true" ]] && should_bell=true ;;
+        complete)   [[ "$BELL_ON_COMPLETE" == "true" ]] && should_bell=true ;;
+        idle)       [[ "$BELL_ON_IDLE" == "true" ]] && should_bell=true ;;
+        compacting) [[ "$BELL_ON_COMPACTING" == "true" ]] && should_bell=true ;;
+        reset)      [[ "$BELL_ON_RESET" == "true" ]] && should_bell=true ;;
+    esac
+    [[ "$should_bell" == "true" ]] && printf "\007" > "$TTY_DEVICE"
+}
+
+# === CONSOLIDATED STATE FILE ===
+# Single file tracks all sessions: /tmp/claude-visual-signals.state
+# Format per line: TTY_SAFE state priority timestamp timer_pid
+# This prevents creating multiple files per session
+STATE_DB="/tmp/claude-visual-signals.state"
 STATE_GRACE_PERIOD=2  # Seconds to protect high-priority states
 
 # Get priority for a state (Bash 3.2 compatible - no associative arrays)
-# Higher = more important, harder to override
 get_state_priority() {
     case "$1" in
         permission) echo 100 ;;
@@ -66,51 +90,79 @@ get_state_priority() {
     esac
 }
 
+# Read session state from consolidated file
+# Sets: SESSION_STATE, SESSION_PRIORITY, SESSION_TIME, SESSION_TIMER_PID
+read_session_state() {
+    SESSION_STATE="" SESSION_PRIORITY=0 SESSION_TIME=0 SESSION_TIMER_PID=""
+    [[ ! -f "$STATE_DB" ]] && return 1
+    local line
+    line=$(grep "^${TTY_SAFE} " "$STATE_DB" 2>/dev/null | tail -1)
+    [[ -z "$line" ]] && return 1
+    read -r _ SESSION_STATE SESSION_PRIORITY SESSION_TIME SESSION_TIMER_PID <<< "$line"
+    return 0
+}
+
+# Write session state to consolidated file (atomic update)
+write_session_state() {
+    local state="$1"
+    local timer_pid="${2:-}"
+    local priority
+    priority=$(get_state_priority "$state")
+    local now
+    now=$(date +%s)
+
+    # Debug logging for state writes
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_state: tty=$TTY_SAFE state=$state timer_pid='$timer_pid'" >> "$IDLE_DEBUG_LOG"
+
+    # Create temp file, remove old entry for this TTY, add new entry
+    local tmp_file="${STATE_DB}.tmp.$$"
+    {
+        grep -v "^${TTY_SAFE} " "$STATE_DB" 2>/dev/null
+        echo "${TTY_SAFE} ${state} ${priority} ${now} ${timer_pid}"
+    } > "$tmp_file" 2>/dev/null
+    mv "$tmp_file" "$STATE_DB" 2>/dev/null
+}
+
 # Check if state change should proceed based on priority
-# Returns 0 (true) if change allowed, 1 (false) if blocked
 should_change_state() {
     local new_state="$1"
     local new_priority
     new_priority=$(get_state_priority "$new_state")
 
-    # Always allow if no state file exists
-    [[ ! -f "$STATE_FILE" ]] && return 0
-
-    # Read current state: "state priority timestamp"
-    local current_state current_priority current_time
-    read -r current_state current_priority current_time < "$STATE_FILE" 2>/dev/null || return 0
+    # Always allow if no state for this session
+    read_session_state || return 0
 
     # Always allow same or higher priority
-    [[ $new_priority -ge $current_priority ]] && return 0
+    [[ $new_priority -ge $SESSION_PRIORITY ]] && return 0
 
     # For lower priority: check if grace period has passed
-    local now
+    local now elapsed
     now=$(date +%s)
-    local elapsed=$((now - current_time))
-
-    # Block if within grace period
+    elapsed=$((now - SESSION_TIME))
     [[ $elapsed -lt $STATE_GRACE_PERIOD ]] && return 1
-
     return 0
 }
 
-# Record current state with priority and timestamp
+# Record current state (wrapper for write_session_state)
 record_state() {
-    local state="$1"
-    local priority
-    priority=$(get_state_priority "$state")
-    local now
-    now=$(date +%s)
-    echo "$state $priority $now" > "$STATE_FILE" 2>/dev/null
+    write_session_state "$1" ""
 }
 
 # === GRADUATED IDLE TIMER CONFIGURATION ===
-IDLE_LOCK_DIR="/tmp/claude-idle-timer.lock"
-IDLE_COLORS=("#3E3046" "#362A3D" "#2E2534" "#26202B" "#1E1B22")  # Stage 0-4
+
+# Toggle for showing stage progression with distinct colors/emojis
+ENABLE_IDLE_STAGE_INDICATORS=true  # Set to false to use subtle color fade only
+
+# Stage colors - distinct colors for testing (purple → blue → teal → olive → dim)
+# Final stage uses "reset" marker to trigger OSC 111 (reset to terminal default)
+IDLE_COLORS=("#443147" "#423148" "#3f3248" "#3a3348" "#373348" "reset")  # Stage 0-5
+
+# Stage emojis - shows progression visually in title
+# Final stage has empty emoji (back to normal title)
+IDLE_EMOJIS=("🟣" "🟣1" "🟣2" "🟣3" "🟣4" "")  # Stage 0-5
 
 # Duration in seconds to stay at each stage before transitioning to next
-# Stage 0→1, 1→2, 2→3, 3→4, 4→reset (5 values = 5 transitions)
-IDLE_STAGE_DURATIONS=(180 180 180 180 180)  # 3 min each = 15 min total
+IDLE_STAGE_DURATIONS=(5 5 5 5 5 5)  # 5 sec each for testing
 
 # === TTY RESOLUTION (optimized) ===
 # Uses $PPID built-in instead of ps -o ppid= call
@@ -127,6 +179,11 @@ fi
 
 # Exit silently if no TTY
 [[ -z "$TTY_DEVICE" ]] && exit 0
+
+# === PER-SESSION IDENTIFIER ===
+# Create unique identifier per TTY for consolidated state file
+# e.g., /dev/ttys005 → _dev_ttys005
+TTY_SAFE="${TTY_DEVICE//\//_}"
 
 # === SECURITY: Sanitize input for terminal output ===
 # Strips control characters (0x00-0x1F, 0x7F) to prevent terminal escape injection
@@ -181,48 +238,94 @@ get_idle_stage() {
     echo $stage
 }
 
-# Kill any existing idle timer process
+# Kill any existing idle timer process (reads PID from consolidated state file)
 kill_idle_timer() {
-    if [[ -d "$IDLE_LOCK_DIR" && -f "$IDLE_LOCK_DIR/pid" ]]; then
-        local old_pid
-        old_pid=$(cat "$IDLE_LOCK_DIR/pid" 2>/dev/null)
-        if [[ -n "$old_pid" ]] && kill -0 "$old_pid" 2>/dev/null; then
-            kill "$old_pid" 2>/dev/null || true
-        fi
-        rm -rf "$IDLE_LOCK_DIR" 2>/dev/null || true
+    read_session_state || return 0
+    if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
+        kill "$SESSION_TIMER_PID" 2>/dev/null || true
     fi
 }
 
 # Background timer process for graduated idle color decay
 # Runs as subprocess, checks every 60 seconds, updates color at stage boundaries
+# Debug log: /tmp/claude-idle-timer.log (remove IDLE_DEBUG=1 to disable)
+IDLE_DEBUG="${IDLE_DEBUG:-1}"  # Set to 0 to disable debug logging
+IDLE_DEBUG_LOG="/tmp/claude-idle-timer.log"
+
 idle_timer_worker() {
     local tty_device="$1"
     local start_time
     start_time=$(date +%s)
 
+    # Get actual subshell PID (Bash 3.2 compatible - $$ returns parent PID in subshells)
+    local my_pid
+    my_pid=$( sh -c 'echo $PPID' )
+
+    # Open TTY as file descriptor 3 for explicit management
+    exec 3>"$tty_device"
+
+    # CRITICAL: Timer writes its own PID to state file immediately
+    # This is more reliable than relying on parent's $! capture
+    write_session_state "idle" "$my_pid"
+
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Timer started, tty=$tty_device, pid=$my_pid, wrote own PID to state" >> "$IDLE_DEBUG_LOG"
+
     while true; do
-        sleep 60  # Check every minute
+        sleep 5  # Check every 5 seconds (was 60 for production)
 
-        # Exit if lock directory removed (cancelled by activity)
-        [[ ! -d "$IDLE_LOCK_DIR" ]] && exit 0
+        # NO VOLUNTARY EXITS - timer only dies when killed by SIGTERM
+        # This prevents the bell that occurs on voluntary exit
+        # kill_idle_timer() will send SIGTERM when a new state starts
 
-        # Exit if TTY no longer valid (terminal closed)
-        [[ ! -w "$tty_device" ]] && { rm -rf "$IDLE_LOCK_DIR" 2>/dev/null; exit 0; }
+        # Skip processing if TTY invalid (terminal closed) - but don't exit
+        [[ ! -w "$tty_device" ]] && continue
 
         local elapsed=$(( $(date +%s) - start_time ))
         local stage
         stage=$(get_idle_stage $elapsed)
 
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] elapsed=${elapsed}s, stage=$stage, max=${#IDLE_COLORS[@]}" >> "$IDLE_DEBUG_LOG"
+
         if [[ $stage -ge ${#IDLE_COLORS[@]} ]]; then
-            # Final stage: reset to default, remove emoji
-            printf "\033]111\033\\\\" > "$tty_device"
-            printf "\033]0;%s\033\\\\" "$(get_short_cwd)" > "$tty_device"
-            rm -rf "$IDLE_LOCK_DIR" 2>/dev/null
-            exit 0
+            # All stages complete - DO NOT EXIT VOLUNTARILY
+            # Voluntary exit (exit 0) triggers a bell notification in Ghostty
+            # Instead, enter "dormant mode" and wait to be killed by kill_idle_timer()
+            # When killed (SIGTERM), no bell occurs - only voluntary exits trigger it
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] FINAL - all stages complete, entering dormant mode (waiting to be killed)" >> "$IDLE_DEBUG_LOG"
+
+            # Sleep forever - only SIGTERM from kill_idle_timer() ends this
+            while true; do
+                sleep 86400
+            done
+            # NEVER exits voluntarily - will be killed by SIGTERM
         fi
 
-        # Apply stage color (only if changed from previous)
-        printf "\033]11;%s\033\\\\" "${IDLE_COLORS[$stage]}" > "$tty_device"
+        # Get color and emoji for this stage
+        local stage_color="${IDLE_COLORS[$stage]}"
+        local stage_emoji="${IDLE_EMOJIS[$stage]}"
+
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $stage: color='$stage_color' emoji='$stage_emoji'" >> "$IDLE_DEBUG_LOG"
+
+        # Apply background color (handle "reset" specially with OSC 111)
+        # Write to fd 3 (our managed TTY descriptor)
+        if [[ "$stage_color" == "reset" ]]; then
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 111 (reset bg)" >> "$IDLE_DEBUG_LOG"
+            printf "\033]111\033\\\\" >&3
+        else
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 11 with color" >> "$IDLE_DEBUG_LOG"
+            printf "\033]11;%s\033\\\\" "$stage_color" >&3
+        fi
+
+        # Apply title with or without emoji
+        if [[ -n "$stage_emoji" && "$ENABLE_IDLE_STAGE_INDICATORS" == "true" ]]; then
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 with emoji" >> "$IDLE_DEBUG_LOG"
+            printf "\033]0;%s %s\033\\\\" "$stage_emoji" "$(get_short_cwd)" >&3
+        else
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 without emoji" >> "$IDLE_DEBUG_LOG"
+            printf "\033]0;%s\033\\\\" "$(get_short_cwd)" >&3
+        fi
+
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $stage complete" >> "$IDLE_DEBUG_LOG"
     done
 }
 
@@ -235,21 +338,23 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_PROCESSING" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_PROCESSING" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\033\\\\" "$COLOR_PROCESSING" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\033\\\\" "$EMOJI_PROCESSING" "$(get_short_cwd)" > "$TTY_DEVICE"
         else
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\\\" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\033\\\\" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
     permission)
         # Permission is high priority - always proceeds, records state
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_PERMISSION" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_PERMISSION" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\033\\\\" "$COLOR_PERMISSION" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\033\\\\" "$EMOJI_PERMISSION" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        send_bell_if_enabled "$STATE"
         record_state "$STATE"
         # Permission fallback: do nothing (stay in current state)
         ;;
@@ -258,12 +363,13 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_COMPLETE" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_COMPLETE" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\033\\\\" "$COLOR_COMPLETE" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\033\\\\" "$EMOJI_COMPLETE" "$(get_short_cwd)" > "$TTY_DEVICE"
         else
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\\\" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\033\\\\" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
     idle)
@@ -278,28 +384,34 @@ case "$STATE" in
                 printf "\033]0;%s %s\033\\\\" "$EMOJI_IDLE" "$(get_short_cwd)" > "$TTY_DEVICE"
 
             # Spawn background timer for graduated color fade
-            mkdir -p "$IDLE_LOCK_DIR" 2>/dev/null
+            # Timer will write its own PID to state file (more reliable than $! capture)
             ( idle_timer_worker "$TTY_DEVICE" ) &
-            echo $! > "$IDLE_LOCK_DIR/pid"
-            disown  # Prevent job control messages
+            disown 2>/dev/null || true  # Prevent job control messages
+
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] IDLE HANDLER: spawned timer for $TTY_DEVICE" >> "$IDLE_DEBUG_LOG"
+            send_bell_if_enabled "$STATE"
+        else
+            send_bell_if_enabled "$STATE"
+            record_state "$STATE"
         fi
-        record_state "$STATE"
         ;;
     compacting)
         # Check priority - don't override higher-priority states
         should_change_state "$STATE" || exit 0
         kill_idle_timer  # Cancel any graduated idle timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\007" "$COLOR_COMPACTING" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\007" "$EMOJI_COMPACTING" "$(get_short_cwd)" > "$TTY_DEVICE"
+            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\033\\\\" "$COLOR_COMPACTING" > "$TTY_DEVICE"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\033\\\\" "$EMOJI_COMPACTING" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+        send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
     reset)
         # Reset always proceeds and clears state
         kill_idle_timer  # Cancel any graduated idle timer
-        [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\007" > "$TTY_DEVICE"
-        [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\007" "$(get_short_cwd)" > "$TTY_DEVICE"
+        [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\\\" > "$TTY_DEVICE"
+        [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\033\\\\" "$(get_short_cwd)" > "$TTY_DEVICE"
+        send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
     *)
