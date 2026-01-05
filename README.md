@@ -78,6 +78,8 @@ claude plugin install terminal-visual-signals@terminal-visual-signals
 
 That's it! Restart Claude Code to apply the visual signals.
 
+> **⚠️ Known Issue:** Due to [Claude Code bug #14410](https://github.com/anthropics/claude-code/issues/14410), plugin hooks may not execute automatically. If visual signals don't work after plugin install, see [Workaround for Bug #14410](#workaround-for-bug-14410) below.
+
 ### Option 2: Manual Install
 
 If you prefer manual setup or need to customize hooks:
@@ -323,6 +325,67 @@ chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visua
 - Ensure `settings.json` is valid JSON (use a JSON validator)
 - Check Claude Code logs for hook errors
 - For fastest response, place these hooks **first** in each hook array
+
+---
+
+## Workaround for Bug #14410
+
+Due to [Claude Code bug #14410](https://github.com/anthropics/claude-code/issues/14410), plugin hooks defined in `hooks/hooks.json` may be matched but never executed. This affects all hook types when installed via the plugin system.
+
+### Symptoms
+
+- Plugin installs successfully
+- Visual signals don't appear
+- No errors in Claude Code logs
+
+### Solution
+
+Run the setup script to create a version-independent symlink and add hooks directly to `settings.json`:
+
+**Step 1:** Run the setup script (after plugin install)
+```bash
+# Find and run the setup script from the plugin cache
+bash ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/setup-hooks-workaround.sh --install
+```
+
+This creates:
+- A stable symlink at `~/.claude/hooks/terminal-visual-signals-current/`
+- A session-start script that auto-updates the symlink when the plugin version changes
+
+**Step 2:** Copy the hooks output to `~/.claude/settings.json`
+
+The script prints the exact JSON to add. Merge these hooks with your existing `settings.json` hooks, placing the visual signal hooks **first** in each array for fastest response.
+
+**Step 3:** Restart Claude Code
+
+### How It Works
+
+```
+SessionStart hook runs
+    ↓
+Checks if symlink points to current plugin version
+    ↓
+Updates symlink if version changed (plugin update)
+    ↓
+Calls reset script
+    ↓
+All other hooks use the stable symlink path
+```
+
+**Benefits:**
+- **Version-independent** — Symlink auto-updates when plugin updates
+- **One-time setup** — No manual intervention needed after plugin updates
+- **Easy removal** — When bug is fixed, run `--uninstall`
+
+### Removing the Workaround
+
+When Claude Code bug #14410 is fixed:
+
+```bash
+bash ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/setup-hooks-workaround.sh --uninstall
+```
+
+Then remove the visual signal hooks from your `settings.json`. The native plugin hooks will take over.
 
 ---
 
