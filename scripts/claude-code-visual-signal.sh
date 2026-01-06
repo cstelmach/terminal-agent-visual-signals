@@ -20,8 +20,9 @@
 #
 # Usage: claude-code-visual-signal.sh {permission|idle|complete|processing|compacting|reset}
 #
-# Performance: Optimized to spawn ~1 external process (vs ~12-15 previously)
-#              using bash builtins and parameter expansion.
+# Performance: Uses bash builtins where possible ($EPOCHSECONDS, $SECONDS,
+#              parameter expansion). Spawns ~8-10 external processes per state
+#              change (pgrep, subshells for functions, background timer).
 # ==============================================================================
 
 # === CONFIGURATION ===
@@ -108,8 +109,8 @@ write_session_state() {
     local timer_pid="${2:-}"
     local priority
     priority=$(get_state_priority "$state")
-    local now
-    now=$(date +%s)
+    # Use $EPOCHSECONDS builtin instead of $(date +%s) - zero subprocess
+    local now=$EPOCHSECONDS
 
     # Debug logging for state writes
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_state: tty=$TTY_SAFE state=$state timer_pid='$timer_pid'" >> "$IDLE_DEBUG_LOG"
@@ -136,9 +137,8 @@ should_change_state() {
     [[ $new_priority -ge $SESSION_PRIORITY ]] && return 0
 
     # For lower priority: check if grace period has passed
-    local now elapsed
-    now=$(date +%s)
-    elapsed=$((now - SESSION_TIME))
+    # Use $EPOCHSECONDS builtin instead of $(date +%s) - zero subprocess
+    local elapsed=$(( EPOCHSECONDS - SESSION_TIME ))
     [[ $elapsed -lt $STATE_GRACE_PERIOD ]] && return 1
     return 0
 }
@@ -295,19 +295,16 @@ kill_idle_timer() {
 }
 
 # SAFETY: Kill any stale timer processes for this TTY (catches orphaned processes)
-# This uses pattern matching as a fallback when state file tracking fails
+# Uses pgrep instead of ps|grep|awk pipeline (1 process vs 5)
 cleanup_stale_timers() {
-    local tty_pattern="${TTY_DEVICE//\//\\/}"  # Escape slashes for grep
-
-    # Find any timer processes that mention our TTY device
-    # This catches timers that weren't properly tracked in state file
     local stale_pids
-    stale_pids=$(ps aux 2>/dev/null | grep -E "unified_timer_worker|idle_timer_worker" | grep "$TTY_DEVICE" | grep -v grep | awk '{print $2}' 2>/dev/null)
+    # pgrep -f matches against full command line; escape special chars in TTY path
+    stale_pids=$(pgrep -f "unified_timer_worker.*${TTY_DEVICE}" 2>/dev/null) || true
 
     if [[ -n "$stale_pids" ]]; then
         for pid in $stale_pids; do
             kill "$pid" 2>/dev/null || true
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] cleanup_stale_timers: killed stale PID $pid for $TTY_DEVICE" >> "$IDLE_DEBUG_LOG"
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] cleanup_stale_timers: killed stale PID $pid" >> "$IDLE_DEBUG_LOG"
         done
     fi
 }
