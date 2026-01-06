@@ -37,7 +37,7 @@ ENABLE_COMPACTING=true
 COLOR_PROCESSING="#473D2F"
 COLOR_PERMISSION="#4A2021"
 COLOR_COMPLETE="#473046" #"#2B4639"
-COLOR_IDLE="#473046"
+COLOR_IDLE="#443147"
 COLOR_COMPACTING="#2B4645"  
 
 EMOJI_PROCESSING="🟠"
@@ -148,26 +148,67 @@ record_state() {
     write_session_state "$1" ""
 }
 
-# === GRADUATED IDLE TIMER CONFIGURATION ===
+# === SKIP SIGNAL MECHANISM ===
+# Used for inter-process communication between idle handler and unified timer
+# When idle_prompt fires during stage 0 (complete), it signals timer to skip to stage 1
+
+# Write skip signal for timer to detect
+write_skip_signal() {
+    local skip_file="${STATE_DB}.skip.${TTY_SAFE}"
+    echo "1" > "$skip_file"
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_skip_signal: created $skip_file" >> "$IDLE_DEBUG_LOG"
+}
+
+# Check and clear skip signal (called by timer)
+# Returns 0 if signal was present, 1 otherwise
+check_and_clear_skip_signal() {
+    local skip_file="${STATE_DB}.skip.${TTY_SAFE}"
+    if [[ -f "$skip_file" ]]; then
+        rm -f "$skip_file"
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] check_and_clear_skip_signal: found and cleared $skip_file" >> "$IDLE_DEBUG_LOG"
+        return 0  # Signal was present
+    fi
+    return 1  # No signal
+}
+
+# === UNIFIED TIMER CONFIGURATION ===
+# Complete and idle are now managed by a single timer triggered on Stop hook
+# Stage 0 = Complete (green), Stage 1+ = Idle progression (purple fade)
 
 # Toggle for showing stage progression with distinct colors/emojis
-ENABLE_IDLE_STAGE_INDICATORS=true  # Set to false to use subtle color fade only
+ENABLE_STAGE_INDICATORS=true  # Set to false to use subtle color fade only
 
-# Stage colors - distinct colors for testing (purple → blue → teal → olive → dim)
+# Unified stage colors - Stage 0 is complete (green), then idle progression
 # Final stage uses "reset" marker to trigger OSC 111 (reset to terminal default)
-IDLE_COLORS=("#443147" "#423148" "#3f3248" "#3a3348" "#373348" "reset")  # Stage 0-5
+UNIFIED_STAGE_COLORS=("$COLOR_COMPLETE" "$COLOR_IDLE" "#423148" "#3f3248" "#3a3348" "#373348" "reset")
 
-# Stage emojis - shows progression visually in title
+# Unified stage emojis - Stage 0 is complete (green), then idle emojis
 # Final stage has empty emoji (back to normal title)
-IDLE_EMOJIS=("🟣" "🟣" "🟣" "🟣" "🟣" "")  # Stage 0-5
+UNIFIED_STAGE_EMOJIS=("$EMOJI_COMPLETE" "$EMOJI_IDLE" "🟣" "🟣" "🟣" "🟣" "")
 
-# Duration in seconds to stay at each stage before transitioning to next
-IDLE_STAGE_DURATIONS=(120 120 120 120 120 120)  # durations of phases in seconds
+# Duration in seconds for each stage
+# Default: Stage 0 (complete) = 60s, then idle stages = 120s each
+UNIFIED_STAGE_DURATIONS=(60 60 60 60 60 60 60)
+
+# Bell configuration per stage (only complete stage gets bell by default)
+UNIFIED_STAGE_BELLS=(true false false false false false false)
 
 # How often the timer checks for stage transitions (in seconds)
 # Should be <= shortest stage duration to ensure smooth transitions
-# Testing: 2-5s | Production: 60s (when using 180s stage durations)
-IDLE_CHECK_INTERVAL=30
+# Testing: 2-5s | Production: 30s
+UNIFIED_CHECK_INTERVAL=20
+
+# === SAFETY: Maximum timer runtime ===
+# Timer will self-terminate after this many seconds to prevent zombie processes
+# Should be longer than total stage duration (60 + 6*120 = 780s)
+# Default: 900s (15 minutes) - gives buffer beyond stage completion
+MAX_TIMER_RUNTIME=450
+
+# Legacy aliases for backward compatibility (if needed by other code)
+IDLE_COLORS=("${UNIFIED_STAGE_COLORS[@]:1}")  # Skip stage 0 (complete)
+IDLE_EMOJIS=("${UNIFIED_STAGE_EMOJIS[@]:1}")
+IDLE_STAGE_DURATIONS=("${UNIFIED_STAGE_DURATIONS[@]:1}")
+IDLE_CHECK_INTERVAL=$UNIFIED_CHECK_INTERVAL
 
 # === TTY RESOLUTION (optimized) ===
 # Uses $PPID built-in instead of ps -o ppid= call
@@ -226,12 +267,12 @@ get_short_cwd() {
 # Calculate current stage from elapsed seconds using cumulative durations
 # Sets RESULT_STAGE to stage number (0 to N) or N+1 if past all stages (time for reset)
 # Uses global variable return to avoid subshell overhead
-get_idle_stage() {
+get_unified_stage() {
     local elapsed=$1
     local cumulative=0
     RESULT_STAGE=0
 
-    for duration in "${IDLE_STAGE_DURATIONS[@]}"; do
+    for duration in "${UNIFIED_STAGE_DURATIONS[@]}"; do
         cumulative=$((cumulative + duration))
         if [[ $elapsed -lt $cumulative ]]; then
             return
@@ -241,23 +282,48 @@ get_idle_stage() {
     # Past all stages - RESULT_STAGE now equals final stage number (triggers reset)
 }
 
+# Alias for backward compatibility
+get_idle_stage() { get_unified_stage "$@"; }
+
 # Kill any existing idle timer process (reads PID from consolidated state file)
 kill_idle_timer() {
     read_session_state || return 0
     if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
         kill "$SESSION_TIMER_PID" 2>/dev/null || true
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] kill_idle_timer: killed PID $SESSION_TIMER_PID" >> "$IDLE_DEBUG_LOG"
     fi
 }
 
-# Background timer process for graduated idle color decay
-# Runs as subprocess, checks every 60 seconds, updates color at stage boundaries
-# Debug log: /tmp/claude-idle-timer.log (remove IDLE_DEBUG=1 to disable)
+# SAFETY: Kill any stale timer processes for this TTY (catches orphaned processes)
+# This uses pattern matching as a fallback when state file tracking fails
+cleanup_stale_timers() {
+    local tty_pattern="${TTY_DEVICE//\//\\/}"  # Escape slashes for grep
+
+    # Find any timer processes that mention our TTY device
+    # This catches timers that weren't properly tracked in state file
+    local stale_pids
+    stale_pids=$(ps aux 2>/dev/null | grep -E "unified_timer_worker|idle_timer_worker" | grep "$TTY_DEVICE" | grep -v grep | awk '{print $2}' 2>/dev/null)
+
+    if [[ -n "$stale_pids" ]]; then
+        for pid in $stale_pids; do
+            kill "$pid" 2>/dev/null || true
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] cleanup_stale_timers: killed stale PID $pid for $TTY_DEVICE" >> "$IDLE_DEBUG_LOG"
+        done
+    fi
+}
+
+# Unified background timer process for complete → idle → reset progression
+# Stage 0 = complete (green), Stage 1+ = idle progression (purple fade)
+# Runs as subprocess, checks every N seconds, updates color at stage boundaries
+# Debug log: /tmp/claude-idle-timer.log (set IDLE_DEBUG=1 to enable)
 IDLE_DEBUG="${IDLE_DEBUG:-0}"  # Set to 1 to enable debug logging
 IDLE_DEBUG_LOG="/tmp/claude-idle-timer.log"
 
-idle_timer_worker() {
+unified_timer_worker() {
     local tty_device="$1"
     local start_seconds=$SECONDS  # Use builtin instead of $(date +%s)
+    local current_stage=0
+    local last_applied_stage=-1  # Track which stage we last applied visuals for
 
     # Signal trap for clean shutdown - close fd3 on termination
     trap 'exec 3>&-; exit 0' TERM INT
@@ -274,13 +340,13 @@ idle_timer_worker() {
     SHORT_CWD=$(get_short_cwd)
 
     # CRITICAL: Timer writes its own PID to state file immediately
-    # This is more reliable than relying on parent's $! capture
-    write_session_state "idle" "$my_pid"
+    # Stage 0 is "complete" state, so record as complete
+    write_session_state "complete" "$my_pid"
 
-    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Timer started, tty=$tty_device, pid=$my_pid, cwd=$SHORT_CWD" >> "$IDLE_DEBUG_LOG"
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Unified timer started, tty=$tty_device, pid=$my_pid, cwd=$SHORT_CWD" >> "$IDLE_DEBUG_LOG"
 
     while true; do
-        sleep "$IDLE_CHECK_INTERVAL"  # Configurable check interval
+        sleep "$UNIFIED_CHECK_INTERVAL"  # Configurable check interval
 
         # NO VOLUNTARY EXITS - timer only dies when killed by SIGTERM
         # This prevents the bell that occurs on voluntary exit
@@ -289,54 +355,98 @@ idle_timer_worker() {
         # Skip processing if TTY invalid (terminal closed) - but don't exit
         [[ ! -w "$tty_device" ]] && continue
 
+        # Check for skip signal (from idle_prompt hook)
+        # If we're at stage 0 (complete) and skip signal received, jump to stage 1
+        if check_and_clear_skip_signal && [[ $current_stage -eq 0 ]]; then
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Skip signal received at stage 0, jumping to stage 1" >> "$IDLE_DEBUG_LOG"
+            # Adjust start_seconds so elapsed time puts us at stage 1
+            start_seconds=$((SECONDS - UNIFIED_STAGE_DURATIONS[0]))
+        fi
+
         local elapsed=$(( SECONDS - start_seconds ))  # Pure bash, no subprocess
-        get_idle_stage $elapsed  # Sets RESULT_STAGE (avoids subshell)
-        local stage=$RESULT_STAGE
+        get_unified_stage $elapsed  # Sets RESULT_STAGE (avoids subshell)
+        current_stage=$RESULT_STAGE
 
-        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] elapsed=${elapsed}s, stage=$stage, max=${#IDLE_COLORS[@]}" >> "$IDLE_DEBUG_LOG"
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] elapsed=${elapsed}s, stage=$current_stage, max=${#UNIFIED_STAGE_COLORS[@]}" >> "$IDLE_DEBUG_LOG"
 
-        if [[ $stage -ge ${#IDLE_COLORS[@]} ]]; then
-            # All stages complete - DO NOT EXIT VOLUNTARILY
-            # Voluntary exit (exit 0) triggers a bell notification in Ghostty
-            # Instead, enter "dormant mode" and wait to be killed by kill_idle_timer()
-            # When killed (SIGTERM), no bell occurs - only voluntary exits trigger it
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] FINAL - all stages complete, entering dormant mode (waiting to be killed)" >> "$IDLE_DEBUG_LOG"
+        # SAFETY: Check max runtime - self-terminate to prevent zombie processes
+        if [[ $elapsed -ge $MAX_TIMER_RUNTIME ]]; then
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] SAFETY: Max runtime ($MAX_TIMER_RUNTIME s) reached, resetting and self-terminating" >> "$IDLE_DEBUG_LOG"
 
-            # Sleep forever - only SIGTERM from kill_idle_timer() ends this
-            while true; do
-                sleep 86400
-            done
-            # NEVER exits voluntarily - will be killed by SIGTERM
+            # Try to reset visuals before terminating (non-blocking, best-effort)
+            # Uses timeout to ensure we don't get stuck - termination happens regardless
+            {
+                # Reset background to default (OSC 111)
+                printf "\033]111\033\\\\" >&3 2>/dev/null || true
+                # Reset title to just the cwd (no emoji)
+                printf "\033]0;%s\033\\\\" "$SHORT_CWD" >&3 2>/dev/null || true
+            } &
+            local reset_pid=$!
+            # Wait max 1 second for reset, then kill it and proceed
+            sleep 1
+            kill $reset_pid 2>/dev/null || true
+
+            # Clean exit via trap - no bell because we use SIGTERM to ourselves
+            kill -TERM $my_pid 2>/dev/null
+            exit 0  # Fallback if kill fails
         fi
 
-        # Get color and emoji for this stage
-        local stage_color="${IDLE_COLORS[$stage]}"
-        local stage_emoji="${IDLE_EMOJIS[$stage]}"
+        if [[ $current_stage -ge ${#UNIFIED_STAGE_COLORS[@]} ]]; then
+            # All stages complete - enter time-limited dormant mode
+            # Will be killed by kill_idle_timer() or self-terminate at MAX_TIMER_RUNTIME
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] FINAL - all stages complete, entering dormant mode (max ${MAX_TIMER_RUNTIME}s)" >> "$IDLE_DEBUG_LOG"
 
-        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $stage: color='$stage_color' emoji='$stage_emoji'" >> "$IDLE_DEBUG_LOG"
+            # Update state to reset before going dormant
+            write_session_state "reset" "$my_pid"
 
-        # Apply background color (handle "reset" specially with OSC 111)
-        # Write to fd 3 (our managed TTY descriptor)
-        if [[ "$stage_color" == "reset" ]]; then
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 111 (reset bg)" >> "$IDLE_DEBUG_LOG"
-            printf "\033]111\033\\\\" >&3
-        else
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 11 with color" >> "$IDLE_DEBUG_LOG"
-            printf "\033]11;%s\033\\\\" "$stage_color" >&3
+            # Dormant mode - but will self-terminate at MAX_TIMER_RUNTIME
+            # The main loop continues checking elapsed time
+            continue
         fi
 
-        # Apply title with or without emoji (uses cached SHORT_CWD)
-        if [[ -n "$stage_emoji" && "$ENABLE_IDLE_STAGE_INDICATORS" == "true" ]]; then
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 with emoji" >> "$IDLE_DEBUG_LOG"
-            printf "\033]0;%s %s\033\\\\" "$stage_emoji" "$SHORT_CWD" >&3
-        else
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 without emoji" >> "$IDLE_DEBUG_LOG"
-            printf "\033]0;%s\033\\\\" "$SHORT_CWD" >&3
-        fi
+        # Only apply visuals if stage changed (optimization)
+        if [[ $current_stage -ne $last_applied_stage ]]; then
+            last_applied_stage=$current_stage
 
-        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $stage complete" >> "$IDLE_DEBUG_LOG"
+            # Update state file: stage 0 = complete, stage 1+ = idle
+            if [[ $current_stage -eq 0 ]]; then
+                write_session_state "complete" "$my_pid"
+            else
+                write_session_state "idle" "$my_pid"
+            fi
+
+            # Get color and emoji for this stage
+            local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
+            local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
+
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $current_stage: color='$stage_color' emoji='$stage_emoji'" >> "$IDLE_DEBUG_LOG"
+
+            # Apply background color (handle "reset" specially with OSC 111)
+            # Write to fd 3 (our managed TTY descriptor)
+            if [[ "$stage_color" == "reset" ]]; then
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 111 (reset bg)" >> "$IDLE_DEBUG_LOG"
+                printf "\033]111\033\\\\" >&3
+            else
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 11 with color" >> "$IDLE_DEBUG_LOG"
+                printf "\033]11;%s\033\\\\" "$stage_color" >&3
+            fi
+
+            # Apply title with or without emoji (uses cached SHORT_CWD)
+            if [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 with emoji" >> "$IDLE_DEBUG_LOG"
+                printf "\033]0;%s %s\033\\\\" "$stage_emoji" "$SHORT_CWD" >&3
+            else
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] -> Sending OSC 0 without emoji" >> "$IDLE_DEBUG_LOG"
+                printf "\033]0;%s\033\\\\" "$SHORT_CWD" >&3
+            fi
+
+            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] STAGE $current_stage transition complete" >> "$IDLE_DEBUG_LOG"
+        fi
     done
 }
+
+# Legacy alias for backward compatibility
+idle_timer_worker() { unified_timer_worker "$@"; }
 
 # === MAIN LOGIC ===
 STATE="${1:-}"
@@ -370,7 +480,10 @@ case "$STATE" in
     complete)
         # Check priority - don't override higher-priority states
         should_change_state "$STATE" || exit 0
-        kill_idle_timer  # Cancel any graduated idle timer
+        kill_idle_timer  # Cancel any existing timer first
+        cleanup_stale_timers  # SAFETY: Kill any orphaned timers for this TTY
+
+        # Set immediate complete visuals (stage 0 of unified timer)
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]11;%s\033\\\\" "$COLOR_COMPLETE" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s %s\033\\\\" "$EMOJI_COMPLETE" "$(get_short_cwd)" > "$TTY_DEVICE"
@@ -378,32 +491,49 @@ case "$STATE" in
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\\\" > "$TTY_DEVICE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && printf "\033]0;%s\033\\\\" "$(get_short_cwd)" > "$TTY_DEVICE"
         fi
+
         send_bell_if_enabled "$STATE"
-        record_state "$STATE"
+
+        # Start unified timer immediately (handles complete → idle → reset progression)
+        # Timer will write its own PID to state file and manage all stage transitions
+        ( unified_timer_worker "$TTY_DEVICE" ) &
+        disown 2>/dev/null || true  # Prevent job control messages
+
+        [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] COMPLETE HANDLER: spawned unified timer for $TTY_DEVICE" >> "$IDLE_DEBUG_LOG"
+        # Note: State recording handled by timer worker (starts as "complete")
         ;;
     idle)
-        # Idle is high priority - always proceeds
-        kill_idle_timer  # Kill any existing timer first
+        # Idle notification from Claude Code - used as skip-forward hint
+        # If unified timer is at stage 0 (complete), signal it to skip to stage 1 (idle)
+        # If already at stage 1+, do nothing (timer is managing progression)
 
         if [[ "$ENABLE_IDLE" == "true" ]]; then
-            # Set initial idle color and emoji (stage 0) - uses ST (\033\\) to avoid audible bell
-            # Use IDLE_EMOJIS[0] for consistency with timer stages (not generic EMOJI_IDLE)
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && \
-                printf "\033]11;%s\033\\\\" "${IDLE_COLORS[0]}" > "$TTY_DEVICE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && \
-                printf "\033]0;%s %s\033\\\\" "${IDLE_EMOJIS[0]}" "$(get_short_cwd)" > "$TTY_DEVICE"
+            # Check if a timer is running (state should be "complete" at stage 0)
+            read_session_state || true
 
-            # Spawn background timer for graduated color fade
-            # Timer will write its own PID to state file (more reliable than $! capture)
-            ( idle_timer_worker "$TTY_DEVICE" ) &
-            disown 2>/dev/null || true  # Prevent job control messages
+            if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
+                # Timer is running - send skip signal to jump from stage 0 to stage 1
+                write_skip_signal
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] IDLE HANDLER: sent skip signal (timer pid=$SESSION_TIMER_PID)" >> "$IDLE_DEBUG_LOG"
+            else
+                # No timer running - this shouldn't normally happen, but handle gracefully
+                # Start the unified timer from stage 0 (complete)
+                [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] IDLE HANDLER: no timer found, starting unified timer" >> "$IDLE_DEBUG_LOG"
 
-            [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] IDLE HANDLER: spawned timer for $TTY_DEVICE" >> "$IDLE_DEBUG_LOG"
-            send_bell_if_enabled "$STATE"
-        else
-            send_bell_if_enabled "$STATE"
-            record_state "$STATE"
+                # Set idle visuals immediately (skipping stage 0)
+                [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && \
+                    printf "\033]11;%s\033\\\\" "${UNIFIED_STAGE_COLORS[1]}" > "$TTY_DEVICE"
+                [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && \
+                    printf "\033]0;%s %s\033\\\\" "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" > "$TTY_DEVICE"
+
+                # Start timer at stage 1 by adjusting start time
+                # (Timer will detect it's past stage 0 and continue from there)
+                ( unified_timer_worker "$TTY_DEVICE" ) &
+                disown 2>/dev/null || true
+            fi
+            # No bell for idle - let the timer/skip handle it
         fi
+        # Note: No state recording here - timer manages state
         ;;
     compacting)
         # Check priority - don't override higher-priority states
