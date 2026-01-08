@@ -1,0 +1,99 @@
+{
+  "_comment": "Gemini CLI Hooks Configuration for Terminal Visual Signals",
+  "_documentation": "See HOOKS_REFERENCE.md in this directory for detailed documentation",
+  "_version": "2.0.0",
+  "_updated": "2026-01-07",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset"
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "_comment": "Fires ONCE when user submits prompt - perfect for processing signal",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "_comment": "Maintains processing state during tool execution",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "_comment": "Maintains processing state between tool calls",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "_comment": "Fires ONCE when agent loop completes - perfect for complete signal",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh complete"
+          }
+        ]
+      }
+    ],
+    "PreCompress": [
+      {
+        "_comment": "Before context compression (manual or auto at 70% threshold)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh compacting"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "_comment": "Permission requests - when tool needs user approval",
+        "matcher": "ToolPermission",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh permission"
+          }
+        ]
+      }
+    ]
+  },
+  "_removed_hooks": {
+    "BeforeModel": "REMOVED: Fires MULTIPLE times per agent loop - too noisy for visual signals",
+    "AfterModel": "NOT USED: Fires MULTIPLE times per agent loop - causes excessive state changes"
+  }
+}
