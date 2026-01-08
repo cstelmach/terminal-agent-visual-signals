@@ -1,0 +1,6 @@
+{
+  "_comment": "PLACEHOLDER - Codex CLI does not support hooks yet. See README.md in this directory.",
+  "_status": "waiting_for_codex_hooks_feature",
+  "_reference": "https://github.com/openai/codex/discussions/2150",
+  "hooks": {}
+}
