@@ -88,10 +88,10 @@ case "$STATE" in
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PROCESSING"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
         else
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -101,7 +101,7 @@ case "$STATE" in
         kill_idle_timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PERMISSION"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -114,16 +114,16 @@ case "$STATE" in
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPLETE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
         else
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         fi
 
         send_bell_if_enabled "$STATE"
 
-        # Start Idle Timer
-        ( unified_timer_worker "$TTY_DEVICE" ) &
+        # Start Idle Timer (redirect fds to prevent parent blocking)
+        ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
         disown 2>/dev/null || true
         ;;
 
@@ -136,8 +136,8 @@ case "$STATE" in
             else
                 # Fallback start
                 [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
-                [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)"
-                ( unified_timer_worker "$TTY_DEVICE" ) &
+                [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
+                ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
                 disown 2>/dev/null || true
             fi
         fi
@@ -148,7 +148,7 @@ case "$STATE" in
         kill_idle_timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPACTING"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)"
+            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -157,7 +157,7 @@ case "$STATE" in
     reset)
         kill_idle_timer
         [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
-        [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)"
+        [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
