@@ -33,12 +33,12 @@ ENABLE_COMPACTING=true
 #   - plain: ASCII-only (:-) for compatibility
 #
 # FACE_POSITION: Where face appears relative to emoji
-#   - after: 🟠 (°-°) ~/path (default)
-#   - before: (°-°) 🟠 ~/path
+#   - before: (°-°) 🟠 ~/path (default)
+#   - after: 🟠 (°-°) ~/path
 #
 ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-false}"
 FACE_THEME="${FACE_THEME:-minimal}"
-FACE_POSITION="${FACE_POSITION:-after}"
+FACE_POSITION="${FACE_POSITION:-before}"
 
 # === THEME: Catppuccin Frappe (Default) ===
 # Muted tints that blend subtly with the background.

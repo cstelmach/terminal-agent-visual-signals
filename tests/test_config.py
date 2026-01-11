@@ -44,15 +44,15 @@ class TestDefaultValues:
         assert result.returncode == 0
         assert result.stdout.strip() == "minimal"
 
-    def test_face_position_defaults_to_after(self):
-        """FACE_POSITION should default to after."""
+    def test_face_position_defaults_to_before(self):
+        """FACE_POSITION should default to before."""
         result = run_bash(
             'source src/core/theme.sh && echo "$FACE_POSITION"',
             env=self._get_clean_env()
         )
 
         assert result.returncode == 0
-        assert result.stdout.strip() == "after"
+        assert result.stdout.strip() == "before"
 
 
 class TestEnvironmentOverrides:
