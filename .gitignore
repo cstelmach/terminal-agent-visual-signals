@@ -23,3 +23,5 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+__pycache__/
+.pytest_cache/
