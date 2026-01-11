@@ -36,9 +36,9 @@ ENABLE_COMPACTING=true
 #   - after: 🟠 (°-°) ~/path (default)
 #   - before: (°-°) 🟠 ~/path
 #
-ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
+ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-false}"
 FACE_THEME="${FACE_THEME:-minimal}"
-FACE_POSITION="${FACE_POSITION:-before}"
+FACE_POSITION="${FACE_POSITION:-after}"
 
 # === THEME: Catppuccin Frappe (Default) ===
 # Muted tints that blend subtly with the background.
