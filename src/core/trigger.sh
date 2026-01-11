@@ -16,6 +16,66 @@ source "$CORE_DIR/state.sh"
 source "$CORE_DIR/terminal.sh"
 source "$CORE_DIR/idle-worker.sh"
 
+# === DEBUG LOGGING ===
+debug_log_invocation() {
+    [[ "$DEBUG_ALL" != "1" ]] && return 0
+
+    mkdir -p "$DEBUG_LOG_DIR"
+    local ts=$(date +%Y%m%d-%H%M%S)
+    local log_file="${DEBUG_LOG_DIR}/${ts}-$$-${1:-unknown}.log"
+
+    {
+        echo "=== TERMINAL VISUAL SIGNALS DEBUG LOG ==="
+        echo "Timestamp: $(date -Iseconds 2>/dev/null || date)"
+        echo "PID: $$"
+        echo "PPID: $PPID"
+        echo ""
+        echo "=== ARGUMENTS ==="
+        echo "Arg count: $#"
+        echo "All args: $*"
+        echo "Arg 1 (state): ${1:-<empty>}"
+        echo ""
+        echo "=== WORKING DIRECTORY ==="
+        echo "PWD env var: $PWD"
+        echo "pwd command: $(pwd)"
+        echo "get_short_cwd: $(get_short_cwd 2>/dev/null || echo '<function not loaded>')"
+        echo ""
+        echo "=== TTY INFO ==="
+        echo "TTY_DEVICE: ${TTY_DEVICE:-<unset>}"
+        echo "TTY_SAFE: ${TTY_SAFE:-<unset>}"
+        echo "tty command: $(tty 2>/dev/null || echo '<no tty>')"
+        echo ""
+        echo "=== PARENT PROCESS ==="
+        ps -p $PPID -o pid,ppid,comm,args 2>/dev/null || echo "ps failed"
+        echo ""
+        echo "=== SCRIPT PATHS ==="
+        echo "SCRIPT_DIR: $SCRIPT_DIR"
+        echo "CORE_DIR: $CORE_DIR"
+        echo "BASH_SOURCE[0]: ${BASH_SOURCE[0]}"
+        echo ""
+        echo "=== STDIN ==="
+        # Non-blocking stdin capture (read with 0.1s timeout)
+        if read -t 0.1 -r stdin_line 2>/dev/null; then
+            echo "First line: $stdin_line"
+            # Capture remaining stdin (up to 100 lines)
+            local count=1
+            while read -t 0.1 -r stdin_line && [[ $count -lt 100 ]]; do
+                echo "Line $((++count)): $stdin_line"
+            done
+        else
+            echo "(no stdin data)"
+        fi
+        echo ""
+        echo "=== END DEBUG LOG ==="
+    } > "$log_file" 2>&1
+
+    # Also append summary to consolidated log
+    echo "${ts} pid=$$ state=${1:-?} pwd=$PWD tty=${TTY_DEVICE:-?}" >> "${DEBUG_LOG_DIR}/summary.log"
+}
+
+# Log this invocation
+debug_log_invocation "$@"
+
 # Exit silently if no TTY available
 [[ -z "$TTY_DEVICE" ]] && exit 0
 

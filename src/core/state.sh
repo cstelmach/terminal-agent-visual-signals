@@ -7,21 +7,41 @@
 
 # Consolidated state file: TTY_SAFE state priority timestamp timer_pid
 STATE_DB="/tmp/terminal-visual-signals.state"
-STATE_GRACE_PERIOD=2  # Seconds to protect high-priority states
+STATE_GRACE_PERIOD_MS=400  # Milliseconds to protect high-priority states
+
+# Get current time in milliseconds (for sub-second grace period)
+# macOS doesn't support %N, so we use perl or python as fallback
+get_time_ms() {
+    if command -v gdate &>/dev/null; then
+        gdate +%s%3N
+    elif command -v perl &>/dev/null; then
+        perl -MTime::HiRes=time -e 'printf "%.0f\n", time*1000'
+    else
+        # Fallback: seconds * 1000 (loses millisecond precision)
+        echo "$(( $(date +%s) * 1000 ))"
+    fi
+}
 
 # Debug logging
 IDLE_DEBUG="${IDLE_DEBUG:-0}"
 IDLE_DEBUG_LOG="/tmp/terminal-agent-idle-timer.log"
 
+# === FULL DEBUG LOGGING ===
+# Set to 1 to capture complete invocation context for all triggers
+DEBUG_ALL="${DEBUG_ALL:-0}"  # Set to 1 to enable debug logging
+DEBUG_LOG_DIR="/tmp/terminal-visual-signals-debug"
+
 # Get numeric priority for a state name
+# Higher priority = harder to override (requires grace period to pass)
+# Lower priority = easily overridden by any higher state
 get_state_priority() {
     case "$1" in
-        permission) echo 100 ;;
-        idle)       echo 90 ;;
-        compacting) echo 50 ;;
-        processing) echo 30 ;;
-        complete)   echo 20 ;;
-        reset)      echo 10 ;;
+        permission) echo 100 ;;  # Highest - waiting for user input
+        compacting) echo 50 ;;   # Mid - system operation
+        processing) echo 30 ;;   # Active work
+        complete)   echo 20 ;;   # Just finished
+        idle)       echo 15 ;;   # Lowest active - any activity overrides immediately
+        reset)      echo 10 ;;   # Baseline
         *)          echo 0 ;;
     esac
 }
@@ -44,14 +64,15 @@ write_session_state() {
     local timer_pid="${2:-}"
     local priority
     priority=$(get_state_priority "$state")
-    local now=$EPOCHSECONDS
+    local now_ms
+    now_ms=$(get_time_ms)
 
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_state: tty=$TTY_SAFE state=$state timer_pid='$timer_pid'" >> "$IDLE_DEBUG_LOG"
 
     local tmp_file="${STATE_DB}.tmp.$$"
     {
         grep -v "^${TTY_SAFE} " "$STATE_DB" 2>/dev/null
-        echo "${TTY_SAFE} ${state} ${priority} ${now} ${timer_pid}"
+        echo "${TTY_SAFE} ${state} ${priority} ${now_ms} ${timer_pid}"
     } > "$tmp_file" 2>/dev/null
     mv "$tmp_file" "$STATE_DB" 2>/dev/null
 }
@@ -68,9 +89,11 @@ should_change_state() {
     # Always allow same or higher priority
     [[ $new_priority -ge $SESSION_PRIORITY ]] && return 0
 
-    # For lower priority: check if grace period has passed
-    local elapsed=$(( EPOCHSECONDS - SESSION_TIME ))
-    [[ $elapsed -lt $STATE_GRACE_PERIOD ]] && return 1
+    # For lower priority: check if grace period has passed (using milliseconds)
+    local now_ms
+    now_ms=$(get_time_ms)
+    local elapsed_ms=$(( now_ms - SESSION_TIME ))
+    [[ $elapsed_ms -lt $STATE_GRACE_PERIOD_MS ]] && return 1
     return 0
 }
 
