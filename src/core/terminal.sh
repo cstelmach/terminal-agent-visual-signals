@@ -5,6 +5,10 @@
 # Handles low-level OSC escape sequences and TTY detection.
 # ==============================================================================
 
+# Source face themes for anthropomorphising feature
+TERMINAL_SH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$TERMINAL_SH_DIR/themes.sh"
+
 # === BELL CONFIGURATION ===
 BELL_ON_PROCESSING=false
 BELL_ON_PERMISSION=true
@@ -74,13 +78,32 @@ send_osc_bg() {
 send_osc_title() {
     local emoji="$1"
     local text="$2"
+    local state="${3:-}"
     [[ -z "$TTY_DEVICE" ]] && return
-    
-    if [[ -n "$emoji" ]]; then
-        printf "\033]0;%s %s\033\\" "$emoji" "$text" > "$TTY_DEVICE"
-    else
-        printf "\033]0;%s\033\\" "$text" > "$TTY_DEVICE"
+
+    # Get face if anthropomorphising is enabled
+    local face=""
+    if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" && -n "$state" ]]; then
+        face=$(get_face "$FACE_THEME" "$state")
     fi
+
+    # Compose title based on what's available
+    local title=""
+    if [[ -n "$emoji" && -n "$face" ]]; then
+        if [[ "$FACE_POSITION" == "before" ]]; then
+            title="$face $emoji $text"
+        else
+            title="$emoji $face $text"
+        fi
+    elif [[ -n "$face" ]]; then
+        title="$face $text"
+    elif [[ -n "$emoji" ]]; then
+        title="$emoji $text"
+    else
+        title="$text"
+    fi
+
+    printf "\033]0;%s\033\\" "$title" > "$TTY_DEVICE"
 }
 
 # === UTILS ===

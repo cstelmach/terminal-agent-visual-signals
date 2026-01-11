@@ -17,6 +17,29 @@ ENABLE_COMPLETE=true
 ENABLE_IDLE=true
 ENABLE_COMPACTING=true
 
+# === ANTHROPOMORPHISING (ASCII FACES) ===
+# Add expressive ASCII faces to terminal titles
+#
+# ENABLE_ANTHROPOMORPHISING: Master toggle for ASCII face display
+#   - false (default): No faces shown
+#   - true: Faces appear in title per FACE_POSITION
+#
+# FACE_THEME: Which face style to use
+#   - minimal: Simple kaomoji (default)
+#   - bear: ʕ•ᴥ•ʔ family
+#   - cat: ฅ^•ﻌ•^ฅ family
+#   - lenny: ( ͡° ͜ʖ ͡°) family
+#   - shrug: ¯\_(ツ)_/¯ family
+#   - plain: ASCII-only (:-) for compatibility
+#
+# FACE_POSITION: Where face appears relative to emoji
+#   - after: 🟠 (°-°) ~/path (default)
+#   - before: (°-°) 🟠 ~/path
+#
+ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
+FACE_THEME="${FACE_THEME:-minimal}"
+FACE_POSITION="${FACE_POSITION:-before}"
+
 # === THEME: Catppuccin Frappe (Default) ===
 # Muted tints that blend subtly with the background.
 
