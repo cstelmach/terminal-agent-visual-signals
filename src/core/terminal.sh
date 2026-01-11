@@ -87,8 +87,9 @@ send_osc_title() {
 
 sanitize_for_terminal() {
     local input="$1"
-    # Remove ASCII control characters
-    printf '%s' "${input//[$'\x00'-$'\x1f'$'\x7f']/}"
+    # Remove ASCII control characters (0x00-0x1f and 0x7f)
+    # Use tr for reliable control character removal
+    printf '%s' "$input" | tr -d '\000-\037\177'
 }
 
 get_short_cwd() {
