@@ -88,7 +88,7 @@ unified_timer_worker() {
             
             # Best effort reset
             {
-                printf "\033]111\033\\" >&3 2>/dev/null || true
+                [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\" >&3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
             local reset_pid=$!
@@ -118,11 +118,13 @@ unified_timer_worker() {
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
 
-            # Apply Color
-            if [[ "$stage_color" == "reset" ]]; then
-                printf "\033]111\033\\" >&3
-            else
-                printf "\033]11;%s\033\\" "$stage_color" >&3
+            # Apply Color (respects ENABLE_BACKGROUND_CHANGE setting)
+            if [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]]; then
+                if [[ "$stage_color" == "reset" ]]; then
+                    printf "\033]111\033\\" >&3
+                else
+                    printf "\033]11;%s\033\\" "$stage_color" >&3
+                fi
             fi
 
             # Apply Title (with face if anthropomorphising enabled)
@@ -132,23 +134,26 @@ unified_timer_worker() {
                 title_face=$(get_face "$FACE_THEME" "idle_${current_stage}")
             fi
 
-            local title=""
-            if [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
-                if [[ -n "$title_face" ]]; then
-                    if [[ "$FACE_POSITION" == "before" ]]; then
-                        title="$title_face $stage_emoji $SHORT_CWD"
+            # Apply Title (respects ENABLE_TITLE_PREFIX setting)
+            if [[ "$ENABLE_TITLE_PREFIX" == "true" ]]; then
+                local title=""
+                if [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
+                    if [[ -n "$title_face" ]]; then
+                        if [[ "$FACE_POSITION" == "before" ]]; then
+                            title="$title_face $stage_emoji $SHORT_CWD"
+                        else
+                            title="$stage_emoji $title_face $SHORT_CWD"
+                        fi
                     else
-                        title="$stage_emoji $title_face $SHORT_CWD"
+                        title="$stage_emoji $SHORT_CWD"
                     fi
+                elif [[ -n "$title_face" ]]; then
+                    title="$title_face $SHORT_CWD"
                 else
-                    title="$stage_emoji $SHORT_CWD"
+                    title="$SHORT_CWD"
                 fi
-            elif [[ -n "$title_face" ]]; then
-                title="$title_face $SHORT_CWD"
-            else
-                title="$SHORT_CWD"
+                printf "\033]0;%s\033\\" "$title" >&3
             fi
-            printf "\033]0;%s\033\\" "$title" >&3
         fi
     done
 }
