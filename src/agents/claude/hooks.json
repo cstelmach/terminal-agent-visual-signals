@@ -6,7 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh compacting"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh compacting",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -16,7 +18,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -27,7 +31,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh permission"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh permission",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -38,7 +44,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -48,7 +56,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh complete"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh complete",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -59,7 +69,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh permission"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh permission",
+            "async": true,
+            "timeout": 5
           }
         ]
       },
@@ -68,7 +80,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh idle"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh idle",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -78,7 +92,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -88,7 +104,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset"
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset",
+            "async": true,
+            "timeout": 5
           }
         ]
       }

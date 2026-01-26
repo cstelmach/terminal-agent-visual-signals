@@ -1,15 +1,17 @@
 {
   "_comment": "Gemini CLI Hooks Configuration for Terminal Visual Signals",
   "_documentation": "See HOOKS_REFERENCE.md in this directory for detailed documentation",
-  "_version": "2.0.0",
-  "_updated": "2026-01-07",
+  "_version": "2.1.0",
+  "_updated": "2026-01-26",
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -19,7 +21,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -30,7 +34,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -41,7 +47,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -52,7 +60,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh processing",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -63,7 +73,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh complete"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh complete",
+            "async": true,
+            "timeout": 10
           }
         ]
       }
@@ -74,7 +86,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh compacting"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh compacting",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
@@ -86,7 +100,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh permission"
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh permission",
+            "async": true,
+            "timeout": 5
           }
         ]
       }
