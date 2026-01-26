@@ -40,6 +40,11 @@ ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-false}"
 FACE_THEME="${FACE_THEME:-minimal}"
 FACE_POSITION="${FACE_POSITION:-before}"
 
+
+ENABLE_ANTHROPOMORPHISING="true"
+FACE_THEME="claudA"
+FACE_POSITION="before"
+
 # === THEME: Catppuccin Frappe (Default) ===
 # Muted tints that blend subtly with the background.
 
