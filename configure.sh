@@ -41,6 +41,8 @@ SELECTED_AGENT=""
 SELECTED_FACE_ENABLED="false"
 SELECTED_FACE_THEME="minimal"
 SELECTED_FACE_POSITION="before"
+SELECTED_STYLISH_ENABLED="false"
+SELECTED_STYLISH_DIR=""
 
 # === HELPER FUNCTIONS ===
 
@@ -284,6 +286,88 @@ select_faces() {
     fi
 }
 
+# === STEP 5: STYLISH BACKGROUNDS ===
+
+select_stylish_backgrounds() {
+    print_section "Step 5: Stylish Backgrounds (Images)"
+
+    echo "  Enable background images for visual states?"
+    echo ""
+    print_info "This feature replaces solid background colors with images."
+    print_info "Each state can have its own image (processing.png, complete.png, etc.)"
+    echo ""
+
+    # Detect terminal
+    local terminal_type="unknown"
+    if [[ -n "$ITERM_SESSION_ID" ]]; then
+        terminal_type="iterm2"
+    elif [[ -n "$KITTY_PID" ]] || [[ -n "$KITTY_WINDOW_ID" ]]; then
+        terminal_type="kitty"
+    elif [[ "$TERM_PROGRAM" == "Apple_Terminal" ]]; then
+        terminal_type="terminal.app"
+    elif [[ -n "$TERM_PROGRAM" ]]; then
+        terminal_type="${TERM_PROGRAM,,}"
+    fi
+
+    # Show compatibility info
+    case "$terminal_type" in
+        iterm2)
+            echo -e "  ${GREEN}✓${NC} ${BOLD}iTerm2 detected${NC} - Full support available"
+            ;;
+        kitty)
+            echo -e "  ${GREEN}✓${NC} ${BOLD}Kitty detected${NC} - Requires allow_remote_control=yes"
+            ;;
+        terminal.app)
+            echo -e "  ${YELLOW}⚠${NC} ${BOLD}Apple Terminal detected${NC} - NOT supported"
+            print_info "Stylish backgrounds require iTerm2 or Kitty."
+            print_info "You can still enable this for use when running in iTerm2/Kitty."
+            ;;
+        *)
+            echo -e "  ${YELLOW}?${NC} ${BOLD}Terminal: $terminal_type${NC}"
+            print_info "Stylish backgrounds only work in iTerm2 and Kitty."
+            print_info "Falls back silently to solid colors in other terminals."
+            ;;
+    esac
+    echo ""
+
+    if confirm "Enable stylish background images?"; then
+        SELECTED_STYLISH_ENABLED="true"
+
+        echo ""
+        echo "  Where should background images be stored?"
+        echo ""
+        print_info "Default: ~/.terminal-visual-signals/backgrounds/"
+        print_info "Create processing.png, complete.png, etc. in this directory."
+        print_info "Or organize by mode: dark/processing.png, light/processing.png"
+        echo ""
+
+        local default_dir="$HOME/.terminal-visual-signals/backgrounds"
+        local custom_dir
+        custom_dir=$(read_choice "Directory path" "$default_dir")
+        SELECTED_STYLISH_DIR="${custom_dir:-$default_dir}"
+
+        # Check if directory exists
+        if [[ ! -d "$SELECTED_STYLISH_DIR" ]]; then
+            echo ""
+            if confirm "Directory doesn't exist. Create it now?"; then
+                mkdir -p "$SELECTED_STYLISH_DIR"
+                mkdir -p "$SELECTED_STYLISH_DIR/dark"
+                mkdir -p "$SELECTED_STYLISH_DIR/light"
+                echo -e "  ${GREEN}Created:${NC} $SELECTED_STYLISH_DIR"
+                echo -e "  ${DIM}Add your images to the dark/ and light/ subdirectories${NC}"
+            fi
+        fi
+
+        echo ""
+        echo -e "  ${GREEN}Stylish backgrounds: ${BOLD}Enabled${NC}"
+        echo -e "  ${GREEN}Directory: ${BOLD}$SELECTED_STYLISH_DIR${NC}"
+    else
+        SELECTED_STYLISH_ENABLED="false"
+        echo ""
+        echo -e "  ${GREEN}Stylish backgrounds: ${BOLD}Disabled${NC}"
+    fi
+}
+
 # === PREVIEW ===
 
 show_preview() {
@@ -299,6 +383,10 @@ show_preview() {
     if [[ "$SELECTED_FACE_ENABLED" == "true" ]]; then
         echo -e "  ${BOLD}Face Theme:${NC}          $SELECTED_FACE_THEME"
         echo -e "  ${BOLD}Face Position:${NC}       $SELECTED_FACE_POSITION"
+    fi
+    echo -e "  ${BOLD}Stylish Backgrounds:${NC} $SELECTED_STYLISH_ENABLED"
+    if [[ "$SELECTED_STYLISH_ENABLED" == "true" ]]; then
+        echo -e "  ${BOLD}Backgrounds Dir:${NC}     $SELECTED_STYLISH_DIR"
     fi
     echo ""
 
@@ -381,7 +469,16 @@ EOF
 ENABLE_ANTHROPOMORPHISING="$SELECTED_FACE_ENABLED"
 FACE_THEME="$SELECTED_FACE_THEME"
 FACE_POSITION="$SELECTED_FACE_POSITION"
+
+# Stylish Backgrounds (Images)
+ENABLE_STYLISH_BACKGROUNDS="$SELECTED_STYLISH_ENABLED"
 EOF
+
+    if [[ "$SELECTED_STYLISH_ENABLED" == "true" ]] && [[ -n "$SELECTED_STYLISH_DIR" ]]; then
+        cat >> "$USER_CONFIG" << EOF
+STYLISH_BACKGROUNDS_DIR="$SELECTED_STYLISH_DIR"
+EOF
+    fi
 
     echo -e "  ${GREEN}Configuration saved to:${NC}"
     echo -e "  ${BOLD}$USER_CONFIG${NC}"
@@ -411,6 +508,7 @@ main() {
     select_theme_preset
     select_auto_dark_mode
     select_faces
+    select_stylish_backgrounds
 
     show_preview
 
