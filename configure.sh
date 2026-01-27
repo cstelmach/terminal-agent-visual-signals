@@ -142,7 +142,11 @@ select_operating_mode() {
 # === STEP 2: THEME PRESET (if mode=preset) ===
 
 select_theme_preset() {
-    [[ "$SELECTED_MODE" != "preset" ]] && return
+    if [[ "$SELECTED_MODE" != "preset" ]]; then
+        echo ""
+        echo -e "  ${DIM}Step 2: Theme Preset - Skipped (not using preset mode)${NC}"
+        return
+    fi
 
     print_section "Step 2: Theme Preset"
 
