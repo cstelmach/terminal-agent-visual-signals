@@ -15,6 +15,8 @@ source "$CORE_DIR/theme.sh"
 source "$CORE_DIR/state.sh"
 source "$CORE_DIR/terminal.sh"
 source "$CORE_DIR/idle-worker.sh"
+source "$CORE_DIR/detect.sh"
+source "$CORE_DIR/backgrounds.sh"
 
 # === DEBUG LOGGING ===
 debug_log_invocation() {
@@ -89,9 +91,11 @@ case "$STATE" in
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PROCESSING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
+            set_state_background_image "processing"
         else
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+            clear_background_image
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -102,6 +106,7 @@ case "$STATE" in
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PERMISSION"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
+            set_state_background_image "permission"
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -115,9 +120,11 @@ case "$STATE" in
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPLETE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
+            set_state_background_image "complete"
         else
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+            clear_background_image
         fi
 
         send_bell_if_enabled "$STATE"
@@ -137,6 +144,7 @@ case "$STATE" in
                 # Fallback start
                 [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
                 [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
+                set_state_background_image "idle"
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
                 disown 2>/dev/null || true
             fi
@@ -149,6 +157,7 @@ case "$STATE" in
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
             [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPACTING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
+            set_state_background_image "compacting"
         fi
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -158,6 +167,7 @@ case "$STATE" in
         kill_idle_timer
         [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
         [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+        clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
         ;;
