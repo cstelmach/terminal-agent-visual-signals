@@ -71,12 +71,18 @@ read_choice() {
     local default="$2"
     local result
 
+    # Prompt goes to stderr so it's not captured by $()
     if [[ -n "$default" ]]; then
-        echo -ne "${GREEN}$prompt [${default}]: ${NC}"
+        echo -ne "${GREEN}$prompt [${default}]: ${NC}" >&2
     else
-        echo -ne "${GREEN}$prompt: ${NC}"
+        echo -ne "${GREEN}$prompt: ${NC}" >&2
     fi
     read -r result
+    # Sanitize input: remove control chars and trim whitespace
+    result="${result//$'\r'/}"                        # Remove CR (CRLF terminals)
+    result="${result//$'\t'/ }"                       # Tabs to spaces
+    while [[ "$result" == " "* ]]; do result="${result# }"; done   # Trim leading
+    while [[ "$result" == *" " ]]; do result="${result% }"; done   # Trim trailing
     echo "${result:-$default}"
 }
 
@@ -87,6 +93,11 @@ confirm() {
 
     echo -ne "${GREEN}$prompt [Y/n]: ${NC}"
     read -r result
+    # Sanitize input: remove control chars and trim whitespace
+    result="${result//$'\r'/}"                        # Remove CR (CRLF terminals)
+    result="${result//$'\t'/ }"                       # Tabs to spaces
+    while [[ "$result" == " "* ]]; do result="${result# }"; done   # Trim leading
+    while [[ "$result" == *" " ]]; do result="${result% }"; done   # Trim trailing
     [[ "${result:-$default}" =~ ^[Yy] ]]
 }
 
