@@ -311,6 +311,12 @@ select_stylish_backgrounds() {
     print_info "This feature replaces solid background colors with images."
     print_info "Each state can have its own image (processing.png, complete.png, etc.)"
     echo ""
+    echo -e "  ${BOLD}Supported terminals:${NC} iTerm2, Kitty"
+    echo -e "  ${BOLD}Unsupported terminals:${NC} Will automatically fall back to solid colors"
+    echo ""
+    print_info "This is a global setting. When enabled, supported terminals show"
+    print_info "images while unsupported terminals gracefully use color-only mode."
+    echo ""
 
     # Detect terminal
     local terminal_type="unknown"
@@ -324,23 +330,20 @@ select_stylish_backgrounds() {
         terminal_type="${TERM_PROGRAM,,}"
     fi
 
-    # Show compatibility info
+    # Show compatibility info for current terminal
+    echo -e "  ${DIM}Current terminal:${NC}"
     case "$terminal_type" in
         iterm2)
-            echo -e "  ${GREEN}✓${NC} ${BOLD}iTerm2 detected${NC} - Full support available"
+            echo -e "  ${GREEN}✓${NC} ${BOLD}iTerm2${NC} - Background images will work"
             ;;
         kitty)
-            echo -e "  ${GREEN}✓${NC} ${BOLD}Kitty detected${NC} - Requires allow_remote_control=yes"
+            echo -e "  ${GREEN}✓${NC} ${BOLD}Kitty${NC} - Background images will work (requires allow_remote_control=yes)"
             ;;
         terminal.app)
-            echo -e "  ${YELLOW}⚠${NC} ${BOLD}Apple Terminal detected${NC} - NOT supported"
-            print_info "Stylish backgrounds require iTerm2 or Kitty."
-            print_info "You can still enable this for use when running in iTerm2/Kitty."
+            echo -e "  ${YELLOW}○${NC} ${BOLD}Apple Terminal${NC} - Will use solid colors (images not supported)"
             ;;
         *)
-            echo -e "  ${YELLOW}?${NC} ${BOLD}Terminal: $terminal_type${NC}"
-            print_info "Stylish backgrounds only work in iTerm2 and Kitty."
-            print_info "Falls back silently to solid colors in other terminals."
+            echo -e "  ${YELLOW}○${NC} ${BOLD}$terminal_type${NC} - Will use solid colors (images not supported)"
             ;;
     esac
     echo ""
@@ -376,10 +379,12 @@ select_stylish_backgrounds() {
         echo ""
         echo -e "  ${GREEN}Stylish backgrounds: ${BOLD}Enabled${NC}"
         echo -e "  ${GREEN}Directory: ${BOLD}$SELECTED_STYLISH_DIR${NC}"
+        print_info "Images in iTerm2/Kitty, solid colors elsewhere"
     else
         SELECTED_STYLISH_ENABLED="false"
         echo ""
         echo -e "  ${GREEN}Stylish backgrounds: ${BOLD}Disabled${NC}"
+        print_info "Using solid colors in all terminals"
     fi
 }
 
