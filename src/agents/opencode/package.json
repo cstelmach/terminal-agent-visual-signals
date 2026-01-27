@@ -1,0 +1,50 @@
+{
+  "name": "@terminal-visual-signals/opencode-plugin",
+  "version": "1.0.0",
+  "description": "Terminal visual signals plugin for OpenCode (opencode.ai) - Changes terminal background color and title based on agent state",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "opencode",
+    "terminal",
+    "visual-signals",
+    "osc",
+    "hooks",
+    "plugin"
+  ],
+  "author": "cstelmach",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cstelmach/terminal-agent-visual-signals"
+  },
+  "homepage": "https://github.com/cstelmach/terminal-agent-visual-signals#opencode",
+  "bugs": {
+    "url": "https://github.com/cstelmach/terminal-agent-visual-signals/issues"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "opencode": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "opencode": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
