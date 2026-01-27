@@ -18,86 +18,135 @@ obsidian-view project PC17 --tasks
 obsidian-view project PC17 --files
 ```
 
-### Current TaskNotes
+---
 
-| Status | TaskNote | Description |
-|--------|----------|-------------|
-| DONE | `tPC2_20260102-1944_terminal-visual-signals-for-claude-code` | Original Claude Code implementation |
-| OPEN | `tPC17_20260105-2008_agent-themes-branding-marketing-theme-collection` | Branding, marketing, theme library |
-| OPEN | `tPC17_20260105-2009_agent-themes-cross-platform-codex-gemini` | Codex + Gemini CLI support |
-
-### View Specific TaskNote
+## Quick Start
 
 ```bash
-# Render a TaskNote with full content
-obsidian-view /Users/cs/Obsidian/_/todo/tasks/tPC17_20260105-2008_agent-themes-branding-marketing-theme-collection.md
+# Test visual signals manually
+./src/core/trigger.sh processing   # Orange
+./src/core/trigger.sh complete     # Green
+./src/core/trigger.sh reset        # Default
+
+# Test terminal compatibility
+./test-terminal.sh
+
+# Install for Gemini CLI
+./install-gemini.sh
+
+# Install for Codex CLI (limited)
+./install-codex.sh
+
+# Build OpenCode plugin
+cd src/agents/opencode && npm install && npm run build
 ```
 
 ---
 
-## Repository Overview
+## Supported Platforms
 
-Visual terminal state indicators for Claude Code sessions using OSC escape sequences.
+| Platform | Support | Installation |
+|----------|---------|--------------|
+| Claude Code | ✅ Full (9 events) | Plugin marketplace or manual |
+| Gemini CLI | ✅ Full (8 events) | `./install-gemini.sh` |
+| OpenCode | ✅ Good (4 events) | npm package |
+| Codex CLI | ⚠️ Limited (1 event) | `./install-codex.sh` |
 
-**GitHub:** https://github.com/cstelmach/terminal-agent-visual-signals
+## Visual States
 
-### Key Files
+| State | Color | Emoji | Description |
+|-------|-------|-------|-------------|
+| Processing | Orange | 🟠 | Agent working |
+| Permission | Red | 🔴 | Needs user approval |
+| Complete | Green | 🟢 | Response finished |
+| Idle | Purple (graduated) | 🟣 | Waiting for input |
+| Compacting | Teal | 🔄 | Context compression |
+
+---
+
+## Key Files
 
 | File | Purpose |
 |------|---------|
-| `scripts/claude-code-visual-signal.sh` | Main signal script (~430 lines) |
-| `setup-hooks-workaround.sh` | Workaround for Claude Code bug #14410 |
-| `test-terminal.sh` | Terminal OSC compatibility tester |
-| `README.md` | Public documentation |
-| `hooks/hooks.json` | Plugin hook definitions |
+| `src/core/trigger.sh` | Main signal dispatcher |
+| `src/core/theme.sh` | Colors, toggles, config |
+| `src/core/themes.sh` | ASCII face themes library |
+| `hooks/hooks.json` | Claude Code plugin hooks |
+| `install-gemini.sh` | Gemini CLI installer |
+| `install-codex.sh` | Codex CLI installer |
+| `src/agents/opencode/` | OpenCode TypeScript plugin |
 
-### States
+---
 
-| State | Color | Emoji | Trigger |
-|-------|-------|-------|---------|
-| Processing | Orange | 🟠 | UserPromptSubmit, PostToolUse |
-| Permission | Red | 🔴 | PermissionRequest |
-| Complete | Green | 🟢 | Stop |
-| Idle | Purple | 🟣 | Notification (idle_prompt) |
-| Compacting | Teal | 🔄 | PreCompact |
+## Documentation Reference
+
+| About | What You'll Find | Key Concepts | Read When |
+|-------|------------------|--------------|-----------|
+| [Architecture](docs/reference/architecture.md) | High-level system design showing how core modules connect to agent adapters. Explains the unified trigger system, OSC sequences, and how each CLI platform hooks into the core. | core-modules, agent-adapters, OSC-sequences, state-machine | Understanding how signals flow, adding new agent support, debugging cross-platform issues |
+| [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
+| [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
 
 ---
 
 ## Development Notes
 
-### Bug Workaround
+### Plugin System (v1.2.0)
 
-Claude Code bug #14410 causes plugin hooks to not execute. The workaround:
-1. `setup-hooks-workaround.sh --install` creates a version-independent symlink
-2. Hooks in `~/.claude/settings.json` use the symlink path
-3. SessionStart hook auto-updates symlink when plugin version changes
+Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. The plugin now works natively via the marketplace.
+
+**Current plugin version:** 1.2.0
+
+```bash
+# Install plugin
+claude plugin marketplace add cstelmach/terminal-agent-visual-signals
+claude plugin install terminal-visual-signals@terminal-visual-signals
+
+# Enable plugin
+/plugin → select terminal-visual-signals
+```
+
+### Async Hooks
+
+All hooks use `async: true` for non-blocking execution:
+- Processing signals: 5s timeout
+- Idle/Complete signals: 10s timeout (spawn worker)
 
 ### Testing Changes
 
 ```bash
-# Test each state manually
-./scripts/claude-code-visual-signal.sh processing
-./scripts/claude-code-visual-signal.sh permission
-./scripts/claude-code-visual-signal.sh complete
-./scripts/claude-code-visual-signal.sh idle
-./scripts/claude-code-visual-signal.sh compacting
-./scripts/claude-code-visual-signal.sh reset
-
-# Test terminal OSC support
-./test-terminal.sh
+# Test each state
+./src/core/trigger.sh processing
+./src/core/trigger.sh permission
+./src/core/trigger.sh complete
+./src/core/trigger.sh idle
+./src/core/trigger.sh compacting
+./src/core/trigger.sh reset
 ```
 
-### Performance Considerations
+### Face Themes
 
-The script is optimized for minimal subprocess spawning:
-- Uses bash builtins (`$PPID`, `$SECONDS`, parameter expansion)
-- Avoids `$(command)` subshells where possible
-- Timer worker spawns ~1-2 external processes per iteration
+Available themes: `minimal`, `bear`, `cat`, `lenny`, `shrug`, `plain`, `claudA`-`claudF`
+
+Default: `claudA` with anthropomorphising enabled.
+
+Configure in `src/core/theme.sh`:
+```bash
+ENABLE_ANTHROPOMORPHISING="true"
+FACE_THEME="claudA"
+FACE_POSITION="before"
+```
 
 ---
 
-## Related Files
+## Verification
 
-- **Settings:** `~/.claude/settings.json` (hooks configuration)
-- **Symlink:** `~/.claude/hooks/terminal-visual-signals-current/`
-- **Session script:** `~/.claude/hooks/terminal-visual-signals-session-start.sh`
+```bash
+# Verify plugin installed
+claude plugin list | grep visual
+
+# Verify hooks in settings
+grep -A5 "terminal-visual-signals" ~/.claude/settings.json
+
+# Verify signals work
+./src/core/trigger.sh processing && sleep 2 && ./src/core/trigger.sh reset
+```
