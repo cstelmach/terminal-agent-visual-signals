@@ -120,3 +120,107 @@ check_and_clear_skip_signal() {
     fi
     return 1
 }
+
+# ==============================================================================
+# SESSION COLORS (Extended State)
+# ==============================================================================
+# Store calculated session colors for dynamic theming.
+# Separate file to avoid breaking existing state parsing.
+#
+# Format: TTY_SAFE agent base_color is_dark system_mode proc perm comp idle compact
+# ==============================================================================
+
+SESSION_COLORS_DB="/tmp/terminal-visual-signals.colors"
+
+# Write session colors for the current TTY
+# Usage: write_session_colors agent base_color is_dark system_mode proc perm comp idle compact
+write_session_colors() {
+    local agent="${1:-claude}"
+    local base_color="${2:-}"
+    local is_dark="${3:-true}"
+    local system_mode="${4:-dark}"
+    local color_proc="${5:-}"
+    local color_perm="${6:-}"
+    local color_comp="${7:-}"
+    local color_idle="${8:-}"
+    local color_compact="${9:-}"
+
+    [[ -z "$TTY_SAFE" ]] && return 1
+
+    local tmp_file="${SESSION_COLORS_DB}.tmp.$$"
+    {
+        grep -v "^${TTY_SAFE} " "$SESSION_COLORS_DB" 2>/dev/null
+        echo "${TTY_SAFE} ${agent} ${base_color} ${is_dark} ${system_mode} ${color_proc} ${color_perm} ${color_comp} ${color_idle} ${color_compact}"
+    } > "$tmp_file" 2>/dev/null
+    mv "$tmp_file" "$SESSION_COLORS_DB" 2>/dev/null
+
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_colors: tty=$TTY_SAFE agent=$agent base=$base_color" >> "$IDLE_DEBUG_LOG"
+}
+
+# Read session colors for the current TTY
+# Sets: SESSION_AGENT, SESSION_BASE_COLOR, SESSION_IS_DARK, SESSION_SYSTEM_MODE
+#       SESSION_COLOR_PROCESSING, SESSION_COLOR_PERMISSION, SESSION_COLOR_COMPLETE
+#       SESSION_COLOR_IDLE, SESSION_COLOR_COMPACTING
+# Returns 0 if colors found, 1 if not
+read_session_colors() {
+    SESSION_AGENT=""
+    SESSION_BASE_COLOR=""
+    SESSION_IS_DARK=""
+    SESSION_SYSTEM_MODE=""
+    SESSION_COLOR_PROCESSING=""
+    SESSION_COLOR_PERMISSION=""
+    SESSION_COLOR_COMPLETE=""
+    SESSION_COLOR_IDLE=""
+    SESSION_COLOR_COMPACTING=""
+
+    [[ ! -f "$SESSION_COLORS_DB" ]] && return 1
+    [[ -z "$TTY_SAFE" ]] && return 1
+
+    local line
+    line=$(grep "^${TTY_SAFE} " "$SESSION_COLORS_DB" 2>/dev/null | tail -1)
+    [[ -z "$line" ]] && return 1
+
+    read -r _ SESSION_AGENT SESSION_BASE_COLOR SESSION_IS_DARK SESSION_SYSTEM_MODE \
+         SESSION_COLOR_PROCESSING SESSION_COLOR_PERMISSION SESSION_COLOR_COMPLETE \
+         SESSION_COLOR_IDLE SESSION_COLOR_COMPACTING <<< "$line"
+
+    return 0
+}
+
+# Check if session has stored colors
+has_session_colors() {
+    [[ -f "$SESSION_COLORS_DB" ]] || return 1
+    [[ -z "$TTY_SAFE" ]] && return 1
+    grep -q "^${TTY_SAFE} " "$SESSION_COLORS_DB" 2>/dev/null
+}
+
+# Clear session colors for the current TTY
+clear_session_colors() {
+    [[ ! -f "$SESSION_COLORS_DB" ]] && return 0
+    [[ -z "$TTY_SAFE" ]] && return 1
+
+    local tmp_file="${SESSION_COLORS_DB}.tmp.$$"
+    grep -v "^${TTY_SAFE} " "$SESSION_COLORS_DB" > "$tmp_file" 2>/dev/null
+    mv "$tmp_file" "$SESSION_COLORS_DB" 2>/dev/null
+
+    [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] clear_session_colors: tty=$TTY_SAFE" >> "$IDLE_DEBUG_LOG"
+}
+
+# Get a specific color from session storage, with fallback to theme default
+# Usage: get_session_color processing -> returns color or empty
+get_session_color() {
+    local state="$1"
+
+    # Try to read session colors first
+    if has_session_colors && read_session_colors; then
+        case "$state" in
+            processing) echo "$SESSION_COLOR_PROCESSING" ;;
+            permission) echo "$SESSION_COLOR_PERMISSION" ;;
+            complete)   echo "$SESSION_COLOR_COMPLETE" ;;
+            idle)       echo "$SESSION_COLOR_IDLE" ;;
+            compacting) echo "$SESSION_COLOR_COMPACTING" ;;
+            base)       echo "$SESSION_BASE_COLOR" ;;
+            *)          echo "" ;;
+        esac
+    fi
+}
