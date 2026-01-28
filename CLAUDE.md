@@ -69,12 +69,27 @@ cd src/agents/opencode && npm install && npm run build
 | File | Purpose |
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
-| `src/core/theme.sh` | Colors, toggles, config |
+| `src/core/theme.sh` | Colors, toggles, config loader |
+| `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
+| `src/core/detect.sh` | Terminal type and dark mode detection |
 | `src/core/themes.sh` | ASCII face themes library |
+| `src/config/global.conf` | Default configuration |
+| `configure.sh` | Interactive configuration wizard |
 | `hooks/hooks.json` | Claude Code plugin hooks |
-| `install-gemini.sh` | Gemini CLI installer |
-| `install-codex.sh` | Codex CLI installer |
-| `src/agents/opencode/` | OpenCode TypeScript plugin |
+
+## User Configuration
+
+All user settings are stored in `~/.terminal-visual-signals/`:
+
+```
+~/.terminal-visual-signals/
+├── user.conf              # User configuration overrides
+└── backgrounds/           # Background images (if enabled)
+    ├── dark/              # Dark mode images
+    └── light/             # Light mode images
+```
+
+**Run `./configure.sh`** to set up interactively, or edit `user.conf` directly.
 
 ---
 
@@ -129,12 +144,28 @@ Available themes: `minimal`, `bear`, `cat`, `lenny`, `shrug`, `plain`, `claudA`-
 
 Default: `claudA` with anthropomorphising enabled.
 
-Configure in `src/core/theme.sh`:
+### Stylish Backgrounds (Images)
+
+Background images per state, with automatic fallback:
+
+| Terminal | Support | Implementation |
+|----------|---------|----------------|
+| iTerm2 | ✅ Full | OSC 1337 protocol |
+| Kitty | ✅ Full | Remote control API (requires `allow_remote_control=yes`) |
+| Others | ○ Fallback | Solid colors via OSC 11 |
+
+**Enable in `~/.terminal-visual-signals/user.conf`:**
 ```bash
-ENABLE_ANTHROPOMORPHISING="true"
-FACE_THEME="claudA"
-FACE_POSITION="before"
+ENABLE_STYLISH_BACKGROUNDS="true"
+STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
 ```
+
+**Generate sample images:**
+```bash
+./assets/backgrounds/generate-samples.sh ~/.terminal-visual-signals/backgrounds
+```
+
+This is a global setting - supported terminals show images, unsupported terminals automatically fall back to solid colors.
 
 ---
 
