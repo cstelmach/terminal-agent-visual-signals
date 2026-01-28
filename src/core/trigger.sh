@@ -81,6 +81,22 @@ debug_log_invocation "$@"
 # Exit silently if no TTY available
 [[ -z "$TTY_DEVICE" ]] && exit 0
 
+# Helper: Check if we should send background color
+# Returns 0 (true) if background color should be sent, 1 (false) to skip
+# Skips when: stylish backgrounds are active AND terminal supports images AND skip option enabled
+should_send_bg_color() {
+    [[ "$ENABLE_BACKGROUND_CHANGE" != "true" ]] && return 1
+
+    # Skip tint when background images are active (if option enabled)
+    if [[ "$STYLISH_SKIP_BG_TINT" == "true" ]] && \
+       [[ "$ENABLE_STYLISH_BACKGROUNDS" == "true" ]] && \
+       supports_background_images; then
+        return 1
+    fi
+
+    return 0
+}
+
 # Main Logic
 STATE="${1:-}"
 
@@ -89,11 +105,11 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PROCESSING"
+            should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
             set_state_background_image "processing"
         else
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
+            should_send_bg_color && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
@@ -104,7 +120,7 @@ case "$STATE" in
     permission)
         kill_idle_timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PERMISSION"
+            should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
             set_state_background_image "permission"
         fi
@@ -118,11 +134,11 @@ case "$STATE" in
         cleanup_stale_timers
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPLETE"
+            should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
             set_state_background_image "complete"
         else
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
+            should_send_bg_color && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
@@ -142,7 +158,7 @@ case "$STATE" in
                 write_skip_signal
             else
                 # Fallback start
-                [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
+                should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
                 [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
                 set_state_background_image "idle"
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
@@ -155,7 +171,7 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
-            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_COMPACTING"
+            should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
             set_state_background_image "compacting"
         fi
@@ -165,7 +181,7 @@ case "$STATE" in
 
     reset)
         kill_idle_timer
-        [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "reset"
+        should_send_bg_color && send_osc_bg "reset"
         [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         clear_background_image
         send_bell_if_enabled "$STATE"

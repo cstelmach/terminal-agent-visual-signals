@@ -5,6 +5,22 @@
 # Contains the logic for the background idle timer.
 # ==============================================================================
 
+# Helper: Check if we should send background color in idle worker
+# Returns 0 (true) if background color should be sent, 1 (false) to skip
+_idle_should_send_bg_color() {
+    [[ "$ENABLE_BACKGROUND_CHANGE" != "true" ]] && return 1
+
+    # Skip tint when background images are active (if option enabled)
+    if [[ "$STYLISH_SKIP_BG_TINT" == "true" ]] && \
+       [[ "$ENABLE_STYLISH_BACKGROUNDS" == "true" ]] && \
+       type supports_background_images &>/dev/null && \
+       supports_background_images; then
+        return 1
+    fi
+
+    return 0
+}
+
 # Calculate current stage from elapsed seconds
 get_unified_stage() {
     local elapsed=$1
@@ -88,7 +104,7 @@ unified_timer_worker() {
             
             # Best effort reset
             {
-                [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && printf "\033]111\033\\" >&3 2>/dev/null || true
+                _idle_should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
             local reset_pid=$!
@@ -118,8 +134,8 @@ unified_timer_worker() {
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
 
-            # Apply Color (respects ENABLE_BACKGROUND_CHANGE setting)
-            if [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]]; then
+            # Apply Color (respects ENABLE_BACKGROUND_CHANGE and STYLISH_SKIP_BG_TINT)
+            if _idle_should_send_bg_color; then
                 if [[ "$stage_color" == "reset" ]]; then
                     printf "\033]111\033\\" >&3
                 else
