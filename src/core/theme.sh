@@ -5,7 +5,7 @@
 # Loads configuration in hierarchical order:
 #   1. Global defaults (src/config/global.conf)
 #   2. Agent-specific (src/config/{agent}.conf)
-#   3. User overrides (~/.config/terminal-visual-signals/user.conf)
+#   3. User overrides (~/.terminal-visual-signals/user.conf)
 #
 # Used by all agents (Claude, Gemini, Codex, OpenCode).
 # ==============================================================================
@@ -14,7 +14,7 @@
 _THEME_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 _CONFIG_DIR="$_THEME_SCRIPT_DIR/../config"
 _THEMES_DIR="$_THEME_SCRIPT_DIR/../themes"
-_USER_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/terminal-visual-signals"
+_USER_CONFIG_DIR="$HOME/.terminal-visual-signals"
 _USER_CONFIG="$_USER_CONFIG_DIR/user.conf"
 
 # ==============================================================================

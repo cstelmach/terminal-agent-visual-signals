@@ -9,13 +9,13 @@
 #   - Agent-specific settings
 #   - Anthropomorphising (ASCII faces)
 #
-# Creates user configuration in ~/.config/terminal-visual-signals/user.conf
+# Creates user configuration in ~/.terminal-visual-signals/user.conf
 # ==============================================================================
 
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/terminal-visual-signals"
+CONFIG_DIR="$HOME/.terminal-visual-signals"
 USER_CONFIG="$CONFIG_DIR/user.conf"
 
 # Source required modules

@@ -9,7 +9,7 @@ This directory contains shareable theme presets for Terminal Agent Visual Signal
 Edit your config to use a preset:
 
 ```bash
-# In ~/.config/terminal-visual-signals/user.conf
+# In ~/.terminal-visual-signals/user.conf
 THEME_MODE="preset"
 THEME_PRESET="nord"
 ```
