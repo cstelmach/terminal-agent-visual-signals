@@ -148,11 +148,16 @@ Default: `claudA` with anthropomorphising enabled.
 
 Background images per state, with automatic fallback:
 
-| Terminal | Support | Implementation |
-|----------|---------|----------------|
-| iTerm2 | ✅ Full | OSC 1337 protocol |
-| Kitty | ✅ Full | Remote control API (requires `allow_remote_control=yes`) |
-| Others | ○ Fallback | Solid colors via OSC 11 |
+| Terminal | Support | Prerequisites |
+|----------|---------|---------------|
+| iTerm2 | ✅ Full | Enable background images in preferences (see below) |
+| Kitty | ✅ Full | `allow_remote_control=yes` in kitty.conf |
+| Others | ○ Fallback | None - uses solid colors via OSC 11 |
+
+**iTerm2 Setup (required):**
+1. iTerm2 → Preferences → Profiles → (your profile) → Window
+2. Enable "Background Image" (can leave path empty)
+3. Without this, OSC 1337 background commands are ignored
 
 **Enable in `~/.terminal-visual-signals/user.conf`:**
 ```bash

@@ -4,9 +4,26 @@ This directory contains sample background images for the stylish backgrounds fea
 
 ## Supported Terminals
 
-- **iTerm2** - Full support via OSC 1337
-- **Kitty** - Requires `allow_remote_control=yes` in kitty.conf
-- All other terminals fall back to solid colors silently
+### iTerm2
+
+Full support via OSC 1337. **Requires setup:**
+
+1. iTerm2 → Preferences → Profiles → (your profile) → Window
+2. Enable "Background Image" checkbox (can leave the path empty)
+3. Without this setting enabled, background image commands are silently ignored
+
+### Kitty
+
+Full support via remote control API. **Requires setup:**
+
+Add to `~/.config/kitty/kitty.conf`:
+```
+allow_remote_control yes
+```
+
+### Other Terminals
+
+All other terminals (Ghostty, Terminal.app, Alacritty, etc.) automatically fall back to solid colors via OSC 11. No errors or warnings - just graceful degradation.
 
 ## Directory Structure
 
