@@ -70,9 +70,10 @@ cd src/agents/opencode && npm install && npm run build
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
 | `src/core/theme.sh` | Colors, toggles, config loader |
+| `src/core/agent-theme.sh` | Agent-specific faces and theme loading |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/detect.sh` | Terminal type and dark mode detection |
-| `src/core/themes.sh` | ASCII face themes library |
+| `src/core/themes.sh` | Legacy face themes (deprecated, see agent-theme.sh) |
 | `src/config/global.conf` | Default configuration |
 | `configure.sh` | Interactive configuration wizard |
 | `hooks/hooks.json` | Claude Code plugin hooks |
@@ -84,9 +85,17 @@ All user settings are stored in `~/.terminal-visual-signals/`:
 ```
 ~/.terminal-visual-signals/
 ├── user.conf              # User configuration overrides
-└── backgrounds/           # Background images (if enabled)
-    ├── dark/              # Dark mode images
-    └── light/             # Light mode images
+├── agents/                # Agent-specific overrides
+│   ├── claude/
+│   │   ├── faces.conf     # Custom Claude faces
+│   │   ├── colors.conf    # Custom Claude colors
+│   │   └── backgrounds/   # Custom Claude backgrounds
+│   ├── gemini/
+│   ├── opencode/
+│   └── codex/
+└── backgrounds/           # Global background images (legacy)
+    ├── dark/
+    └── light/
 ```
 
 **Run `./configure.sh`** to set up interactively, or edit `user.conf` directly.
@@ -138,11 +147,19 @@ All hooks use `async: true` for non-blocking execution:
 ./src/core/trigger.sh reset
 ```
 
-### Face Themes
+### Agent-Specific Face Themes
 
-Available themes: `minimal`, `bear`, `cat`, `lenny`, `shrug`, `plain`, `claudA`-`claudF`
+Each agent has its own face theme with random selection per trigger:
 
-Default: `claudA` with anthropomorphising enabled.
+| Agent | Face Style | Example |
+|-------|------------|---------|
+| Claude Code | Combined claudA-F pincer (6 variants/state) | `Ǝ(• •)E` |
+| Gemini CLI | Bear | `ʕ•ᴥ•ʔ` |
+| OpenCode | Minimal kaomoji | `(°-°)` |
+| Codex CLI | Cat | `ฅ^•ﻌ•^ฅ` |
+
+Face definitions are in `src/agents/{agent}/data/faces.conf`.
+User overrides can be placed in `~/.terminal-visual-signals/agents/{agent}/faces.conf`.
 
 ### Stylish Backgrounds (Images)
 
