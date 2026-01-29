@@ -174,11 +174,8 @@ set_state_background_image() {
         return $?
     fi
 
-    # Determine background directory (dark/light based on mode)
-    local backgrounds_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.terminal-visual-signals/backgrounds}"
+    # Determine mode directory (dark/light based on settings)
     local mode_dir=""
-
-    # Check system dark/light mode if auto-detect enabled
     if [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
         if detect_system_dark_mode; then
             mode_dir="dark"
@@ -191,24 +188,50 @@ set_state_background_image() {
         mode_dir="dark"  # Default to dark
     fi
 
-    # Look for state-specific image
-    local image_path=""
+    # Map state to image filename (idle_* variants use idle.png)
+    local filename
+    case "$state" in
+        idle_*) filename="idle.png" ;;
+        *)      filename="${state}.png" ;;
+    esac
 
-    # Priority 1: State-specific image in mode directory
-    if [[ -f "${backgrounds_dir}/${mode_dir}/${state}.png" ]]; then
-        image_path="${backgrounds_dir}/${mode_dir}/${state}.png"
-    # Priority 2: State-specific image in root backgrounds dir
-    elif [[ -f "${backgrounds_dir}/${state}.png" ]]; then
-        image_path="${backgrounds_dir}/${state}.png"
-    # Priority 3: Single image fallback
+    # Look for image with agent-specific priority
+    local image_path=""
+    local agent="${TAVS_AGENT:-claude}"
+
+    # Get paths
+    local user_agent_dir="$HOME/.terminal-visual-signals/agents/$agent/backgrounds"
+    local src_agent_dir
+    src_agent_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../agents/$agent/data/backgrounds" 2>/dev/null && pwd )" || true
+    local global_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.terminal-visual-signals/backgrounds}"
+
+    # Priority 1: User agent override with mode
+    if [[ -f "${user_agent_dir}/${mode_dir}/${filename}" ]]; then
+        image_path="${user_agent_dir}/${mode_dir}/${filename}"
+    # Priority 2: User agent override without mode
+    elif [[ -f "${user_agent_dir}/${filename}" ]]; then
+        image_path="${user_agent_dir}/${filename}"
+    # Priority 3: Source agent data with mode
+    elif [[ -n "$src_agent_dir" ]] && [[ -f "${src_agent_dir}/${mode_dir}/${filename}" ]]; then
+        image_path="${src_agent_dir}/${mode_dir}/${filename}"
+    # Priority 4: Source agent data without mode
+    elif [[ -n "$src_agent_dir" ]] && [[ -f "${src_agent_dir}/${filename}" ]]; then
+        image_path="${src_agent_dir}/${filename}"
+    # Priority 5: Global user backgrounds with mode (legacy)
+    elif [[ -f "${global_dir}/${mode_dir}/${filename}" ]]; then
+        image_path="${global_dir}/${mode_dir}/${filename}"
+    # Priority 6: Global user backgrounds without mode
+    elif [[ -f "${global_dir}/${filename}" ]]; then
+        image_path="${global_dir}/${filename}"
+    # Priority 7: Single image fallback
     elif [[ -n "$STYLISH_SINGLE_IMAGE" ]] && [[ -f "$STYLISH_SINGLE_IMAGE" ]]; then
         image_path="$STYLISH_SINGLE_IMAGE"
-    # Priority 4: Default image in mode directory
-    elif [[ -f "${backgrounds_dir}/${mode_dir}/default.png" ]]; then
-        image_path="${backgrounds_dir}/${mode_dir}/default.png"
-    # Priority 5: Default image in root
-    elif [[ -f "${backgrounds_dir}/default.png" ]]; then
-        image_path="${backgrounds_dir}/default.png"
+    # Priority 8: Default image in global mode directory
+    elif [[ -f "${global_dir}/${mode_dir}/default.png" ]]; then
+        image_path="${global_dir}/${mode_dir}/default.png"
+    # Priority 9: Default image in global root
+    elif [[ -f "${global_dir}/default.png" ]]; then
+        image_path="${global_dir}/default.png"
     fi
 
     # No image found - silent fallback
