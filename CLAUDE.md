@@ -107,6 +107,7 @@ All user settings are stored in `~/.terminal-visual-signals/`:
 | About | What You'll Find | Key Concepts | Read When |
 |-------|------------------|--------------|-----------|
 | [Architecture](docs/reference/architecture.md) | High-level system design showing how core modules connect to agent adapters. Explains the unified trigger system, OSC sequences, and how each CLI platform hooks into the core. | core-modules, agent-adapters, OSC-sequences, state-machine | Understanding how signals flow, adding new agent support, debugging cross-platform issues |
+| [Agent Themes](docs/reference/agent-themes.md) | Per-agent customization of faces, colors, and backgrounds. Explains the directory structure, file formats, override priority, and how to create custom themes without modifying source files. | faces.conf, colors.conf, random-selection, user-overrides | Customizing agent appearance, adding new agent themes, understanding face selection |
 | [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
 | [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
 
@@ -153,13 +154,15 @@ Each agent has its own face theme with random selection per trigger:
 
 | Agent | Face Style | Example |
 |-------|------------|---------|
-| Claude Code | Combined claudA-F pincer (6 variants/state) | `Ǝ(• •)E` |
+| Claude Code | Combined claudA-F pincer (6 variants/state) | `Ǝ[• •]E` |
 | Gemini CLI | Bear | `ʕ•ᴥ•ʔ` |
 | OpenCode | Minimal kaomoji | `(°-°)` |
 | Codex CLI | Cat | `ฅ^•ﻌ•^ฅ` |
 
 Face definitions are in `src/agents/{agent}/data/faces.conf`.
 User overrides can be placed in `~/.terminal-visual-signals/agents/{agent}/faces.conf`.
+
+See [Agent Themes Reference](docs/reference/agent-themes.md) for customization guide.
 
 ### Stylish Backgrounds (Images)
 

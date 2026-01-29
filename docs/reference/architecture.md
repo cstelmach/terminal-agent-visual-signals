@@ -21,7 +21,7 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  ┌────────────────────────────────────────────────────────┐    │
 │  │              Agent Trigger Wrappers                     │    │
 │  │      src/agents/{claude,gemini,codex,opencode}/         │    │
-│  │                    trigger.sh                           │    │
+│  │         trigger.sh  +  data/{faces,colors}.conf         │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
 │                          ▼                                      │
@@ -29,10 +29,11 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  │                    Core System                          │    │
 │  │                 src/core/trigger.sh                     │    │
 │  │                                                         │    │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐  ┌─────────┐  │    │
-│  │  │theme.sh │  │state.sh │  │terminal.sh│  │idle-    │  │    │
-│  │  │themes.sh│  │         │  │           │  │worker.sh│  │    │
-│  │  └─────────┘  └─────────┘  └──────────┘  └─────────┘  │    │
+│  │  ┌───────────┐  ┌─────────┐  ┌──────────┐ ┌─────────┐ │    │
+│  │  │ theme.sh  │  │state.sh │  │terminal.sh│ │idle-    │ │    │
+│  │  │agent-     │  │         │  │           │ │worker.sh│ │    │
+│  │  │ theme.sh  │  │         │  │           │ │         │ │    │
+│  │  └───────────┘  └─────────┘  └──────────┘ └─────────┘ │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
 │                          ▼                                      │
@@ -40,6 +41,7 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  │                  Terminal (OSC Sequences)               │    │
 │  │     • Background color (OSC 11)                        │    │
 │  │     • Tab title (OSC 0)                                │    │
+│  │     • Background image (OSC 1337 / kitten @)          │    │
 │  │     • Bell notification (BEL)                          │    │
 │  └────────────────────────────────────────────────────────┘    │
 │                                                                  │
@@ -58,17 +60,27 @@ Main dispatcher that handles state transitions:
 
 ### theme.sh (Configuration)
 
-Defines visual appearance:
-- Colors for each state (Catppuccin Frappe palette)
+Defines visual appearance and loads configuration hierarchy:
+- Colors for each state (Catppuccin Frappe palette default)
 - Toggle switches for features (ENABLE_BACKGROUND_CHANGE, ENABLE_TITLE_PREFIX)
-- Anthropomorphising configuration (face themes)
+- Anthropomorphising configuration
+- Sources agent-theme.sh for agent-specific theming
 
-### themes.sh (Face Library)
+### agent-theme.sh (Agent Theming)
 
-Collection of ASCII face themes:
-- minimal, bear, cat, lenny, shrug, plain
-- Claude-branded themes: claudA, claudB, claudC, claudD, claudE, claudF
-- Each theme defines faces for all states including idle stages
+Agent-specific face, color, and background management:
+- `load_agent_faces()` - Load faces.conf from agent data directory
+- `get_random_face()` - Random face selection from pool for each state
+- `load_agent_colors()` - Optional per-agent color overrides
+- `get_agent_background_path()` - Agent-specific background image resolution
+- Fallback to minimal faces for unknown agents
+
+### themes.sh (Legacy Compatibility)
+
+Backward-compatible wrapper for old `get_face()` calls:
+- Delegates to `get_random_face()` when agent-theme.sh is loaded
+- Falls back to minimal faces if agent-theme.sh unavailable
+- **Deprecated:** New code should use `get_random_face()` directly
 
 ### state.sh (State Management)
 
@@ -180,5 +192,6 @@ idle-worker.sh transitions through idle stages
 
 ## Related
 
+- [Agent Themes](agent-themes.md) - Per-agent face, color, and background customization
 - [Testing](testing.md) - How to test the visual signals
 - [Troubleshooting](../troubleshooting/overview.md) - Common issues

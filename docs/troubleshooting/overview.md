@@ -10,6 +10,7 @@ Quick reference for common issues with Terminal Agent Visual Signals.
 | Plugin shows disabled | CLI says disabled but settings say true | [Local settings override](#local-settings-override) |
 | Hooks not firing | No color change on prompt submit | [Verify hook installation](#hooks-not-installed) |
 | Wrong colors | Colors different than expected | [Theme configuration](#wrong-theme) |
+| Wrong faces showing | Old faces or wrong agent faces | [Agent theme issues](#agent-theme-issues) |
 | Idle timer not working | No purple stages after completion | [Check idle-worker](#idle-timer-issues) |
 | OpenCode plugin fails | TypeScript/npm errors | [Build issues](#opencode-build-issues) |
 
@@ -69,6 +70,46 @@ Colors may be configured for a different palette.
 **Check:** `src/core/theme.sh` for color definitions.
 
 **Solution:** Modify theme colors or use a different terminal that renders colors correctly.
+
+### Agent Theme Issues
+
+Wrong faces appearing (e.g., round brackets instead of square for Claude).
+
+**Common causes:**
+1. **Plugin cache outdated** - Cached plugin version has old faces
+2. **User override exists** - Custom faces.conf overriding source
+3. **Old idle timer running** - Background process started before update
+
+**Solution 1: Update plugin cache**
+```bash
+# Copy updated files to plugin cache
+CACHE_DIR="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/src"
+cp src/core/agent-theme.sh "$CACHE_DIR/core/"
+cp src/agents/claude/data/faces.conf "$CACHE_DIR/agents/claude/data/"
+```
+
+**Solution 2: Check for user overrides**
+```bash
+# Check if user override exists
+ls ~/.terminal-visual-signals/agents/claude/faces.conf
+# If exists but outdated, remove or update it
+```
+
+**Solution 3: Kill stale background processes**
+```bash
+pkill -f "idle-worker"
+./src/core/trigger.sh reset
+```
+
+**Verify faces are correct:**
+```bash
+/bin/bash -c '
+    export TAVS_AGENT=claude
+    source src/core/agent-theme.sh
+    echo "Processing: $(get_random_face processing)"
+'
+# Should show: Ǝ[• •]E (square brackets for Claude)
+```
 
 ### Idle Timer Issues
 
