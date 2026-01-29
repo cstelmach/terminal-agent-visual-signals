@@ -6,6 +6,24 @@
 # Used by Claude, Gemini, and (future) Codex hooks.
 # ==============================================================================
 
+# ==============================================================================
+# TAVS_STATUS KILL SWITCH
+# ==============================================================================
+# Exit immediately if TAVS_STATUS environment variable is set to disabled.
+# This allows users to run agents without visual signals by setting:
+#   TAVS_STATUS=false claude
+#   TAVS_STATUS=0 gemini
+#
+# Recognized disabled values (case-insensitive): false, 0, off, no, disabled
+# ==============================================================================
+_tavs_status_lower=$(printf '%s' "$TAVS_STATUS" | tr '[:upper:]' '[:lower:]')
+case "$_tavs_status_lower" in
+    false|0|off|no|disabled)
+        exit 0
+        ;;
+esac
+unset _tavs_status_lower
+
 # Resolve Script Directory and Project Root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"

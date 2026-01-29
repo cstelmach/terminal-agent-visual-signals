@@ -28,6 +28,9 @@ obsidian-view project PC17 --files
 ./src/core/trigger.sh complete     # Green
 ./src/core/trigger.sh reset        # Default
 
+# Quick disable (run without visual signals)
+TAVS_STATUS=false claude
+
 # Test terminal compatibility
 ./test-terminal.sh
 

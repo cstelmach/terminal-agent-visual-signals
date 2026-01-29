@@ -106,6 +106,29 @@ The visual signals will activate on your next session.
 
 ---
 
+## Quick Disable (Environment Variable)
+
+Temporarily disable visual signals without changing configuration:
+
+```bash
+# Disable for a single session
+TAVS_STATUS=false claude
+
+# Disable for all sessions in current terminal
+export TAVS_STATUS=false
+
+# Re-enable
+unset TAVS_STATUS
+# or
+export TAVS_STATUS=true
+```
+
+Recognized disabled values (case-insensitive): `false`, `0`, `off`, `no`, `disabled`
+
+Useful for presentations, screen sharing, or when you need a "quiet" terminal.
+
+---
+
 ## Graduated Idle Timer
 
 When Claude enters idle state, the terminal progressively fades through stages instead of showing a static color. This provides a visual sense of how long Claude has been waiting.
