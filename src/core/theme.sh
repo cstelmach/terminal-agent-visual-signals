@@ -4,8 +4,10 @@
 # ==============================================================================
 # Loads configuration in hierarchical order:
 #   1. Global defaults (src/config/global.conf)
-#   2. Agent-specific (src/config/{agent}.conf)
-#   3. User overrides (~/.terminal-visual-signals/user.conf)
+#   2. Agent-specific config (src/config/{agent}.conf)
+#   3. Agent-specific theme data (src/agents/{agent}/data/)
+#   4. User overrides (~/.terminal-visual-signals/user.conf)
+#   5. User agent overrides (~/.terminal-visual-signals/agents/{agent}/)
 #
 # Used by all agents (Claude, Gemini, Codex, OpenCode).
 # ==============================================================================
@@ -16,6 +18,13 @@ _CONFIG_DIR="$_THEME_SCRIPT_DIR/../config"
 _THEMES_DIR="$_THEME_SCRIPT_DIR/../themes"
 _USER_CONFIG_DIR="$HOME/.terminal-visual-signals"
 _USER_CONFIG="$_USER_CONFIG_DIR/user.conf"
+
+# Source agent theme system
+_AGENT_THEME_SCRIPT="$_THEME_SCRIPT_DIR/agent-theme.sh"
+if [[ -f "$_AGENT_THEME_SCRIPT" ]]; then
+    # shellcheck source=/dev/null
+    source "$_AGENT_THEME_SCRIPT"
+fi
 
 # ==============================================================================
 # CONFIGURATION LOADING
@@ -60,7 +69,12 @@ load_agent_config() {
         _load_config_file "$_THEMES_DIR/${THEME_PRESET}.conf"
     fi
 
-    # 5. Resolve final color values based on mode
+    # 5. Initialize agent-specific theme (faces, colors, backgrounds)
+    if type init_agent_theme &>/dev/null; then
+        init_agent_theme "$agent"
+    fi
+
+    # 6. Resolve final color values based on mode
     _resolve_colors
 }
 
@@ -83,8 +97,8 @@ _set_inline_defaults() {
 
     # Anthropomorphising
     ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-false}"
-    FACE_THEME="${FACE_THEME:-minimal}"
     FACE_POSITION="${FACE_POSITION:-before}"
+    # Note: FACE_THEME is deprecated - faces are now agent-specific
 
     # Dark mode colors (defaults)
     DARK_BASE="${DARK_BASE:-#2E3440}"
