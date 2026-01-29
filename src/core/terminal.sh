@@ -7,6 +7,7 @@
 
 # Source face themes for anthropomorphising feature
 TERMINAL_SH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Note: themes.sh kept for backward compatibility, agent-theme.sh provides get_random_face()
 source "$TERMINAL_SH_DIR/themes.sh"
 
 # === BELL CONFIGURATION ===
@@ -84,7 +85,12 @@ send_osc_title() {
     # Get face if anthropomorphising is enabled
     local face=""
     if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" && -n "$state" ]]; then
-        face=$(get_face "$FACE_THEME" "$state")
+        # Use new agent-specific random face system if available, else fall back to legacy
+        if type get_random_face &>/dev/null; then
+            face=$(get_random_face "$state")
+        elif type get_face &>/dev/null; then
+            face=$(get_face "${FACE_THEME:-minimal}" "$state")
+        fi
     fi
 
     # Compose title based on what's available

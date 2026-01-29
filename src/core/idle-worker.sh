@@ -147,7 +147,12 @@ unified_timer_worker() {
             # Uses >&3 directly to avoid blocking - consistent with color writes
             local title_face=""
             if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
-                title_face=$(get_face "$FACE_THEME" "idle_${current_stage}")
+                # Use new agent-specific random face system if available, else fall back to legacy
+                if type get_random_face &>/dev/null; then
+                    title_face=$(get_random_face "idle_${current_stage}")
+                elif type get_face &>/dev/null; then
+                    title_face=$(get_face "${FACE_THEME:-minimal}" "idle_${current_stage}")
+                fi
             fi
 
             # Apply Title (respects ENABLE_TITLE_PREFIX setting)
