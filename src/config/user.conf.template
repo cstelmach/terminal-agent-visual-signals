@@ -1,0 +1,207 @@
+#!/bin/bash
+# ==============================================================================
+# Terminal Agent Visual Signals - User Configuration Template
+# ==============================================================================
+# Copy this file to: ~/.terminal-visual-signals/user.conf
+#
+# Configuration Priority: User > Agent > Global
+#   - Only uncommented values take effect
+#   - Uncomment and modify settings you want to override
+#   - Delete or leave commented settings you want to inherit from defaults
+#
+# Quick disable (without editing this file):
+#   TAVS_STATUS=false claude
+# ==============================================================================
+
+# ==============================================================================
+# OPERATING MODE
+# ==============================================================================
+# Options: "static" (hardcoded colors), "dynamic" (query terminal), "preset"
+
+# THEME_MODE="static"
+
+# For preset mode, choose a theme:
+#   Catppuccin: catppuccin-latte, catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
+#   Classic: nord, dracula, solarized-dark, solarized-light, tokyo-night
+
+# THEME_PRESET=""
+
+# ==============================================================================
+# LIGHT/DARK MODE
+# ==============================================================================
+# Auto-detect system light/dark mode and adjust colors
+
+# ENABLE_AUTO_DARK_MODE="false"
+
+# Force mode: "auto" (detect), "dark", "light"
+
+# FORCE_MODE="auto"
+
+# ==============================================================================
+# FEATURE TOGGLES
+# ==============================================================================
+
+# Master toggles
+# ENABLE_BACKGROUND_CHANGE="true"
+# ENABLE_TITLE_PREFIX="true"
+
+# Per-state toggles
+# ENABLE_PROCESSING="true"
+# ENABLE_PERMISSION="true"
+# ENABLE_COMPLETE="true"
+# ENABLE_IDLE="true"
+# ENABLE_COMPACTING="true"
+
+# ==============================================================================
+# ANTHROPOMORPHISING (ASCII FACES)
+# ==============================================================================
+# Add expressive ASCII faces to terminal titles
+# Faces are agent-specific (see ~/.terminal-visual-signals/agents/{agent}/faces.conf)
+
+# ENABLE_ANTHROPOMORPHISING="false"
+
+# Face position relative to emoji: "before" or "after"
+#   before: (°-°) 🟠 ~/path
+#   after:  🟠 (°-°) ~/path
+
+# FACE_POSITION="before"
+
+# ==============================================================================
+# COLORS - DARK MODE
+# ==============================================================================
+# Default palette: Catppuccin Frappé
+
+# DARK_BASE="#303446"
+# DARK_PROCESSING="#3d3b42"
+# DARK_PERMISSION="#3d3440"
+# DARK_COMPLETE="#374539"
+# DARK_IDLE="#3d3850"
+# DARK_COMPACTING="#334545"
+
+# ==============================================================================
+# COLORS - LIGHT MODE
+# ==============================================================================
+# Default palette: Catppuccin Latte
+
+# LIGHT_BASE="#eff1f5"
+# LIGHT_PROCESSING="#f5e6dc"
+# LIGHT_PERMISSION="#f5dde0"
+# LIGHT_COMPLETE="#e5f0e5"
+# LIGHT_IDLE="#ebe5f5"
+# LIGHT_COMPACTING="#e0f0f0"
+
+# ==============================================================================
+# EMOJIS
+# ==============================================================================
+
+# EMOJI_PROCESSING="🟠"
+# EMOJI_PERMISSION="🔴"
+# EMOJI_COMPLETE="🟢"
+# EMOJI_IDLE="🟣"
+# EMOJI_COMPACTING="🔄"
+
+# ==============================================================================
+# DYNAMIC MODE SETTINGS
+# ==============================================================================
+# Target hues for dynamic color calculation (degrees 0-360)
+
+# HUE_PROCESSING=30      # Orange
+# HUE_PERMISSION=0       # Red
+# HUE_COMPLETE=120       # Green
+# HUE_IDLE=270           # Purple
+# HUE_COMPACTING=180     # Teal
+
+# Terminal query timeout (seconds)
+# DYNAMIC_QUERY_TIMEOUT="0.1"
+
+# Disable dynamic mode over SSH
+# DYNAMIC_DISABLE_SSH="true"
+
+# ==============================================================================
+# IDLE TIMER CONFIGURATION
+# ==============================================================================
+# Gradual fade: Complete(0) -> Idle(1-5) -> Reset(6)
+
+# Show stage indicators in title
+# ENABLE_STAGE_INDICATORS="true"
+
+# Stage durations in seconds (Stage0 Stage1 Stage2 Stage3 Stage4 Stage5 Stage6)
+# STAGE_DURATIONS=(60 30 30 30 30 30 30)
+
+# How often timer checks for state changes (seconds)
+# IDLE_CHECK_INTERVAL=15
+
+# ==============================================================================
+# IDLE STAGE OVERRIDES (Optional)
+# ==============================================================================
+# Override individual stages for precise control
+# Leave commented to use automatic interpolation
+
+# Stage colors (Stage 0 = Complete, Stage 6 = Reset)
+# IDLE_STAGE_0_COLOR=""
+# IDLE_STAGE_1_COLOR=""
+# IDLE_STAGE_2_COLOR=""
+# IDLE_STAGE_3_COLOR=""
+# IDLE_STAGE_4_COLOR=""
+# IDLE_STAGE_5_COLOR=""
+# IDLE_STAGE_6_COLOR=""
+
+# Stage emojis
+# IDLE_STAGE_0_EMOJI=""
+# IDLE_STAGE_1_EMOJI=""
+# IDLE_STAGE_2_EMOJI=""
+# IDLE_STAGE_3_EMOJI=""
+# IDLE_STAGE_4_EMOJI=""
+# IDLE_STAGE_5_EMOJI=""
+# IDLE_STAGE_6_EMOJI=""
+
+# ==============================================================================
+# BELL/NOTIFICATION SETTINGS
+# ==============================================================================
+
+# ENABLE_BELL_PROCESSING="false"
+# ENABLE_BELL_PERMISSION="true"
+# ENABLE_BELL_COMPLETE="false"
+# ENABLE_BELL_COMPACTING="false"
+
+# ==============================================================================
+# STYLISH BACKGROUNDS (Images)
+# ==============================================================================
+# Background images for iTerm2 and Kitty only
+# Other terminals fall back to solid colors automatically
+
+# Master toggle
+# ENABLE_STYLISH_BACKGROUNDS="false"
+
+# Directory containing background images
+# Structure: backgrounds/processing.png or backgrounds/dark/processing.png
+# STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
+
+# Single fallback image for all states (optional)
+# STYLISH_SINGLE_IMAGE=""
+
+# Disable over SSH
+# STYLISH_DISABLE_SSH="true"
+
+# Skip background color tint when images are active
+# STYLISH_SKIP_BG_TINT="false"
+
+# iTerm2: Image display mode ("default", "aspect_fill", "tile")
+# ITERM2_IMAGE_MODE="aspect_fill"
+
+# Kitty: Image layout ("scaled", "tiled", "mirrored", "clamped")
+# KITTY_IMAGE_LAYOUT="scaled"
+
+# Kitty: Background tint (0.0-1.0, higher = more tint for readability)
+# KITTY_IMAGE_TINT="0.8"
+
+# ==============================================================================
+# ADVANCED SETTINGS
+# ==============================================================================
+
+# Debug logging (creates logs in /tmp/terminal-visual-signals-debug/)
+# DEBUG_ALL="0"
+# IDLE_DEBUG="0"
+
+# State grace period (ms) - prevents rapid flickering
+# STATE_GRACE_PERIOD_MS=400
