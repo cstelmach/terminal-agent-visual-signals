@@ -32,6 +32,7 @@ CORE_DIR="$SCRIPT_DIR"
 source "$CORE_DIR/theme.sh"
 source "$CORE_DIR/state.sh"
 source "$CORE_DIR/terminal.sh"
+source "$CORE_DIR/spinner.sh"
 source "$CORE_DIR/idle-worker.sh"
 source "$CORE_DIR/detect.sh"
 source "$CORE_DIR/backgrounds.sh"
@@ -167,6 +168,38 @@ _reset_palette_if_enabled() {
     send_osc_palette_reset
 }
 
+# Helper: Check if we should send title for current state
+# Returns 0 (true) if title should be sent, 1 (false) to skip
+# Respects TAVS_TITLE_MODE: full (all), skip-processing (skip processing), off (none)
+should_send_title() {
+    local state="${1:-}"
+
+    # Master toggle must be on
+    [[ "$ENABLE_TITLE_PREFIX" != "true" ]] && return 1
+
+    # Check title mode
+    case "$TAVS_TITLE_MODE" in
+        "full")
+            # Send title for all states
+            return 0
+            ;;
+        "skip-processing")
+            # Skip only processing state (let Claude Code handle it)
+            [[ "$state" == "processing" ]] && return 1
+            return 0
+            ;;
+        "off")
+            # Never send titles
+            return 1
+            ;;
+        *)
+            # Default: skip-processing
+            [[ "$state" == "processing" ]] && return 1
+            return 0
+            ;;
+    esac
+}
+
 # Main Logic
 STATE="${1:-}"
 
@@ -178,12 +211,12 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
+            should_send_title "processing" && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
             set_state_background_image "processing"
         else
             _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+            should_send_title "processing" && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
         send_bell_if_enabled "$STATE"
@@ -196,7 +229,7 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
+            should_send_title "permission" && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
             set_state_background_image "permission"
         fi
         send_bell_if_enabled "$STATE"
@@ -212,12 +245,12 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
+            should_send_title "complete" && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
             set_state_background_image "complete"
         else
             _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+            should_send_title "complete" && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
 
@@ -238,7 +271,7 @@ case "$STATE" in
                 # Fallback start - apply palette before background
                 _apply_palette_if_enabled
                 should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
-                [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
+                should_send_title "idle" && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
                 set_state_background_image "idle"
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
                 disown 2>/dev/null || true
@@ -253,7 +286,7 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
-            [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
+            should_send_title "compacting" && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
             set_state_background_image "compacting"
         fi
         send_bell_if_enabled "$STATE"
@@ -265,10 +298,13 @@ case "$STATE" in
         # Reset palette FIRST, then background
         _reset_palette_if_enabled
         should_send_bg_color && send_osc_bg "reset"
-        [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
+        should_send_title "reset" && send_osc_title "" "$(get_short_cwd)" "reset"
         clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
+        # Initialize session spinner if session identity is enabled
+        reset_spinner
+        [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
         ;;
 
     *)

@@ -86,6 +86,7 @@ _resolve_agent_variables() {
         AGENT_NAME
         DARK_BASE DARK_PROCESSING DARK_PERMISSION DARK_COMPLETE DARK_IDLE DARK_COMPACTING
         LIGHT_BASE LIGHT_PROCESSING LIGHT_PERMISSION LIGHT_COMPLETE LIGHT_IDLE LIGHT_COMPACTING
+        SPINNER_FACE_FRAME
     )
 
     local var value
@@ -99,8 +100,8 @@ _resolve_agent_variables() {
             eval "value=\${UNKNOWN_${var}:-}"
         fi
 
-        # Fall back to DEFAULT_ if still not set (for colors only)
-        if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING ]]; then
+        # Fall back to DEFAULT_ if still not set (for colors and spinner frame)
+        if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING || "$var" == "SPINNER_FACE_FRAME" ]]; then
             eval "value=\${DEFAULT_${var}:-}"
         fi
 
