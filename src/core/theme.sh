@@ -81,11 +81,17 @@ _resolve_agent_variables() {
     local prefix
     prefix="$(echo "$agent" | tr '[:lower:]' '[:upper:]')_"  # CLAUDE_, GEMINI_, etc.
 
-    # Variables to resolve
+    # Variables to resolve (background colors)
     local vars=(
         AGENT_NAME
         DARK_BASE DARK_PROCESSING DARK_PERMISSION DARK_COMPLETE DARK_IDLE DARK_COMPACTING
         LIGHT_BASE LIGHT_PROCESSING LIGHT_PERMISSION LIGHT_COMPLETE LIGHT_IDLE LIGHT_COMPACTING
+    )
+
+    # Foreground color variables
+    local fg_vars=(
+        DARK_FOREGROUND DARK_FG_PROCESSING DARK_FG_PERMISSION DARK_FG_COMPLETE DARK_FG_IDLE DARK_FG_COMPACTING
+        LIGHT_FOREGROUND LIGHT_FG_PROCESSING LIGHT_FG_PERMISSION LIGHT_FG_COMPLETE LIGHT_FG_IDLE LIGHT_FG_COMPACTING
     )
 
     local var value
@@ -101,6 +107,22 @@ _resolve_agent_variables() {
 
         # Fall back to DEFAULT_ if still not set (for colors only)
         if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING ]]; then
+            eval "value=\${DEFAULT_${var}:-}"
+        fi
+
+        # Set the generic variable if we have a value
+        if [[ -n "$value" ]]; then
+            eval "$var=\"\$value\""
+        fi
+    done
+
+    # Resolve foreground color variables
+    for var in "${fg_vars[@]}"; do
+        # Try AGENT_prefixed first
+        eval "value=\${${prefix}${var}:-}"
+
+        # Fall back to DEFAULT_ if not set
+        if [[ -z "$value" ]]; then
             eval "value=\${DEFAULT_${var}:-}"
         fi
 
@@ -206,6 +228,7 @@ _set_inline_defaults() {
 
     # Feature toggles
     ENABLE_BACKGROUND_CHANGE="${ENABLE_BACKGROUND_CHANGE:-true}"
+    ENABLE_FOREGROUND_CHANGE="${ENABLE_FOREGROUND_CHANGE:-true}"
     ENABLE_TITLE_PREFIX="${ENABLE_TITLE_PREFIX:-true}"
     ENABLE_PROCESSING="${ENABLE_PROCESSING:-true}"
     ENABLE_PERMISSION="${ENABLE_PERMISSION:-true}"
@@ -217,7 +240,7 @@ _set_inline_defaults() {
     ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
     FACE_POSITION="${FACE_POSITION:-before}"
 
-    # Dark mode colors (defaults - Catppuccin Frappé)
+    # Dark mode background colors (defaults - Catppuccin Frappé)
     DEFAULT_DARK_BASE="${DEFAULT_DARK_BASE:-#303446}"
     DEFAULT_DARK_PROCESSING="${DEFAULT_DARK_PROCESSING:-#3d3b42}"
     DEFAULT_DARK_PERMISSION="${DEFAULT_DARK_PERMISSION:-#3d3440}"
@@ -225,13 +248,29 @@ _set_inline_defaults() {
     DEFAULT_DARK_IDLE="${DEFAULT_DARK_IDLE:-#3d3850}"
     DEFAULT_DARK_COMPACTING="${DEFAULT_DARK_COMPACTING:-#334545}"
 
-    # Light mode colors (defaults - Catppuccin Latte)
+    # Dark mode foreground colors (defaults - Catppuccin Frappé Text)
+    DEFAULT_DARK_FOREGROUND="${DEFAULT_DARK_FOREGROUND:-#c6d0f5}"
+    DEFAULT_DARK_FG_PROCESSING="${DEFAULT_DARK_FG_PROCESSING:-$DEFAULT_DARK_FOREGROUND}"
+    DEFAULT_DARK_FG_PERMISSION="${DEFAULT_DARK_FG_PERMISSION:-$DEFAULT_DARK_FOREGROUND}"
+    DEFAULT_DARK_FG_COMPLETE="${DEFAULT_DARK_FG_COMPLETE:-$DEFAULT_DARK_FOREGROUND}"
+    DEFAULT_DARK_FG_IDLE="${DEFAULT_DARK_FG_IDLE:-$DEFAULT_DARK_FOREGROUND}"
+    DEFAULT_DARK_FG_COMPACTING="${DEFAULT_DARK_FG_COMPACTING:-$DEFAULT_DARK_FOREGROUND}"
+
+    # Light mode background colors (defaults - Catppuccin Latte)
     DEFAULT_LIGHT_BASE="${DEFAULT_LIGHT_BASE:-#eff1f5}"
     DEFAULT_LIGHT_PROCESSING="${DEFAULT_LIGHT_PROCESSING:-#f5e6dc}"
     DEFAULT_LIGHT_PERMISSION="${DEFAULT_LIGHT_PERMISSION:-#f5dde0}"
     DEFAULT_LIGHT_COMPLETE="${DEFAULT_LIGHT_COMPLETE:-#e5f0e5}"
     DEFAULT_LIGHT_IDLE="${DEFAULT_LIGHT_IDLE:-#ebe5f5}"
     DEFAULT_LIGHT_COMPACTING="${DEFAULT_LIGHT_COMPACTING:-#e0f0f0}"
+
+    # Light mode foreground colors (defaults - Catppuccin Latte Text)
+    DEFAULT_LIGHT_FOREGROUND="${DEFAULT_LIGHT_FOREGROUND:-#4c4f69}"
+    DEFAULT_LIGHT_FG_PROCESSING="${DEFAULT_LIGHT_FG_PROCESSING:-$DEFAULT_LIGHT_FOREGROUND}"
+    DEFAULT_LIGHT_FG_PERMISSION="${DEFAULT_LIGHT_FG_PERMISSION:-$DEFAULT_LIGHT_FOREGROUND}"
+    DEFAULT_LIGHT_FG_COMPLETE="${DEFAULT_LIGHT_FG_COMPLETE:-$DEFAULT_LIGHT_FOREGROUND}"
+    DEFAULT_LIGHT_FG_IDLE="${DEFAULT_LIGHT_FG_IDLE:-$DEFAULT_LIGHT_FOREGROUND}"
+    DEFAULT_LIGHT_FG_COMPACTING="${DEFAULT_LIGHT_FG_COMPACTING:-$DEFAULT_LIGHT_FOREGROUND}"
 
     # Emojis
     EMOJI_PROCESSING="${EMOJI_PROCESSING:-🟠}"
@@ -286,7 +325,7 @@ _set_inline_defaults() {
 # Cached system mode (to avoid repeated detection)
 _CACHED_SYSTEM_MODE=""
 
-# Resolve final COLOR_* values based on mode settings
+# Resolve final COLOR_* and FG_* values based on mode settings
 _resolve_colors() {
     local use_dark="true"
 
@@ -305,20 +344,36 @@ _resolve_colors() {
 
     # Set active colors based on mode
     if [[ "$use_dark" == "true" ]]; then
+        # Background colors
         COLOR_BASE="${DARK_BASE}"
         COLOR_PROCESSING="${DARK_PROCESSING}"
         COLOR_PERMISSION="${DARK_PERMISSION}"
         COLOR_COMPLETE="${DARK_COMPLETE}"
         COLOR_IDLE="${DARK_IDLE}"
         COLOR_COMPACTING="${DARK_COMPACTING}"
+        # Foreground colors (with fallback to base foreground)
+        FG_BASE="${DARK_FOREGROUND:-#c6d0f5}"
+        FG_PROCESSING="${DARK_FG_PROCESSING:-$FG_BASE}"
+        FG_PERMISSION="${DARK_FG_PERMISSION:-$FG_BASE}"
+        FG_COMPLETE="${DARK_FG_COMPLETE:-$FG_BASE}"
+        FG_IDLE="${DARK_FG_IDLE:-$FG_BASE}"
+        FG_COMPACTING="${DARK_FG_COMPACTING:-$FG_BASE}"
         IS_DARK_THEME="true"
     else
+        # Background colors
         COLOR_BASE="${LIGHT_BASE}"
         COLOR_PROCESSING="${LIGHT_PROCESSING}"
         COLOR_PERMISSION="${LIGHT_PERMISSION}"
         COLOR_COMPLETE="${LIGHT_COMPLETE}"
         COLOR_IDLE="${LIGHT_IDLE}"
         COLOR_COMPACTING="${LIGHT_COMPACTING}"
+        # Foreground colors (with fallback to base foreground)
+        FG_BASE="${LIGHT_FOREGROUND:-#4c4f69}"
+        FG_PROCESSING="${LIGHT_FG_PROCESSING:-$FG_BASE}"
+        FG_PERMISSION="${LIGHT_FG_PERMISSION:-$FG_BASE}"
+        FG_COMPLETE="${LIGHT_FG_COMPLETE:-$FG_BASE}"
+        FG_IDLE="${LIGHT_FG_IDLE:-$FG_BASE}"
+        FG_COMPACTING="${LIGHT_FG_COMPACTING:-$FG_BASE}"
         IS_DARK_THEME="false"
     fi
 
@@ -657,7 +712,7 @@ refresh_colors_if_needed() {
     fi
 }
 
-# Get the effective color for a state
+# Get the effective background color for a state
 # Checks session colors first, then falls back to theme colors
 get_effective_color() {
     local state="$1"
@@ -681,6 +736,23 @@ get_effective_color() {
         compacting) echo "$COLOR_COMPACTING" ;;
         base)       echo "$COLOR_BASE" ;;
         *)          echo "" ;;
+    esac
+}
+
+# Get the effective foreground color for a state
+# Returns the foreground color configured for the given state
+get_effective_foreground() {
+    local state="$1"
+
+    # Fall back to theme foreground color
+    case "$state" in
+        processing) echo "$FG_PROCESSING" ;;
+        permission) echo "$FG_PERMISSION" ;;
+        complete)   echo "$FG_COMPLETE" ;;
+        idle)       echo "$FG_IDLE" ;;
+        compacting) echo "$FG_COMPACTING" ;;
+        base)       echo "$FG_BASE" ;;
+        *)          echo "$FG_BASE" ;;  # Default to base foreground
     esac
 }
 
