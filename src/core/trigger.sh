@@ -115,6 +115,33 @@ should_send_bg_color() {
     return 0
 }
 
+# Helper: Send both foreground and background colors for a state
+# Usage: send_state_colors <bg_color> <fg_color>
+send_state_colors() {
+    local bg_color="$1"
+    local fg_color="$2"
+
+    # Send background if enabled
+    if should_send_bg_color; then
+        send_osc_bg "$bg_color"
+    fi
+
+    # Send foreground if enabled (always send alongside background)
+    if [[ "$ENABLE_FOREGROUND_CHANGE" == "true" ]]; then
+        send_osc_fg "$fg_color"
+    fi
+}
+
+# Helper: Reset both foreground and background colors
+reset_state_colors() {
+    if should_send_bg_color; then
+        send_osc_bg "reset"
+    fi
+    if [[ "$ENABLE_FOREGROUND_CHANGE" == "true" ]]; then
+        send_osc_fg "reset"
+    fi
+}
+
 # Main Logic
 STATE="${1:-}"
 
@@ -123,11 +150,11 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
-            should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
+            send_state_colors "$COLOR_PROCESSING" "$FG_PROCESSING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
             set_state_background_image "processing"
         else
-            should_send_bg_color && send_osc_bg "reset"
+            reset_state_colors
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
@@ -138,7 +165,7 @@ case "$STATE" in
     permission)
         kill_idle_timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
-            should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
+            send_state_colors "$COLOR_PERMISSION" "$FG_PERMISSION"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
             set_state_background_image "permission"
         fi
@@ -152,11 +179,11 @@ case "$STATE" in
         cleanup_stale_timers
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
-            should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
+            send_state_colors "$COLOR_COMPLETE" "$FG_COMPLETE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
             set_state_background_image "complete"
         else
-            should_send_bg_color && send_osc_bg "reset"
+            reset_state_colors
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
         fi
@@ -175,8 +202,8 @@ case "$STATE" in
             if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
                 write_skip_signal
             else
-                # Fallback start
-                should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
+                # Fallback start - use idle foreground color
+                send_state_colors "${UNIFIED_STAGE_COLORS[1]}" "$FG_IDLE"
                 [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
                 set_state_background_image "idle"
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
@@ -189,7 +216,7 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
-            should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
+            send_state_colors "$COLOR_COMPACTING" "$FG_COMPACTING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
             set_state_background_image "compacting"
         fi
@@ -199,7 +226,7 @@ case "$STATE" in
 
     reset)
         kill_idle_timer
-        should_send_bg_color && send_osc_bg "reset"
+        reset_state_colors
         [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         clear_background_image
         send_bell_if_enabled "$STATE"
