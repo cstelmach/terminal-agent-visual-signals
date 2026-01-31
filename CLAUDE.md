@@ -168,11 +168,14 @@ bash src/core/detect.sh test
 |----------|-----------------|-------------|-------------------|
 | Ghostty | ✅ | ✅ | ❌ |
 | iTerm2 | ✅ | ✅ | ✅ |
-| Kitty | ✅ | ✅ | ❌ |
-| WezTerm | ✅ | ✅ | ✅ (partial) |
+| Kitty | ✅ | ✅ | ❌* |
+| WezTerm | ✅ | ✅ | ❌** |
 | Terminal.app | ❌ | ❌ | ❌ |
 
-**Note:** OSC 4 palette theming only affects applications using 256-color mode.
+\* Kitty uses its own image protocol, not OSC 1337.
+\** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
+
+**Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
 Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
 
 ### Agent-Specific Face Themes

@@ -22,31 +22,46 @@ _idle_should_send_bg_color() {
 }
 
 # Helper: Get palette mode for idle worker
+# Uses IS_DARK_THEME from theme.sh (respects FORCE_MODE and ENABLE_AUTO_DARK_MODE)
 _idle_get_palette_mode() {
+    # 1. Respect explicit FORCE_MODE overrides
     if [[ "$FORCE_MODE" == "light" ]]; then
         echo "light"
+        return
     elif [[ "$FORCE_MODE" == "dark" ]]; then
         echo "dark"
-    elif [[ "$FORCE_MODE" == "auto" ]]; then
-        # Use system detection if available
+        return
+    fi
+
+    # 2. For auto/unset: use IS_DARK_THEME from theme.sh (if available)
+    #    This ensures palette stays in sync with background colors
+    if [[ "$IS_DARK_THEME" == "false" ]]; then
+        echo "light"
+        return
+    elif [[ "$IS_DARK_THEME" == "true" ]]; then
+        echo "dark"
+        return
+    fi
+
+    # 3. Fallback: only use system detection if auto dark mode is enabled
+    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
         if type get_system_mode &>/dev/null; then
             local system_mode
             system_mode=$(get_system_mode)
             if [[ "$system_mode" == "light" ]]; then
                 echo "light"
-            else
-                echo "dark"
+                return
             fi
-        else
-            echo "dark"
         fi
-    else
-        echo "dark"
     fi
+
+    # 4. Final fallback: dark mode
+    echo "dark"
 }
 
 # Helper: Send OSC 4 palette in idle worker (using file descriptor)
 # Usage: _idle_send_palette "dark" or "light" via fd 3
+# Uses shared _build_osc_palette_seq from terminal.sh to avoid code duplication
 _idle_send_palette() {
     local mode="$1"
 
@@ -54,26 +69,13 @@ _idle_send_palette() {
     type should_enable_palette_theming &>/dev/null || return 0
     should_enable_palette_theming || return 0
 
-    # Build palette sequence for all 16 colors
-    local seq="\033]4"
-    local var_name color x11_color
-    local has_colors=false
+    # Check if shared builder function is available
+    type _build_osc_palette_seq &>/dev/null || return 0
 
-    for i in {0..15}; do
-        var_name="PALETTE_${mode^^}_${i}"
-        color="${!var_name}"
-        if [[ -n "$color" ]]; then
-            # Convert hex to X11 format (inline)
-            local hex="${color#\#}"
-            x11_color="rgb:${hex:0:2}/${hex:2:2}/${hex:4:2}"
-            seq+=";${i};${x11_color}"
-            has_colors=true
-        fi
-    done
-    seq+="\033\\"
-
-    # Only send if we have at least one color defined
-    [[ "$has_colors" == "true" ]] && printf "%b" "$seq" >&3
+    # Build and send palette sequence via fd 3
+    local seq
+    seq=$(_build_osc_palette_seq "$mode")
+    [[ -n "$seq" ]] && printf "%b" "$seq" >&3
 }
 
 # Helper: Reset OSC 4 palette in idle worker (using file descriptor)

@@ -88,12 +88,16 @@ _hex_to_x11() {
     printf "rgb:%s/%s/%s" "${hex:0:2}" "${hex:2:2}" "${hex:4:2}"
 }
 
-# Send OSC 4 palette batch (all 16 ANSI colors atomically)
-# Usage: send_osc_palette "dark" or send_osc_palette "light"
-# Palette colors are read from PALETTE_DARK_0..15 or PALETTE_LIGHT_0..15
-send_osc_palette() {
+# Build OSC 4 palette sequence string (shared logic for trigger and idle-worker)
+# Usage: _build_osc_palette_seq "dark" or "light"
+# Returns: OSC 4 escape sequence via stdout, or empty if no colors defined
+# Caller is responsible for writing to the appropriate output (TTY_DEVICE or fd)
+_build_osc_palette_seq() {
     local mode="$1"
-    [[ -z "$TTY_DEVICE" ]] && return
+
+    # Convert mode to uppercase (Bash 3.2 compatible - avoid ${var^^})
+    local mode_upper
+    mode_upper=$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')
 
     # Build palette sequence for all 16 colors
     local seq="\033]4"
@@ -101,7 +105,7 @@ send_osc_palette() {
     local has_colors=false
 
     for i in {0..15}; do
-        var_name="PALETTE_${mode^^}_${i}"
+        var_name="PALETTE_${mode_upper}_${i}"
         color="${!var_name}"
         if [[ -n "$color" ]]; then
             x11_color=$(_hex_to_x11 "$color")
@@ -111,8 +115,20 @@ send_osc_palette() {
     done
     seq+="\033\\"
 
-    # Only send if we have at least one color defined
-    [[ "$has_colors" == "true" ]] && printf "%b" "$seq" > "$TTY_DEVICE"
+    # Only return if we have at least one color defined
+    [[ "$has_colors" == "true" ]] && printf "%s" "$seq"
+}
+
+# Send OSC 4 palette batch (all 16 ANSI colors atomically)
+# Usage: send_osc_palette "dark" or send_osc_palette "light"
+# Palette colors are read from PALETTE_DARK_0..15 or PALETTE_LIGHT_0..15
+send_osc_palette() {
+    local mode="$1"
+    [[ -z "$TTY_DEVICE" ]] && return
+
+    local seq
+    seq=$(_build_osc_palette_seq "$mode")
+    [[ -n "$seq" ]] && printf "%b" "$seq" > "$TTY_DEVICE"
 }
 
 # Reset palette to terminal defaults (OSC 104)

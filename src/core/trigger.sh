@@ -115,25 +115,41 @@ should_send_bg_color() {
     return 0
 }
 
-# Helper: Get current palette mode based on FORCE_MODE and system detection
+# Helper: Get current palette mode based on theme resolution
 # Returns "dark" or "light"
+# Uses IS_DARK_THEME from theme.sh (already respects FORCE_MODE and ENABLE_AUTO_DARK_MODE)
 _get_palette_mode() {
+    # 1. Respect explicit FORCE_MODE overrides
     if [[ "$FORCE_MODE" == "light" ]]; then
         echo "light"
+        return
     elif [[ "$FORCE_MODE" == "dark" ]]; then
         echo "dark"
-    elif [[ "$FORCE_MODE" == "auto" ]]; then
-        # Use system detection from detect.sh
+        return
+    fi
+
+    # 2. For auto/unset: use IS_DARK_THEME from theme.sh (if available)
+    #    This ensures palette stays in sync with background colors
+    if [[ "$IS_DARK_THEME" == "false" ]]; then
+        echo "light"
+        return
+    elif [[ "$IS_DARK_THEME" == "true" ]]; then
+        echo "dark"
+        return
+    fi
+
+    # 3. Fallback: only use system detection if auto dark mode is enabled
+    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
         local system_mode
         system_mode=$(get_system_mode)
         if [[ "$system_mode" == "light" ]]; then
             echo "light"
-        else
-            echo "dark"  # Default to dark if unknown
+            return
         fi
-    else
-        echo "dark"  # Default fallback
     fi
+
+    # 4. Final fallback: dark mode
+    echo "dark"
 }
 
 # Helper: Apply palette if enabled (must be called BEFORE background)
