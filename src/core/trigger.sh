@@ -115,6 +115,42 @@ should_send_bg_color() {
     return 0
 }
 
+# Helper: Get current palette mode based on FORCE_MODE and system detection
+# Returns "dark" or "light"
+_get_palette_mode() {
+    if [[ "$FORCE_MODE" == "light" ]]; then
+        echo "light"
+    elif [[ "$FORCE_MODE" == "dark" ]]; then
+        echo "dark"
+    elif [[ "$FORCE_MODE" == "auto" ]]; then
+        # Use system detection from detect.sh
+        local system_mode
+        system_mode=$(get_system_mode)
+        if [[ "$system_mode" == "light" ]]; then
+            echo "light"
+        else
+            echo "dark"  # Default to dark if unknown
+        fi
+    else
+        echo "dark"  # Default fallback
+    fi
+}
+
+# Helper: Apply palette if enabled (must be called BEFORE background)
+# This prevents contrast flicker by setting colors before background changes
+_apply_palette_if_enabled() {
+    should_enable_palette_theming || return 0
+    local mode
+    mode=$(_get_palette_mode)
+    send_osc_palette "$mode"
+}
+
+# Helper: Reset palette if enabled
+_reset_palette_if_enabled() {
+    should_enable_palette_theming || return 0
+    send_osc_palette_reset
+}
+
 # Main Logic
 STATE="${1:-}"
 
@@ -123,10 +159,13 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
             set_state_background_image "processing"
         else
+            _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
@@ -138,6 +177,8 @@ case "$STATE" in
     permission)
         kill_idle_timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
             set_state_background_image "permission"
@@ -152,10 +193,13 @@ case "$STATE" in
         cleanup_stale_timers
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
             set_state_background_image "complete"
         else
+            _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
             clear_background_image
@@ -175,7 +219,8 @@ case "$STATE" in
             if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
                 write_skip_signal
             else
-                # Fallback start
+                # Fallback start - apply palette before background
+                _apply_palette_if_enabled
                 should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
                 [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
                 set_state_background_image "idle"
@@ -189,6 +234,8 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
             [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
             set_state_background_image "compacting"
@@ -199,6 +246,8 @@ case "$STATE" in
 
     reset)
         kill_idle_timer
+        # Reset palette FIRST, then background
+        _reset_palette_if_enabled
         should_send_bg_color && send_osc_bg "reset"
         [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "" "$(get_short_cwd)" "reset"
         clear_background_image

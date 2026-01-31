@@ -21,6 +21,68 @@ _idle_should_send_bg_color() {
     return 0
 }
 
+# Helper: Get palette mode for idle worker
+_idle_get_palette_mode() {
+    if [[ "$FORCE_MODE" == "light" ]]; then
+        echo "light"
+    elif [[ "$FORCE_MODE" == "dark" ]]; then
+        echo "dark"
+    elif [[ "$FORCE_MODE" == "auto" ]]; then
+        # Use system detection if available
+        if type get_system_mode &>/dev/null; then
+            local system_mode
+            system_mode=$(get_system_mode)
+            if [[ "$system_mode" == "light" ]]; then
+                echo "light"
+            else
+                echo "dark"
+            fi
+        else
+            echo "dark"
+        fi
+    else
+        echo "dark"
+    fi
+}
+
+# Helper: Send OSC 4 palette in idle worker (using file descriptor)
+# Usage: _idle_send_palette "dark" or "light" via fd 3
+_idle_send_palette() {
+    local mode="$1"
+
+    # Check if palette theming is enabled
+    type should_enable_palette_theming &>/dev/null || return 0
+    should_enable_palette_theming || return 0
+
+    # Build palette sequence for all 16 colors
+    local seq="\033]4"
+    local var_name color x11_color
+    local has_colors=false
+
+    for i in {0..15}; do
+        var_name="PALETTE_${mode^^}_${i}"
+        color="${!var_name}"
+        if [[ -n "$color" ]]; then
+            # Convert hex to X11 format (inline)
+            local hex="${color#\#}"
+            x11_color="rgb:${hex:0:2}/${hex:2:2}/${hex:4:2}"
+            seq+=";${i};${x11_color}"
+            has_colors=true
+        fi
+    done
+    seq+="\033\\"
+
+    # Only send if we have at least one color defined
+    [[ "$has_colors" == "true" ]] && printf "%b" "$seq" >&3
+}
+
+# Helper: Reset OSC 4 palette in idle worker (using file descriptor)
+_idle_reset_palette() {
+    type should_enable_palette_theming &>/dev/null || return 0
+    should_enable_palette_theming || return 0
+    printf "\033]104\033\\" >&3
+}
+
 # Calculate current stage from elapsed seconds
 get_unified_stage() {
     local elapsed=$1
@@ -102,8 +164,9 @@ unified_timer_worker() {
         if [[ $elapsed -ge $max_runtime ]]; then
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Max runtime reached" >> "$IDLE_DEBUG_LOG"
 
-            # Best effort reset
+            # Best effort reset (palette + background + title)
             {
+                _idle_reset_palette 2>/dev/null || true
                 _idle_should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
@@ -133,6 +196,13 @@ unified_timer_worker() {
 
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
+
+            # Apply Palette FIRST (prevents contrast flicker)
+            if [[ "$stage_color" == "reset" ]]; then
+                _idle_reset_palette
+            else
+                _idle_send_palette "$(_idle_get_palette_mode)"
+            fi
 
             # Apply Background Color (respects ENABLE_BACKGROUND_CHANGE and STYLISH_SKIP_BG_TINT)
             if _idle_should_send_bg_color; then
