@@ -25,3 +25,6 @@ Thumbs.db
 *.backup
 __pycache__/
 .pytest_cache/
+
+# Git worktrees
+.worktrees/
