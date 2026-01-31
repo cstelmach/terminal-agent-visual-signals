@@ -72,36 +72,32 @@ cd src/agents/opencode && npm install && npm run build
 | File | Purpose |
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
-| `src/core/theme.sh` | Colors, toggles, config loader |
-| `src/core/agent-theme.sh` | Agent-specific faces and theme loading |
+| `src/core/theme.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/detect.sh` | Terminal type and dark mode detection |
-| `src/core/themes.sh` | Legacy face themes (deprecated, see agent-theme.sh) |
-| `src/config/global.conf` | Default configuration |
+| `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
+| `src/config/user.conf.template` | Template for user overrides (copy to ~/.terminal-visual-signals/) |
 | `configure.sh` | Interactive configuration wizard |
 | `hooks/hooks.json` | Claude Code plugin hooks |
 
 ## User Configuration
 
-All user settings are stored in `~/.terminal-visual-signals/`:
+All user settings are stored in `~/.terminal-visual-signals/user.conf`:
 
 ```
 ~/.terminal-visual-signals/
-├── user.conf              # User configuration overrides
-├── agents/                # Agent-specific overrides
-│   ├── claude/
-│   │   ├── faces.conf     # Custom Claude faces
-│   │   ├── colors.conf    # Custom Claude colors
-│   │   └── backgrounds/   # Custom Claude backgrounds
-│   ├── gemini/
-│   ├── opencode/
-│   └── codex/
-└── backgrounds/           # Global background images (legacy)
+├── user.conf              # All user overrides (global + per-agent)
+└── backgrounds/           # Background images (if enabled)
     ├── dark/
     └── light/
 ```
 
-**Run `./configure.sh`** to set up interactively, or edit `user.conf` directly.
+**Variable naming convention:**
+- Global settings: `THEME_MODE`, `ENABLE_ANTHROPOMORPHISING`, etc.
+- Per-agent overrides: `CLAUDE_DARK_BASE`, `GEMINI_FACES_PROCESSING`, etc.
+- Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
+
+**Run `./configure.sh`** to set up interactively, or copy `src/config/user.conf.template` to `~/.terminal-visual-signals/user.conf` and edit directly.
 
 ---
 
@@ -155,15 +151,16 @@ All hooks use `async: true` for non-blocking execution:
 
 Each agent has its own face theme with random selection per trigger:
 
-| Agent | Face Style | Example |
-|-------|------------|---------|
-| Claude Code | Combined claudA-F pincer (6 variants/state) | `Ǝ[• •]E` |
-| Gemini CLI | Bear | `ʕ•ᴥ•ʔ` |
-| OpenCode | Minimal kaomoji | `(°-°)` |
-| Codex CLI | Cat | `ฅ^•ﻌ•^ฅ` |
+| Agent | Face Style | Example | Variants |
+|-------|------------|---------|----------|
+| Claude Code | Pincer | `Ǝ[• •]E` | 6 per state |
+| Gemini CLI | Bear | `ʕ•ᴥ•ʔ` | 1 per state |
+| OpenCode | Minimal kaomoji | `(°-°)` | 1 per state |
+| Codex CLI | Cat | `ฅ^•ﻌ•^ฅ` | 1 per state |
+| Unknown | Kaomoji fallback | `(°-°)` | 1 per state |
 
-Face definitions are in `src/agents/{agent}/data/faces.conf`.
-User overrides can be placed in `~/.terminal-visual-signals/agents/{agent}/faces.conf`.
+**All faces defined in:** `src/config/defaults.conf` (search for `AGENT_FACES_`)
+**User overrides:** Add `CLAUDE_FACES_PROCESSING=('custom' 'faces')` to `~/.terminal-visual-signals/user.conf`
 
 See [Agent Themes Reference](docs/reference/agent-themes.md) for customization guide.
 
