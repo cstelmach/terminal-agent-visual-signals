@@ -91,6 +91,14 @@
 # TAVS_SPINNER_FRAMES_BLOCK=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█" "▇" "▆" "▅" "▄" "▃" "▂")
 # TAVS_SPINNER_FRAMES_EYE_ANIMATE=("•" "◦" "·" "°" "○" "◌" "◎" "●" "◉" "⊙" "⊚" "⦿")
 
+# Spinner face frames - the face outline with {L} and {R} placeholders for eyes
+# Each agent has a different face style. Override per-agent:
+# CLAUDE_SPINNER_FACE_FRAME='Ǝ[{L} {R}]E'  # Pincer style
+# GEMINI_SPINNER_FACE_FRAME='ʕ{L}ᴥ{R}ʔ'    # Bear style
+# CODEX_SPINNER_FACE_FRAME='ฅ^{L}ﻌ{R}^ฅ'  # Cat style
+# OPENCODE_SPINNER_FACE_FRAME='({L}-{R})'  # Kaomoji style
+# DEFAULT_SPINNER_FACE_FRAME='[{L} {R}]'   # Fallback
+
 # Anthropomorphising (ASCII Faces)
 # ENABLE_ANTHROPOMORPHISING="true"
 # FACE_POSITION="before"  # "before" or "after"

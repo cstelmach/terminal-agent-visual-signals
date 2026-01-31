@@ -104,11 +104,15 @@ send_osc_title() {
                 title="$emoji $text"
             fi
         elif [[ -n "$spinner_result" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
-            # With face: build face with spinner eyes - Ǝ[⠋ ⠙]E
-            # NOTE: The pincer style (Ǝ[...]E) is intentionally fixed for spinner mode
-            # to ensure consistent visual appearance regardless of agent theme.
-            # The spinner eyes replace the face's eyes within this fixed frame.
-            face="Ǝ[${spinner_result}]E"
+            # With face: build face with spinner eyes using agent-specific frame
+            # SPINNER_FACE_FRAME is resolved per-agent (e.g., "Ǝ[{L} {R}]E" for Claude)
+            # {L} and {R} are placeholders for left and right spinner eyes
+            local left_eye="${spinner_result%% *}"
+            local right_eye="${spinner_result##* }"
+            local frame="${SPINNER_FACE_FRAME:-[{L} {R}]}"
+            # Substitute placeholders with spinner eyes
+            face="${frame//\{L\}/$left_eye}"
+            face="${face//\{R\}/$right_eye}"
             if [[ "$FACE_POSITION" == "before" ]]; then
                 title="$face $emoji $text"
             else
