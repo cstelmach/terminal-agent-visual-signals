@@ -19,7 +19,8 @@ get_terminal_type() {
     # Check specific terminal identifiers first
     if [[ -n "$ITERM_SESSION_ID" ]]; then
         echo "iterm2"
-    elif [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+    elif [[ -n "$GHOSTTY_RESOURCES_DIR" ]] || [[ "$TERM_PROGRAM" == "ghostty" ]]; then
+        # Ghostty: Check both env var and TERM_PROGRAM (v1.2.0+)
         echo "ghostty"
     elif [[ -n "$KITTY_PID" ]] || [[ -n "$KITTY_WINDOW_ID" ]]; then
         echo "kitty"
@@ -36,6 +37,56 @@ get_terminal_type() {
     else
         echo "unknown"
     fi
+}
+
+# Check if terminal supports OSC 10 (foreground color)
+# Most modern terminals do, but Terminal.app does not
+# Returns 0 (true) if supported, 1 (false) if not
+supports_osc10() {
+    local terminal_type
+    terminal_type=$(get_terminal_type)
+
+    case "$terminal_type" in
+        # Terminals with confirmed OSC 10 support
+        iterm2|ghostty|kitty|wezterm|vscode|gnome-terminal|foot|alacritty)
+            return 0
+            ;;
+        # macOS Terminal.app does NOT support OSC 10/11
+        terminal.app)
+            return 1
+            ;;
+        # Unknown terminals - assume support (silent failure is harmless)
+        *)
+            return 0
+            ;;
+    esac
+}
+
+# Check if terminal supports OSC 1337 (iTerm2 proprietary extensions)
+# Only iTerm2 and WezTerm have partial support
+# Returns 0 (true) if supported, 1 (false) if not
+supports_osc1337() {
+    local terminal_type
+    terminal_type=$(get_terminal_type)
+
+    case "$terminal_type" in
+        # Full iTerm2 extension support
+        iterm2)
+            return 0
+            ;;
+        # Partial support (some features)
+        wezterm)
+            return 0
+            ;;
+        # Ghostty explicitly does NOT support OSC 1337
+        ghostty)
+            return 1
+            ;;
+        # Other terminals don't support iTerm2 extensions
+        *)
+            return 1
+            ;;
+    esac
 }
 
 # Check if terminal supports OSC 11 background query
@@ -303,7 +354,9 @@ get_terminal_info() {
     echo "Terminal Type: $(get_terminal_type)"
     echo "SSH Session: $(is_ssh_session && echo "yes" || echo "no")"
     echo "System Mode: $(get_system_mode)"
-    echo "OSC 11 Support: $(supports_osc11_query && echo "yes" || echo "no")"
+    echo "OSC 10 Support (foreground): $(supports_osc10 && echo "yes" || echo "no")"
+    echo "OSC 11 Support (background): $(supports_osc11_query && echo "yes" || echo "no")"
+    echo "OSC 1337 Support (iTerm2 ext): $(supports_osc1337 && echo "yes" || echo "no")"
     echo "TERM: ${TERM:-unset}"
     echo "TERM_PROGRAM: ${TERM_PROGRAM:-unset}"
     echo "COLORTERM: ${COLORTERM:-unset}"
