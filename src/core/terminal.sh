@@ -82,31 +82,70 @@ send_osc_title() {
     local state="${3:-}"
     [[ -z "$TTY_DEVICE" ]] && return
 
-    # Get face if anthropomorphising is enabled
-    local face=""
-    if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" && -n "$state" ]]; then
-        # Use new agent-specific random face system if available, else fall back to legacy
-        if type get_random_face &>/dev/null; then
-            face=$(get_random_face "$state")
-        elif type get_face &>/dev/null; then
-            face=$(get_face "${FACE_THEME:-minimal}" "$state")
-        fi
-    fi
-
-    # Compose title based on what's available
     local title=""
-    if [[ -n "$emoji" && -n "$face" ]]; then
-        if [[ "$FACE_POSITION" == "before" ]]; then
-            title="$face $emoji $text"
-        else
-            title="$emoji $face $text"
+    local face=""
+
+    # Handle processing state with spinner when TAVS_TITLE_MODE="full"
+    if [[ "$state" == "processing" && "$TAVS_TITLE_MODE" == "full" ]]; then
+        # Get spinner eyes (requires spinner.sh to be sourced)
+        local spinner_result=""
+        if type get_spinner_eyes &>/dev/null; then
+            spinner_result=$(get_spinner_eyes)
         fi
-    elif [[ -n "$face" ]]; then
-        title="$face $text"
-    elif [[ -n "$emoji" ]]; then
-        title="$emoji $text"
+
+        if [[ "$spinner_result" == "FACE_VARIANT" ]]; then
+            # "none" style - use existing face selection
+            if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
+                if type get_random_face &>/dev/null; then
+                    face=$(get_random_face "$state")
+                fi
+                title="$emoji $face $text"
+            else
+                title="$emoji $text"
+            fi
+        elif [[ -n "$spinner_result" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
+            # With face: build face with spinner eyes - Ǝ[⠋ ⠙]E
+            # Get the pincer style from current agent theme
+            face="Ǝ[${spinner_result}]E"
+            if [[ "$FACE_POSITION" == "before" ]]; then
+                title="$face $emoji $text"
+            else
+                title="$emoji $face $text"
+            fi
+        elif [[ -n "$spinner_result" ]]; then
+            # No face (ENABLE_ANTHROPOMORPHISING=false): just spinner + path
+            # Extract first eye character for single spinner
+            local single_spinner="${spinner_result%% *}"
+            title="$emoji $single_spinner $text"
+        else
+            # Fallback if spinner not available
+            title="$emoji $text"
+        fi
     else
-        title="$text"
+        # Non-processing states OR skip-processing mode - use normal face selection
+        if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" && -n "$state" ]]; then
+            # Use new agent-specific random face system if available, else fall back to legacy
+            if type get_random_face &>/dev/null; then
+                face=$(get_random_face "$state")
+            elif type get_face &>/dev/null; then
+                face=$(get_face "${FACE_THEME:-minimal}" "$state")
+            fi
+        fi
+
+        # Compose title based on what's available
+        if [[ -n "$emoji" && -n "$face" ]]; then
+            if [[ "$FACE_POSITION" == "before" ]]; then
+                title="$face $emoji $text"
+            else
+                title="$emoji $face $text"
+            fi
+        elif [[ -n "$face" ]]; then
+            title="$face $text"
+        elif [[ -n "$emoji" ]]; then
+            title="$emoji $text"
+        else
+            title="$text"
+        fi
     fi
 
     printf "\033]0;%s\033\\" "$title" > "$TTY_DEVICE"
