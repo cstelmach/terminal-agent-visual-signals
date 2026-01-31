@@ -2,14 +2,13 @@
 # ==============================================================================
 # Terminal Agent Visual Themes - Theme Definitions & Config Loader
 # ==============================================================================
-# Loads configuration in hierarchical order:
-#   1. Global defaults (src/config/global.conf)
-#   2. Agent-specific config (src/config/{agent}.conf)
-#   3. Agent-specific theme data (src/agents/{agent}/data/)
-#   4. User overrides (~/.terminal-visual-signals/user.conf)
-#   5. User agent overrides (~/.terminal-visual-signals/agents/{agent}/)
+# Loads configuration from consolidated defaults and user overrides:
+#   1. Master defaults (src/config/defaults.conf) - global + all agents
+#   2. User overrides (~/.terminal-visual-signals/user.conf)
+#   3. Theme preset (src/themes/{preset}.conf) if THEME_MODE="preset"
+#   4. Resolve AGENT_prefixed variables to generic names
 #
-# Used by all agents (Claude, Gemini, Codex, OpenCode).
+# Used by all agents (Claude, Gemini, Codex, OpenCode, Unknown).
 # ==============================================================================
 
 # Resolve paths
@@ -18,13 +17,6 @@ _CONFIG_DIR="$_THEME_SCRIPT_DIR/../config"
 _THEMES_DIR="$_THEME_SCRIPT_DIR/../themes"
 _USER_CONFIG_DIR="$HOME/.terminal-visual-signals"
 _USER_CONFIG="$_USER_CONFIG_DIR/user.conf"
-
-# Source agent theme system
-_AGENT_THEME_SCRIPT="$_THEME_SCRIPT_DIR/agent-theme.sh"
-if [[ -f "$_AGENT_THEME_SCRIPT" ]]; then
-    # shellcheck source=/dev/null
-    source "$_AGENT_THEME_SCRIPT"
-fi
 
 # ==============================================================================
 # CONFIGURATION LOADING
@@ -48,34 +40,160 @@ _load_config_file() {
 # Usage: load_agent_config [agent_id]
 load_agent_config() {
     local agent="${1:-$TAVS_AGENT}"
+    agent="${agent:-unknown}"  # Default to unknown if empty
     TAVS_AGENT="$agent"
 
-    # 1. Load global defaults (required)
-    if [[ -f "$_CONFIG_DIR/global.conf" ]]; then
-        _load_config_file "$_CONFIG_DIR/global.conf"
+    # 1. Load master defaults (required)
+    if [[ -f "$_CONFIG_DIR/defaults.conf" ]]; then
+        _load_config_file "$_CONFIG_DIR/defaults.conf"
     else
         # Fallback to inline defaults if config not found
         _set_inline_defaults
     fi
 
-    # 2. Load agent-specific config (optional)
-    _load_config_file "$_CONFIG_DIR/${agent}.conf" || true
-
-    # 3. Load user overrides (optional)
+    # 2. Load user overrides (optional)
     _load_config_file "$_USER_CONFIG" || true
 
-    # 4. Apply theme preset if specified
+    # 3. Apply theme preset if specified
     if [[ "$THEME_MODE" == "preset" ]] && [[ -n "$THEME_PRESET" ]]; then
         _load_config_file "$_THEMES_DIR/${THEME_PRESET}.conf"
     fi
 
-    # 5. Initialize agent-specific theme (faces, colors, backgrounds)
-    if type init_agent_theme &>/dev/null; then
-        init_agent_theme "$agent"
-    fi
+    # 4. Resolve agent-specific variables to generic names
+    _resolve_agent_variables "$agent"
+
+    # 5. Resolve agent-specific faces
+    _resolve_agent_faces "$agent"
 
     # 6. Resolve final color values based on mode
     _resolve_colors
+}
+
+# ==============================================================================
+# AGENT VARIABLE RESOLUTION
+# ==============================================================================
+
+# Resolve AGENT_prefixed variables to generic names
+# E.g., CLAUDE_DARK_BASE -> DARK_BASE when agent=claude
+_resolve_agent_variables() {
+    local agent="$1"
+    # Convert to uppercase for prefix (Bash 3.2 compatible)
+    local prefix
+    prefix="$(echo "$agent" | tr '[:lower:]' '[:upper:]')_"  # CLAUDE_, GEMINI_, etc.
+
+    # Variables to resolve
+    local vars=(
+        AGENT_NAME
+        DARK_BASE DARK_PROCESSING DARK_PERMISSION DARK_COMPLETE DARK_IDLE DARK_COMPACTING
+        LIGHT_BASE LIGHT_PROCESSING LIGHT_PERMISSION LIGHT_COMPLETE LIGHT_IDLE LIGHT_COMPACTING
+    )
+
+    local var value
+
+    for var in "${vars[@]}"; do
+        # Try AGENT_prefixed first
+        eval "value=\${${prefix}${var}:-}"
+
+        # Fall back to UNKNOWN_ for unrecognized agents
+        if [[ -z "$value" ]]; then
+            eval "value=\${UNKNOWN_${var}:-}"
+        fi
+
+        # Fall back to DEFAULT_ if still not set (for colors only)
+        if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING ]]; then
+            eval "value=\${DEFAULT_${var}:-}"
+        fi
+
+        # Set the generic variable if we have a value
+        if [[ -n "$value" ]]; then
+            eval "$var=\"\$value\""
+        fi
+    done
+}
+
+# Resolve AGENT_FACES_* arrays to generic FACES_* arrays
+_resolve_agent_faces() {
+    local agent="$1"
+    # Convert to uppercase for prefix (Bash 3.2 compatible)
+    local prefix
+    prefix="$(echo "$agent" | tr '[:lower:]' '[:upper:]')_"  # CLAUDE_, GEMINI_, etc.
+
+    # Face states to resolve
+    local states=(
+        PROCESSING PERMISSION COMPLETE COMPACTING RESET
+        IDLE_0 IDLE_1 IDLE_2 IDLE_3 IDLE_4 IDLE_5
+    )
+
+    local state count
+
+    for state in "${states[@]}"; do
+        # Check if agent-specific array exists and has elements
+        eval "count=\${#${prefix}FACES_${state}[@]}"
+
+        if [[ $count -gt 0 ]]; then
+            # Copy agent-specific faces to generic
+            eval "FACES_${state}=(\"\${${prefix}FACES_${state}[@]}\")"
+        else
+            # Fall back to UNKNOWN agent faces
+            eval "count=\${#UNKNOWN_FACES_${state}[@]}"
+            if [[ $count -gt 0 ]]; then
+                eval "FACES_${state}=(\"\${UNKNOWN_FACES_${state}[@]}\")"
+            else
+                # Ultimate fallback: minimal face
+                case "$state" in
+                    PROCESSING)  eval "FACES_${state}=('(°-°)')" ;;
+                    PERMISSION)  eval "FACES_${state}=('(°□°)')" ;;
+                    COMPLETE)    eval "FACES_${state}=('(^‿^)')" ;;
+                    COMPACTING)  eval "FACES_${state}=('(@_@)')" ;;
+                    RESET)       eval "FACES_${state}=('(-_-)')" ;;
+                    IDLE_0)      eval "FACES_${state}=('(•‿•)')" ;;
+                    IDLE_1)      eval "FACES_${state}=('(‿‿)')" ;;
+                    IDLE_2)      eval "FACES_${state}=('(︶‿︶)')" ;;
+                    IDLE_3)      eval "FACES_${state}=('(¬‿¬)')" ;;
+                    IDLE_4)      eval "FACES_${state}=('(-.-)zzZ')" ;;
+                    IDLE_5)      eval "FACES_${state}=('(︶.︶)ᶻᶻ')" ;;
+                esac
+            fi
+        fi
+    done
+}
+
+# ==============================================================================
+# RANDOM FACE SELECTION
+# ==============================================================================
+
+# Get a random face for the given state
+# Usage: get_random_face <state>
+get_random_face() {
+    local state="$1"
+    local array_name
+
+    # Map state to array name
+    case "$state" in
+        processing) array_name="FACES_PROCESSING" ;;
+        permission) array_name="FACES_PERMISSION" ;;
+        complete)   array_name="FACES_COMPLETE" ;;
+        compacting) array_name="FACES_COMPACTING" ;;
+        reset)      array_name="FACES_RESET" ;;
+        idle_0)     array_name="FACES_IDLE_0" ;;
+        idle_1)     array_name="FACES_IDLE_1" ;;
+        idle_2)     array_name="FACES_IDLE_2" ;;
+        idle_3)     array_name="FACES_IDLE_3" ;;
+        idle_4)     array_name="FACES_IDLE_4" ;;
+        idle_5)     array_name="FACES_IDLE_5" ;;
+        idle)       array_name="FACES_IDLE_1" ;;  # Default idle to stage 1
+        *)          echo ""; return ;;
+    esac
+
+    # Get array count and select random element
+    local count
+    eval "count=\${#${array_name}[@]}"
+    if [[ $count -eq 0 ]]; then
+        echo ""
+        return
+    fi
+    local index=$((RANDOM % count))
+    eval "echo \"\${${array_name}[$index]}\""
 }
 
 # Set inline defaults (fallback when config files not found)
@@ -96,25 +214,24 @@ _set_inline_defaults() {
     ENABLE_COMPACTING="${ENABLE_COMPACTING:-true}"
 
     # Anthropomorphising
-    ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-false}"
+    ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
     FACE_POSITION="${FACE_POSITION:-before}"
-    # Note: FACE_THEME is deprecated - faces are now agent-specific
 
-    # Dark mode colors (defaults)
-    DARK_BASE="${DARK_BASE:-#2E3440}"
-    DARK_PROCESSING="${DARK_PROCESSING:-#473D2F}"
-    DARK_PERMISSION="${DARK_PERMISSION:-#4A2021}"
-    DARK_COMPLETE="${DARK_COMPLETE:-#473046}"
-    DARK_IDLE="${DARK_IDLE:-#443147}"
-    DARK_COMPACTING="${DARK_COMPACTING:-#2B4645}"
+    # Dark mode colors (defaults - Catppuccin Frappé)
+    DEFAULT_DARK_BASE="${DEFAULT_DARK_BASE:-#303446}"
+    DEFAULT_DARK_PROCESSING="${DEFAULT_DARK_PROCESSING:-#3d3b42}"
+    DEFAULT_DARK_PERMISSION="${DEFAULT_DARK_PERMISSION:-#3d3440}"
+    DEFAULT_DARK_COMPLETE="${DEFAULT_DARK_COMPLETE:-#374539}"
+    DEFAULT_DARK_IDLE="${DEFAULT_DARK_IDLE:-#3d3850}"
+    DEFAULT_DARK_COMPACTING="${DEFAULT_DARK_COMPACTING:-#334545}"
 
-    # Light mode colors (defaults)
-    LIGHT_BASE="${LIGHT_BASE:-#ECEFF4}"
-    LIGHT_PROCESSING="${LIGHT_PROCESSING:-#F5E0D0}"
-    LIGHT_PERMISSION="${LIGHT_PERMISSION:-#F5D0D0}"
-    LIGHT_COMPLETE="${LIGHT_COMPLETE:-#E0F0E0}"
-    LIGHT_IDLE="${LIGHT_IDLE:-#E8E0F0}"
-    LIGHT_COMPACTING="${LIGHT_COMPACTING:-#D8F0F0}"
+    # Light mode colors (defaults - Catppuccin Latte)
+    DEFAULT_LIGHT_BASE="${DEFAULT_LIGHT_BASE:-#eff1f5}"
+    DEFAULT_LIGHT_PROCESSING="${DEFAULT_LIGHT_PROCESSING:-#f5e6dc}"
+    DEFAULT_LIGHT_PERMISSION="${DEFAULT_LIGHT_PERMISSION:-#f5dde0}"
+    DEFAULT_LIGHT_COMPLETE="${DEFAULT_LIGHT_COMPLETE:-#e5f0e5}"
+    DEFAULT_LIGHT_IDLE="${DEFAULT_LIGHT_IDLE:-#ebe5f5}"
+    DEFAULT_LIGHT_COMPACTING="${DEFAULT_LIGHT_COMPACTING:-#e0f0f0}"
 
     # Emojis
     EMOJI_PROCESSING="${EMOJI_PROCESSING:-🟠}"
@@ -147,6 +264,19 @@ _set_inline_defaults() {
     DEBUG_ALL="${DEBUG_ALL:-0}"
     IDLE_DEBUG="${IDLE_DEBUG:-0}"
     STATE_GRACE_PERIOD_MS="${STATE_GRACE_PERIOD_MS:-400}"
+
+    # Unknown agent faces (inline fallback)
+    UNKNOWN_FACES_PROCESSING=('(°-°)')
+    UNKNOWN_FACES_PERMISSION=('(°□°)')
+    UNKNOWN_FACES_COMPLETE=('(^‿^)')
+    UNKNOWN_FACES_COMPACTING=('(@_@)')
+    UNKNOWN_FACES_RESET=('(-_-)')
+    UNKNOWN_FACES_IDLE_0=('(•‿•)')
+    UNKNOWN_FACES_IDLE_1=('(‿‿)')
+    UNKNOWN_FACES_IDLE_2=('(︶‿︶)')
+    UNKNOWN_FACES_IDLE_3=('(¬‿¬)')
+    UNKNOWN_FACES_IDLE_4=('(-.-)zzZ')
+    UNKNOWN_FACES_IDLE_5=('(︶.︶)ᶻᶻ')
 }
 
 # ==============================================================================

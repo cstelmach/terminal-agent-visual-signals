@@ -1,207 +1,271 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - User Configuration Template
+# Terminal Agent Visual Signals - User Configuration
 # ==============================================================================
 # Copy this file to: ~/.terminal-visual-signals/user.conf
 #
-# Configuration Priority: User > Agent > Global
-#   - Only uncommented values take effect
+# How it works:
 #   - Uncomment and modify settings you want to override
-#   - Delete or leave commented settings you want to inherit from defaults
+#   - Global settings affect all agents
+#   - Use AGENT_ prefix (CLAUDE_, GEMINI_, etc.) to override specific agents
+#   - Leave settings commented to use defaults from defaults.conf
 #
 # Quick disable (without editing this file):
 #   TAVS_STATUS=false claude
 # ==============================================================================
 
 # ==============================================================================
-# OPERATING MODE
+# GLOBAL SETTINGS (affect all agents)
 # ==============================================================================
-# Options: "static" (hardcoded colors), "dynamic" (query terminal), "preset"
 
+# Operating Mode: "static", "dynamic", or "preset"
 # THEME_MODE="static"
 
-# For preset mode, choose a theme:
-#   Catppuccin: catppuccin-latte, catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
-#   Classic: nord, dracula, solarized-dark, solarized-light, tokyo-night
-
+# Theme preset (when THEME_MODE="preset")
+# Options: catppuccin-latte, catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
+#          nord, dracula, solarized-dark, solarized-light, tokyo-night
 # THEME_PRESET=""
 
-# ==============================================================================
-# LIGHT/DARK MODE
-# ==============================================================================
-# Auto-detect system light/dark mode and adjust colors
-
+# Light/Dark Mode
 # ENABLE_AUTO_DARK_MODE="false"
+# FORCE_MODE="auto"  # "auto", "dark", or "light"
 
-# Force mode: "auto" (detect), "dark", "light"
-
-# FORCE_MODE="auto"
-
-# ==============================================================================
-# FEATURE TOGGLES
-# ==============================================================================
-
-# Master toggles
+# Feature Toggles
 # ENABLE_BACKGROUND_CHANGE="true"
 # ENABLE_TITLE_PREFIX="true"
-
-# Per-state toggles
 # ENABLE_PROCESSING="true"
 # ENABLE_PERMISSION="true"
 # ENABLE_COMPLETE="true"
 # ENABLE_IDLE="true"
 # ENABLE_COMPACTING="true"
 
-# ==============================================================================
-# ANTHROPOMORPHISING (ASCII FACES)
-# ==============================================================================
-# Add expressive ASCII faces to terminal titles
-# Faces are agent-specific (see ~/.terminal-visual-signals/agents/{agent}/faces.conf)
+# Anthropomorphising (ASCII Faces)
+# ENABLE_ANTHROPOMORPHISING="true"
+# FACE_POSITION="before"  # "before" or "after"
 
-# ENABLE_ANTHROPOMORPHISING="false"
-
-# Face position relative to emoji: "before" or "after"
-#   before: (°-°) 🟠 ~/path
-#   after:  🟠 (°-°) ~/path
-
-# FACE_POSITION="before"
-
-# ==============================================================================
-# COLORS - DARK MODE
-# ==============================================================================
-# Default palette: Catppuccin Frappé
-
-# DARK_BASE="#303446"
-# DARK_PROCESSING="#3d3b42"
-# DARK_PERMISSION="#3d3440"
-# DARK_COMPLETE="#374539"
-# DARK_IDLE="#3d3850"
-# DARK_COMPACTING="#334545"
-
-# ==============================================================================
-# COLORS - LIGHT MODE
-# ==============================================================================
-# Default palette: Catppuccin Latte
-
-# LIGHT_BASE="#eff1f5"
-# LIGHT_PROCESSING="#f5e6dc"
-# LIGHT_PERMISSION="#f5dde0"
-# LIGHT_COMPLETE="#e5f0e5"
-# LIGHT_IDLE="#ebe5f5"
-# LIGHT_COMPACTING="#e0f0f0"
-
-# ==============================================================================
-# EMOJIS
-# ==============================================================================
-
+# Emojis
 # EMOJI_PROCESSING="🟠"
 # EMOJI_PERMISSION="🔴"
 # EMOJI_COMPLETE="🟢"
 # EMOJI_IDLE="🟣"
 # EMOJI_COMPACTING="🔄"
 
-# ==============================================================================
-# DYNAMIC MODE SETTINGS
-# ==============================================================================
-# Target hues for dynamic color calculation (degrees 0-360)
-
-# HUE_PROCESSING=30      # Orange
-# HUE_PERMISSION=0       # Red
-# HUE_COMPLETE=120       # Green
-# HUE_IDLE=270           # Purple
-# HUE_COMPACTING=180     # Teal
-
-# Terminal query timeout (seconds)
+# Dynamic Mode Settings
+# HUE_PROCESSING=30
+# HUE_PERMISSION=0
+# HUE_COMPLETE=120
+# HUE_IDLE=270
+# HUE_COMPACTING=180
 # DYNAMIC_QUERY_TIMEOUT="0.1"
-
-# Disable dynamic mode over SSH
 # DYNAMIC_DISABLE_SSH="true"
 
-# ==============================================================================
-# IDLE TIMER CONFIGURATION
-# ==============================================================================
-# Gradual fade: Complete(0) -> Idle(1-5) -> Reset(6)
-
-# Show stage indicators in title
+# Idle Timer Configuration
 # ENABLE_STAGE_INDICATORS="true"
-
-# Stage durations in seconds (Stage0 Stage1 Stage2 Stage3 Stage4 Stage5 Stage6)
 # STAGE_DURATIONS=(60 30 30 30 30 30 30)
-
-# How often timer checks for state changes (seconds)
 # IDLE_CHECK_INTERVAL=15
 
-# ==============================================================================
-# IDLE STAGE OVERRIDES (Optional)
-# ==============================================================================
-# Override individual stages for precise control
-# Leave commented to use automatic interpolation
-
-# Stage colors (Stage 0 = Complete, Stage 6 = Reset)
-# IDLE_STAGE_0_COLOR=""
-# IDLE_STAGE_1_COLOR=""
-# IDLE_STAGE_2_COLOR=""
-# IDLE_STAGE_3_COLOR=""
-# IDLE_STAGE_4_COLOR=""
-# IDLE_STAGE_5_COLOR=""
-# IDLE_STAGE_6_COLOR=""
-
-# Stage emojis
-# IDLE_STAGE_0_EMOJI=""
-# IDLE_STAGE_1_EMOJI=""
-# IDLE_STAGE_2_EMOJI=""
-# IDLE_STAGE_3_EMOJI=""
-# IDLE_STAGE_4_EMOJI=""
-# IDLE_STAGE_5_EMOJI=""
-# IDLE_STAGE_6_EMOJI=""
-
-# ==============================================================================
-# BELL/NOTIFICATION SETTINGS
-# ==============================================================================
-
+# Bell/Notification Settings
 # ENABLE_BELL_PROCESSING="false"
 # ENABLE_BELL_PERMISSION="true"
 # ENABLE_BELL_COMPLETE="false"
 # ENABLE_BELL_COMPACTING="false"
 
-# ==============================================================================
-# STYLISH BACKGROUNDS (Images)
-# ==============================================================================
-# Background images for iTerm2 and Kitty only
-# Other terminals fall back to solid colors automatically
-
-# Master toggle
+# Stylish Backgrounds (Images) - iTerm2/Kitty only
 # ENABLE_STYLISH_BACKGROUNDS="false"
-
-# Directory containing background images
-# Structure: backgrounds/processing.png or backgrounds/dark/processing.png
 # STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
-
-# Single fallback image for all states (optional)
 # STYLISH_SINGLE_IMAGE=""
-
-# Disable over SSH
 # STYLISH_DISABLE_SSH="true"
-
-# Skip background color tint when images are active
 # STYLISH_SKIP_BG_TINT="false"
 
-# iTerm2: Image display mode ("default", "aspect_fill", "tile")
+# iTerm2-Specific
 # ITERM2_IMAGE_MODE="aspect_fill"
 
-# Kitty: Image layout ("scaled", "tiled", "mirrored", "clamped")
+# Kitty-Specific
 # KITTY_IMAGE_LAYOUT="scaled"
-
-# Kitty: Background tint (0.0-1.0, higher = more tint for readability)
 # KITTY_IMAGE_TINT="0.8"
 
-# ==============================================================================
-# ADVANCED SETTINGS
-# ==============================================================================
-
-# Debug logging (creates logs in /tmp/terminal-visual-signals-debug/)
+# Advanced Settings
 # DEBUG_ALL="0"
 # IDLE_DEBUG="0"
-
-# State grace period (ms) - prevents rapid flickering
 # STATE_GRACE_PERIOD_MS=400
+
+# ==============================================================================
+# DEFAULT COLORS (fallback when agent has no specific colors)
+# ==============================================================================
+
+# Dark Mode
+# DEFAULT_DARK_BASE="#303446"
+# DEFAULT_DARK_PROCESSING="#3d3b42"
+# DEFAULT_DARK_PERMISSION="#3d3440"
+# DEFAULT_DARK_COMPLETE="#374539"
+# DEFAULT_DARK_IDLE="#3d3850"
+# DEFAULT_DARK_COMPACTING="#334545"
+
+# Light Mode
+# DEFAULT_LIGHT_BASE="#eff1f5"
+# DEFAULT_LIGHT_PROCESSING="#f5e6dc"
+# DEFAULT_LIGHT_PERMISSION="#f5dde0"
+# DEFAULT_LIGHT_COMPLETE="#e5f0e5"
+# DEFAULT_LIGHT_IDLE="#ebe5f5"
+# DEFAULT_LIGHT_COMPACTING="#e0f0f0"
+
+# ==============================================================================
+# CLAUDE CODE OVERRIDES
+# ==============================================================================
+# Only uncomment settings you want to change for Claude specifically.
+
+# Agent name (shown in some contexts)
+# CLAUDE_AGENT_NAME="Claude Code"
+
+# Colors - Dark Mode
+# CLAUDE_DARK_BASE="#2E3440"
+# CLAUDE_DARK_PROCESSING="#473D2F"
+# CLAUDE_DARK_PERMISSION="#4A2021"
+# CLAUDE_DARK_COMPLETE="#473046"
+# CLAUDE_DARK_IDLE="#443147"
+# CLAUDE_DARK_COMPACTING="#2B4645"
+
+# Colors - Light Mode
+# CLAUDE_LIGHT_BASE="#ECEFF4"
+# CLAUDE_LIGHT_PROCESSING="#F5E0D0"
+# CLAUDE_LIGHT_PERMISSION="#F5D0D0"
+# CLAUDE_LIGHT_COMPLETE="#E8E0F0"
+# CLAUDE_LIGHT_IDLE="#E8E0F0"
+# CLAUDE_LIGHT_COMPACTING="#D8F0F0"
+
+# Faces - Override with custom arrays (6 variants per state)
+# CLAUDE_FACES_PROCESSING=('Ǝ[• •]E' 'Ǝ[• ◕]E' 'Ǝ[■ ■]E' 'Ǝ[◔ ◔]E' 'Ǝ[｡ ｡]E' 'Ǝ[. .]E')
+# CLAUDE_FACES_PERMISSION=('Ǝ[° °]E' 'Ǝ[○ ○]E' 'Ǝ[□ □]E' 'Ǝ[ʘ ʘ]E' 'Ǝ[՞ ՞]E' 'Ǝ[o o]E')
+# CLAUDE_FACES_COMPLETE=('Ǝ[✦ ✦]E' 'Ǝ[★ ★]E' 'Ǝ[✧ ✧]E' 'Ǝ[❀ ❀]E' 'Ǝ[✿ ✿]E' 'Ǝ[* *]E')
+# CLAUDE_FACES_COMPACTING=('Ǝ[@ @]E' 'Ǝ[◎ ◎]E' 'Ǝ[▣ ▣]E' 'Ǝ[× ×]E' 'Ǝ[＠ ＠]E' 'Ǝ[@ @]E')
+# CLAUDE_FACES_RESET=('Ǝ[• •]E')
+# CLAUDE_FACES_IDLE_0=('Ǝ[◕ ◕]E')
+# CLAUDE_FACES_IDLE_1=('Ǝ[• •]E')
+# CLAUDE_FACES_IDLE_2=('Ǝ[ᴗ ᴗ]E')
+# CLAUDE_FACES_IDLE_3=('Ǝ[¬ ¬]E')
+# CLAUDE_FACES_IDLE_4=('Ǝ[- -]E zZ')
+# CLAUDE_FACES_IDLE_5=('Ǝ[= =]E ᶻᶻ')
+
+# ==============================================================================
+# GEMINI CLI OVERRIDES
+# ==============================================================================
+
+# GEMINI_AGENT_NAME="Gemini CLI"
+
+# Colors - Dark Mode
+# GEMINI_DARK_BASE="#2B3540"
+# GEMINI_DARK_PROCESSING="#3D4A47"
+# GEMINI_DARK_PERMISSION="#4A2028"
+# GEMINI_DARK_COMPLETE="#304640"
+# GEMINI_DARK_IDLE="#3B3F4A"
+# GEMINI_DARK_COMPACTING="#264548"
+
+# Colors - Light Mode
+# GEMINI_LIGHT_BASE="#EBF0F4"
+# GEMINI_LIGHT_PROCESSING="#D8E8E0"
+# GEMINI_LIGHT_PERMISSION="#F0D0D8"
+# GEMINI_LIGHT_COMPLETE="#D0F0E8"
+# GEMINI_LIGHT_IDLE="#D8E0F5"
+# GEMINI_LIGHT_COMPACTING="#D0F0F5"
+
+# Faces - Bear style
+# GEMINI_FACES_PROCESSING=('ʕ•ᴥ•ʔ')
+# GEMINI_FACES_PERMISSION=('ʕ๏ᴥ๏ʔ')
+# GEMINI_FACES_COMPLETE=('ʕ♥ᴥ♥ʔ')
+# GEMINI_FACES_COMPACTING=('ʕ•_•ʔ')
+# GEMINI_FACES_RESET=('ʕ-ᴥ-ʔ')
+# GEMINI_FACES_IDLE_0=('ʕ•ᴥ•ʔ')
+# GEMINI_FACES_IDLE_1=('ʕ‾ᴥ‾ʔ')
+# GEMINI_FACES_IDLE_2=('ʕ︶ᴥ︶ʔ')
+# GEMINI_FACES_IDLE_3=('ʕ¬ᴥ¬ʔ')
+# GEMINI_FACES_IDLE_4=('ʕ-ᴥ-ʔzZ')
+# GEMINI_FACES_IDLE_5=('ʕ︶ᴥ︶ʔᶻᶻ')
+
+# ==============================================================================
+# CODEX CLI OVERRIDES
+# ==============================================================================
+
+# CODEX_AGENT_NAME="Codex CLI"
+
+# Colors - Dark Mode
+# CODEX_DARK_BASE="#303035"
+# CODEX_DARK_PROCESSING="#454035"
+# CODEX_DARK_PERMISSION="#452830"
+# CODEX_DARK_COMPLETE="#354538"
+# CODEX_DARK_IDLE="#3A3540"
+# CODEX_DARK_COMPACTING="#304040"
+
+# Colors - Light Mode
+# CODEX_LIGHT_BASE="#F0F0F2"
+# CODEX_LIGHT_PROCESSING="#E8E0D8"
+# CODEX_LIGHT_PERMISSION="#E8D8D8"
+# CODEX_LIGHT_COMPLETE="#D8E8D8"
+# CODEX_LIGHT_IDLE="#E0D8E8"
+# CODEX_LIGHT_COMPACTING="#D8E8E8"
+
+# Faces - Cat style
+# CODEX_FACES_PROCESSING=('ฅ^•ﻌ•^ฅ')
+# CODEX_FACES_PERMISSION=('ฅ^◉ﻌ◉^ฅ')
+# CODEX_FACES_COMPLETE=('ฅ^♥ﻌ♥^ฅ')
+# CODEX_FACES_COMPACTING=('ฅ^•_•^ฅ')
+# CODEX_FACES_RESET=('ฅ^-ﻌ-^ฅ')
+# CODEX_FACES_IDLE_0=('ฅ^•ﻌ•^ฅ')
+# CODEX_FACES_IDLE_1=('ฅ^‾ﻌ‾^ฅ')
+# CODEX_FACES_IDLE_2=('ฅ^︶ﻌ︶^ฅ')
+# CODEX_FACES_IDLE_3=('ฅ^¬ﻌ¬^ฅ')
+# CODEX_FACES_IDLE_4=('ฅ^-ﻌ-^ฅzZ')
+# CODEX_FACES_IDLE_5=('ฅ^︶ﻌ︶^ฅᶻᶻ')
+
+# ==============================================================================
+# OPENCODE OVERRIDES
+# ==============================================================================
+
+# OPENCODE_AGENT_NAME="OpenCode"
+
+# Colors - Dark Mode
+# OPENCODE_DARK_BASE="#3A3530"
+# OPENCODE_DARK_PROCESSING="#504030"
+# OPENCODE_DARK_PERMISSION="#502520"
+# OPENCODE_DARK_COMPLETE="#404538"
+# OPENCODE_DARK_IDLE="#453840"
+# OPENCODE_DARK_COMPACTING="#354540"
+
+# Colors - Light Mode
+# OPENCODE_LIGHT_BASE="#F5F0E8"
+# OPENCODE_LIGHT_PROCESSING="#F8E0C8"
+# OPENCODE_LIGHT_PERMISSION="#F8D0C8"
+# OPENCODE_LIGHT_COMPLETE="#E8F0D8"
+# OPENCODE_LIGHT_IDLE="#F0E0E8"
+# OPENCODE_LIGHT_COMPACTING="#E0F0E8"
+
+# Faces - Minimal kaomoji
+# OPENCODE_FACES_PROCESSING=('(°-°)')
+# OPENCODE_FACES_PERMISSION=('(°□°)')
+# OPENCODE_FACES_COMPLETE=('(^‿^)')
+# OPENCODE_FACES_COMPACTING=('(@_@)')
+# OPENCODE_FACES_RESET=('(-_-)')
+# OPENCODE_FACES_IDLE_0=('(•‿•)')
+# OPENCODE_FACES_IDLE_1=('(‿‿)')
+# OPENCODE_FACES_IDLE_2=('(︶‿︶)')
+# OPENCODE_FACES_IDLE_3=('(¬‿¬)')
+# OPENCODE_FACES_IDLE_4=('(-.-)zzZ')
+# OPENCODE_FACES_IDLE_5=('(︶.︶)ᶻᶻ')
+
+# ==============================================================================
+# UNKNOWN AGENT OVERRIDES (fallback for unrecognized agents)
+# ==============================================================================
+
+# UNKNOWN_AGENT_NAME="Unknown Agent"
+
+# Faces - Minimal kaomoji (customize if desired)
+# UNKNOWN_FACES_PROCESSING=('(°-°)')
+# UNKNOWN_FACES_PERMISSION=('(°□°)')
+# UNKNOWN_FACES_COMPLETE=('(^‿^)')
+# UNKNOWN_FACES_COMPACTING=('(@_@)')
+# UNKNOWN_FACES_RESET=('(-_-)')
+# UNKNOWN_FACES_IDLE_0=('(•‿•)')
+# UNKNOWN_FACES_IDLE_1=('(‿‿)')
+# UNKNOWN_FACES_IDLE_2=('(︶‿︶)')
+# UNKNOWN_FACES_IDLE_3=('(¬‿¬)')
+# UNKNOWN_FACES_IDLE_4=('(-.-)zzZ')
+# UNKNOWN_FACES_IDLE_5=('(︶.︶)ᶻᶻ')
