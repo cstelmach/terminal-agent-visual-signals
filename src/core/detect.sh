@@ -111,6 +111,50 @@ supports_osc11_query() {
 }
 
 # ==============================================================================
+# Color Mode Detection (TrueColor vs 256-color)
+# ==============================================================================
+
+# Check if TrueColor mode is active (24-bit RGB)
+# When COLORTERM=truecolor, applications use direct RGB values that bypass
+# the terminal's 16-color ANSI palette entirely.
+# Returns 0 (true) if TrueColor, 1 (false) if not
+is_truecolor_mode() {
+    [[ "$COLORTERM" == "truecolor" ]] || [[ "$COLORTERM" == "24bit" ]]
+}
+
+# Check if palette theming should be enabled
+# Based on ENABLE_PALETTE_THEMING setting and current color mode
+# Returns 0 (true) if palette should be applied, 1 (false) to skip
+should_enable_palette_theming() {
+    # Disabled explicitly
+    [[ "$ENABLE_PALETTE_THEMING" == "false" ]] && return 1
+
+    # Enabled explicitly (even in TrueColor mode - affects shell tools)
+    [[ "$ENABLE_PALETTE_THEMING" == "true" ]] && return 0
+
+    # Auto mode: enable only if NOT in TrueColor
+    if [[ "$ENABLE_PALETTE_THEMING" == "auto" ]]; then
+        ! is_truecolor_mode && return 0
+    fi
+
+    return 1
+}
+
+# Get current color mode as string (for logging/debugging)
+# Returns "truecolor", "256color", or the value of COLORTERM
+get_color_mode() {
+    if is_truecolor_mode; then
+        echo "truecolor"
+    elif [[ -n "$COLORTERM" ]]; then
+        echo "$COLORTERM"
+    elif [[ "$TERM" == *"256color"* ]]; then
+        echo "256color"
+    else
+        echo "basic"
+    fi
+}
+
+# ==============================================================================
 # SSH Detection
 # ==============================================================================
 
@@ -354,12 +398,16 @@ get_terminal_info() {
     echo "Terminal Type: $(get_terminal_type)"
     echo "SSH Session: $(is_ssh_session && echo "yes" || echo "no")"
     echo "System Mode: $(get_system_mode)"
+    echo "Color Mode: $(get_color_mode)"
+    echo "TrueColor Active: $(is_truecolor_mode && echo "yes" || echo "no")"
+    echo "Palette Theming: $(should_enable_palette_theming && echo "enabled" || echo "disabled")"
     echo "OSC 10 Support (foreground): $(supports_osc10 && echo "yes" || echo "no")"
     echo "OSC 11 Support (background): $(supports_osc11_query && echo "yes" || echo "no")"
     echo "OSC 1337 Support (iTerm2 ext): $(supports_osc1337 && echo "yes" || echo "no")"
     echo "TERM: ${TERM:-unset}"
     echo "TERM_PROGRAM: ${TERM_PROGRAM:-unset}"
     echo "COLORTERM: ${COLORTERM:-unset}"
+    echo "ENABLE_PALETTE_THEMING: ${ENABLE_PALETTE_THEMING:-unset}"
 }
 
 # ==============================================================================
