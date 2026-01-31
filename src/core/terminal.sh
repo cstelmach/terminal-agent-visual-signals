@@ -77,6 +77,50 @@ send_osc_bg() {
     fi
 }
 
+# === OSC 4 PALETTE COMMANDS ===
+# OSC 4 modifies the terminal's 16-color ANSI palette.
+# This affects applications that use palette indices (256-color mode).
+# Note: TrueColor (24-bit RGB) applications bypass the palette entirely.
+
+# Convert hex color (#RRGGBB) to X11 format (rgb:RR/GG/BB)
+_hex_to_x11() {
+    local hex="${1#\#}"
+    printf "rgb:%s/%s/%s" "${hex:0:2}" "${hex:2:2}" "${hex:4:2}"
+}
+
+# Send OSC 4 palette batch (all 16 ANSI colors atomically)
+# Usage: send_osc_palette "dark" or send_osc_palette "light"
+# Palette colors are read from PALETTE_DARK_0..15 or PALETTE_LIGHT_0..15
+send_osc_palette() {
+    local mode="$1"
+    [[ -z "$TTY_DEVICE" ]] && return
+
+    # Build palette sequence for all 16 colors
+    local seq="\033]4"
+    local var_name color x11_color
+    local has_colors=false
+
+    for i in {0..15}; do
+        var_name="PALETTE_${mode^^}_${i}"
+        color="${!var_name}"
+        if [[ -n "$color" ]]; then
+            x11_color=$(_hex_to_x11 "$color")
+            seq+=";${i};${x11_color}"
+            has_colors=true
+        fi
+    done
+    seq+="\033\\"
+
+    # Only send if we have at least one color defined
+    [[ "$has_colors" == "true" ]] && printf "%b" "$seq" > "$TTY_DEVICE"
+}
+
+# Reset palette to terminal defaults (OSC 104)
+send_osc_palette_reset() {
+    [[ -z "$TTY_DEVICE" ]] && return
+    printf "\033]104\033\\" > "$TTY_DEVICE"
+}
+
 send_osc_title() {
     local emoji="$1"
     local text="$2"
