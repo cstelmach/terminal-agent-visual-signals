@@ -73,11 +73,12 @@ cd src/agents/opencode && npm install && npm run build
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
 | `src/core/theme.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
+| `src/core/spinner.sh` | Animated spinner system for processing state titles |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/detect.sh` | Terminal type and dark mode detection |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
 | `src/config/user.conf.template` | Template for user overrides (copy to ~/.terminal-visual-signals/) |
-| `configure.sh` | Interactive configuration wizard |
+| `configure.sh` | Interactive configuration wizard (includes title mode setup) |
 | `hooks/hooks.json` | Claude Code plugin hooks |
 
 ## User Configuration
@@ -109,6 +110,52 @@ All user settings are stored in `~/.terminal-visual-signals/user.conf`:
 | [Agent Themes](docs/reference/agent-themes.md) | Per-agent customization of faces, colors, and backgrounds. Explains the directory structure, file formats, override priority, and how to create custom themes without modifying source files. | faces.conf, colors.conf, random-selection, user-overrides | Customizing agent appearance, adding new agent themes, understanding face selection |
 | [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
 | [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
+
+---
+
+## Terminal Title Mode
+
+TAVS can control terminal tab titles with animated spinners during processing. Three modes are available:
+
+| Mode | Description |
+|------|-------------|
+| `skip-processing` | **(Default)** Let Claude Code handle processing titles, TAVS handles others |
+| `full` | TAVS owns all titles with animated spinner eyes in face |
+| `off` | No title changes, only background colors/images |
+
+### Enabling Full Title Mode
+
+1. Run `./configure.sh` and select "Full" in Step 6, OR
+2. Add to `~/.terminal-visual-signals/user.conf`:
+```bash
+TAVS_TITLE_MODE="full"
+TAVS_SPINNER_STYLE="random"      # braille, circle, block, eye-animate, none, random
+TAVS_SPINNER_EYE_MODE="random"   # sync, opposite, stagger, mirror, random
+TAVS_SESSION_IDENTITY="true"     # Consistent visual identity per session
+```
+
+3. **Required for Claude Code:** Add to `~/.claude/settings.json`:
+```json
+{
+  "env": {
+    "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"
+  }
+}
+```
+Then restart Claude Code.
+
+### Per-Agent Spinner Faces
+
+Each agent's face style is preserved during spinner animations:
+
+| Agent | Spinner Face | Example |
+|-------|--------------|---------|
+| Claude | `Ǝ[{L} {R}]E` | `Ǝ[⠋ ⠙]E` |
+| Gemini | `ʕ{L}ᴥ{R}ʔ` | `ʕ⠋ᴥ⠙ʔ` |
+| Codex | `ฅ^{L}ﻌ{R}^ฅ` | `ฅ^⠋ﻌ⠙^ฅ` |
+| OpenCode | `({L}-{R})` | `(⠋-⠙)` |
+
+The `{L}` and `{R}` placeholders are replaced with animated spinner characters.
 
 ---
 

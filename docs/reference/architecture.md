@@ -32,7 +32,7 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  │  ┌───────────┐  ┌─────────┐  ┌──────────┐ ┌─────────┐ │    │
 │  │  │ theme.sh  │  │state.sh │  │terminal.sh│ │idle-    │ │    │
 │  │  │agent-     │  │         │  │           │ │worker.sh│ │    │
-│  │  │ theme.sh  │  │         │  │           │ │         │ │    │
+│  │  │ theme.sh  │  │         │  │spinner.sh │ │         │ │    │
 │  │  └───────────┘  └─────────┘  └──────────┘ └─────────┘ │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
@@ -93,8 +93,17 @@ Session state tracking:
 
 Terminal escape sequence functions:
 - `send_osc_bg` - Change background color
-- `send_osc_title` - Update tab title
+- `send_osc_title` - Update tab title (integrates spinner for processing state)
 - `send_bell_if_enabled` - Notification bell
+
+### spinner.sh (Animated Spinners)
+
+Manages animated spinner frames for processing state titles (when `TAVS_TITLE_MODE="full"`):
+- Multiple spinner styles: braille, circle, block, eye-animate, none
+- Eye synchronization modes: sync, opposite, stagger, mirror, clockwise, counter
+- Session identity: random selections persisted per session for consistent visual identity
+- Per-agent face frames: `{L}` and `{R}` placeholders replaced with spinner characters
+- Secure state storage: `~/.cache/tavs/` (not `/tmp`) with safe file parsing
 
 ### idle-worker.sh (Idle Timer)
 
@@ -160,8 +169,9 @@ Core trigger.sh:
   1. Kill any existing idle timer
   2. Check state change needed
   3. Send OSC 11 (background color)
-  4. Send OSC 0 (title with emoji/face)
-  5. Record state
+  4. Check TAVS_TITLE_MODE (full/skip-processing/off)
+  5. Send OSC 0 (title with emoji/face/spinner)
+  6. Record state
        │
        ▼
 [Agent works, tools execute...]
