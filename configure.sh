@@ -455,14 +455,39 @@ configure_full_title_mode() {
             echo -e "  ${YELLOW}!${NC} Need to configure CLAUDE_CODE_DISABLE_TERMINAL_TITLE"
             if confirm "  Add to ~/.claude/settings.json?"; then
                 if command -v jq &>/dev/null; then
-                    # Check if env key exists
-                    if jq -e '.env' "$SETTINGS_FILE" &>/dev/null; then
-                        jq '.env["CLAUDE_CODE_DISABLE_TERMINAL_TITLE"] = "1"' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+                    local backup_file="${SETTINGS_FILE}.bak"
+                    local tmp_file="${SETTINGS_FILE}.tmp"
+
+                    # Create backup before modifying
+                    if ! cp "$SETTINGS_FILE" "$backup_file" 2>/dev/null; then
+                        echo -e "  ${RED}✗${NC} Failed to create backup; aborting update."
                     else
-                        jq '. + {"env": {"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"}}' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+                        local jq_success=false
+
+                        # Check if env key exists and apply appropriate jq transformation
+                        if jq -e '.env' "$SETTINGS_FILE" &>/dev/null; then
+                            jq '.env["CLAUDE_CODE_DISABLE_TERMINAL_TITLE"] = "1"' "$SETTINGS_FILE" > "$tmp_file" 2>/dev/null && jq_success=true
+                        else
+                            jq '. + {"env": {"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"}}' "$SETTINGS_FILE" > "$tmp_file" 2>/dev/null && jq_success=true
+                        fi
+
+                        if [[ "$jq_success" == "true" ]] && jq -e '.' "$tmp_file" >/dev/null 2>&1; then
+                            # Validate JSON is valid before replacing
+                            if mv "$tmp_file" "$SETTINGS_FILE" 2>/dev/null; then
+                                rm -f "$backup_file" 2>/dev/null
+                                echo -e "  ${GREEN}✓${NC} Added to settings.json"
+                                echo -e "  ${YELLOW}!${NC} Restart Claude Code for this to take effect"
+                            else
+                                echo -e "  ${RED}✗${NC} Failed to update settings.json; restoring backup."
+                                mv "$backup_file" "$SETTINGS_FILE" 2>/dev/null || true
+                                rm -f "$tmp_file" 2>/dev/null
+                            fi
+                        else
+                            echo -e "  ${RED}✗${NC} jq failed to produce valid JSON; restoring backup."
+                            mv "$backup_file" "$SETTINGS_FILE" 2>/dev/null || true
+                            rm -f "$tmp_file" 2>/dev/null
+                        fi
                     fi
-                    echo -e "  ${GREEN}✓${NC} Added to settings.json"
-                    echo -e "  ${YELLOW}!${NC} Restart Claude Code for this to take effect"
                 else
                     echo -e "  ${RED}✗${NC} jq not found. Please manually add to ~/.claude/settings.json:"
                     echo -e '     "env": { "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1" }'
