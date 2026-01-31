@@ -73,9 +73,10 @@ cd src/agents/opencode && npm install && npm run build
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
 | `src/core/theme.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
+| `src/core/terminal.sh` | OSC sequences (OSC 4/11 for palette/background) |
 | `src/core/spinner.sh` | Animated spinner system for processing state titles |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
-| `src/core/detect.sh` | Terminal type and dark mode detection |
+| `src/core/detect.sh` | Terminal type, capabilities, color mode detection |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
 | `src/config/user.conf.template` | Template for user overrides (copy to ~/.terminal-visual-signals/) |
 | `configure.sh` | Interactive configuration wizard (includes title mode setup) |
@@ -192,7 +193,35 @@ All hooks use `async: true` for non-blocking execution:
 ./src/core/trigger.sh idle
 ./src/core/trigger.sh compacting
 ./src/core/trigger.sh reset
+
+# Test light mode explicitly
+FORCE_MODE=light ./src/core/trigger.sh processing
+FORCE_MODE=light ./src/core/trigger.sh reset
+
+# Test palette theming (requires 256-color mode)
+ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
+ls --color=auto  # Check if ls colors match theme
+./src/core/trigger.sh reset
+
+# Check terminal capabilities
+bash src/core/detect.sh test
 ```
+
+### Terminal Compatibility
+
+| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) |
+|----------|-----------------|-------------|-------------------|
+| Ghostty | ✅ | ✅ | ❌ |
+| iTerm2 | ✅ | ✅ | ✅ |
+| Kitty | ✅ | ✅ | ❌* |
+| WezTerm | ✅ | ✅ | ❌** |
+| Terminal.app | ❌ | ❌ | ❌ |
+
+\* Kitty uses its own image protocol, not OSC 1337.
+\** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
+
+**Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
+Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
 
 ### Agent-Specific Face Themes
 
@@ -238,6 +267,55 @@ STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
 ```
 
 This is a global setting - supported terminals show images, unsupported terminals automatically fall back to solid colors.
+
+### Palette Theming (Optional)
+
+TAVS can modify the terminal's 16-color ANSI palette for cohesive light/dark themes.
+This affects shell prompts, `ls` output, `git status`, and other CLI tools.
+
+**Enable in `~/.terminal-visual-signals/user.conf`:**
+```bash
+ENABLE_PALETTE_THEMING="auto"  # or "true"
+```
+
+**Options:**
+- `"false"` (default) - Background colors only
+- `"auto"` - Enable when NOT in TrueColor mode
+- `"true"` - Always apply palette (affects shell tools)
+
+**Limitation: TrueColor Applications**
+
+Applications using TrueColor (24-bit RGB) bypass the palette entirely.
+Claude Code uses TrueColor by default (`COLORTERM=truecolor`).
+
+**To enable palette theming for Claude Code:**
+```bash
+# Launch with 256-color mode
+TERM=xterm-256color COLORTERM= claude
+
+# Or add alias to your shell profile
+alias claude='TERM=xterm-256color COLORTERM= claude'
+```
+
+**How It Works:**
+
+| Mode | Background (OSC 11) | Palette (OSC 4) | Affects |
+|------|---------------------|-----------------|---------|
+| `ENABLE_PALETTE_THEMING=false` | ✅ | ❌ | Background only |
+| `ENABLE_PALETTE_THEMING=auto` + TrueColor | ✅ | ❌ | Background only |
+| `ENABLE_PALETTE_THEMING=auto` + 256-color | ✅ | ✅ | Background + all text |
+| `ENABLE_PALETTE_THEMING=true` | ✅ | ✅ | Background + shell tools |
+
+**Theme Presets with Palettes:**
+
+All theme presets include 16-color ANSI palettes:
+- Catppuccin (Frappé, Latte, Macchiato, Mocha)
+- Nord
+- Dracula
+- Solarized (Dark, Light)
+- Tokyo Night
+
+Select in `configure.sh` or set `THEME_PRESET` in user.conf.
 
 ---
 

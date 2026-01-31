@@ -21,6 +21,70 @@ _idle_should_send_bg_color() {
     return 0
 }
 
+# Helper: Get palette mode for idle worker
+# Uses IS_DARK_THEME from theme.sh (respects FORCE_MODE and ENABLE_AUTO_DARK_MODE)
+_idle_get_palette_mode() {
+    # 1. Respect explicit FORCE_MODE overrides
+    if [[ "$FORCE_MODE" == "light" ]]; then
+        echo "light"
+        return
+    elif [[ "$FORCE_MODE" == "dark" ]]; then
+        echo "dark"
+        return
+    fi
+
+    # 2. For auto/unset: use IS_DARK_THEME from theme.sh (if available)
+    #    This ensures palette stays in sync with background colors
+    if [[ "$IS_DARK_THEME" == "false" ]]; then
+        echo "light"
+        return
+    elif [[ "$IS_DARK_THEME" == "true" ]]; then
+        echo "dark"
+        return
+    fi
+
+    # 3. Fallback: only use system detection if auto dark mode is enabled
+    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
+        if type get_system_mode &>/dev/null; then
+            local system_mode
+            system_mode=$(get_system_mode)
+            if [[ "$system_mode" == "light" ]]; then
+                echo "light"
+                return
+            fi
+        fi
+    fi
+
+    # 4. Final fallback: dark mode
+    echo "dark"
+}
+
+# Helper: Send OSC 4 palette in idle worker (using file descriptor)
+# Usage: _idle_send_palette "dark" or "light" via fd 3
+# Uses shared _build_osc_palette_seq from terminal.sh to avoid code duplication
+_idle_send_palette() {
+    local mode="$1"
+
+    # Check if palette theming is enabled
+    type should_enable_palette_theming &>/dev/null || return 0
+    should_enable_palette_theming || return 0
+
+    # Check if shared builder function is available
+    type _build_osc_palette_seq &>/dev/null || return 0
+
+    # Build and send palette sequence via fd 3
+    local seq
+    seq=$(_build_osc_palette_seq "$mode")
+    [[ -n "$seq" ]] && printf "%b" "$seq" >&3
+}
+
+# Helper: Reset OSC 4 palette in idle worker (using file descriptor)
+_idle_reset_palette() {
+    type should_enable_palette_theming &>/dev/null || return 0
+    should_enable_palette_theming || return 0
+    printf "\033]104\033\\" >&3
+}
+
 # Calculate current stage from elapsed seconds
 get_unified_stage() {
     local elapsed=$1
@@ -101,16 +165,17 @@ unified_timer_worker() {
         # Safety Timeout
         if [[ $elapsed -ge $max_runtime ]]; then
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Max runtime reached" >> "$IDLE_DEBUG_LOG"
-            
-            # Best effort reset
+
+            # Best effort reset (palette + background + title)
             {
+                _idle_reset_palette 2>/dev/null || true
                 _idle_should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
             local reset_pid=$!
             sleep 1
             kill $reset_pid 2>/dev/null || true
-            
+
             kill -TERM $my_pid 2>/dev/null
             exit 0
         fi
@@ -134,7 +199,14 @@ unified_timer_worker() {
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
 
-            # Apply Color (respects ENABLE_BACKGROUND_CHANGE and STYLISH_SKIP_BG_TINT)
+            # Apply Palette FIRST (prevents contrast flicker)
+            if [[ "$stage_color" == "reset" ]]; then
+                _idle_reset_palette
+            else
+                _idle_send_palette "$(_idle_get_palette_mode)"
+            fi
+
+            # Apply Background Color (respects ENABLE_BACKGROUND_CHANGE and STYLISH_SKIP_BG_TINT)
             if _idle_should_send_bg_color; then
                 if [[ "$stage_color" == "reset" ]]; then
                     printf "\033]111\033\\" >&3

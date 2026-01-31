@@ -43,6 +43,8 @@ SELECTED_FACE_THEME="minimal"
 SELECTED_FACE_POSITION="before"
 SELECTED_STYLISH_ENABLED="false"
 SELECTED_STYLISH_DIR=""
+SELECTED_PALETTE_MODE="false"
+SELECTED_CREATE_ALIAS="false"
 # Title Mode and Spinner
 SELECTED_TITLE_MODE="skip-processing"
 SELECTED_SPINNER_STYLE="random"
@@ -580,6 +582,86 @@ configure_full_title_mode() {
     echo -e "  ${GREEN}Session identity: ${BOLD}$SELECTED_SESSION_IDENTITY${NC}"
 }
 
+# === STEP 7: PALETTE THEMING ===
+
+select_palette_theming() {
+    print_section "Step 7: Palette Theming (OSC 4)"
+
+    echo "  Modify the terminal's 16-color ANSI palette for cohesive theming?"
+    echo ""
+    print_info "This affects shell prompts, ls colors, git status, and other CLI tools."
+    print_info "Colors from your selected theme will be applied to the entire terminal."
+    echo ""
+    echo -e "  ${YELLOW}Important:${NC} Only works when applications use 256-color mode."
+    echo -e "  Claude Code uses ${BOLD}TrueColor${NC} by default, which bypasses the palette."
+    echo ""
+    echo -e "  ${YELLOW}1)${NC} ${BOLD}Disabled${NC} ${DIM}(Recommended)${NC}"
+    print_info "Background colors only. Safest, works everywhere."
+    echo ""
+    echo -e "  ${YELLOW}2)${NC} ${BOLD}Auto${NC}"
+    print_info "Enable when NOT in TrueColor mode."
+    print_info "Automatically detects COLORTERM environment."
+    echo ""
+    echo -e "  ${YELLOW}3)${NC} ${BOLD}Enabled${NC}"
+    print_info "Always apply palette (affects shell tools even in TrueColor)."
+    print_info "Shell prompts, ls, git will use themed colors."
+    echo ""
+
+    local valid=false
+    while [[ "$valid" == "false" ]]; do
+        local choice
+        choice=$(read_choice "Select palette theming mode [1-3]" "1")
+
+        case "$choice" in
+            1) SELECTED_PALETTE_MODE="false"; valid=true ;;
+            2) SELECTED_PALETTE_MODE="auto"; valid=true ;;
+            3) SELECTED_PALETTE_MODE="true"; valid=true ;;
+            *) echo -e "${RED}Invalid choice. Please enter 1, 2, or 3.${NC}" ;;
+        esac
+    done
+
+    echo ""
+    case "$SELECTED_PALETTE_MODE" in
+        false) echo -e "  ${GREEN}Palette theming: ${BOLD}Disabled${NC}" ;;
+        auto)  echo -e "  ${GREEN}Palette theming: ${BOLD}Auto (256-color only)${NC}" ;;
+        true)  echo -e "  ${GREEN}Palette theming: ${BOLD}Always enabled${NC}" ;;
+    esac
+
+    # Offer to create Claude alias if palette theming is enabled
+    if [[ "$SELECTED_PALETTE_MODE" != "false" ]]; then
+        echo ""
+        echo -e "  ${BOLD}To enable palette theming for Claude Code:${NC}"
+        echo ""
+        echo -e "  Launch with: ${CYAN}TERM=xterm-256color COLORTERM= claude${NC}"
+        echo ""
+        print_info "Or add an alias to your shell profile."
+        echo ""
+
+        if confirm "Create this alias in your shell profile?"; then
+            SELECTED_CREATE_ALIAS="true"
+
+            # Detect shell config
+            local shell_rc=""
+            if [[ -f "$HOME/.zshrc" ]]; then
+                shell_rc="$HOME/.zshrc"
+            elif [[ -f "$HOME/.bashrc" ]]; then
+                shell_rc="$HOME/.bashrc"
+            fi
+
+            if [[ -n "$shell_rc" ]]; then
+                echo ""
+                echo -e "  ${GREEN}Will add alias to:${NC} $shell_rc"
+            else
+                echo ""
+                echo -e "  ${YELLOW}No .zshrc or .bashrc found. You may need to add the alias manually.${NC}"
+                SELECTED_CREATE_ALIAS="false"
+            fi
+        else
+            SELECTED_CREATE_ALIAS="false"
+        fi
+    fi
+}
+
 # === PREVIEW ===
 
 show_preview() {
@@ -605,6 +687,10 @@ show_preview() {
         echo -e "  ${BOLD}Spinner Style:${NC}       $SELECTED_SPINNER_STYLE"
         echo -e "  ${BOLD}Eye Mode:${NC}            $SELECTED_SPINNER_EYE_MODE"
         echo -e "  ${BOLD}Session Identity:${NC}    $SELECTED_SESSION_IDENTITY"
+    fi
+    echo -e "  ${BOLD}Palette Theming:${NC}     $SELECTED_PALETTE_MODE"
+    if [[ "$SELECTED_CREATE_ALIAS" == "true" ]]; then
+        echo -e "  ${BOLD}Create Claude Alias:${NC} Yes (256-color mode)"
     fi
     echo ""
 
@@ -715,6 +801,42 @@ TAVS_SESSION_IDENTITY="$SELECTED_SESSION_IDENTITY"
 EOF
     fi
 
+    cat >> "$USER_CONFIG" << EOF
+
+# Palette Theming (OSC 4)
+# Options: "false" (disabled), "auto" (if not TrueColor), "true" (always)
+ENABLE_PALETTE_THEMING="$SELECTED_PALETTE_MODE"
+EOF
+
+    # Create Claude alias if requested
+    if [[ "$SELECTED_CREATE_ALIAS" == "true" ]]; then
+        local shell_rc=""
+        if [[ -f "$HOME/.zshrc" ]]; then
+            shell_rc="$HOME/.zshrc"
+        elif [[ -f "$HOME/.bashrc" ]]; then
+            shell_rc="$HOME/.bashrc"
+        fi
+
+        if [[ -n "$shell_rc" ]]; then
+            # Check if alias already exists
+            if ! grep -q "alias claude=" "$shell_rc" 2>/dev/null; then
+                cat >> "$shell_rc" << 'ALIAS_EOF'
+
+# Claude Code with 256-color mode for TAVS palette theming
+# Added by Terminal Agent Visual Signals configure.sh
+alias claude='TERM=xterm-256color COLORTERM= claude'
+ALIAS_EOF
+                echo ""
+                echo -e "  ${GREEN}Added Claude alias to:${NC} $shell_rc"
+                print_info "Run 'source $shell_rc' or restart your terminal to use it."
+            else
+                echo ""
+                echo -e "  ${YELLOW}Claude alias already exists in:${NC} $shell_rc"
+            fi
+        fi
+    fi
+
+    echo ""
     echo -e "  ${GREEN}Configuration saved to:${NC}"
     echo -e "  ${BOLD}$USER_CONFIG${NC}"
     echo ""
@@ -745,6 +867,7 @@ main() {
     select_faces
     select_stylish_backgrounds
     select_title_mode
+    select_palette_theming
 
     show_preview
 

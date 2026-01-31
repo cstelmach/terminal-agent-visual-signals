@@ -81,7 +81,7 @@ _resolve_agent_variables() {
     local prefix
     prefix="$(echo "$agent" | tr '[:lower:]' '[:upper:]')_"  # CLAUDE_, GEMINI_, etc.
 
-    # Variables to resolve
+    # Variables to resolve (background colors)
     local vars=(
         AGENT_NAME
         DARK_BASE DARK_PROCESSING DARK_PERMISSION DARK_COMPLETE DARK_IDLE DARK_COMPACTING
@@ -218,7 +218,7 @@ _set_inline_defaults() {
     ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
     FACE_POSITION="${FACE_POSITION:-before}"
 
-    # Dark mode colors (defaults - Catppuccin Frappé)
+    # Dark mode background colors (defaults - Catppuccin Frappé)
     DEFAULT_DARK_BASE="${DEFAULT_DARK_BASE:-#303446}"
     DEFAULT_DARK_PROCESSING="${DEFAULT_DARK_PROCESSING:-#3d3b42}"
     DEFAULT_DARK_PERMISSION="${DEFAULT_DARK_PERMISSION:-#3d3440}"
@@ -226,7 +226,7 @@ _set_inline_defaults() {
     DEFAULT_DARK_IDLE="${DEFAULT_DARK_IDLE:-#3d3850}"
     DEFAULT_DARK_COMPACTING="${DEFAULT_DARK_COMPACTING:-#334545}"
 
-    # Light mode colors (defaults - Catppuccin Latte)
+    # Light mode background colors (defaults - Catppuccin Latte)
     DEFAULT_LIGHT_BASE="${DEFAULT_LIGHT_BASE:-#eff1f5}"
     DEFAULT_LIGHT_PROCESSING="${DEFAULT_LIGHT_PROCESSING:-#f5e6dc}"
     DEFAULT_LIGHT_PERMISSION="${DEFAULT_LIGHT_PERMISSION:-#f5dde0}"
@@ -658,7 +658,7 @@ refresh_colors_if_needed() {
     fi
 }
 
-# Get the effective color for a state
+# Get the effective background color for a state
 # Checks session colors first, then falls back to theme colors
 get_effective_color() {
     local state="$1"
