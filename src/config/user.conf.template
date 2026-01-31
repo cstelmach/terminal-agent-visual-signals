@@ -39,6 +39,66 @@
 # ENABLE_IDLE="true"
 # ENABLE_COMPACTING="true"
 
+# ==============================================================================
+# TERMINAL TITLE MODE
+# ==============================================================================
+# Controls how TAVS handles terminal tab titles when used with Claude Code.
+# Claude Code sets its own animated spinner title during processing.
+#
+# Options:
+#   "full"            - TAVS owns all titles (requires Claude Code setting, see below)
+#   "skip-processing" - Let Claude Code handle processing titles, TAVS handles others (DEFAULT)
+#   "off"             - No title changes at all, colors/backgrounds only
+#
+# For "full" mode, add to ~/.claude/settings.json:
+#   "env": { "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1" }
+# Then restart Claude Code.
+#
+# TAVS_TITLE_MODE="skip-processing"
+
+# ==============================================================================
+# SPINNER CONFIGURATION (for TAVS_TITLE_MODE="full")
+# ==============================================================================
+# When TAVS owns the processing title, these settings control eye animation.
+
+# Spinner Style - animation pattern for eyes during processing
+#   "braille"     - Rotating dots ⠋ ⠙ ⠹ ⠸ (Claude-style)
+#   "circle"      - Filling circles ○ ◔ ◑ ◕ ●
+#   "block"       - Pulsing vertical bars ▁ ▂ ▃ ▄ ▅ ▆ ▇ █
+#   "eye-animate" - Random eye characters from variety pool
+#   "none"        - Use existing face variants (no spinner)
+#   "random"      - Random selection per session (recommended)
+# TAVS_SPINNER_STYLE="random"
+
+# Eye Synchronization Mode - how the two "eyes" animate together
+#   "sync"        - Both eyes show same frame
+#   "opposite"    - Eyes half-cycle apart (e.g., ◐ ◑)
+#   "stagger"     - Left leads, right follows (2 frames behind)
+#   "clockwise"   - Both rotate clockwise (braille)
+#   "counter"     - Both rotate counter-clockwise
+#   "mirror"      - Left increases, right decreases
+#   "mirror_inv"  - Left decreases, right increases
+#   "random"      - Random selection per session (recommended)
+# TAVS_SPINNER_EYE_MODE="random"
+
+# Session Identity - consistent visual identity per session
+# When true, random selections are made once at session start
+# TAVS_SESSION_IDENTITY="true"
+
+# Custom spinner frames (override defaults)
+# TAVS_SPINNER_FRAMES_BRAILLE=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+# TAVS_SPINNER_FRAMES_CIRCLE=("○" "◔" "◑" "◕" "●" "◕" "◑" "◔")
+# TAVS_SPINNER_FRAMES_BLOCK=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█" "▇" "▆" "▅" "▄" "▃" "▂")
+# TAVS_SPINNER_FRAMES_EYE_ANIMATE=("•" "◦" "·" "°" "○" "◌" "◎" "●" "◉" "⊙" "⊚" "⦿")
+
+# Spinner face frames - the face outline with {L} and {R} placeholders for eyes
+# Each agent has a different face style. Override per-agent:
+# CLAUDE_SPINNER_FACE_FRAME='Ǝ[{L} {R}]E'  # Pincer style
+# GEMINI_SPINNER_FACE_FRAME='ʕ{L}ᴥ{R}ʔ'    # Bear style
+# CODEX_SPINNER_FACE_FRAME='ฅ^{L}ﻌ{R}^ฅ'  # Cat style
+# OPENCODE_SPINNER_FACE_FRAME='({L}-{R})'  # Kaomoji style
+# DEFAULT_SPINNER_FACE_FRAME='[{L} {R}]'   # Fallback
+
 # Anthropomorphising (ASCII Faces)
 # ENABLE_ANTHROPOMORPHISING="true"
 # FACE_POSITION="before"  # "before" or "after"
