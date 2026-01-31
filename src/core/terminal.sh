@@ -77,46 +77,6 @@ send_osc_bg() {
     fi
 }
 
-# Send OSC 10 (foreground/text color)
-send_osc_fg() {
-    local color="$1"
-    [[ -z "$TTY_DEVICE" ]] && return
-    [[ "$ENABLE_FOREGROUND_CHANGE" != "true" ]] && return
-    if [[ "$color" == "reset" ]]; then
-        printf "\033]110\033\\" > "$TTY_DEVICE"
-    else
-        printf "\033]10;%s\033\\" "$color" > "$TTY_DEVICE"
-    fi
-}
-
-# Send both foreground and background colors together
-# Usage: send_osc_colors <bg_color> [fg_color]
-# If fg_color is omitted, only background is set
-send_osc_colors() {
-    local bg_color="$1"
-    local fg_color="${2:-}"
-    [[ -z "$TTY_DEVICE" ]] && return
-
-    # Set background
-    send_osc_bg "$bg_color"
-
-    # Set foreground if provided and enabled
-    if [[ -n "$fg_color" ]]; then
-        send_osc_fg "$fg_color"
-    fi
-}
-
-# Reset both foreground and background to terminal defaults
-send_osc_reset_colors() {
-    [[ -z "$TTY_DEVICE" ]] && return
-    # Reset background (OSC 111)
-    printf "\033]111\033\\" > "$TTY_DEVICE"
-    # Reset foreground (OSC 110) if foreground changes are enabled
-    if [[ "$ENABLE_FOREGROUND_CHANGE" == "true" ]]; then
-        printf "\033]110\033\\" > "$TTY_DEVICE"
-    fi
-}
-
 send_osc_title() {
     local emoji="$1"
     local text="$2"

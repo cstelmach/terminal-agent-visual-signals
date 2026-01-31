@@ -21,22 +21,6 @@ _idle_should_send_bg_color() {
     return 0
 }
 
-# Helper: Send foreground color in idle worker
-# Uses file descriptor 3 which is connected to TTY
-_idle_send_fg_color() {
-    local color="$1"
-    local fd="$2"  # File descriptor (default 3)
-    fd="${fd:-3}"
-
-    [[ "$ENABLE_FOREGROUND_CHANGE" != "true" ]] && return 0
-
-    if [[ "$color" == "reset" ]]; then
-        printf "\033]110\033\\" >&"$fd"
-    else
-        printf "\033]10;%s\033\\" "$color" >&"$fd"
-    fi
-}
-
 # Calculate current stage from elapsed seconds
 get_unified_stage() {
     local elapsed=$1
@@ -118,10 +102,9 @@ unified_timer_worker() {
         if [[ $elapsed -ge $max_runtime ]]; then
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Max runtime reached" >> "$IDLE_DEBUG_LOG"
 
-            # Best effort reset (both background and foreground)
+            # Best effort reset
             {
                 _idle_should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
-                _idle_send_fg_color "reset" 3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
             local reset_pid=$!
@@ -158,15 +141,6 @@ unified_timer_worker() {
                 else
                     printf "\033]11;%s\033\\" "$stage_color" >&3
                 fi
-            fi
-
-            # Apply Foreground Color (respects ENABLE_FOREGROUND_CHANGE)
-            # Use idle foreground for stages 1-5, reset for stage 6
-            if [[ "$stage_color" == "reset" ]]; then
-                _idle_send_fg_color "reset" 3
-            else
-                # Use the idle foreground color for all idle stages
-                _idle_send_fg_color "${FG_IDLE:-$FG_BASE}" 3
             fi
 
             # Apply Title (with face if anthropomorphising enabled)
