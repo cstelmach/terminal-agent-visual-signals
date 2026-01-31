@@ -57,13 +57,29 @@ cd src/agents/opencode && npm install && npm run build
 
 ## Visual States
 
-| State | Color | Emoji | Description |
-|-------|-------|-------|-------------|
-| Processing | Orange | 🟠 | Agent working |
-| Permission | Red | 🔴 | Needs user approval |
-| Complete | Green | 🟢 | Response finished |
-| Idle | Purple (graduated) | 🟣 | Waiting for input |
-| Compacting | Teal | 🔄 | Context compression |
+| State | Background | Foreground | Emoji | Description |
+|-------|------------|------------|-------|-------------|
+| Processing | Orange tint | Auto (based on mode) | 🟠 | Agent working |
+| Permission | Red tint | Auto (based on mode) | 🔴 | Needs user approval |
+| Complete | Green tint | Auto (based on mode) | 🟢 | Response finished |
+| Idle | Purple (graduated) | Auto (based on mode) | 🟣 | Waiting for input |
+| Compacting | Teal tint | Auto (based on mode) | 🔄 | Context compression |
+
+### Foreground Color Support
+
+TAVS automatically sets appropriate foreground (text) colors alongside background colors:
+- **Dark mode**: Uses Catppuccin Frappé Text (`#c6d0f5`) - ~6:1 contrast
+- **Light mode**: Uses Catppuccin Latte Text (`#4c4f69`) - ~6:1 contrast
+
+This ensures text remains readable when switching between light/dark modes.
+
+**Toggle:** `ENABLE_FOREGROUND_CHANGE="true"` (default: enabled)
+
+**Per-state overrides:** You can customize foreground colors per state in `defaults.conf`:
+```bash
+DARK_FG_PROCESSING="#c6d0f5"    # Custom dark mode processing foreground
+LIGHT_FG_PROCESSING="#4c4f69"   # Custom light mode processing foreground
+```
 
 ---
 
@@ -72,12 +88,11 @@ cd src/agents/opencode && npm install && npm run build
 | File | Purpose |
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher |
-| `src/core/theme.sh` | Colors, toggles, config loader |
-| `src/core/agent-theme.sh` | Agent-specific faces and theme loading |
+| `src/core/theme.sh` | Config loader, color/face resolution |
+| `src/core/terminal.sh` | OSC sequences (OSC 10/11 for fg/bg colors) |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
-| `src/core/detect.sh` | Terminal type and dark mode detection |
-| `src/core/themes.sh` | Legacy face themes (deprecated, see agent-theme.sh) |
-| `src/config/global.conf` | Default configuration |
+| `src/core/detect.sh` | Terminal type, capabilities, dark mode detection |
+| `src/config/defaults.conf` | **Single source of truth**: all settings + agent configs |
 | `configure.sh` | Interactive configuration wizard |
 | `hooks/hooks.json` | Claude Code plugin hooks |
 
@@ -142,14 +157,34 @@ All hooks use `async: true` for non-blocking execution:
 ### Testing Changes
 
 ```bash
-# Test each state
+# Test each state (foreground + background)
 ./src/core/trigger.sh processing
 ./src/core/trigger.sh permission
 ./src/core/trigger.sh complete
 ./src/core/trigger.sh idle
 ./src/core/trigger.sh compacting
 ./src/core/trigger.sh reset
+
+# Test light mode explicitly
+FORCE_MODE=light ./src/core/trigger.sh processing
+FORCE_MODE=light ./src/core/trigger.sh reset
+
+# Test with foreground disabled
+ENABLE_FOREGROUND_CHANGE=false ./src/core/trigger.sh processing
+
+# Check terminal capabilities
+bash src/core/detect.sh test
 ```
+
+### Terminal Compatibility
+
+| Terminal | OSC 10 (fg) | OSC 11 (bg) | OSC 1337 (images) |
+|----------|-------------|-------------|-------------------|
+| Ghostty | ✅ | ✅ | ❌ |
+| iTerm2 | ✅ | ✅ | ✅ |
+| Kitty | ✅ | ✅ | ❌ |
+| WezTerm | ✅ | ✅ | ✅ (partial) |
+| Terminal.app | ❌ | ❌ | ❌ |
 
 ### Agent-Specific Face Themes
 
