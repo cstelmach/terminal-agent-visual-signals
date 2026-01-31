@@ -16,6 +16,41 @@ Testing terminal visual signals involves verifying OSC escape sequences work cor
 ./src/core/trigger.sh idle         # Purple background
 ./src/core/trigger.sh compacting   # Teal background
 ./src/core/trigger.sh reset        # Reset to default
+
+# Test light mode
+FORCE_MODE=light ./src/core/trigger.sh processing
+FORCE_MODE=light ./src/core/trigger.sh reset
+```
+
+### Test Palette Theming
+
+```bash
+# Test with palette enabled (requires 256-color mode)
+ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
+ls --color=auto  # Check if ls colors match theme
+./src/core/trigger.sh reset
+
+# Test auto mode (should skip in TrueColor)
+ENABLE_PALETTE_THEMING=auto COLORTERM=truecolor ./src/core/trigger.sh processing
+./src/core/trigger.sh reset
+
+# Test auto mode (should apply when not TrueColor)
+ENABLE_PALETTE_THEMING=auto COLORTERM= ./src/core/trigger.sh processing
+ls --color=auto
+./src/core/trigger.sh reset
+```
+
+### Test Terminal Title Mode
+
+```bash
+# Test with TAVS title mode (requires disabling Claude Code's title)
+TAVS_TITLE_MODE=full ./src/core/trigger.sh processing
+sleep 3  # Watch spinner animation
+./src/core/trigger.sh reset
+
+# Test skip-processing mode (default)
+TAVS_TITLE_MODE=skip-processing ./src/core/trigger.sh processing
+./src/core/trigger.sh reset
 ```
 
 ### Test Agent Triggers
@@ -95,6 +130,9 @@ export DEBUG_ALL=1
 - [ ] Idle stages graduate correctly
 - [ ] New prompt cancels idle timer
 - [ ] Reset clears all visual state
+- [ ] Palette theming applies to ls/git (when enabled)
+- [ ] Title mode respects TAVS_TITLE_MODE setting
+- [ ] Spinner animation works (when TAVS_TITLE_MODE=full)
 
 ## Common Test Scenarios
 
@@ -130,14 +168,17 @@ End and start new session:
 
 ### Ghostty (Recommended)
 
-- Full OSC 11 support ✅
-- Full OSC 0 support ✅
-- Bell notifications ✅
+- OSC 4 (palette): ✅
+- OSC 11 (background): ✅
+- OSC 0 (title): ✅
+- Bell notifications: ✅
 
 ### iTerm2
 
+- OSC 4: ✅
 - OSC 11: ✅
 - OSC 0: ✅
+- OSC 1337 (images): ✅
 - May need "Apps can change title" enabled
 
 ### VS Code Terminal

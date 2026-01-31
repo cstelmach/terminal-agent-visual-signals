@@ -40,6 +40,7 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  ┌────────────────────────────────────────────────────────┐    │
 │  │                  Terminal (OSC Sequences)               │    │
 │  │     • Background color (OSC 11)                        │    │
+│  │     • 16-color palette (OSC 4) - optional              │    │
 │  │     • Tab title (OSC 0)                                │    │
 │  │     • Background image (OSC 1337 / kitten @)          │    │
 │  │     • Bell notification (BEL)                          │    │
@@ -92,9 +93,12 @@ Session state tracking:
 ### terminal.sh (OSC Functions)
 
 Terminal escape sequence functions:
-- `send_osc_bg` - Change background color
-- `send_osc_title` - Update tab title (integrates spinner for processing state)
-- `send_bell_if_enabled` - Notification bell
+- `send_osc_bg` - Change background color (OSC 11)
+- `send_osc_title` - Update tab title (OSC 0, integrates spinner for processing state)
+- `send_osc_palette` - Modify 16-color ANSI palette (OSC 4)
+- `send_osc_palette_reset` - Reset palette to terminal defaults (OSC 104)
+- `send_bell_if_enabled` - Notification bell (BEL)
+- `_build_osc_palette_seq` - Build palette sequence (shared by trigger and idle-worker)
 
 ### spinner.sh (Animated Spinners)
 

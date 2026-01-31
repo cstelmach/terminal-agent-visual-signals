@@ -12,6 +12,7 @@ Quick reference for common issues with Terminal Agent Visual Signals.
 | Wrong colors | Colors different than expected | [Theme configuration](#wrong-theme) |
 | Wrong faces showing | Old faces or wrong agent faces | [Agent theme issues](#agent-theme-issues) |
 | Idle timer not working | No purple stages after completion | [Check idle-worker](#idle-timer-issues) |
+| Palette theming not working | `ls` colors unchanged | [Palette theming issues](#palette-theming-issues) |
 | OpenCode plugin fails | TypeScript/npm errors | [Build issues](#opencode-build-issues) |
 
 ## Quick Fixes
@@ -124,6 +125,47 @@ ps aux | grep idle-worker
 1. Verify `ENABLE_IDLE=true` in theme.sh
 2. Check for processes killing the timer
 3. Increase idle timeout if needed
+
+### Palette Theming Issues
+
+Palette theming enabled but `ls`, `git` colors unchanged.
+
+**Common causes:**
+1. **TrueColor mode active** - Claude Code uses TrueColor by default
+2. **Palette theming disabled** - Not enabled in config
+3. **Terminal doesn't support OSC 4** - Use supported terminal
+
+**Check TrueColor status:**
+```bash
+echo $COLORTERM  # "truecolor" means palette won't work
+bash src/core/detect.sh test  # Shows "Palette Theming" status
+```
+
+**Solution 1: Launch in 256-color mode**
+```bash
+TERM=xterm-256color COLORTERM= claude
+```
+
+**Solution 2: Add alias**
+```bash
+# In ~/.zshrc or ~/.bashrc
+alias claude='TERM=xterm-256color COLORTERM= claude'
+```
+
+**Solution 3: Enable palette theming**
+```bash
+# In ~/.terminal-visual-signals/user.conf
+ENABLE_PALETTE_THEMING="auto"  # or "true"
+```
+
+**Test if working:**
+```bash
+ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
+ls --color=auto  # Colors should match theme
+./src/core/trigger.sh reset
+```
+
+See [Palette Theming Reference](../reference/palette-theming.md) for details.
 
 ### OpenCode Build Issues
 
