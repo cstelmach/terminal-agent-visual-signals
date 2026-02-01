@@ -123,6 +123,7 @@ All user settings are stored in `~/.terminal-visual-signals/user.conf`:
 | [Agent Themes](docs/reference/agent-themes.md) | Per-agent customization of faces, colors, and backgrounds. Explains the directory structure, file formats, override priority, and how to create custom themes without modifying source files. | faces.conf, colors.conf, random-selection, user-overrides | Customizing agent appearance, adding new agent themes, understanding face selection |
 | [Palette Theming](docs/reference/palette-theming.md) | Optional 16-color ANSI palette modification for cohesive terminal theming. Explains OSC 4 sequences, TrueColor limitations, theme presets, and how to enable for Claude Code. | OSC-4, ANSI-palette, TrueColor, 256-color-mode | Enabling palette theming, understanding why colors don't change in TrueColor mode |
 | [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
+| [Development Testing](docs/reference/development-testing.md) | Workflow for testing code changes live. How to update the plugin cache, test locally, and see changes reflected in Claude Code immediately. | plugin-cache, live-testing, development-workflow | Making code changes, testing modifications, deploying to plugin cache |
 | [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
 
 ---
@@ -219,6 +220,33 @@ ls --color=auto  # Check if ls colors match theme
 # Check terminal capabilities
 bash src/core/detect.sh test
 ```
+
+### Deploy Changes to Plugin Cache
+
+**IMPORTANT:** After making code changes, you must update the plugin cache for Claude Code to use them.
+
+```bash
+# Quick update: Copy all core files to plugin cache
+CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
+echo "Plugin cache updated - submit a prompt to test"
+```
+
+**Full update script:**
+```bash
+CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+REPO="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
+cp "$REPO/src/core/"*.sh "$CACHE/src/core/"
+mkdir -p "$CACHE/src/config" && cp "$REPO/src/config/"*.conf "$CACHE/src/config/"
+cp "$REPO/src/agents/claude/trigger.sh" "$CACHE/src/agents/claude/"
+```
+
+**Key locations:**
+- Source repo: `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`
+- Plugin cache: `~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/`
+- User config: `~/.terminal-visual-signals/user.conf` (changes here work immediately)
+
+See [Development Testing](docs/reference/development-testing.md) for the full workflow.
 
 ### Terminal Compatibility
 
