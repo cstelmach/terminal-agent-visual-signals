@@ -19,6 +19,7 @@ Quick reference for common issues with Terminal Agent Visual Signals.
 | Title not changing | Tab title stays default | [Title management issues](#title-management-issues) |
 | Title mode not working | Full mode not showing spinner | [Title mode setup](#title-mode-setup) |
 | Ghostty title override | Ghostty resets title after commands | [Ghostty configuration](#ghostty-configuration) |
+| Ghostty locked title | Title stops working after manual rename | [Ghostty manual tab naming](#ghostty-manual-tab-naming-known-limitation) |
 | Empty variables in zsh | Config values empty in Claude Code | [Shell compatibility](#shell-compatibility-issues) |
 
 ## Quick Fixes
@@ -304,6 +305,30 @@ shell-integration-features = no-title
 **Reload config:** Press `Cmd+Shift+,` or restart Ghostty.
 
 This disables ONLY title management while keeping other shell integration features (cursor shape, sudo wrapping, etc.).
+
+### Ghostty Manual Tab Naming (Known Limitation)
+
+**Symptom:** After manually renaming a tab in Ghostty, TAVS spinner/title stops working.
+
+**Cause:** When you manually name a tab in Ghostty (via Cmd+I or right-click → Rename), Ghostty **locks** that title and ignores all OSC escape sequences. This is intentional Ghostty behavior to protect your customization.
+
+**This is NOT a TAVS bug** - Ghostty is designed this way.
+
+**Solutions:**
+
+1. **Clear the custom name:**
+   - Press `Cmd+I` (or right-click tab → Rename)
+   - Delete the custom name and save
+   - Ghostty will now accept OSC title changes again
+
+2. **Close and reopen the tab:**
+   - New tabs don't have locked titles
+
+3. **Use a different terminal:**
+   - iTerm2 supports user title detection and can work around this
+   - Other terminals may have different behaviors
+
+**Note:** Unlike iTerm2 where TAVS can detect user-set titles via OSC 1337, Ghostty doesn't provide a way to query or detect locked titles. Once locked, TAVS cannot override it.
 
 ### Shell Compatibility Issues
 
