@@ -68,6 +68,7 @@
 #
 # Options:
 #   "full"            - TAVS owns all titles (requires Claude Code setting, see below)
+#   "prefix-only"     - TAVS adds face+emoji prefix, preserves user's base title
 #   "skip-processing" - Let Claude Code handle processing titles, TAVS handles others (DEFAULT)
 #   "off"             - No title changes at all, colors/backgrounds only
 #
@@ -76,6 +77,56 @@
 # Then restart Claude Code.
 #
 # TAVS_TITLE_MODE="skip-processing"
+
+# ==============================================================================
+# TITLE BASE & FALLBACK (for prefix-only and full modes)
+# ==============================================================================
+# When you manually rename a tab, TAVS preserves your name and adds a prefix.
+# If no manual name is set, TAVS uses the fallback setting below.
+#
+# User-set title override: Set this to always use a specific base title
+# TAVS_TITLE_BASE="My Project"
+
+# Fallback when no user title is set:
+#   "session-path" - Session ID + path: "134eed79 ~/projects"
+#   "path-session" - Path + session ID: "~/projects 134eed79"
+#   "session"      - Session ID only: "134eed79"
+#   "path"         - Path only (default): "~/projects"
+# TAVS_TITLE_FALLBACK="path"
+
+# ==============================================================================
+# TITLE FORMAT TEMPLATE
+# ==============================================================================
+# Customize how the title is composed. Placeholders:
+#   {FACE}  - Agent face (e.g., "Ǝ[• •]E")
+#   {EMOJI} - State emoji (e.g., "🟠")
+#   {BASE}  - Base title (your tab name or fallback)
+#
+# Examples:
+#   "{FACE} {EMOJI} {BASE}" -> "Ǝ[• •]E 🟠 My Project"
+#   "{EMOJI} {FACE} {BASE}" -> "🟠 Ǝ[• •]E My Project"
+#   "[{EMOJI}] {BASE}"      -> "[🟠] My Project"
+#   "{EMOJI} {BASE}"        -> "🟠 My Project" (no face)
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {BASE}"
+
+# ==============================================================================
+# USER TITLE OVERRIDE BEHAVIOR
+# ==============================================================================
+# When TAVS detects you've manually renamed a tab, what should it do?
+#
+#   "prefix" - Add face+emoji prefix, keep your base name (recommended)
+#   "full"   - Completely respect your title (no changes at all)
+#   "ignore" - Always overwrite your title (legacy behavior)
+# TAVS_RESPECT_USER_TITLE="prefix"
+
+# ==============================================================================
+# TITLE COMPONENT TOGGLES
+# ==============================================================================
+# Fine-grained control over what appears in the title.
+# TAVS_TITLE_SHOW_FACE="true"     # Include face in title
+# TAVS_TITLE_SHOW_EMOJI="true"    # Include emoji in title
+# TAVS_TITLE_SHOW_SESSION="true"  # Include session ID in fallback
+# TAVS_TITLE_SHOW_PATH="true"     # Include path in fallback
 
 # ==============================================================================
 # SPINNER CONFIGURATION (for TAVS_TITLE_MODE="full")
