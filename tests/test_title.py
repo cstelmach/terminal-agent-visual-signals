@@ -297,10 +297,11 @@ class TestTitleModes:
     def test_skip_processing_mode_skips_processing(self):
         """skip-processing mode should skip the processing state."""
         # This is hard to test directly without TTY, but we can verify
-        # the mode variable is read correctly
+        # the mode variable is read correctly when set AFTER sourcing
+        # (to simulate user.conf override)
         results = run_in_both_shells('''
-            export TAVS_TITLE_MODE="skip-processing"
             source src/core/theme.sh
+            TAVS_TITLE_MODE="skip-processing"
             echo "$TAVS_TITLE_MODE"
         ''')
 

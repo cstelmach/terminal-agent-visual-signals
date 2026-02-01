@@ -36,11 +36,15 @@ _generate_session_id() {
         fi
     fi
 
-    # Generate new session ID (first 8 chars of UUID)
+    # Generate new session ID (first 8 chars of UUID or random hex)
     if command -v uuidgen &>/dev/null; then
         uuidgen | cut -c1-8 | tr '[:upper:]' '[:lower:]'
     elif [[ -f /proc/sys/kernel/random/uuid ]]; then
-        cat /proc/sys/kernel/random/uuid | cut -c1-8
+        cut -c1-8 < /proc/sys/kernel/random/uuid
+    elif [[ -c /dev/urandom ]]; then
+        # Use /dev/urandom for better randomness (available on most Unix systems)
+        head -c 4 /dev/urandom | od -An -t x4 | tr -d ' \n'
+        echo  # Add newline
     else
         # Fallback: use hash-like value based on PID + timestamp
         local seed
@@ -48,8 +52,8 @@ _generate_session_id() {
         if command -v md5sum &>/dev/null; then
             printf '%s' "$seed" | md5sum | cut -c1-8
         elif command -v cksum &>/dev/null; then
-            # cksum output: "<checksum> <length>"; take checksum and format as hex
-            printf '%08x\n' "$(printf '%s' "$seed" | cksum | cut -d' ' -f1)"
+            # cksum output format varies; use awk to reliably get first field
+            printf '%08x\n' "$(printf '%s' "$seed" | cksum | awk '{print $1}')"
         else
             # Pure shell fallback: 8-digit hexadecimal representation of the seed
             printf '%08x\n' "$seed"
@@ -119,6 +123,18 @@ load_title_state() {
     return 0
 }
 
+# Escape a value for safe storage in state file
+# Removes/escapes characters that could break key="value" format
+_escape_for_state_file() {
+    local val="$1"
+    # Remove newlines and carriage returns, escape double quotes and backslashes
+    val="${val//$'\n'/ }"
+    val="${val//$'\r'/}"
+    val="${val//\\/\\\\}"
+    val="${val//\"/\\\"}"
+    printf '%s' "$val"
+}
+
 # Save title state atomically
 # Usage: save_title_state [user_base] [last_set] [locked] [session_id]
 save_title_state() {
@@ -126,6 +142,13 @@ save_title_state() {
     local last_set="${2:-$TITLE_LAST_SET}"
     local locked="${3:-$TITLE_LOCKED}"
     local session_id="${4:-$SESSION_ID}"
+
+    # Sanitize values to prevent state file corruption
+    user_base=$(_escape_for_state_file "$user_base")
+    last_set=$(_escape_for_state_file "$last_set")
+    # locked and session_id are internal values, but sanitize for safety
+    locked=$(_escape_for_state_file "$locked")
+    session_id=$(_escape_for_state_file "$session_id")
 
     local state_file
     state_file=$(get_title_state_file)
@@ -192,10 +215,16 @@ detect_user_title_change() {
         if user_title=$(iterm2_enhanced_detect_change); then
             # Override detected by iTerm2's robust mechanism
             if [[ -n "$user_title" ]]; then
+                # Sanitize before storing to prevent state file corruption
+                if type sanitize_for_terminal &>/dev/null; then
+                    user_title=$(sanitize_for_terminal "$user_title")
+                fi
                 TITLE_USER_BASE="$user_title"
                 save_title_state
+                return 0  # Override detected with valid title
             fi
-            return 0  # Override detected
+            # Empty output with success code = treat as no override
+            return 1
         else
             return 1  # No override detected by iTerm2
         fi
@@ -229,6 +258,10 @@ detect_user_title_change() {
         local user_base
         user_base=$(_extract_base_from_title "$current_title")
         if [[ -n "$user_base" ]]; then
+            # Sanitize before storing to prevent state file corruption
+            if type sanitize_for_terminal &>/dev/null; then
+                user_base=$(sanitize_for_terminal "$user_base")
+            fi
             TITLE_USER_BASE="$user_base"
             save_title_state
         fi

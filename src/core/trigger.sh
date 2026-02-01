@@ -184,8 +184,8 @@ should_send_title() {
 
     # Check title mode
     case "$TAVS_TITLE_MODE" in
-        "full")
-            # Send title for all states
+        "full"|"prefix-only")
+            # Send title for all states (prefix-only preserves user names but still updates)
             return 0
             ;;
         "skip-processing")
@@ -198,7 +198,7 @@ should_send_title() {
             return 1
             ;;
         *)
-            # Default: skip-processing
+            # Default: skip-processing behavior
             [[ "$state" == "processing" ]] && return 1
             return 0
             ;;

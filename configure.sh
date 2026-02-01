@@ -518,7 +518,7 @@ configure_prefix_only_mode() {
             2) SELECTED_TITLE_FALLBACK="session-path"; valid=true ;;
             3) SELECTED_TITLE_FALLBACK="path-session"; valid=true ;;
             4) SELECTED_TITLE_FALLBACK="session"; valid=true ;;
-            *) echo -e "${RED}Invalid choice.${NC}" ;;
+            *) echo -e "${RED}Invalid choice. Please enter a number from 1 to 4.${NC}" ;;
         esac
     done
 

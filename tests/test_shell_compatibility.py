@@ -13,7 +13,7 @@ These tests ensure shell compatibility is maintained going forward.
 """
 
 import pytest
-from conftest import run_bash, run_zsh, run_in_both_shells, PROJECT_ROOT
+from conftest import run_bash, run_zsh, run_in_both_shells
 
 
 class TestBashZshConfigParity:
@@ -286,7 +286,6 @@ class TestInlineFallbacks:
             echo "$TAVS_TITLE_FORMAT"
         ''')
         assert result.returncode == 0
-        output = result.stdout.strip()
         # Should have the default format (may be empty if not in inline defaults)
         # The key point is it shouldn't error
         # Actually, TAVS_TITLE_FORMAT is set in title.sh, not theme.sh inline defaults
