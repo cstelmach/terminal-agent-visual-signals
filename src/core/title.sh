@@ -372,7 +372,9 @@ compose_title() {
     fi
 
     # Compose using format template or default
-    local format="${TAVS_TITLE_FORMAT:-{FACE} {EMOJI} {BASE}}"
+    # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
+    local _default_format='{FACE} {EMOJI} {BASE}'
+    local format="${TAVS_TITLE_FORMAT:-$_default_format}"
     local title="$format"
 
     # Substitute placeholders
