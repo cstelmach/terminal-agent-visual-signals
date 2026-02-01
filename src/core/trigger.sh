@@ -36,6 +36,11 @@ source "$CORE_DIR/spinner.sh"
 source "$CORE_DIR/idle-worker.sh"
 source "$CORE_DIR/detect.sh"
 source "$CORE_DIR/backgrounds.sh"
+source "$CORE_DIR/title.sh"
+
+# Source iTerm2-specific title detection if applicable
+[[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
+    source "$CORE_DIR/title-iterm2.sh"
 
 # === DEBUG LOGGING ===
 debug_log_invocation() {
@@ -211,12 +216,13 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
-            should_send_title "processing" && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
+            # Use new title system with user override detection
+            should_send_title "processing" && set_tavs_title "processing"
             set_state_background_image "processing"
         else
             _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
-            should_send_title "processing" && send_osc_title "" "$(get_short_cwd)" "reset"
+            should_send_title "processing" && reset_tavs_title
             clear_background_image
         fi
         send_bell_if_enabled "$STATE"
@@ -229,7 +235,8 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
-            should_send_title "permission" && send_osc_title "$EMOJI_PERMISSION" "$(get_short_cwd)" "permission"
+            # Use new title system with user override detection
+            should_send_title "permission" && set_tavs_title "permission"
             set_state_background_image "permission"
         fi
         send_bell_if_enabled "$STATE"
@@ -245,12 +252,13 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
-            should_send_title "complete" && send_osc_title "$EMOJI_COMPLETE" "$(get_short_cwd)" "complete"
+            # Use new title system with user override detection
+            should_send_title "complete" && set_tavs_title "complete"
             set_state_background_image "complete"
         else
             _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
-            should_send_title "complete" && send_osc_title "" "$(get_short_cwd)" "reset"
+            should_send_title "complete" && reset_tavs_title
             clear_background_image
         fi
 
@@ -271,7 +279,8 @@ case "$STATE" in
                 # Fallback start - apply palette before background
                 _apply_palette_if_enabled
                 should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
-                should_send_title "idle" && send_osc_title "${UNIFIED_STAGE_EMOJIS[1]}" "$(get_short_cwd)" "idle_1"
+                # Use new title system with user override detection
+                should_send_title "idle" && set_tavs_title "idle_1"
                 set_state_background_image "idle"
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
                 disown 2>/dev/null || true
@@ -286,7 +295,8 @@ case "$STATE" in
             # Apply palette FIRST (prevents contrast flicker)
             _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
-            should_send_title "compacting" && send_osc_title "$EMOJI_COMPACTING" "$(get_short_cwd)" "compacting"
+            # Use new title system with user override detection
+            should_send_title "compacting" && set_tavs_title "compacting"
             set_state_background_image "compacting"
         fi
         send_bell_if_enabled "$STATE"
@@ -298,13 +308,16 @@ case "$STATE" in
         # Reset palette FIRST, then background
         _reset_palette_if_enabled
         should_send_bg_color && send_osc_bg "reset"
-        should_send_title "reset" && send_osc_title "" "$(get_short_cwd)" "reset"
+        # Use new title system - reset to base title
+        should_send_title "reset" && reset_tavs_title
         clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
         # Initialize session spinner if session identity is enabled
         reset_spinner
         [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
+        # Clear title state on full reset (new session)
+        clear_title_state 2>/dev/null || true
         ;;
 
     *)
