@@ -29,7 +29,7 @@
 # ==============================================================================
 # LIGHT/DARK MODE
 # ==============================================================================
-# ENABLE_AUTO_DARK_MODE - Auto-detect system light/dark mode
+# ENABLE_LIGHT_DARK_SWITCHING - Auto-detect system light/dark mode
 #   "false" - Always use dark backgrounds (default)
 #   "true"  - Switch based on system appearance
 #
@@ -38,7 +38,7 @@
 #
 # TRUECOLOR_MODE_OVERRIDE - Special handling for TrueColor terminals
 #   TrueColor terminals (Ghostty, iTerm2, etc.) have their own color schemes.
-#   This controls how TAVS behaves when ENABLE_AUTO_DARK_MODE="true":
+#   This controls how TAVS behaves when ENABLE_LIGHT_DARK_SWITCHING="true":
 #
 #   "off"   - (Default) Skip auto-detect in TrueColor, always use dark.
 #             Respects your terminal's color scheme.
@@ -47,7 +47,7 @@
 #   "full"  - Allow light/dark switching with regular colors.
 #             May clash with your terminal's color scheme.
 #
-# ENABLE_AUTO_DARK_MODE="true"
+# ENABLE_LIGHT_DARK_SWITCHING="true"
 # FORCE_MODE="auto"
 # TRUECOLOR_MODE_OVERRIDE="off"
 

@@ -176,7 +176,7 @@ set_state_background_image() {
 
     # Determine mode directory (dark/light based on settings)
     local mode_dir=""
-    if [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
+    if [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
         if detect_system_dark_mode; then
             mode_dir="dark"
         else

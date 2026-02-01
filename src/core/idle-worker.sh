@@ -22,7 +22,7 @@ _idle_should_send_bg_color() {
 }
 
 # Helper: Get palette mode for idle worker
-# Uses IS_DARK_THEME from theme.sh (respects FORCE_MODE and ENABLE_AUTO_DARK_MODE)
+# Uses IS_DARK_THEME from theme.sh (respects FORCE_MODE and ENABLE_LIGHT_DARK_SWITCHING)
 _idle_get_palette_mode() {
     # 1. Respect explicit FORCE_MODE overrides
     if [[ "$FORCE_MODE" == "light" ]]; then
@@ -44,7 +44,7 @@ _idle_get_palette_mode() {
     fi
 
     # 3. Fallback: only use system detection if auto dark mode is enabled
-    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
+    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
         if type get_system_mode &>/dev/null; then
             local system_mode
             system_mode=$(get_system_mode)

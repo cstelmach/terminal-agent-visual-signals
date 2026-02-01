@@ -174,11 +174,11 @@ test_truecolor_behavior() {
 
     # Simulate TrueColor environment
     COLORTERM="truecolor"
-    ENABLE_AUTO_DARK_MODE="true"
+    ENABLE_LIGHT_DARK_SWITCHING="true"
 
     echo "Current environment:"
     echo "  COLORTERM=$COLORTERM"
-    echo "  ENABLE_AUTO_DARK_MODE=$ENABLE_AUTO_DARK_MODE"
+    echo "  ENABLE_LIGHT_DARK_SWITCHING=$ENABLE_LIGHT_DARK_SWITCHING"
     echo
 
     echo "Test 1: TRUECOLOR_MODE_OVERRIDE='off' (default)"

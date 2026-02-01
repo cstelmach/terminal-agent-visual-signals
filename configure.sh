@@ -36,7 +36,7 @@ NC='\033[0m'
 # === CONFIGURATION STATE ===
 SELECTED_MODE="static"
 SELECTED_PRESET=""
-SELECTED_AUTO_DARK="false"
+SELECTED_LIGHT_DARK_SWITCHING="false"
 SELECTED_AGENT=""
 SELECTED_FACE_ENABLED="false"
 SELECTED_FACE_THEME="minimal"
@@ -231,21 +231,21 @@ select_auto_dark_mode() {
         choice=$(read_choice "Select option [1-4]" "1")
 
         case "$choice" in
-            1) SELECTED_AUTO_DARK="false"; SELECTED_FORCE_MODE="auto"; valid=true ;;
-            2) SELECTED_AUTO_DARK="true"; SELECTED_FORCE_MODE="auto"; valid=true ;;
-            3) SELECTED_AUTO_DARK="false"; SELECTED_FORCE_MODE="light"; valid=true ;;
-            4) SELECTED_AUTO_DARK="false"; SELECTED_FORCE_MODE="dark"; valid=true ;;
+            1) SELECTED_LIGHT_DARK_SWITCHING="false"; SELECTED_FORCE_MODE="auto"; valid=true ;;
+            2) SELECTED_LIGHT_DARK_SWITCHING="true"; SELECTED_FORCE_MODE="auto"; valid=true ;;
+            3) SELECTED_LIGHT_DARK_SWITCHING="false"; SELECTED_FORCE_MODE="light"; valid=true ;;
+            4) SELECTED_LIGHT_DARK_SWITCHING="false"; SELECTED_FORCE_MODE="dark"; valid=true ;;
             *) echo -e "${RED}Invalid choice.${NC}" ;;
         esac
     done
 
     echo ""
-    if [[ "$SELECTED_AUTO_DARK" == "true" ]]; then
-        echo -e "  ${GREEN}Auto dark mode: ${BOLD}Enabled${NC}"
+    if [[ "$SELECTED_LIGHT_DARK_SWITCHING" == "true" ]]; then
+        echo -e "  ${GREEN}Light/dark switching: ${BOLD}Enabled${NC}"
     elif [[ "$SELECTED_FORCE_MODE" != "auto" ]]; then
         echo -e "  ${GREEN}Forced mode: ${BOLD}$SELECTED_FORCE_MODE${NC}"
     else
-        echo -e "  ${GREEN}Auto dark mode: ${BOLD}Disabled${NC}"
+        echo -e "  ${GREEN}Light/dark switching: ${BOLD}Disabled${NC}"
     fi
 }
 
@@ -671,7 +671,7 @@ show_preview() {
     echo ""
     echo -e "  ${BOLD}Operating Mode:${NC}      $SELECTED_MODE"
     [[ "$SELECTED_MODE" == "preset" ]] && echo -e "  ${BOLD}Theme Preset:${NC}        $SELECTED_PRESET"
-    echo -e "  ${BOLD}Auto Dark Mode:${NC}      $SELECTED_AUTO_DARK"
+    echo -e "  ${BOLD}Auto Dark Mode:${NC}      $SELECTED_LIGHT_DARK_SWITCHING"
     [[ "$SELECTED_FORCE_MODE" != "auto" ]] && echo -e "  ${BOLD}Force Mode:${NC}          $SELECTED_FORCE_MODE"
     echo -e "  ${BOLD}ASCII Faces:${NC}         $SELECTED_FACE_ENABLED"
     if [[ "$SELECTED_FACE_ENABLED" == "true" ]]; then
@@ -755,8 +755,8 @@ EOF
 
     cat >> "$USER_CONFIG" << EOF
 
-# Auto-detect system light/dark mode
-ENABLE_AUTO_DARK_MODE="$SELECTED_AUTO_DARK"
+# Enable light/dark mode switching based on system appearance
+ENABLE_LIGHT_DARK_SWITCHING="$SELECTED_LIGHT_DARK_SWITCHING"
 EOF
 
     if [[ "$SELECTED_FORCE_MODE" != "auto" ]]; then

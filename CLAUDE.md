@@ -66,7 +66,7 @@ cd src/agents/opencode && npm install && npm run build
 | Compacting | Teal | 🔄 | Context compression |
 
 **TrueColor Mode Behavior:** When TrueColor is active (`COLORTERM=truecolor`),
-auto dark mode detection is skipped by default. TrueColor terminals have their own
+light/dark switching is skipped by default. TrueColor terminals have their own
 color schemes that TAVS respects. Override with `TRUECOLOR_MODE_OVERRIDE`:
 
 | Value | Behavior |

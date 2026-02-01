@@ -140,7 +140,7 @@ The palette mode (dark/light) follows the same logic as background colors:
 
 1. Respect explicit `FORCE_MODE` ("dark" or "light")
 2. Use `IS_DARK_THEME` from theme.sh (if available)
-3. Use system detection if `ENABLE_AUTO_DARK_MODE="true"`
+3. Use system detection if `ENABLE_LIGHT_DARK_SWITCHING="true"`
 4. Fall back to dark mode
 
 ### OSC Sequences

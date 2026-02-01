@@ -204,7 +204,13 @@ _set_inline_defaults() {
     # Operating mode
     THEME_MODE="${THEME_MODE:-static}"
     THEME_PRESET="${THEME_PRESET:-}"
-    ENABLE_AUTO_DARK_MODE="${ENABLE_AUTO_DARK_MODE:-false}"
+
+    # Backward compatibility: support old variable name ENABLE_LIGHT_DARK_SWITCHING
+    if [[ -n "${ENABLE_LIGHT_DARK_SWITCHING:-}" ]] && [[ -z "${ENABLE_LIGHT_DARK_SWITCHING:-}" ]]; then
+        ENABLE_LIGHT_DARK_SWITCHING="$ENABLE_LIGHT_DARK_SWITCHING"
+    fi
+    ENABLE_LIGHT_DARK_SWITCHING="${ENABLE_LIGHT_DARK_SWITCHING:-false}"
+
     FORCE_MODE="${FORCE_MODE:-auto}"
     TRUECOLOR_MODE_OVERRIDE="${TRUECOLOR_MODE_OVERRIDE:-off}"
 
@@ -322,7 +328,7 @@ _resolve_colors() {
         use_dark="true"
     elif [[ "$FORCE_MODE" == "light" ]]; then
         use_dark="false"
-    elif [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
+    elif [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
         # Handle TrueColor mode based on override setting
         if [[ "$in_truecolor" == "true" ]]; then
             case "$TRUECOLOR_MODE_OVERRIDE" in
@@ -683,7 +689,7 @@ load_session_colors_or_defaults() {
         IS_DARK_THEME="$SESSION_IS_DARK"
 
         # Check if system mode changed (for auto-dark mode switching)
-        if [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
+        if [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
             local current_mode
             current_mode=$(_detect_system_mode)
             if [[ "$current_mode" != "$SESSION_SYSTEM_MODE" ]]; then
@@ -708,7 +714,7 @@ load_session_colors_or_defaults() {
 # Called at key check events (permission, complete)
 refresh_colors_if_needed() {
     # Only check if auto-dark mode is enabled
-    [[ "$ENABLE_AUTO_DARK_MODE" != "true" ]] && return 0
+    [[ "$ENABLE_LIGHT_DARK_SWITCHING" != "true" ]] && return 0
 
     # Check if system mode changed
     local current_mode
