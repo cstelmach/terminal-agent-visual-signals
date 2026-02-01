@@ -65,9 +65,17 @@ cd src/agents/opencode && npm install && npm run build
 | Idle | Purple (graduated) | 🟣 | Waiting for input |
 | Compacting | Teal | 🔄 | Context compression |
 
-**Note:** When TrueColor mode is active (`COLORTERM=truecolor`), auto dark mode
-detection is skipped. TrueColor terminals have their own color schemes that
-TAVS respects by defaulting to dark mode backgrounds.
+**TrueColor Mode Behavior:** When TrueColor is active (`COLORTERM=truecolor`),
+auto dark mode detection is skipped by default. TrueColor terminals have their own
+color schemes that TAVS respects. Override with `TRUECOLOR_MODE_OVERRIDE`:
+
+| Value | Behavior |
+|-------|----------|
+| `"off"` | (Default) Skip auto detection, always use dark mode |
+| `"muted"` | Allow light/dark switching with muted colors (reduced contrast) |
+| `"full"` | Allow light/dark switching with regular colors |
+
+Set in `~/.terminal-visual-signals/user.conf`.
 
 ---
 

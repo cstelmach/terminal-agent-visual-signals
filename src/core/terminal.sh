@@ -54,13 +54,13 @@ resolve_tty() {
 }
 
 # Auto-detect TTY on source if not already set
-if [[ -z "$TTY_DEVICE" ]]; then
+if [[ -z "${TTY_DEVICE:-}" ]]; then
     TTY_DEVICE=$(resolve_tty)
     # If still empty, we can't do anything (exit handled by caller usually)
 fi
 
 # Create safe identifier for filenames
-if [[ -n "$TTY_DEVICE" ]]; then
+if [[ -n "${TTY_DEVICE:-}" ]]; then
     TTY_SAFE="${TTY_DEVICE//\//_}"
 fi
 

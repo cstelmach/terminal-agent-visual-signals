@@ -86,6 +86,8 @@ _resolve_agent_variables() {
         AGENT_NAME
         DARK_BASE DARK_PROCESSING DARK_PERMISSION DARK_COMPLETE DARK_IDLE DARK_COMPACTING
         LIGHT_BASE LIGHT_PROCESSING LIGHT_PERMISSION LIGHT_COMPLETE LIGHT_IDLE LIGHT_COMPACTING
+        MUTED_DARK_BASE MUTED_DARK_PROCESSING MUTED_DARK_PERMISSION MUTED_DARK_COMPLETE MUTED_DARK_IDLE MUTED_DARK_COMPACTING
+        MUTED_LIGHT_BASE MUTED_LIGHT_PROCESSING MUTED_LIGHT_PERMISSION MUTED_LIGHT_COMPLETE MUTED_LIGHT_IDLE MUTED_LIGHT_COMPACTING
         SPINNER_FACE_FRAME
     )
 
@@ -204,6 +206,7 @@ _set_inline_defaults() {
     THEME_PRESET="${THEME_PRESET:-}"
     ENABLE_AUTO_DARK_MODE="${ENABLE_AUTO_DARK_MODE:-false}"
     FORCE_MODE="${FORCE_MODE:-auto}"
+    TRUECOLOR_MODE_OVERRIDE="${TRUECOLOR_MODE_OVERRIDE:-off}"
 
     # Feature toggles
     ENABLE_BACKGROUND_CHANGE="${ENABLE_BACKGROUND_CHANGE:-true}"
@@ -233,6 +236,22 @@ _set_inline_defaults() {
     DEFAULT_LIGHT_COMPLETE="${DEFAULT_LIGHT_COMPLETE:-#e5f0e5}"
     DEFAULT_LIGHT_IDLE="${DEFAULT_LIGHT_IDLE:-#ebe5f5}"
     DEFAULT_LIGHT_COMPACTING="${DEFAULT_LIGHT_COMPACTING:-#e0f0f0}"
+
+    # Muted dark mode colors (for TrueColor terminals with mode switching)
+    DEFAULT_MUTED_DARK_BASE="${DEFAULT_MUTED_DARK_BASE:-#4a4e5c}"
+    DEFAULT_MUTED_DARK_PROCESSING="${DEFAULT_MUTED_DARK_PROCESSING:-#5a5650}"
+    DEFAULT_MUTED_DARK_PERMISSION="${DEFAULT_MUTED_DARK_PERMISSION:-#5a4a4c}"
+    DEFAULT_MUTED_DARK_COMPLETE="${DEFAULT_MUTED_DARK_COMPLETE:-#4f5a52}"
+    DEFAULT_MUTED_DARK_IDLE="${DEFAULT_MUTED_DARK_IDLE:-#544f62}"
+    DEFAULT_MUTED_DARK_COMPACTING="${DEFAULT_MUTED_DARK_COMPACTING:-#4a5858}"
+
+    # Muted light mode colors (for TrueColor terminals with mode switching)
+    DEFAULT_MUTED_LIGHT_BASE="${DEFAULT_MUTED_LIGHT_BASE:-#b8bac2}"
+    DEFAULT_MUTED_LIGHT_PROCESSING="${DEFAULT_MUTED_LIGHT_PROCESSING:-#c9b8a8}"
+    DEFAULT_MUTED_LIGHT_PERMISSION="${DEFAULT_MUTED_LIGHT_PERMISSION:-#c9a8ac}"
+    DEFAULT_MUTED_LIGHT_COMPLETE="${DEFAULT_MUTED_LIGHT_COMPLETE:-#a8c2a8}"
+    DEFAULT_MUTED_LIGHT_IDLE="${DEFAULT_MUTED_LIGHT_IDLE:-#b8aac8}"
+    DEFAULT_MUTED_LIGHT_COMPACTING="${DEFAULT_MUTED_LIGHT_COMPACTING:-#a8c2c2}"
 
     # Emojis
     EMOJI_PROCESSING="${EMOJI_PROCESSING:-🟠}"
@@ -290,6 +309,13 @@ _CACHED_SYSTEM_MODE=""
 # Resolve final COLOR_* values based on mode settings
 _resolve_colors() {
     local use_dark="true"
+    local use_muted="false"
+    local in_truecolor="false"
+
+    # Check if we're in TrueColor mode
+    if _source_detect_if_needed && is_truecolor_mode; then
+        in_truecolor="true"
+    fi
 
     # Determine if we should use dark or light colors
     if [[ "$FORCE_MODE" == "dark" ]]; then
@@ -297,12 +323,31 @@ _resolve_colors() {
     elif [[ "$FORCE_MODE" == "light" ]]; then
         use_dark="false"
     elif [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
-        # Skip auto detection if TrueColor is active
-        # TrueColor terminals have their own color schemes - don't override
-        if _source_detect_if_needed && is_truecolor_mode; then
-            use_dark="true"  # Use dark mode as default for TrueColor terminals
+        # Handle TrueColor mode based on override setting
+        if [[ "$in_truecolor" == "true" ]]; then
+            case "$TRUECOLOR_MODE_OVERRIDE" in
+                "muted")
+                    # Allow switching with muted colors
+                    use_muted="true"
+                    if [[ -z "$_CACHED_SYSTEM_MODE" ]]; then
+                        _CACHED_SYSTEM_MODE=$(_detect_system_mode)
+                    fi
+                    [[ "$_CACHED_SYSTEM_MODE" == "dark" ]] && use_dark="true" || use_dark="false"
+                    ;;
+                "full")
+                    # Allow switching with regular colors (same as non-TrueColor)
+                    if [[ -z "$_CACHED_SYSTEM_MODE" ]]; then
+                        _CACHED_SYSTEM_MODE=$(_detect_system_mode)
+                    fi
+                    [[ "$_CACHED_SYSTEM_MODE" == "dark" ]] && use_dark="true" || use_dark="false"
+                    ;;
+                *)
+                    # "off" (default) - skip auto detection, use dark mode
+                    use_dark="true"
+                    ;;
+            esac
         else
-            # Auto-detect system mode
+            # Non-TrueColor: always auto-detect system mode
             if [[ -z "$_CACHED_SYSTEM_MODE" ]]; then
                 _CACHED_SYSTEM_MODE=$(_detect_system_mode)
             fi
@@ -310,23 +355,45 @@ _resolve_colors() {
         fi
     fi
 
-    # Set active colors based on mode
-    if [[ "$use_dark" == "true" ]]; then
-        COLOR_BASE="${DARK_BASE}"
-        COLOR_PROCESSING="${DARK_PROCESSING}"
-        COLOR_PERMISSION="${DARK_PERMISSION}"
-        COLOR_COMPLETE="${DARK_COMPLETE}"
-        COLOR_IDLE="${DARK_IDLE}"
-        COLOR_COMPACTING="${DARK_COMPACTING}"
-        IS_DARK_THEME="true"
+    # Set active colors based on mode and muted preference
+    if [[ "$use_muted" == "true" ]]; then
+        # Use muted colors for TrueColor terminals
+        if [[ "$use_dark" == "true" ]]; then
+            COLOR_BASE="${MUTED_DARK_BASE}"
+            COLOR_PROCESSING="${MUTED_DARK_PROCESSING}"
+            COLOR_PERMISSION="${MUTED_DARK_PERMISSION}"
+            COLOR_COMPLETE="${MUTED_DARK_COMPLETE}"
+            COLOR_IDLE="${MUTED_DARK_IDLE}"
+            COLOR_COMPACTING="${MUTED_DARK_COMPACTING}"
+            IS_DARK_THEME="true"
+        else
+            COLOR_BASE="${MUTED_LIGHT_BASE}"
+            COLOR_PROCESSING="${MUTED_LIGHT_PROCESSING}"
+            COLOR_PERMISSION="${MUTED_LIGHT_PERMISSION}"
+            COLOR_COMPLETE="${MUTED_LIGHT_COMPLETE}"
+            COLOR_IDLE="${MUTED_LIGHT_IDLE}"
+            COLOR_COMPACTING="${MUTED_LIGHT_COMPACTING}"
+            IS_DARK_THEME="false"
+        fi
     else
-        COLOR_BASE="${LIGHT_BASE}"
-        COLOR_PROCESSING="${LIGHT_PROCESSING}"
-        COLOR_PERMISSION="${LIGHT_PERMISSION}"
-        COLOR_COMPLETE="${LIGHT_COMPLETE}"
-        COLOR_IDLE="${LIGHT_IDLE}"
-        COLOR_COMPACTING="${LIGHT_COMPACTING}"
-        IS_DARK_THEME="false"
+        # Use regular colors
+        if [[ "$use_dark" == "true" ]]; then
+            COLOR_BASE="${DARK_BASE}"
+            COLOR_PROCESSING="${DARK_PROCESSING}"
+            COLOR_PERMISSION="${DARK_PERMISSION}"
+            COLOR_COMPLETE="${DARK_COMPLETE}"
+            COLOR_IDLE="${DARK_IDLE}"
+            COLOR_COMPACTING="${DARK_COMPACTING}"
+            IS_DARK_THEME="true"
+        else
+            COLOR_BASE="${LIGHT_BASE}"
+            COLOR_PROCESSING="${LIGHT_PROCESSING}"
+            COLOR_PERMISSION="${LIGHT_PERMISSION}"
+            COLOR_COMPLETE="${LIGHT_COMPLETE}"
+            COLOR_IDLE="${LIGHT_IDLE}"
+            COLOR_COMPACTING="${LIGHT_COMPACTING}"
+            IS_DARK_THEME="false"
+        fi
     fi
 
     # Build unified stage arrays for backward compatibility
@@ -700,7 +767,7 @@ get_effective_color() {
 # will get colors loaded automatically
 
 # Only auto-load if not already loaded (prevent double-loading)
-if [[ -z "$_THEME_LOADED" ]]; then
+if [[ -z "${_THEME_LOADED:-}" ]]; then
     _THEME_LOADED="1"
     load_agent_config "$TAVS_AGENT"
 fi
