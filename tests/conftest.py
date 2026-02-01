@@ -50,6 +50,24 @@ def bash_env():
     return env
 
 
+@pytest.fixture
+def zsh_env():
+    """Return base environment for zsh subprocess calls."""
+    env = os.environ.copy()
+    env['SHELL'] = '/bin/zsh'
+    return env
+
+
+@pytest.fixture
+def clean_env():
+    """Return minimal environment without TAVS variables for testing defaults."""
+    return {
+        'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
+        'HOME': os.environ.get('HOME', '/tmp'),
+        'SHELL': '/bin/bash',
+    }
+
+
 def run_bash(command: str, env: dict = None, cwd: Path = None, timeout: float = 5.0) -> subprocess.CompletedProcess:
     """
     Run a bash command and return the result.
@@ -77,6 +95,59 @@ def run_bash(command: str, env: dict = None, cwd: Path = None, timeout: float = 
         timeout=timeout
     )
     return result
+
+
+def run_zsh(command: str, env: dict = None, cwd: Path = None, timeout: float = 5.0) -> subprocess.CompletedProcess:
+    """
+    Run a command in zsh and return the result.
+
+    This is critical for testing shell compatibility since Claude Code's
+    Bash tool runs commands in zsh, not bash.
+
+    Args:
+        command: Zsh command to run
+        env: Environment variables (defaults to current env)
+        cwd: Working directory (defaults to project root)
+        timeout: Command timeout in seconds
+
+    Returns:
+        CompletedProcess with stdout, stderr, returncode
+    """
+    if env is None:
+        env = os.environ.copy()
+    if cwd is None:
+        cwd = PROJECT_ROOT
+
+    result = subprocess.run(
+        ['zsh', '-c', command],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=cwd,
+        timeout=timeout
+    )
+    return result
+
+
+def run_in_both_shells(command: str, env: dict = None, cwd: Path = None) -> dict:
+    """
+    Run command in both bash and zsh, return both results.
+
+    Use this to verify shell compatibility - results should be identical
+    for cross-shell compatible code.
+
+    Args:
+        command: Command to run in both shells
+        env: Environment variables (defaults to current env)
+        cwd: Working directory (defaults to project root)
+
+    Returns:
+        dict with 'bash' and 'zsh' keys containing CompletedProcess results
+    """
+    return {
+        'bash': run_bash(command, env, cwd),
+        'zsh': run_zsh(command, env, cwd)
+    }
 
 
 def source_and_run(script_path: str, command: str, env: dict = None) -> subprocess.CompletedProcess:
