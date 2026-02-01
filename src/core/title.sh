@@ -510,13 +510,19 @@ set_tavs_title() {
         fi
     fi
 
-    # Detect if user changed title since last set (on supported terminals)
-    if detect_user_title_change; then
-        # User changed title - respect their base, add our prefix
-        if [[ "$respect_mode" == "full" ]]; then
-            return 0
+    # "ignore" mode: always overwrite, never detect user titles
+    if [[ "$respect_mode" != "ignore" ]]; then
+        # Detect if user changed title since last set (on supported terminals)
+        if detect_user_title_change; then
+            # User changed title - respect their base, add our prefix
+            if [[ "$respect_mode" == "full" ]]; then
+                return 0
+            fi
+            # With "prefix" mode, we continue but use their base
         fi
-        # With "prefix" mode, we continue but use their base
+    else
+        # Ignore mode: clear any previously detected user title
+        TITLE_USER_BASE=""
     fi
 
     # Get base title
@@ -552,10 +558,14 @@ reset_tavs_title() {
         return 0
     fi
 
-    # In "full" respect mode, don't overwrite user titles even on reset
+    # Check user override behavior
     local respect_mode="${TAVS_RESPECT_USER_TITLE:-prefix}"
     if [[ "$respect_mode" == "full" && -n "$TITLE_USER_BASE" ]]; then
+        # In "full" respect mode, don't overwrite user titles even on reset
         return 0
+    elif [[ "$respect_mode" == "ignore" ]]; then
+        # In "ignore" mode, clear any detected user title
+        TITLE_USER_BASE=""
     fi
 
     # Get base title (no prefix)
