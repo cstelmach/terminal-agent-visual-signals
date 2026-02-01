@@ -65,6 +65,10 @@ cd src/agents/opencode && npm install && npm run build
 | Idle | Purple (graduated) | 🟣 | Waiting for input |
 | Compacting | Teal | 🔄 | Context compression |
 
+**Note:** When TrueColor mode is active (`COLORTERM=truecolor`), auto dark mode
+detection is skipped. TrueColor terminals have their own color schemes that
+TAVS respects by defaulting to dark mode backgrounds.
+
 ---
 
 ## Key Files

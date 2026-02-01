@@ -297,11 +297,17 @@ _resolve_colors() {
     elif [[ "$FORCE_MODE" == "light" ]]; then
         use_dark="false"
     elif [[ "$ENABLE_AUTO_DARK_MODE" == "true" ]]; then
-        # Auto-detect system mode
-        if [[ -z "$_CACHED_SYSTEM_MODE" ]]; then
-            _CACHED_SYSTEM_MODE=$(_detect_system_mode)
+        # Skip auto detection if TrueColor is active
+        # TrueColor terminals have their own color schemes - don't override
+        if _source_detect_if_needed && is_truecolor_mode; then
+            use_dark="true"  # Use dark mode as default for TrueColor terminals
+        else
+            # Auto-detect system mode
+            if [[ -z "$_CACHED_SYSTEM_MODE" ]]; then
+                _CACHED_SYSTEM_MODE=$(_detect_system_mode)
+            fi
+            [[ "$_CACHED_SYSTEM_MODE" == "dark" ]] && use_dark="true" || use_dark="false"
         fi
-        [[ "$_CACHED_SYSTEM_MODE" == "dark" ]] && use_dark="true" || use_dark="false"
     fi
 
     # Set active colors based on mode
