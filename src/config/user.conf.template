@@ -26,9 +26,30 @@
 #          nord, dracula, solarized-dark, solarized-light, tokyo-night
 # THEME_PRESET=""
 
-# Light/Dark Mode
-# ENABLE_AUTO_DARK_MODE="false"
-# FORCE_MODE="auto"  # "auto", "dark", or "light"
+# ==============================================================================
+# LIGHT/DARK MODE
+# ==============================================================================
+# ENABLE_AUTO_DARK_MODE - Auto-detect system light/dark mode
+#   "false" - Always use dark backgrounds (default)
+#   "true"  - Switch based on system appearance
+#
+# FORCE_MODE - Explicit override (takes priority over auto-detection)
+#   "auto", "dark", or "light"
+#
+# TRUECOLOR_MODE_OVERRIDE - Special handling for TrueColor terminals
+#   TrueColor terminals (Ghostty, iTerm2, etc.) have their own color schemes.
+#   This controls how TAVS behaves when ENABLE_AUTO_DARK_MODE="true":
+#
+#   "off"   - (Default) Skip auto-detect in TrueColor, always use dark.
+#             Respects your terminal's color scheme.
+#   "muted" - Allow light/dark switching with muted colors (reduced contrast).
+#             Good if you want mode switching without jarring color changes.
+#   "full"  - Allow light/dark switching with regular colors.
+#             May clash with your terminal's color scheme.
+#
+# ENABLE_AUTO_DARK_MODE="true"
+# FORCE_MODE="auto"
+# TRUECOLOR_MODE_OVERRIDE="off"
 
 # Feature Toggles
 # ENABLE_BACKGROUND_CHANGE="true"
