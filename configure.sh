@@ -419,6 +419,10 @@ select_title_mode() {
         print_info "This disables ONLY title management while keeping other modern"
         print_info "features like cursor shapes and sudo wrapping."
         echo ""
+        echo -e "  ${YELLOW}⚠️  Important Limitation:${NC} If you manually name a tab in Ghostty"
+        echo -e "      (Cmd+I), Ghostty locks that title and TAVS cannot override it."
+        echo -e "      Clear the custom name to restore TAVS title functionality."
+        echo ""
 
         if confirm "Have you updated your Ghostty config (or want to proceed anyway)?"; then
             echo ""
@@ -660,6 +664,11 @@ configure_full_title_mode() {
 
     echo ""
     echo -e "  ${GREEN}Session identity: ${BOLD}$SELECTED_SESSION_IDENTITY${NC}"
+
+    # Note about spinner cache
+    echo ""
+    print_info "Note: To apply new spinner settings to existing sessions,"
+    print_info "clear the cache: rm -f ~/.cache/tavs/session-spinner.* ~/.cache/tavs/spinner-idx.*"
 }
 
 # === STEP 7: PALETTE THEMING ===
