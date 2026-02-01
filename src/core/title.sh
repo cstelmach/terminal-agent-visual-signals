@@ -129,7 +129,13 @@ save_title_state() {
 
     local state_file
     state_file=$(get_title_state_file)
-    local tmp_file="${state_file}.tmp.$$"
+
+    # Use mktemp for guaranteed unique temp file (avoids race conditions with $$)
+    local tmp_file
+    tmp_file=$(mktemp "${state_file}.tmp.XXXXXX" 2>/dev/null) || {
+        # Fallback if mktemp fails
+        tmp_file="${state_file}.tmp.$$"
+    }
 
     {
         echo "# TAVS Title State - $(date -Iseconds 2>/dev/null || date)"
@@ -157,7 +163,15 @@ clear_title_state() {
 # ==============================================================================
 # USER OVERRIDE DETECTION
 # ==============================================================================
-# Detect when user has manually changed the tab title
+# Detect when user has manually changed the tab title.
+#
+# LIMITATION: User title detection currently only works on iTerm2.
+# Other terminals (Kitty, WezTerm, Ghostty, etc.) cannot be queried for
+# their current title, so user-renamed tabs will be overwritten by TAVS
+# in prefix-only mode. For these terminals, users can:
+#   - Use TAVS_TITLE_BASE env var to set a persistent base title
+#   - Use lock_tavs_title() to prevent any changes
+#   - Set TAVS_TITLE_MODE="off" to disable title management entirely
 # ==============================================================================
 
 # Check if user has locked the title (explicit lock)
@@ -202,8 +216,9 @@ detect_user_title_change() {
             fi
             ;;
         *)
-            # For other terminals, we can't reliably query
-            # Return "no change detected" to allow TAVS to proceed
+            # For other terminals (Kitty, WezTerm, Ghostty, etc.), we can't
+            # reliably query the current title. Return "no change detected"
+            # to allow TAVS to proceed. See LIMITATION note above.
             return 1
             ;;
     esac
@@ -295,9 +310,17 @@ get_fallback_title() {
     local path_part
     local session_part
 
-    # Get path component
+    # Get path component (with sanitization fallback)
     if [[ "${TAVS_TITLE_SHOW_PATH:-true}" == "true" ]]; then
-        path_part=$(get_short_cwd 2>/dev/null || echo "${PWD/#$HOME/\~}")
+        path_part=$(get_short_cwd 2>/dev/null) || {
+            # Fallback: manual path shortening with sanitization
+            local fallback_path="${PWD/#$HOME/\~}"
+            if type sanitize_for_terminal &>/dev/null; then
+                path_part=$(sanitize_for_terminal "$fallback_path")
+            else
+                path_part="$fallback_path"
+            fi
+        }
     fi
 
     # Get session ID component
@@ -452,12 +475,12 @@ set_tavs_title() {
     local full_title
     full_title=$(compose_title "$state" "$base_title")
 
-    # Send to terminal
-    printf "\033]0;%s\033\\" "$full_title" > "$TTY_DEVICE"
-
-    # Save state
-    TITLE_LAST_SET="$full_title"
-    save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+    # Send to terminal (only save state if write succeeds)
+    if printf "\033]0;%s\033\\" "$full_title" > "$TTY_DEVICE" 2>/dev/null; then
+        # Save state only after successful write
+        TITLE_LAST_SET="$full_title"
+        save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+    fi
 }
 
 # Reset terminal title to base (remove TAVS prefix)
@@ -487,12 +510,12 @@ reset_tavs_title() {
     local base_title
     base_title=$(get_base_title)
 
-    # Send to terminal
-    printf "\033]0;%s\033\\" "$base_title" > "$TTY_DEVICE"
-
-    # Save state (base title as last set)
-    TITLE_LAST_SET="$base_title"
-    save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+    # Send to terminal (only save state if write succeeds)
+    if printf "\033]0;%s\033\\" "$base_title" > "$TTY_DEVICE" 2>/dev/null; then
+        # Save state only after successful write
+        TITLE_LAST_SET="$base_title"
+        save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+    fi
 }
 
 # Lock title (prevent TAVS from changing it)

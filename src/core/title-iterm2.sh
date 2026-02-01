@@ -67,9 +67,9 @@ iterm2_get_var() {
     # Extract payload (remove everything before ReportVariable=)
     local payload="${response##*ReportVariable=}"
 
-    # Decode Base64
+    # Decode Base64 (use -d for macOS/BSD compatibility, --decode is GNU-only)
     if [[ -n "$payload" ]]; then
-        echo "$payload" | base64 --decode 2>/dev/null
+        echo "$payload" | base64 -d 2>/dev/null
     else
         [[ "$ITERM2_TITLE_DEBUG" == "1" ]] && echo "[iTerm2] Empty payload for: $var_name" >&2
         return 1
