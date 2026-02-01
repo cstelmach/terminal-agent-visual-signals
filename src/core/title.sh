@@ -42,8 +42,18 @@ _generate_session_id() {
     elif [[ -f /proc/sys/kernel/random/uuid ]]; then
         cat /proc/sys/kernel/random/uuid | cut -c1-8
     else
-        # Fallback: use hash of PID + timestamp
-        echo "$(( (PPID + $(date +%s)) % 0xFFFFFFFF ))" | md5sum | cut -c1-8
+        # Fallback: use hash-like value based on PID + timestamp
+        local seed
+        seed="$(( (PPID + $(date +%s)) % 0xFFFFFFFF ))"
+        if command -v md5sum &>/dev/null; then
+            printf '%s' "$seed" | md5sum | cut -c1-8
+        elif command -v cksum &>/dev/null; then
+            # cksum output: "<checksum> <length>"; take checksum and format as hex
+            printf '%08x\n' "$(printf '%s' "$seed" | cksum | cut -d' ' -f1)"
+        else
+            # Pure shell fallback: 8-digit hexadecimal representation of the seed
+            printf '%08x\n' "$seed"
+        fi
     fi
 }
 
@@ -72,8 +82,7 @@ _read_title_state_value() {
         # Skip comments and empty lines
         [[ "$k" =~ ^[[:space:]]*# ]] && continue
         [[ -z "$k" ]] && continue
-        # Strip quotes and whitespace
-        k="${k//[[:space:]]/}"
+        # Strip quotes from value (key is already clean from save_title_state)
         v="${v%\"}"
         v="${v#\"}"
         v="${v%\'}"
@@ -163,6 +172,22 @@ is_title_locked() {
 detect_user_title_change() {
     load_title_state || return 1
 
+    # Use enhanced iTerm2 detection if available (compares termTitle vs presentationName)
+    if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && type iterm2_enhanced_detect_change &>/dev/null; then
+        local user_title
+        if user_title=$(iterm2_enhanced_detect_change); then
+            # Override detected by iTerm2's robust mechanism
+            if [[ -n "$user_title" ]]; then
+                TITLE_USER_BASE="$user_title"
+                save_title_state
+            fi
+            return 0  # Override detected
+        else
+            return 1  # No override detected by iTerm2
+        fi
+    fi
+
+    # Generic fallback detection for terminals that can't be queried
     # If we haven't set anything yet, no change to detect
     [[ -z "$TITLE_LAST_SET" ]] && return 1
 
@@ -171,7 +196,7 @@ detect_user_title_change() {
 
     case "$TERM_PROGRAM" in
         "iTerm.app")
-            # Use iTerm2-specific detection if available
+            # Fallback to simple query if enhanced detection unavailable
             if type iterm2_get_current_title &>/dev/null; then
                 current_title=$(iterm2_get_current_title)
             fi
@@ -213,7 +238,8 @@ _extract_base_from_title() {
 
     # Remove leading face patterns (non-greedy)
     # This handles: "Ǝ[• •]E 🟠 Base" -> "🟠 Base"
-    if [[ "$base" =~ ^[ǝǢฅʕ\(].*[EǢฅʔ\)][[:space:]]+(.*) ]]; then
+    # Face opening chars: Ǝ (uppercase schwa), ʕ (bear), ฅ (cat), (
+    if [[ "$base" =~ ^[Ǝʕฅ\(].*[Eʔฅ\)][[:space:]]+(.*) ]]; then
         base="${BASH_REMATCH[1]}"
     fi
 
@@ -238,19 +264,27 @@ _extract_base_from_title() {
 get_base_title() {
     load_title_state || true
 
-    # Priority 1: User-set base title
+    # Priority 1: User-set base title (sanitized for terminal safety)
     if [[ -n "$TITLE_USER_BASE" ]]; then
-        echo "$TITLE_USER_BASE"
+        if type sanitize_for_terminal &>/dev/null; then
+            sanitize_for_terminal "$TITLE_USER_BASE"
+        else
+            echo "$TITLE_USER_BASE"
+        fi
         return 0
     fi
 
-    # Priority 2: Environment variable override
+    # Priority 2: Environment variable override (sanitized for terminal safety)
     if [[ -n "${TAVS_TITLE_BASE:-}" ]]; then
-        echo "$TAVS_TITLE_BASE"
+        if type sanitize_for_terminal &>/dev/null; then
+            sanitize_for_terminal "$TAVS_TITLE_BASE"
+        else
+            echo "$TAVS_TITLE_BASE"
+        fi
         return 0
     fi
 
-    # Priority 3: Fallback based on configuration
+    # Priority 3: Fallback based on configuration (already sanitized via get_short_cwd)
     get_fallback_title
 }
 
@@ -346,10 +380,10 @@ compose_title() {
     title="${title//\{EMOJI\}/$emoji}"
     title="${title//\{BASE\}/$base_title}"
 
-    # Clean up multiple spaces and trim
-    title=$(echo "$title" | sed 's/  */ /g; s/^ *//; s/ *$//')
+    # Clean up multiple spaces and trim (use printf for safe string handling)
+    title=$(printf '%s\n' "$title" | sed 's/  */ /g; s/^ *//; s/ *$//')
 
-    echo "$title"
+    printf '%s\n' "$title"
 }
 
 # ==============================================================================
@@ -384,12 +418,17 @@ set_tavs_title() {
     load_title_state || true
     [[ -z "$SESSION_ID" ]] && init_session_id
 
+    # Always respect explicit title lock (regardless of mode)
+    if [[ "$TITLE_LOCKED" == "true" ]]; then
+        return 0
+    fi
+
     # Check user override behavior
     local respect_mode="${TAVS_RESPECT_USER_TITLE:-prefix}"
 
     if [[ "$respect_mode" == "full" ]]; then
         # Full respect: if user set title, don't change anything
-        if [[ -n "$TITLE_USER_BASE" ]] || is_title_locked; then
+        if [[ -n "$TITLE_USER_BASE" ]]; then
             return 0
         fi
     fi
@@ -431,6 +470,17 @@ reset_tavs_title() {
     load_title_state || true
     [[ -z "$SESSION_ID" ]] && init_session_id
 
+    # Always respect explicit title lock (regardless of mode)
+    if [[ "$TITLE_LOCKED" == "true" ]]; then
+        return 0
+    fi
+
+    # In "full" respect mode, don't overwrite user titles even on reset
+    local respect_mode="${TAVS_RESPECT_USER_TITLE:-prefix}"
+    if [[ "$respect_mode" == "full" && -n "$TITLE_USER_BASE" ]]; then
+        return 0
+    fi
+
     # Get base title (no prefix)
     local base_title
     base_title=$(get_base_title)
@@ -463,7 +513,12 @@ set_user_title() {
     local user_title="$1"
     load_title_state || true
     [[ -z "$SESSION_ID" ]] && init_session_id
-    TITLE_USER_BASE="$user_title"
+    # Sanitize user input to prevent control character injection
+    if type sanitize_for_terminal &>/dev/null; then
+        TITLE_USER_BASE=$(sanitize_for_terminal "$user_title")
+    else
+        TITLE_USER_BASE="$user_title"
+    fi
     save_title_state
 }
 
