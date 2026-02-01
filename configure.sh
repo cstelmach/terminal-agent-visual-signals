@@ -47,6 +47,7 @@ SELECTED_PALETTE_MODE="false"
 SELECTED_CREATE_ALIAS="false"
 # Title Mode and Spinner
 SELECTED_TITLE_MODE="skip-processing"
+SELECTED_TITLE_FALLBACK="path"
 SELECTED_SPINNER_STYLE="random"
 SELECTED_SPINNER_EYE_MODE="random"
 SELECTED_SESSION_IDENTITY="true"
@@ -400,6 +401,39 @@ select_stylish_backgrounds() {
 select_title_mode() {
     print_section "Step 6: Terminal Title Mode (Claude Code Integration)"
 
+    # Check for Ghostty and show configuration guidance
+    if [[ "$TERM_PROGRAM" == "ghostty" ]] || [[ -n "$GHOSTTY_RESOURCES_DIR" ]]; then
+        echo -e "  ${YELLOW}⚠️  Ghostty Terminal Detected${NC}"
+        echo ""
+        print_info "Ghostty's shell integration automatically manages tab titles."
+        print_info "For TAVS title features to work properly, you need to disable this."
+        echo ""
+        echo -e "  ${BOLD}Add this line to your Ghostty config:${NC}"
+        echo ""
+        echo -e "    ${CYAN}shell-integration-features = no-title${NC}"
+        echo ""
+        print_info "Config file locations:"
+        print_info "  macOS: ~/Library/Application Support/com.mitchellh.ghostty/config"
+        print_info "  Linux: ~/.config/ghostty/config"
+        echo ""
+        print_info "This disables ONLY title management while keeping other modern"
+        print_info "features like cursor shapes and sudo wrapping."
+        echo ""
+        echo -e "  ${YELLOW}⚠️  Important Limitation:${NC} If you manually name a tab in Ghostty"
+        echo -e "      (Cmd+I), Ghostty locks that title and TAVS cannot override it."
+        echo -e "      Clear the custom name to restore TAVS title functionality."
+        echo ""
+
+        if confirm "Have you updated your Ghostty config (or want to proceed anyway)?"; then
+            echo ""
+        else
+            echo ""
+            echo -e "  ${YELLOW}Note: Title features may not work correctly without this setting.${NC}"
+            echo -e "  ${DIM}You can continue and update Ghostty config later.${NC}"
+            echo ""
+        fi
+    fi
+
     echo "  How should TAVS handle terminal tab titles?"
     echo ""
     print_info "Claude Code sets its own animated spinner title during processing."
@@ -410,12 +444,17 @@ select_title_mode() {
     print_info "TAVS shows titles for other states (complete, permission, etc.)."
     print_info "Safe default - no title conflicts."
     echo ""
-    echo -e "  ${YELLOW}2)${NC} ${BOLD}Full${NC}"
+    echo -e "  ${YELLOW}2)${NC} ${BOLD}Prefix Only${NC}"
+    print_info "TAVS adds face+emoji prefix while preserving your tab names."
+    print_info "Example: 'My Project' becomes 'Ǝ[• •]E 🟠 My Project'"
+    print_info "Best for users who manually name their tabs."
+    echo ""
+    echo -e "  ${YELLOW}3)${NC} ${BOLD}Full${NC}"
     print_info "TAVS owns all terminal titles, including processing."
     print_info "Shows animated spinner eyes in face: Ǝ[⠋ ⠙]E"
     print_info "Requires disabling Claude Code's terminal title (will be configured)."
     echo ""
-    echo -e "  ${YELLOW}3)${NC} ${BOLD}Off${NC}"
+    echo -e "  ${YELLOW}4)${NC} ${BOLD}Off${NC}"
     print_info "TAVS never sets terminal titles."
     print_info "Only background colors and images are used."
     echo ""
@@ -423,13 +462,14 @@ select_title_mode() {
     local valid=false
     while [[ "$valid" == "false" ]]; do
         local choice
-        choice=$(read_choice "Select title mode [1-3]" "1")
+        choice=$(read_choice "Select title mode [1-4]" "1")
 
         case "$choice" in
             1) SELECTED_TITLE_MODE="skip-processing"; valid=true ;;
-            2) SELECTED_TITLE_MODE="full"; valid=true ;;
-            3) SELECTED_TITLE_MODE="off"; valid=true ;;
-            *) echo -e "${RED}Invalid choice. Please enter 1, 2, or 3.${NC}" ;;
+            2) SELECTED_TITLE_MODE="prefix-only"; valid=true ;;
+            3) SELECTED_TITLE_MODE="full"; valid=true ;;
+            4) SELECTED_TITLE_MODE="off"; valid=true ;;
+            *) echo -e "${RED}Invalid choice. Please enter 1, 2, 3, or 4.${NC}" ;;
         esac
     done
 
@@ -440,6 +480,50 @@ select_title_mode() {
     if [[ "$SELECTED_TITLE_MODE" == "full" ]]; then
         configure_full_title_mode
     fi
+
+    # If prefix-only mode, configure title fallback
+    if [[ "$SELECTED_TITLE_MODE" == "prefix-only" ]]; then
+        configure_prefix_only_mode
+    fi
+}
+
+configure_prefix_only_mode() {
+    echo ""
+    print_info "Prefix-only mode selected. Configuring title fallback..."
+    echo ""
+    echo "  When you haven't manually named a tab, TAVS needs a fallback title."
+    echo ""
+    echo -e "  ${YELLOW}1)${NC} ${BOLD}Path Only${NC} ${DIM}(Default)${NC}"
+    print_info "Shows current directory: ~/projects/my-app"
+    echo ""
+    echo -e "  ${YELLOW}2)${NC} ${BOLD}Session ID + Path${NC}"
+    print_info "Shows unique session ID + path: 134eed79 ~/projects"
+    print_info "Helps identify multiple Claude sessions."
+    echo ""
+    echo -e "  ${YELLOW}3)${NC} ${BOLD}Path + Session ID${NC}"
+    print_info "Shows path + session ID: ~/projects 134eed79"
+    echo ""
+    echo -e "  ${YELLOW}4)${NC} ${BOLD}Session ID Only${NC}"
+    print_info "Shows just the session ID: 134eed79"
+    print_info "Minimal, relies on colors for state."
+    echo ""
+
+    local valid=false
+    while [[ "$valid" == "false" ]]; do
+        local choice
+        choice=$(read_choice "Select fallback mode [1-4]" "1")
+
+        case "$choice" in
+            1) SELECTED_TITLE_FALLBACK="path"; valid=true ;;
+            2) SELECTED_TITLE_FALLBACK="session-path"; valid=true ;;
+            3) SELECTED_TITLE_FALLBACK="path-session"; valid=true ;;
+            4) SELECTED_TITLE_FALLBACK="session"; valid=true ;;
+            *) echo -e "${RED}Invalid choice. Please enter a number from 1 to 4.${NC}" ;;
+        esac
+    done
+
+    echo ""
+    echo -e "  ${GREEN}Title fallback: ${BOLD}$SELECTED_TITLE_FALLBACK${NC}"
 }
 
 configure_full_title_mode() {
@@ -580,6 +664,11 @@ configure_full_title_mode() {
 
     echo ""
     echo -e "  ${GREEN}Session identity: ${BOLD}$SELECTED_SESSION_IDENTITY${NC}"
+
+    # Note about spinner cache
+    echo ""
+    print_info "Note: To apply new spinner settings to existing sessions,"
+    print_info "clear the cache: rm -f ~/.cache/tavs/session-spinner.* ~/.cache/tavs/spinner-idx.*"
 }
 
 # === STEP 7: PALETTE THEMING ===
@@ -683,6 +772,9 @@ show_preview() {
         echo -e "  ${BOLD}Backgrounds Dir:${NC}     $SELECTED_STYLISH_DIR"
     fi
     echo -e "  ${BOLD}Title Mode:${NC}          $SELECTED_TITLE_MODE"
+    if [[ "$SELECTED_TITLE_MODE" == "prefix-only" ]]; then
+        echo -e "  ${BOLD}Title Fallback:${NC}      $SELECTED_TITLE_FALLBACK"
+    fi
     if [[ "$SELECTED_TITLE_MODE" == "full" ]]; then
         echo -e "  ${BOLD}Spinner Style:${NC}       $SELECTED_SPINNER_STYLE"
         echo -e "  ${BOLD}Eye Mode:${NC}            $SELECTED_SPINNER_EYE_MODE"
@@ -787,9 +879,18 @@ EOF
     cat >> "$USER_CONFIG" << EOF
 
 # Terminal Title Mode
-# Options: "full" (TAVS owns all), "skip-processing" (let Claude handle), "off" (no titles)
+# Options: "full" (TAVS owns all), "prefix-only" (preserve user titles), "skip-processing" (let Claude handle), "off" (no titles)
 TAVS_TITLE_MODE="$SELECTED_TITLE_MODE"
 EOF
+
+    if [[ "$SELECTED_TITLE_MODE" == "prefix-only" ]]; then
+        cat >> "$USER_CONFIG" << EOF
+
+# Title Fallback (for TAVS_TITLE_MODE="prefix-only")
+# Options: "path", "session-path", "path-session", "session"
+TAVS_TITLE_FALLBACK="$SELECTED_TITLE_FALLBACK"
+EOF
+    fi
 
     if [[ "$SELECTED_TITLE_MODE" == "full" ]]; then
         cat >> "$USER_CONFIG" << EOF

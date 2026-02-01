@@ -11,8 +11,16 @@
 # Used by all agents (Claude, Gemini, Codex, OpenCode, Unknown).
 # ==============================================================================
 
-# Resolve paths
-_THEME_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Resolve paths - works in both bash and zsh
+# BASH_SOURCE is bash-only; zsh uses different mechanisms
+if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
+    _THIS_SCRIPT="${BASH_SOURCE[0]}"
+elif [[ -n "${(%):-%x}" ]] 2>/dev/null; then
+    _THIS_SCRIPT="${(%):-%x}"  # zsh-specific: current script path
+else
+    _THIS_SCRIPT="$0"  # Fallback (may not work when sourced)
+fi
+_THEME_SCRIPT_DIR="$( cd "$( dirname "$_THIS_SCRIPT" )" && pwd )"
 _CONFIG_DIR="$_THEME_SCRIPT_DIR/../config"
 _THEMES_DIR="$_THEME_SCRIPT_DIR/../themes"
 _USER_CONFIG_DIR="$HOME/.terminal-visual-signals"

@@ -86,6 +86,8 @@ Set in `~/.terminal-visual-signals/user.conf`.
 | `src/core/trigger.sh` | Main signal dispatcher |
 | `src/core/theme.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
 | `src/core/terminal.sh` | OSC sequences (OSC 4/11 for palette/background) |
+| `src/core/title.sh` | Title management with user override detection |
+| `src/core/title-iterm2.sh` | iTerm2-specific title detection via OSC 1337 |
 | `src/core/spinner.sh` | Animated spinner system for processing state titles |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/detect.sh` | Terminal type, capabilities, color mode detection |
@@ -130,13 +132,39 @@ All user settings are stored in `~/.terminal-visual-signals/user.conf`:
 
 ## Terminal Title Mode
 
-TAVS can control terminal tab titles with animated spinners during processing. Three modes are available:
+TAVS can control terminal tab titles with animated spinners during processing. Four modes are available:
 
 | Mode | Description |
 |------|-------------|
 | `skip-processing` | **(Default)** Let Claude Code handle processing titles, TAVS handles others |
+| `prefix-only` | Add face+emoji prefix while preserving user's tab names |
 | `full` | TAVS owns all titles with animated spinner eyes in face |
 | `off` | No title changes, only background colors/images |
+
+### Prefix-Only Mode (Named Sessions)
+
+Best for users who manually name their terminal tabs. TAVS adds a status prefix without losing your custom name.
+
+**Example:** `My Project` becomes `Ǝ[• •]E 🟠 My Project` during processing.
+
+1. Run `./configure.sh` and select "Prefix Only" in Step 6, OR
+2. Add to `~/.terminal-visual-signals/user.conf`:
+```bash
+TAVS_TITLE_MODE="prefix-only"
+TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
+
+# Optional: Force a specific base title
+# TAVS_TITLE_BASE="My Project"
+
+# Optional: Customize format
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {BASE}"  # or "{EMOJI} {BASE}" for minimal
+```
+
+**Fallback options** (when no user title is set):
+- `path` - Current directory only: `~/projects`
+- `session-path` - Session ID + path: `134eed79 ~/projects`
+- `path-session` - Path + session ID: `~/projects 134eed79`
+- `session` - Session ID only: `134eed79`
 
 ### Enabling Full Title Mode
 
@@ -250,19 +278,40 @@ See [Development Testing](docs/reference/development-testing.md) for the full wo
 
 ### Terminal Compatibility
 
-| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) |
-|----------|-----------------|-------------|-------------------|
-| Ghostty | ✅ | ✅ | ❌ |
-| iTerm2 | ✅ | ✅ | ✅ |
-| Kitty | ✅ | ✅ | ❌* |
-| WezTerm | ✅ | ✅ | ❌** |
-| Terminal.app | ❌ | ❌ | ❌ |
+| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) | Title Detection |
+|----------|-----------------|-------------|-------------------|-----------------|
+| Ghostty | ✅ | ✅ | ❌ | State file* |
+| iTerm2 | ✅ | ✅ | ✅ | OSC 1337 query |
+| Kitty | ✅ | ✅ | ❌** | State file |
+| WezTerm | ✅ | ✅ | ❌*** | State file |
+| Terminal.app | ❌ | ❌ | ❌ | State file |
 
-\* Kitty uses its own image protocol, not OSC 1337.
-\** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
+\* Ghostty requires `shell-integration-features = no-title` in config (see below).
+\** Kitty uses its own image protocol, not OSC 1337.
+\*** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
 
 **Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
 Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
+
+### Ghostty Shell Integration (Required for Titles)
+
+Ghostty's shell integration automatically manages tab titles, which conflicts with TAVS.
+**For TAVS title features to work**, you must disable Ghostty's title management.
+
+**Add to your Ghostty config:**
+```ini
+# macOS: ~/Library/Application Support/com.mitchellh.ghostty/config
+# Linux: ~/.config/ghostty/config
+
+shell-integration-features = no-title
+```
+
+This disables ONLY title management while keeping:
+- Cursor shape integration
+- Sudo wrapping
+- Other modern shell features
+
+**Without this setting:** Ghostty will overwrite TAVS titles after every command.
 
 ### Agent-Specific Face Themes
 
