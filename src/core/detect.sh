@@ -7,7 +7,8 @@
 # ==============================================================================
 
 # Timeout for OSC 11 query in seconds (use fractional for milliseconds)
-readonly OSC_QUERY_TIMEOUT=0.1  # 100ms
+# Only set if not already defined (prevents readonly error on re-source)
+[[ -z "${OSC_QUERY_TIMEOUT:-}" ]] && readonly OSC_QUERY_TIMEOUT=0.1  # 100ms
 
 # ==============================================================================
 # Terminal Type Detection
