@@ -1,5 +1,5 @@
 """
-Tests for title state persistence functions in src/core/title.sh.
+Tests for title state persistence functions in src/core/title-management.sh.
 
 These functions will be extracted to title-state-persistence.sh in refactoring.
 
@@ -30,7 +30,7 @@ class TestGetTitleStateFile:
         result = run_bash(
             '''
             export TTY_SAFE="dev_ttys001"
-            source src/core/title.sh
+            source src/core/title-management.sh
             get_title_state_file
             ''',
             cwd=PROJECT_ROOT
@@ -45,7 +45,7 @@ class TestGetTitleStateFile:
         result = run_bash(
             '''
             unset TTY_SAFE
-            source src/core/title.sh
+            source src/core/title-management.sh
             get_title_state_file
             ''',
             cwd=PROJECT_ROOT
@@ -62,7 +62,7 @@ class TestEscapeForStateFile:
         """Double quotes should be escaped."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             _escape_for_state_file 'Hello "World"'
             ''',
             cwd=PROJECT_ROOT
@@ -74,7 +74,7 @@ class TestEscapeForStateFile:
         """Backslashes should be escaped."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             _escape_for_state_file 'path\\to\\file'
             ''',
             cwd=PROJECT_ROOT
@@ -86,7 +86,7 @@ class TestEscapeForStateFile:
         """Newlines should be replaced with spaces."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             _escape_for_state_file $'line1\\nline2'
             ''',
             cwd=PROJECT_ROOT
@@ -99,7 +99,7 @@ class TestEscapeForStateFile:
         """Empty string should return empty."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             _escape_for_state_file ""
             ''',
             cwd=PROJECT_ROOT
@@ -118,7 +118,7 @@ class TestSaveAndLoadTitleState:
                 f'''
                 export TTY_SAFE="test_tty"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
                 save_title_state "My Project" "Ǝ[• •]E 🟠 My Project" "false" "abc12345"
                 cat "$TITLE_STATE_DB.$TTY_SAFE"
                 ''',
@@ -136,7 +136,7 @@ class TestSaveAndLoadTitleState:
                 f'''
                 export TTY_SAFE="test_tty"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Save state
                 save_title_state "My Project" "Full Title" "false" "sess1234"
@@ -169,7 +169,7 @@ class TestSaveAndLoadTitleState:
                 # Use a fresh state directory with no existing files
                 export TTY_SAFE="fresh_session"
                 export TITLE_STATE_DB="{tmpdir}/fresh.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
                 # Try to load - should handle gracefully
                 load_title_state
                 echo "LOCKED:$TITLE_LOCKED"
@@ -195,7 +195,7 @@ class TestReadTitleStateValueIntegration:
                 f'''
                 export TTY_SAFE="test"
                 export TITLE_STATE_DB="{tmpdir}/state"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Save with specific values
                 save_title_state "My Project" "Full Title" "false" "abc12345"
@@ -224,7 +224,7 @@ class TestReadTitleStateValueIntegration:
                 f'''
                 export TTY_SAFE="test"
                 export TITLE_STATE_DB="{tmpdir}/state"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Save with quotes (they'll be escaped)
                 save_title_state 'Test Project' "Title" "false" "sess1234"
@@ -251,7 +251,7 @@ class TestClearTitleState:
                 f'''
                 export TTY_SAFE="test_tty"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Create state file
                 save_title_state "Test" "Title" "false" "sess"
@@ -279,7 +279,7 @@ class TestSessionIdGeneration:
         """Generated session ID should be 8 characters."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             id=$(_generate_session_id)
             echo "${#id}"
             ''',
@@ -293,7 +293,7 @@ class TestSessionIdGeneration:
         """Generated session ID should be lowercase hex."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             id=$(_generate_session_id)
             echo "$id"
             ''',
@@ -308,7 +308,7 @@ class TestSessionIdGeneration:
         """init_session_id should set SESSION_ID variable."""
         result = run_bash(
             '''
-            source src/core/title.sh
+            source src/core/title-management.sh
             SESSION_ID=""
             init_session_id
             echo "$SESSION_ID"
@@ -326,7 +326,7 @@ class TestSessionIdGeneration:
                 f'''
                 export TTY_SAFE="persist_test"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # First call generates new ID
                 init_session_id
@@ -375,7 +375,7 @@ class TestStateFileSecuritySanitization:
                 f'''
                 export TTY_SAFE="test"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Try to inject a newline
                 save_title_state $'line1\\nline2' "Title" "false" "sess"
@@ -396,7 +396,7 @@ class TestStateFileSecuritySanitization:
                 f'''
                 export TTY_SAFE="test"
                 export TITLE_STATE_DB="{tmpdir}/test.title"
-                source src/core/title.sh
+                source src/core/title-management.sh
 
                 # Save with quotes in value
                 save_title_state 'My "Project"' "Title" "false" "sess"

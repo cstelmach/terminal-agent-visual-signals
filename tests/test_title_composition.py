@@ -1,5 +1,5 @@
 """
-Tests for src/core/terminal.sh - Title composition with faces.
+Tests for src/core/terminal-osc-sequences.sh - Title composition with faces.
 
 Verifies:
 - send_osc_title() composes titles correctly
@@ -49,8 +49,8 @@ class TestTitleComposition:
         # theme.sh because theme.sh loads defaults.conf which overwrites env vars
         state_arg = f' "{state}"' if state else ''
         cmd = f'''
-            source src/core/theme.sh
-            source src/core/terminal.sh
+            source src/core/theme-config-loader.sh
+            source src/core/terminal-osc-sequences.sh
             # Override config variables after sourcing (defaults would overwrite env)
             export ENABLE_ANTHROPOMORPHISING="{enable}"
             export FACE_POSITION="{position}"
@@ -200,7 +200,7 @@ class TestSanitizeForTerminal:
         """Control characters should be stripped from input."""
         result = run_bash(
             '''
-            source src/core/terminal.sh
+            source src/core/terminal-osc-sequences.sh
             sanitize_for_terminal "hello$(printf '\\x00\\x01\\x1f')world"
             '''
         )
@@ -215,7 +215,7 @@ class TestSanitizeForTerminal:
         """Unicode characters should be preserved."""
         result = run_bash(
             '''
-            source src/core/terminal.sh
+            source src/core/terminal-osc-sequences.sh
             sanitize_for_terminal "hello 🟠 world"
             '''
         )
@@ -231,7 +231,7 @@ class TestGetShortCwd:
         """Home directory should be shortened to ~."""
         result = run_bash(
             '''
-            source src/core/terminal.sh
+            source src/core/terminal-osc-sequences.sh
             cd ~
             get_short_cwd
             '''
@@ -245,7 +245,7 @@ class TestGetShortCwd:
         """Deep paths should be shortened with ellipsis."""
         result = run_bash(
             '''
-            source src/core/terminal.sh
+            source src/core/terminal-osc-sequences.sh
             # Simulate a deep path
             export PWD="/Users/test/very/deep/nested/path"
             export HOME="/Users/test"

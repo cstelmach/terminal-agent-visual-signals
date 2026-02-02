@@ -1,5 +1,5 @@
 """
-Tests for src/core/detect.sh - Terminal detection module.
+Tests for src/core/terminal-detection.sh - Terminal detection module.
 
 This file will be renamed to terminal-detection.sh in refactoring.
 
@@ -25,7 +25,7 @@ from conftest import run_bash, PROJECT_ROOT
 
 def source_detect_and_run(cmd: str, env: dict = None) -> tuple:
     """Source detect.sh and run a command, return (returncode, stdout, stderr)."""
-    result = run_bash(f'source src/core/detect.sh && {cmd}',
+    result = run_bash(f'source src/core/terminal-detection.sh && {cmd}',
                       cwd=PROJECT_ROOT, env=env)
     return (result.returncode, result.stdout.strip(), result.stderr.strip())
 
@@ -326,7 +326,7 @@ class TestDetectSystemDarkMode:
         # This function returns exit codes, not strings
         result = run_bash(
             '''
-            source src/core/detect.sh
+            source src/core/terminal-detection.sh
             detect_system_dark_mode
             echo $?
             ''',
@@ -343,12 +343,12 @@ class TestDetectShSyntax:
 
     def test_syntax_valid(self):
         """detect.sh should have valid bash syntax."""
-        result = run_bash('bash -n src/core/detect.sh', cwd=PROJECT_ROOT)
+        result = run_bash('bash -n src/core/terminal-detection.sh', cwd=PROJECT_ROOT)
         assert result.returncode == 0
 
     def test_can_be_sourced(self):
         """detect.sh should source without errors."""
-        result = run_bash('source src/core/detect.sh && echo "OK"',
+        result = run_bash('source src/core/terminal-detection.sh && echo "OK"',
                          cwd=PROJECT_ROOT)
         assert result.returncode == 0
         assert "OK" in result.stdout

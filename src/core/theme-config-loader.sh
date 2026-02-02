@@ -340,7 +340,7 @@ _resolve_colors() {
 }
 
 # Detect system dark mode (simplified inline version)
-# Full detection is in detect.sh
+# Full detection is in terminal-detection.sh
 _detect_system_mode() {
     case "$(uname -s)" in
         Darwin)
@@ -499,7 +499,7 @@ list_themes() {
 # ==============================================================================
 
 # Auto-load configuration on source
-# This ensures backward compatibility - existing code that sources theme.sh
+# This ensures backward compatibility - existing code that sources theme-config-loader.sh
 # will get colors loaded automatically
 
 # Only auto-load if not already loaded (prevent double-loading)

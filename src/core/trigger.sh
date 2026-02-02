@@ -29,14 +29,14 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"
 
 # Source Core Modules
-source "$CORE_DIR/theme.sh"
-source "$CORE_DIR/state.sh"
-source "$CORE_DIR/terminal.sh"
+source "$CORE_DIR/theme-config-loader.sh"
+source "$CORE_DIR/session-state.sh"
+source "$CORE_DIR/terminal-osc-sequences.sh"
 source "$CORE_DIR/spinner.sh"
-source "$CORE_DIR/idle-worker.sh"
-source "$CORE_DIR/detect.sh"
+source "$CORE_DIR/idle-worker-background.sh"
+source "$CORE_DIR/terminal-detection.sh"
 source "$CORE_DIR/backgrounds.sh"
-source "$CORE_DIR/title.sh"
+source "$CORE_DIR/title-management.sh"
 source "$CORE_DIR/palette-mode-helpers.sh"
 
 # Source iTerm2-specific title detection if applicable

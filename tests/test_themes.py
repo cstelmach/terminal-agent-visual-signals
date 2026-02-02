@@ -70,7 +70,7 @@ class TestGetRandomFace:
         result = run_bash(
             f'''
             export TAVS_AGENT=unknown
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "{state}"
             ''',
             cwd=PROJECT_ROOT
@@ -85,7 +85,7 @@ class TestGetRandomFace:
         result = run_bash(
             '''
             export TAVS_AGENT=unknown
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "nonexistent_state"
             ''',
             cwd=PROJECT_ROOT
@@ -100,7 +100,7 @@ class TestGetRandomFace:
         result = run_bash(
             f'''
             export TAVS_AGENT=unknown
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "{state}"
             ''',
             cwd=PROJECT_ROOT
@@ -121,7 +121,7 @@ class TestAgentFaces:
         result = run_bash(
             f'''
             export TAVS_AGENT={agent}
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "{state}"
             ''',
             cwd=PROJECT_ROOT
@@ -137,7 +137,7 @@ class TestAgentFaces:
         result = run_bash(
             f'''
             export TAVS_AGENT={agent}
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "processing"
             ''',
             cwd=PROJECT_ROOT
@@ -155,7 +155,7 @@ class TestAgentFaces:
             result = run_bash(
                 '''
                 export TAVS_AGENT=claude
-                source src/core/theme.sh
+                source src/core/theme-config-loader.sh
                 get_random_face "processing"
                 ''',
                 cwd=PROJECT_ROOT
@@ -179,7 +179,7 @@ class TestAgentVariableResolution:
         result = run_bash(
             '''
             export TAVS_AGENT=claude
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "$AGENT_NAME"
             ''',
             cwd=PROJECT_ROOT
@@ -194,7 +194,7 @@ class TestAgentVariableResolution:
         result = run_bash(
             '''
             export TAVS_AGENT=claude
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "$SPINNER_FACE_FRAME"
             ''',
             cwd=PROJECT_ROOT
@@ -214,7 +214,7 @@ class TestLegacyGetFace:
         result = run_bash(
             '''
             export TAVS_AGENT=unknown
-            source src/core/theme.sh  # Provides get_random_face
+            source src/core/theme-config-loader.sh  # Provides get_random_face
             source src/core/themes.sh  # Provides get_face
             get_face "minimal" "processing"
             ''',
@@ -253,7 +253,7 @@ class TestFaceStateCount:
             result = run_bash(
                 f'''
                 export TAVS_AGENT={agent}
-                source src/core/theme.sh
+                source src/core/theme-config-loader.sh
                 get_random_face "{state}"
                 ''',
                 cwd=PROJECT_ROOT
@@ -271,7 +271,7 @@ class TestFaceStateCount:
             result = run_bash(
                 f'''
                 export TAVS_AGENT={agent}
-                source src/core/theme.sh
+                source src/core/theme-config-loader.sh
                 get_random_face "{state}"
                 ''',
                 cwd=PROJECT_ROOT

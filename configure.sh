@@ -20,7 +20,7 @@ USER_CONFIG="$CONFIG_DIR/user.conf"
 
 # Source required modules
 source "$SCRIPT_DIR/src/core/themes.sh"
-source "$SCRIPT_DIR/src/core/theme.sh"
+source "$SCRIPT_DIR/src/core/theme-config-loader.sh"
 
 # === COLORS ===
 RED='\033[0;31m'

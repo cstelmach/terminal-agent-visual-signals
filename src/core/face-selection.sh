@@ -3,7 +3,7 @@
 # Terminal Agent Visual Signals - Face Selection Module
 # ==============================================================================
 # Provides agent-specific face selection with randomization.
-# Extracted from theme.sh for modularization.
+# Extracted from theme-config-loader.sh for modularization.
 #
 # Public functions:
 #   get_random_face()        - Get random face for current state/agent

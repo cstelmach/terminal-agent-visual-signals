@@ -3,7 +3,7 @@
 # Terminal Agent Visual Signals - Title State Persistence Module
 # ==============================================================================
 # Manages title state persistence per-TTY session.
-# Extracted from title.sh for modularization.
+# Extracted from title-management.sh for modularization.
 #
 # Public functions:
 #   get_title_state_file()    - Get state file path for current TTY

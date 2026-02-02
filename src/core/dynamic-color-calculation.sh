@@ -3,7 +3,7 @@
 # Terminal Agent Visual Signals - Dynamic Color Calculation Module
 # ==============================================================================
 # Handles dynamic mode color calculations based on terminal background.
-# Extracted from theme.sh for modularization.
+# Extracted from theme-config-loader.sh for modularization.
 #
 # Public functions:
 #   initialize_dynamic_colors()      - Initialize session colors from terminal bg
@@ -13,9 +13,9 @@
 #
 # Internal functions:
 #   _source_colors_if_needed()       - Lazy load colors.sh
-#   _source_detect_if_needed()       - Lazy load detect.sh
+#   _source_detect_if_needed()       - Lazy load terminal-detection.sh
 #
-# Dependencies (from theme.sh when sourced):
+# Dependencies (from theme-config-loader.sh when sourced):
 #   - _THEME_SCRIPT_DIR - path to core directory
 #   - _detect_system_mode() - detect system dark/light mode
 #   - _resolve_colors() - resolve color variables

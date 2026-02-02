@@ -19,7 +19,7 @@ THEME_PRESET="nord"
 Apply a preset at runtime:
 
 ```bash
-source src/core/theme.sh
+source src/core/theme-config-loader.sh
 apply_theme "dracula"
 ```
 
@@ -113,7 +113,7 @@ Keep saturation and lightness appropriate for terminal backgrounds:
 
 ```bash
 # Load your theme
-source src/core/theme.sh
+source src/core/theme-config-loader.sh
 apply_theme "my-theme"
 
 # Test each state

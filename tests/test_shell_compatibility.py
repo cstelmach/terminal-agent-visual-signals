@@ -34,7 +34,7 @@ class TestBashZshConfigParity:
     def test_config_var_matches_in_both_shells(self, var):
         """Variable must have same value in bash and zsh."""
         results = run_in_both_shells(
-            f'source src/core/theme.sh && echo "${var}"'
+            f'source src/core/theme-config-loader.sh && echo "${var}"'
         )
 
         bash_val = results['bash'].stdout.strip()
@@ -60,7 +60,7 @@ class TestScriptPathResolution:
     def test_theme_script_dir_resolves_correctly_bash(self):
         """_THEME_SCRIPT_DIR should resolve to src/core in bash."""
         result = run_bash(
-            'source src/core/theme.sh && echo "$_THEME_SCRIPT_DIR"'
+            'source src/core/theme-config-loader.sh && echo "$_THEME_SCRIPT_DIR"'
         )
         assert result.returncode == 0, f"Failed: {result.stderr}"
         assert 'src/core' in result.stdout, f"Expected 'src/core' in path: {result.stdout}"
@@ -70,7 +70,7 @@ class TestScriptPathResolution:
     def test_theme_script_dir_resolves_correctly_zsh(self):
         """_THEME_SCRIPT_DIR should resolve to src/core in zsh."""
         result = run_zsh(
-            'source src/core/theme.sh && echo "$_THEME_SCRIPT_DIR"'
+            'source src/core/theme-config-loader.sh && echo "$_THEME_SCRIPT_DIR"'
         )
         assert result.returncode == 0, f"Failed: {result.stderr}"
         assert 'src/core' in result.stdout, f"Expected 'src/core' in path: {result.stdout}"
@@ -80,7 +80,7 @@ class TestScriptPathResolution:
     def test_config_dir_exists_and_has_defaults_bash(self):
         """Config directory should contain defaults.conf in bash."""
         result = run_bash(
-            'source src/core/theme.sh && ls "$_CONFIG_DIR/defaults.conf"'
+            'source src/core/theme-config-loader.sh && ls "$_CONFIG_DIR/defaults.conf"'
         )
         assert result.returncode == 0, \
             f"defaults.conf not found via bash: {result.stderr}"
@@ -88,7 +88,7 @@ class TestScriptPathResolution:
     def test_config_dir_exists_and_has_defaults_zsh(self):
         """Config directory should contain defaults.conf in zsh."""
         result = run_zsh(
-            'source src/core/theme.sh && ls "$_CONFIG_DIR/defaults.conf"'
+            'source src/core/theme-config-loader.sh && ls "$_CONFIG_DIR/defaults.conf"'
         )
         assert result.returncode == 0, \
             f"defaults.conf not found via zsh: {result.stderr}"
@@ -96,7 +96,7 @@ class TestScriptPathResolution:
     def test_path_resolution_parity(self):
         """Path resolution should produce identical paths in both shells."""
         results = run_in_both_shells(
-            'source src/core/theme.sh && echo "$_THEME_SCRIPT_DIR"'
+            'source src/core/theme-config-loader.sh && echo "$_THEME_SCRIPT_DIR"'
         )
 
         bash_path = results['bash'].stdout.strip()
@@ -117,7 +117,7 @@ class TestBraceExpansionSafety:
     def test_title_format_default_bash(self):
         """TAVS_TITLE_FORMAT default should be correct in bash."""
         result = run_bash(
-            'source src/core/theme.sh && echo "$TAVS_TITLE_FORMAT"'
+            'source src/core/theme-config-loader.sh && echo "$TAVS_TITLE_FORMAT"'
         )
         assert result.returncode == 0
         output = result.stdout.strip()
@@ -127,7 +127,7 @@ class TestBraceExpansionSafety:
     def test_title_format_default_zsh(self):
         """TAVS_TITLE_FORMAT default should be correct in zsh."""
         result = run_zsh(
-            'source src/core/theme.sh && echo "$TAVS_TITLE_FORMAT"'
+            'source src/core/theme-config-loader.sh && echo "$TAVS_TITLE_FORMAT"'
         )
         assert result.returncode == 0
         output = result.stdout.strip()
@@ -137,7 +137,7 @@ class TestBraceExpansionSafety:
     def test_title_format_parity(self):
         """TAVS_TITLE_FORMAT must be identical in both shells."""
         results = run_in_both_shells(
-            'source src/core/theme.sh && echo "$TAVS_TITLE_FORMAT"'
+            'source src/core/theme-config-loader.sh && echo "$TAVS_TITLE_FORMAT"'
         )
 
         bash_val = results['bash'].stdout.strip()
@@ -156,8 +156,8 @@ class TestBraceExpansionSafety:
         """compose_title should not corrupt output in bash."""
         result = run_bash('''
             export ENABLE_ANTHROPOMORPHISING="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -174,8 +174,8 @@ class TestBraceExpansionSafety:
         """compose_title should not corrupt output in zsh."""
         result = run_zsh('''
             export ENABLE_ANTHROPOMORPHISING="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -199,8 +199,8 @@ class TestBraceExpansionSafety:
         # Explicitly enable anthropomorphising to ensure face can appear
         results = run_in_both_shells('''
             export ENABLE_ANTHROPOMORPHISING="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "processing" "TestProject"
         ''')
 
@@ -234,7 +234,7 @@ class TestConfigLoadingPaths:
     def test_defaults_conf_loads_bash(self):
         """defaults.conf should load without errors in bash."""
         result = run_bash('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "loaded"
         ''')
         assert result.returncode == 0, f"Load failed in bash: {result.stderr}"
@@ -243,7 +243,7 @@ class TestConfigLoadingPaths:
     def test_defaults_conf_loads_zsh(self):
         """defaults.conf should load without errors in zsh."""
         result = run_zsh('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "loaded"
         ''')
         assert result.returncode == 0, f"Load failed in zsh: {result.stderr}"
@@ -252,7 +252,7 @@ class TestConfigLoadingPaths:
     def test_emoji_variables_load_in_both_shells(self):
         """Emoji variables should be set correctly in both shells."""
         results = run_in_both_shells(
-            'source src/core/theme.sh && echo "$EMOJI_PROCESSING $EMOJI_COMPLETE"'
+            'source src/core/theme-config-loader.sh && echo "$EMOJI_PROCESSING $EMOJI_COMPLETE"'
         )
 
         # Both should succeed
@@ -280,7 +280,7 @@ class TestInlineFallbacks:
         """The _set_inline_defaults function should set TAVS_TITLE_FORMAT."""
         # This test verifies the inline defaults are complete
         result = run_bash('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             # Force inline defaults by checking they're set
             _set_inline_defaults
             echo "$TAVS_TITLE_FORMAT"
@@ -303,7 +303,7 @@ class TestInlineFallbacks:
 
         for var in critical_vars:
             result = run_bash(f'''
-                source src/core/theme.sh
+                source src/core/theme-config-loader.sh
                 _set_inline_defaults
                 echo "${var}"
             ''')

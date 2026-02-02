@@ -349,9 +349,9 @@ _test_backgrounds() {
 
 # Run tests if invoked with "test" argument
 if [[ "${1:-}" == "test" ]]; then
-    # Need to source detect.sh for get_terminal_type
+    # Need to source terminal-detection.sh for get_terminal_type
     SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-    source "$SCRIPT_DIR/detect.sh"
+    source "$SCRIPT_DIR/terminal-detection.sh"
     _test_backgrounds
     exit 0
 fi

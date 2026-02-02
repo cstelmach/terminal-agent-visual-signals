@@ -1,5 +1,5 @@
 """
-Tests for src/core/title.sh - Title composition and management.
+Tests for src/core/title-management.sh - Title composition and management.
 
 Verifies:
 - Title composition for all states
@@ -25,8 +25,8 @@ class TestTitleComposition:
     def test_compose_title_emojis_bash(self, state, expected_emoji):
         """Each state should produce correct emoji in bash."""
         result = run_bash(f'''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -42,8 +42,8 @@ class TestTitleComposition:
     def test_compose_title_emojis_zsh(self, state, expected_emoji):
         """Each state should produce correct emoji in zsh."""
         result = run_zsh(f'''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
         assert result.returncode == 0, f"Failed: {result.stderr}"
@@ -53,8 +53,8 @@ class TestTitleComposition:
     def test_compose_title_reset_no_emoji(self):
         """Reset state should have no emoji."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "reset" "Base"
         ''')
 
@@ -69,8 +69,8 @@ class TestTitleComposition:
     def test_compose_title_includes_base(self):
         """compose_title should include the base title."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "processing" "MyProject"
         ''')
 
@@ -82,8 +82,8 @@ class TestTitleComposition:
     def test_compose_title_with_empty_base(self):
         """compose_title should handle empty base gracefully."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "processing" ""
         ''')
 
@@ -106,8 +106,8 @@ class TestFallbackTitle:
             export TAVS_TITLE_FALLBACK="{mode}"
             export TAVS_TITLE_SHOW_PATH="true"
             export TAVS_TITLE_SHOW_SESSION="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             get_fallback_title
         ''')
         assert result.returncode == 0, f"Failed for mode '{mode}': {result.stderr}"
@@ -120,8 +120,8 @@ class TestFallbackTitle:
             export TAVS_TITLE_FALLBACK="{mode}"
             export TAVS_TITLE_SHOW_PATH="true"
             export TAVS_TITLE_SHOW_SESSION="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             get_fallback_title
         ''')
         assert result.returncode == 0, f"Failed for mode '{mode}': {result.stderr}"
@@ -132,8 +132,8 @@ class TestFallbackTitle:
         results = run_in_both_shells('''
             export TAVS_TITLE_FALLBACK="path"
             export TAVS_TITLE_SHOW_PATH="true"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             get_fallback_title
         ''')
 
@@ -155,9 +155,9 @@ class TestFallbackTitle:
         """Session-path mode should include a hex session ID."""
         # Set fallback AFTER sourcing config (simulating user.conf override)
         results = run_in_both_shells('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             TAVS_TITLE_FALLBACK="session-path"
-            source src/core/title.sh
+            source src/core/title-management.sh
             get_fallback_title
         ''')
 
@@ -182,8 +182,8 @@ class TestSessionId:
     def test_session_id_is_generated(self):
         """init_session_id should produce output."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
         ''')
@@ -197,8 +197,8 @@ class TestSessionId:
     def test_session_id_is_8_chars(self):
         """Session ID should be exactly 8 characters."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
         ''')
@@ -212,8 +212,8 @@ class TestSessionId:
     def test_session_id_is_lowercase_hex(self):
         """Session ID should be lowercase hexadecimal."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
         ''')
@@ -235,7 +235,7 @@ class TestFormatSubstitution:
     def test_default_format_has_all_placeholders(self):
         """Default format should include FACE, EMOJI, and BASE."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "$TAVS_TITLE_FORMAT"
         ''')
 
@@ -255,10 +255,10 @@ class TestFormatSubstitution:
         """Custom TAVS_TITLE_FORMAT should be respected when set after config load."""
         # Set format AFTER sourcing config (simulating user.conf override)
         results = run_in_both_shells('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             export TAVS_TITLE_FORMAT="{EMOJI} [{BASE}]"
             export ENABLE_ANTHROPOMORPHISING="false"
-            source src/core/title.sh
+            source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
 
@@ -276,8 +276,8 @@ class TestFormatSubstitution:
         results = run_in_both_shells('''
             export TAVS_TITLE_FORMAT="{EMOJI} {BASE}"
             export ENABLE_ANTHROPOMORPHISING="false"
-            source src/core/theme.sh
-            source src/core/title.sh
+            source src/core/theme-config-loader.sh
+            source src/core/title-management.sh
             compose_title "complete" "MyApp"
         ''')
 
@@ -300,7 +300,7 @@ class TestTitleModes:
         # the mode variable is read correctly when set AFTER sourcing
         # (to simulate user.conf override)
         results = run_in_both_shells('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             TAVS_TITLE_MODE="skip-processing"
             echo "$TAVS_TITLE_MODE"
         ''')
@@ -311,7 +311,7 @@ class TestTitleModes:
     def test_title_mode_defaults_correctly(self):
         """Default title mode should be set."""
         results = run_in_both_shells('''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "$TAVS_TITLE_MODE"
         ''')
 

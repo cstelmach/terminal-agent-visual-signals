@@ -8,7 +8,7 @@
 #   - should_send_bg_color()  - Decides whether to send background color
 #   - _get_palette_mode()     - Gets current palette mode (dark/light)
 #
-# These are sourced by trigger.sh before idle-worker.sh, so they are available.
+# These are sourced by trigger.sh before idle-worker-background.sh, so they are available.
 # ==============================================================================
 
 # Helper: Send OSC 4 palette in idle worker (using file descriptor)

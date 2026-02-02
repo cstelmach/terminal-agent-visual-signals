@@ -1,5 +1,5 @@
 """
-Tests for src/core/theme.sh - Configuration variables.
+Tests for src/core/theme-config-loader.sh - Configuration variables.
 
 Verifies:
 - Default values are correct
@@ -27,7 +27,7 @@ class TestDefaultValues:
         This changed from false to true in the agent-based face system.
         """
         result = run_bash(
-            'source src/core/theme.sh && echo "$ENABLE_ANTHROPOMORPHISING"',
+            'source src/core/theme-config-loader.sh && echo "$ENABLE_ANTHROPOMORPHISING"',
             cwd=PROJECT_ROOT
         )
 
@@ -37,7 +37,7 @@ class TestDefaultValues:
     def test_face_position_defaults_to_before(self):
         """FACE_POSITION should default to before."""
         result = run_bash(
-            'source src/core/theme.sh && echo "$FACE_POSITION"',
+            'source src/core/theme-config-loader.sh && echo "$FACE_POSITION"',
             cwd=PROJECT_ROOT
         )
 
@@ -47,7 +47,7 @@ class TestDefaultValues:
     def test_tavs_agent_defaults_to_claude(self):
         """TAVS_AGENT should default to claude."""
         result = run_bash(
-            'source src/core/theme.sh && echo "$TAVS_AGENT"',
+            'source src/core/theme-config-loader.sh && echo "$TAVS_AGENT"',
             cwd=PROJECT_ROOT
         )
 
@@ -67,7 +67,7 @@ class TestEnvironmentOverrides:
         """ENABLE_ANTHROPOMORPHISING can be overridden after sourcing."""
         result = run_bash(
             '''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             ENABLE_ANTHROPOMORPHISING=false
             echo "$ENABLE_ANTHROPOMORPHISING"
             ''',
@@ -82,7 +82,7 @@ class TestEnvironmentOverrides:
         """FACE_POSITION can be set after sourcing."""
         result = run_bash(
             f'''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             FACE_POSITION={position}
             echo "$FACE_POSITION"
             ''',
@@ -98,7 +98,7 @@ class TestEnvironmentOverrides:
         result = run_bash(
             f'''
             export TAVS_AGENT={agent}
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             echo "$TAVS_AGENT"
             ''',
             cwd=PROJECT_ROOT
@@ -116,7 +116,7 @@ class TestInvalidValues:
         result = run_bash(
             '''
             export TAVS_AGENT=nonexistent_agent
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             get_random_face "processing"
             ''',
             cwd=PROJECT_ROOT
@@ -131,7 +131,7 @@ class TestInvalidValues:
         """Invalid FACE_POSITION should not crash the script."""
         result = run_bash(
             '''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             FACE_POSITION=invalid
             echo "OK"
             ''',
@@ -157,7 +157,7 @@ class TestOtherConfigVariables:
     def test_feature_toggles_exist(self, var, expected_default):
         """Feature toggle variables should exist with correct defaults."""
         result = source_and_run(
-            "src/core/theme.sh",
+            "src/core/theme-config-loader.sh",
             f'echo "${var}"'
         )
 
@@ -176,7 +176,7 @@ class TestOtherConfigVariables:
 
         for color in colors:
             result = source_and_run(
-                "src/core/theme.sh",
+                "src/core/theme-config-loader.sh",
                 f'echo "${color}"'
             )
 
@@ -196,7 +196,7 @@ class TestOtherConfigVariables:
 
         for var, expected in emojis.items():
             result = source_and_run(
-                "src/core/theme.sh",
+                "src/core/theme-config-loader.sh",
                 f'echo "${var}"'
             )
 
@@ -211,7 +211,7 @@ class TestAgentConfigLoading:
         """load_agent_config() should set TAVS_AGENT."""
         result = run_bash(
             '''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             load_agent_config gemini
             echo "$TAVS_AGENT"
             ''',
@@ -225,7 +225,7 @@ class TestAgentConfigLoading:
         """load_agent_config() should resolve agent-specific colors."""
         result = run_bash(
             '''
-            source src/core/theme.sh
+            source src/core/theme-config-loader.sh
             load_agent_config claude
             # DARK_BASE should be resolved from CLAUDE_DARK_BASE or DEFAULT_DARK_BASE
             echo "$DARK_BASE"
