@@ -4,10 +4,12 @@ Tests for configure.sh - Interactive configuration script.
 Verifies:
 - Script has valid syntax
 - Script runs without error
-- Helper functions exist
+- Helper functions exist (in main or sourced modules)
 
-Note: The configure.sh script has been refactored and some old functions
-have been renamed or replaced.
+Note: configure.sh has been modularized into:
+- configure-utilities.sh - Shared helpers
+- configure-step-*.sh - Individual wizard steps
+The main configure.sh orchestrates by sourcing these modules.
 """
 
 import pytest
@@ -28,6 +30,17 @@ class TestConfigureSyntax:
         assert result.returncode == 0
         assert "executable" in result.stdout
 
+    def test_step_modules_syntax_valid(self):
+        """All configure step modules should have valid bash syntax."""
+        result = run_bash('''
+            for f in configure-*.sh; do
+                bash -n "$f" || exit 1
+            done
+            echo "all valid"
+        ''', cwd=PROJECT_ROOT)
+        assert result.returncode == 0
+        assert "all valid" in result.stdout
+
 
 class TestConfigureFunctions:
     """Test configure.sh internal functions."""
@@ -39,6 +52,14 @@ class TestConfigureFunctions:
             grep -q "theme" configure.sh && echo "found"
         ''', cwd=PROJECT_ROOT)
 
+        assert result.returncode == 0
+        assert "found" in result.stdout
+
+    def test_sources_step_modules(self):
+        """configure.sh should source all step modules."""
+        result = run_bash('''
+            grep -q "configure-step-" configure.sh && echo "found"
+        ''', cwd=PROJECT_ROOT)
         assert result.returncode == 0
         assert "found" in result.stdout
 
@@ -72,29 +93,32 @@ class TestConfigureOutput:
     """Test configure.sh output and messages."""
 
     def test_creates_backup(self):
-        """Script should create backup before modifying config."""
-        result = run_bash('grep -q ".bak" configure.sh && echo "found"', cwd=PROJECT_ROOT)
+        """Step module should create backup before modifying config.
+
+        Note: .bak logic is in configure-step-terminal-title.sh for settings.json backup.
+        """
+        result = run_bash('grep -q ".bak" configure-step-terminal-title.sh && echo "found"', cwd=PROJECT_ROOT)
         assert "found" in result.stdout
 
 
 class TestConfigureHelpers:
-    """Test configure.sh helper functions exist."""
+    """Test configure.sh helper functions exist (in modules or main)."""
 
     def test_has_select_operating_mode_function(self):
-        """Should have select_operating_mode function."""
-        result = run_bash('grep -q "select_operating_mode()" configure.sh && echo "found"',
+        """Should have select_operating_mode function in step module."""
+        result = run_bash('grep -q "select_operating_mode()" configure-step-operating-mode.sh && echo "found"',
                          cwd=PROJECT_ROOT)
         assert "found" in result.stdout
 
     def test_has_select_faces_function(self):
-        """Should have select_faces function for anthropomorphising."""
-        result = run_bash('grep -q "select_faces()" configure.sh && echo "found"',
+        """Should have select_faces function for anthropomorphising in step module."""
+        result = run_bash('grep -q "select_faces()" configure-step-ascii-faces.sh && echo "found"',
                          cwd=PROJECT_ROOT)
         assert "found" in result.stdout
 
     def test_has_select_title_mode_function(self):
-        """Should have select_title_mode function."""
-        result = run_bash('grep -q "select_title_mode()" configure.sh && echo "found"',
+        """Should have select_title_mode function in step module."""
+        result = run_bash('grep -q "select_title_mode()" configure-step-terminal-title.sh && echo "found"',
                          cwd=PROJECT_ROOT)
         assert "found" in result.stdout
 
@@ -108,4 +132,17 @@ class TestConfigureHelpers:
         """Should have show_preview function."""
         result = run_bash('grep -q "show_preview()" configure.sh && echo "found"',
                          cwd=PROJECT_ROOT)
+        assert "found" in result.stdout
+
+    def test_main_calls_step_functions(self):
+        """Main function should call all step functions."""
+        result = run_bash('''
+            grep -q "select_operating_mode" configure.sh && \
+            grep -q "select_theme_preset" configure.sh && \
+            grep -q "select_auto_dark_mode" configure.sh && \
+            grep -q "select_faces" configure.sh && \
+            grep -q "select_title_mode" configure.sh && \
+            grep -q "select_palette_theming" configure.sh && \
+            echo "found"
+        ''', cwd=PROJECT_ROOT)
         assert "found" in result.stdout
