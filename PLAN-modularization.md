@@ -11,96 +11,70 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 
 ## 🔄 HANDOFF SECTION
 
-### Current Status: Phase 0 COMPLETE ✅
+### Current Status: Phase 1 COMPLETE ✅
 
 **Last Updated:** 2026-02-02
-**Last Commit:** `64ff746 test(phase0): Build comprehensive test safety harness`
+**Last Commit:** Pending commit of Phase 1 work
 
 ### What Has Been Completed
 
-#### Phase 0.1: Audit Current Test Coverage ✅
-- Created `coverage-audit.md` documenting all functions and their test status
-- Identified 30 failing tests due to deprecated face theme system
-- Mapped all 100+ shell functions across 12 core modules
+#### Phase 0: Test Safety Harness ✅ COMPLETE
+- **Phase 0.1**: Created `coverage-audit.md` documenting all functions and test status
+- **Phase 0.2**: Fixed 30 failing tests (TAVS_AGENT, env override pattern, face system)
+- **Phase 0.3**: Added 4 new test files (test_colors.py, test_title_state_persistence.py, test_terminal_detection.py, test_spinner.py)
+- **Result**: 359 passing tests, 0 failing
 
-#### Phase 0.2: Fix Failing Tests ✅
-- **test_title_composition.py**: Added `TAVS_AGENT` parameter, fixed env variable overrides (must set AFTER sourcing theme.sh)
-- **test_themes.py**: Complete rewrite for `get_random_face()` and agent-specific faces
-- **test_config.py**: Updated defaults expectations (ENABLE_ANTHROPOMORPHISING=true now)
-- **test_configure.py**: Updated function existence checks to match current code
+#### Phase 1: Extract Core Module Files ✅ COMPLETE
 
-#### Phase 0.3: Add Missing Behavioral Tests ✅
-| New Test File | LOC | Coverage |
-|---------------|-----|----------|
-| `test_colors.py` | 405 | hex/rgb/hsl conversions, interpolation, is_dark_color |
-| `test_title_state_persistence.py` | 410 | State file save/load, session IDs, escaping |
-| `test_terminal_detection.py` | 354 | Terminal type detection, SSH, TrueColor |
-| `test_spinner.py` | 312 | Spinner state, eye generation, styles |
+| New File | LOC | Functions Extracted |
+|----------|-----|---------------------|
+| `src/core/face-selection.sh` | 112 | `_resolve_agent_faces()`, `get_random_face()` |
+| `src/core/dynamic-color-calculation.sh` | 249 | `_source_colors_if_needed()`, `_source_detect_if_needed()`, `initialize_dynamic_colors()`, `load_session_colors_or_defaults()`, `refresh_colors_if_needed()`, `get_effective_color()` |
+| `src/core/title-state-persistence.sh` | 218 | `get_title_state_file()`, `_generate_session_id()`, `init_session_id()`, `_read_title_state_value()`, `load_title_state()`, `_escape_for_state_file()`, `save_title_state()`, `clear_title_state()` |
+| `src/core/palette-mode-helpers.sh` | 98 | `should_send_bg_color()`, `_get_palette_mode()` |
+
+**All new files pass bash -n and zsh -n syntax checks ✅**
+**All 359 tests still pass ✅**
+**Total new LOC: 677 (all under 500 LOC per file) ✅**
 
 ### Test Suite Status
 
 ```
 Before Phase 0: 206 passing, 30 failing
 After Phase 0:  359 passing, 0 failing
+After Phase 1:  359 passing, 0 failing (unchanged - no breaking changes)
 ```
 
-**All test files under 500 LOC ✅**
+### What's Next: Phase 2 - Update Core Source Files
 
-### What's Next: Phase 1 - Extract Core Module Files
+Phase 2 wires up the new modules by adding source statements and removing duplicates.
 
-Phase 1 creates new module files by COPYING (not moving) functions. This is a safe extraction that doesn't break existing code until Phase 2 wires things up.
-
-#### Step 1.1: Create face-selection.sh
-- **Source:** Extract from theme.sh (lines 173-316, ~144 LOC)
-- **Functions to extract:**
-  - `get_random_face()` - Main public function
-  - `_resolve_agent_faces()` - Resolves agent-specific face arrays
-  - `_get_face_array()` - Returns face array for given state
-- **File structure:**
+#### Step 2.1: Update theme.sh to source extracted modules
+- Add at top of theme.sh:
   ```bash
-  #!/usr/bin/env bash
-  # face-selection.sh - Random face selection for TAVS
-  # Dependencies: None (standalone utility)
+  source "${_THEME_SCRIPT_DIR}/face-selection.sh"
+  source "${_THEME_SCRIPT_DIR}/dynamic-color-calculation.sh"
   ```
+- Remove the now-duplicated functions from theme.sh
+- Run tests: `pytest tests/ -v`
 
-#### Step 1.2: Create dynamic-color-calculation.sh
-- **Source:** Extract from theme.sh (lines 573-775, ~203 LOC)
-- **Functions to extract:**
-  - `_calculate_dynamic_color()` - Core calculation logic
-  - `_apply_dynamic_mode()` - Applies dynamic mode to base colors
-- **Dependencies:** Will need to source `colors.sh`
+#### Step 2.2: Update title.sh to source title-state-persistence.sh
+- Add source line at top of title.sh
+- Remove duplicated functions from title.sh
+- Run tests
 
-#### Step 1.3: Create title-state-persistence.sh
-- **Source:** Extract from title.sh (lines 10-186, ~177 LOC)
-- **Functions to extract:**
-  - `get_state_file()` - Returns path to state file
-  - `_read_state_value()` - Safely reads value from state file
-  - `_escape_for_state_file()` - Escapes special characters
-  - `write_state_file()` - Writes key-value to state file
-  - `init_session_id()` - Generates session ID
+#### Step 2.3: Update trigger.sh and idle-worker.sh for shared palette helpers
+- Add source line to both files: `source "$CORE_DIR/palette-mode-helpers.sh"`
+- Remove `should_send_bg_color()` and `_get_palette_mode()` from trigger.sh
+- Remove `_idle_should_send_bg_color()` and `_idle_get_palette_mode()` from idle-worker.sh
+- Run tests
 
-#### Step 1.4: Create palette-mode-helpers.sh
-- **Source:** Extract from trigger.sh + deduplicate from idle-worker.sh (~35 LOC)
-- **Functions to extract:**
-  - `_get_palette_mode()` - Determines current palette mode
-  - `should_send_bg_color()` - Decides whether to send background color
-- **Why:** Eliminates duplication between trigger.sh and idle-worker.sh
-  - `_idle_get_palette_mode()` → replaced by shared function
-  - `_idle_should_send_bg_color()` → replaced by shared function
-
-#### Step 1.5: Verify Extraction
+#### Step 2.4: Verify All Source Wiring
 ```bash
-# Syntax check all new files
-bash -n src/core/face-selection.sh
-bash -n src/core/dynamic-color-calculation.sh
-bash -n src/core/title-state-persistence.sh
-bash -n src/core/palette-mode-helpers.sh
-
-# Zsh compatibility
+bash -n src/core/*.sh
 zsh -n src/core/*.sh
-
-# All tests still pass (original code unchanged)
 pytest tests/ -v
+./src/core/trigger.sh processing && sleep 1 && ./src/core/trigger.sh reset
 ```
 
 ### Key Decisions Already Made
