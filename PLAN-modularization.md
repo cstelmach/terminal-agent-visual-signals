@@ -11,10 +11,10 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 
 ## 🔄 HANDOFF SECTION
 
-### Current Status: Phase 1 COMPLETE ✅ | Ready for Phase 2
+### Current Status: Phase 2 COMPLETE ✅ | Ready for Phase 3
 
 **Last Updated:** 2026-02-02
-**Last Commit:** `b229279 feat(phase1): Extract core module files (no breaking changes)`
+**Last Commit:** `32e9ef7 refactor(phase2): Wire up extracted modules, remove duplicates`
 
 ---
 
@@ -24,8 +24,8 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 |-------|--------|-------------|
 | Phase 0 | ✅ COMPLETE | Test safety harness (359 tests passing) |
 | Phase 1 | ✅ COMPLETE | Extract core module files (4 new files created) |
-| Phase 2 | 🔲 NEXT | Wire up modules, remove duplicates |
-| Phase 3 | 🔲 Pending | Rename core files |
+| Phase 2 | ✅ COMPLETE | Wire up modules, remove duplicates (-540 lines) |
+| Phase 3 | 🔲 NEXT | Rename core files |
 | Phase 4 | 🔲 Pending | Modularize configure.sh |
 | Phase 5 | 🔲 Pending | Update all source statements |
 | Phase 6 | 🔲 Pending | Verify and deploy |
@@ -95,121 +95,101 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 Before Phase 0: 206 passing, 30 failing
 After Phase 0:  359 passing, 0 failing
 After Phase 1:  359 passing, 0 failing (no changes - copy approach)
+After Phase 2:  359 passing, 0 failing (1 test path updated)
 ```
 
 ---
 
-### What's Next: Phase 2 - Update Core Source Files
+#### Phase 2: Wire Up Modules ✅
 
 **Purpose:** Wire up the new modules by adding source statements and removing duplicate code from original files.
 
-**This is where the actual modularization takes effect.** After Phase 2:
-- theme.sh LOC: 787 → ~440 (removing ~347 lines)
-- title.sh LOC: 627 → ~450 (removing ~177 lines)
-- trigger.sh LOC: 329 → ~280 (removing ~49 lines)
-- idle-worker.sh LOC: 252 → ~217 (removing ~35 lines)
+**Steps completed:**
+1. ✅ theme.sh: Added source statements, removed 8 duplicated functions
+2. ✅ title.sh: Added source statement, removed 9 duplicated functions
+3. ✅ trigger.sh: Added source statement, removed 2 duplicated functions
+4. ✅ idle-worker.sh: Removed 2 duplicated functions, updated function calls
+
+**LOC reduction achieved:**
+
+| File | Before | After | Reduction |
+|------|--------|-------|-----------|
+| theme.sh | 787 | 509 | -278 |
+| title.sh | 627 | 465 | -162 |
+| trigger.sh | 329 | 277 | -52 |
+| idle-worker.sh | 252 | 204 | -48 |
+| **Total** | **1,995** | **1,455** | **-540** |
+
+**Verification performed:**
+- ✅ All 16 core files pass `bash -n` syntax check
+- ✅ All 16 core files pass `zsh -n` syntax check
+- ✅ All 359 tests still pass
+- ✅ Manual trigger test works
+
+**Commit:** `32e9ef7 refactor(phase2): Wire up extracted modules, remove duplicates`
 
 ---
 
-#### Step 2.1: Update theme.sh to source extracted modules
+### What's Next: Phase 3 - Rename Core Files
 
-**Current state:** theme.sh (787 LOC) contains functions that are now duplicated in face-selection.sh and dynamic-color-calculation.sh.
+**Purpose:** Rename 6 core files for self-documentation and LLM discoverability.
 
-**Actions:**
-1. Add source statements after line 27 (after `_USER_CONFIG` definition):
-   ```bash
-   # Source extracted modules
-   source "${_THEME_SCRIPT_DIR}/face-selection.sh"
-   source "${_THEME_SCRIPT_DIR}/dynamic-color-calculation.sh"
-   ```
+**Files to rename:**
 
-2. Remove these functions from theme.sh (they now live in face-selection.sh):
-   - `_resolve_agent_faces()` (lines 126-170)
-   - `get_random_face()` (lines 178-208)
-
-3. Remove these functions from theme.sh (they now live in dynamic-color-calculation.sh):
-   - `_source_colors_if_needed()` (lines 577-588)
-   - `_source_detect_if_needed()` (lines 591-602)
-   - `initialize_dynamic_colors()` (lines 607-674)
-   - `load_session_colors_or_defaults()` (lines 678-719)
-   - `refresh_colors_if_needed()` (lines 723-746)
-   - `get_effective_color()` (lines 750-773)
-
-4. Verify: `pytest tests/ -v` (should still be 359 passing)
-
-**Important:** The function `load_agent_config()` calls `_resolve_agent_faces()` at line 74. After sourcing face-selection.sh, this will work because the function is defined before it's called.
+| Current | New Name | Purpose |
+|---------|----------|---------|
+| `theme.sh` | `theme-config-loader.sh` | Config loading + color resolution |
+| `title.sh` | `title-management.sh` | Title composition + API |
+| `detect.sh` | `terminal-detection.sh` | Terminal capability detection |
+| `terminal.sh` | `terminal-osc-sequences.sh` | OSC escape sequence output |
+| `state.sh` | `session-state.sh` | Session persistence |
+| `idle-worker.sh` | `idle-worker-background.sh` | Background idle timer |
 
 ---
 
-#### Step 2.2: Update title.sh to source title-state-persistence.sh
+#### Step 3.1: Execute Renames
 
-**Current state:** title.sh (627 LOC) contains state persistence functions that are now duplicated in title-state-persistence.sh.
-
-**Actions:**
-1. Add source statement near the top (after shebang and header comments):
-   ```bash
-   # Source extracted modules
-   _TITLE_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-   source "${_TITLE_SCRIPT_DIR}/title-state-persistence.sh"
-   ```
-
-2. Remove these items from title.sh (they now live in title-state-persistence.sh):
-   - `TITLE_STATE_DB` variable (line 17)
-   - `get_title_state_file()` (lines 20-22)
-   - `_generate_session_id()` (lines 26-62)
-   - `init_session_id()` (lines 65-67)
-   - `_read_title_state_value()` (lines 77-101)
-   - `load_title_state()` (lines 105-124)
-   - `_escape_for_state_file()` (lines 128-136)
-   - `save_title_state()` (lines 140-177)
-   - `clear_title_state()` (lines 180-184)
-
-3. Verify: `pytest tests/ -v`
+```bash
+git mv src/core/theme.sh src/core/theme-config-loader.sh
+git mv src/core/title.sh src/core/title-management.sh
+git mv src/core/detect.sh src/core/terminal-detection.sh
+git mv src/core/terminal.sh src/core/terminal-osc-sequences.sh
+git mv src/core/state.sh src/core/session-state.sh
+git mv src/core/idle-worker.sh src/core/idle-worker-background.sh
+```
 
 ---
 
-#### Step 2.3: Update trigger.sh and idle-worker.sh for shared palette helpers
+#### Step 3.2: Update All Internal Source Statements
 
-**Current state:** trigger.sh has `should_send_bg_color()` and `_get_palette_mode()`. idle-worker.sh has nearly identical `_idle_should_send_bg_color()` and `_idle_get_palette_mode()`. Both are now in palette-mode-helpers.sh.
-
-**Actions for trigger.sh:**
-1. Add source statement after other module sources (around line 38):
-   ```bash
-   source "$CORE_DIR/palette-mode-helpers.sh"
-   ```
-
-2. Remove these functions from trigger.sh:
-   - `should_send_bg_color()` (lines 111-122)
-   - `_get_palette_mode()` (lines 127-159)
-
-3. Keep `_apply_palette_if_enabled()` and `_reset_palette_if_enabled()` - they call the shared functions.
-
-**Actions for idle-worker.sh:**
-1. The idle-worker.sh file doesn't source modules directly (it's sourced by trigger.sh). The shared functions will be available because trigger.sh sources palette-mode-helpers.sh before sourcing idle-worker.sh.
-
-2. Remove these duplicate functions from idle-worker.sh:
-   - `_idle_should_send_bg_color()` (lines 10-22)
-   - `_idle_get_palette_mode()` (lines 26-60)
-
-3. Update function calls in `unified_timer_worker()`:
-   - Change `_idle_should_send_bg_color` → `should_send_bg_color`
-   - Change `_idle_get_palette_mode` → `_get_palette_mode`
-
-4. Verify: `pytest tests/ -v`
+Update every file that sources the renamed files:
+- `src/core/trigger.sh` - Sources multiple core modules
+- `src/core/theme-config-loader.sh` - May source other modules
+- `src/core/title-management.sh` - Sources theme
+- `src/agents/claude/trigger.sh` - Sources core modules
+- `src/agents/gemini/trigger.sh` - Sources core modules
+- `src/agents/opencode/trigger.sh` - Sources core modules
+- `src/agents/codex/trigger.sh` - Sources core modules
 
 ---
 
-#### Step 2.4: Verify All Source Wiring
+#### Step 3.3: Update Test Paths
+
+Search tests/ for any references to old filenames and update them.
+
+---
+
+#### Step 3.4: Verify Renames
 
 ```bash
 # Syntax checks
 bash -n src/core/*.sh
 zsh -n src/core/*.sh
 
-# Full test suite
+# Tests
 pytest tests/ -v
 
-# Manual verification
+# Manual test
 ./src/core/trigger.sh processing && sleep 1 && ./src/core/trigger.sh reset
 ```
 
@@ -237,14 +217,14 @@ In shell scripts, functions must be defined before they're called. The source or
 2. state.sh
 3. terminal.sh
 4. spinner.sh
-5. idle-worker.sh (uses functions from above)
+5. idle-worker.sh (uses shared functions from palette-mode-helpers.sh)
 6. detect.sh
 7. backgrounds.sh
 8. title.sh (sources title-state-persistence.sh)
-9. palette-mode-helpers.sh (NEW - add here)
+9. palette-mode-helpers.sh
 
 #### 4. Idle Worker Runs in Background
-`idle-worker.sh` functions run in a background subshell spawned by trigger.sh. They use file descriptor `>&3` for output. The `_idle_*` prefix was used to distinguish duplicate functions - after Phase 2, we use the shared functions directly.
+`idle-worker.sh` functions run in a background subshell spawned by trigger.sh. They use file descriptor `>&3` for output. After Phase 2, idle-worker.sh uses the shared `should_send_bg_color()` and `_get_palette_mode()` functions from palette-mode-helpers.sh instead of its own `_idle_*` prefixed duplicates.
 
 #### 5. File Locations
 - **Working directory:** `/Users/cs/.claude/hooks/terminal-agent-visual-signals/.worktrees/refactor-modularization`
