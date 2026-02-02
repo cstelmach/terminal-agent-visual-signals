@@ -355,8 +355,9 @@ class TestStateFileAtomicity:
     def test_uses_temp_file_for_write(self):
         """save_title_state should use temp file + mv pattern."""
         # This is a code inspection test - the function uses mktemp + mv
+        # Function is now in title-state-persistence.sh (extracted module)
         result = run_bash(
-            'grep -A25 "save_title_state()" src/core/title.sh | grep -E "mktemp|mv"',
+            'grep -A25 "save_title_state()" src/core/title-state-persistence.sh | grep -E "mktemp|mv"',
             cwd=PROJECT_ROOT
         )
         assert result.returncode == 0
