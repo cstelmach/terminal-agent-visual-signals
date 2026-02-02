@@ -11,10 +11,10 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 
 ## 🔄 HANDOFF SECTION
 
-### Current Status: Phase 2 COMPLETE ✅ | Ready for Phase 3
+### Current Status: Phase 3 COMPLETE ✅ | Ready for Phase 4
 
 **Last Updated:** 2026-02-02
-**Last Commit:** `32e9ef7 refactor(phase2): Wire up extracted modules, remove duplicates`
+**Last Commit:** `4352a7a refactor(phase3): Rename 6 core files for self-documentation`
 
 ---
 
@@ -25,8 +25,8 @@ Refactor TAVS shell scripts to achieve ≤500 LOC per file with clear separation
 | Phase 0 | ✅ COMPLETE | Test safety harness (359 tests passing) |
 | Phase 1 | ✅ COMPLETE | Extract core module files (4 new files created) |
 | Phase 2 | ✅ COMPLETE | Wire up modules, remove duplicates (-540 lines) |
-| Phase 3 | 🔲 NEXT | Rename core files |
-| Phase 4 | 🔲 Pending | Modularize configure.sh |
+| Phase 3 | ✅ COMPLETE | Rename 6 core files for self-documentation |
+| Phase 4 | 🔲 NEXT | Modularize configure.sh |
 | Phase 5 | 🔲 Pending | Update all source statements |
 | Phase 6 | 🔲 Pending | Verify and deploy |
 
@@ -96,6 +96,7 @@ Before Phase 0: 206 passing, 30 failing
 After Phase 0:  359 passing, 0 failing
 After Phase 1:  359 passing, 0 failing (no changes - copy approach)
 After Phase 2:  359 passing, 0 failing (1 test path updated)
+After Phase 3:  359 passing, 0 failing (8 test files updated for new names)
 ```
 
 ---
@@ -130,14 +131,14 @@ After Phase 2:  359 passing, 0 failing (1 test path updated)
 
 ---
 
-### What's Next: Phase 3 - Rename Core Files
+#### Phase 3: Rename Core Files ✅
 
 **Purpose:** Rename 6 core files for self-documentation and LLM discoverability.
 
-**Files to rename:**
+**Files renamed:**
 
-| Current | New Name | Purpose |
-|---------|----------|---------|
+| Old Name | New Name | Purpose |
+|----------|----------|---------|
 | `theme.sh` | `theme-config-loader.sh` | Config loading + color resolution |
 | `title.sh` | `title-management.sh` | Title composition + API |
 | `detect.sh` | `terminal-detection.sh` | Terminal capability detection |
@@ -145,53 +146,40 @@ After Phase 2:  359 passing, 0 failing (1 test path updated)
 | `state.sh` | `session-state.sh` | Session persistence |
 | `idle-worker.sh` | `idle-worker-background.sh` | Background idle timer |
 
----
+**Files updated with new paths:**
+- `src/core/trigger.sh` - Main orchestrator
+- `src/core/backgrounds.sh` - Test function
+- `configure.sh` - Configuration wizard
+- 8 test files with source statement updates
+- Comments in extracted modules
 
-#### Step 3.1: Execute Renames
+**Verification performed:**
+- ✅ All 16 core files pass `bash -n` syntax check
+- ✅ All 16 core files pass `zsh -n` syntax check
+- ✅ All 359 tests pass
+- ✅ Manual trigger test works
 
-```bash
-git mv src/core/theme.sh src/core/theme-config-loader.sh
-git mv src/core/title.sh src/core/title-management.sh
-git mv src/core/detect.sh src/core/terminal-detection.sh
-git mv src/core/terminal.sh src/core/terminal-osc-sequences.sh
-git mv src/core/state.sh src/core/session-state.sh
-git mv src/core/idle-worker.sh src/core/idle-worker-background.sh
-```
-
----
-
-#### Step 3.2: Update All Internal Source Statements
-
-Update every file that sources the renamed files:
-- `src/core/trigger.sh` - Sources multiple core modules
-- `src/core/theme-config-loader.sh` - May source other modules
-- `src/core/title-management.sh` - Sources theme
-- `src/agents/claude/trigger.sh` - Sources core modules
-- `src/agents/gemini/trigger.sh` - Sources core modules
-- `src/agents/opencode/trigger.sh` - Sources core modules
-- `src/agents/codex/trigger.sh` - Sources core modules
+**Commit:** `4352a7a refactor(phase3): Rename 6 core files for self-documentation`
 
 ---
 
-#### Step 3.3: Update Test Paths
+### What's Next: Phase 4 - Modularize configure.sh
 
-Search tests/ for any references to old filenames and update them.
+**Purpose:** Split 1,059 LOC configure.sh into 9 focused modules (~50-270 LOC each).
 
----
+**Proposed split:**
 
-#### Step 3.4: Verify Renames
-
-```bash
-# Syntax checks
-bash -n src/core/*.sh
-zsh -n src/core/*.sh
-
-# Tests
-pytest tests/ -v
-
-# Manual test
-./src/core/trigger.sh processing && sleep 1 && ./src/core/trigger.sh reset
-```
+| New File | Purpose | LOC |
+|----------|---------|-----|
+| `configure.sh` | Main orchestrator, menu, final save | ~200 |
+| `configure-utilities.sh` | Shared helpers (colors, prompts, file ops) | ~200 |
+| `configure-step-operating-mode.sh` | Step 1: static/dynamic/preset | ~50 |
+| `configure-step-theme-preset.sh` | Step 2: Theme selection | ~60 |
+| `configure-step-light-dark-mode.sh` | Step 3: Light/dark switching | ~50 |
+| `configure-step-ascii-faces.sh` | Step 4: Anthropomorphising | ~60 |
+| `configure-step-backgrounds.sh` | Step 5: Stylish backgrounds | ~90 |
+| `configure-step-terminal-title.sh` | Step 6: Title mode + spinner | ~270 |
+| `configure-step-palette-theming.sh` | Step 7: OSC 4 palette | ~80 |
 
 ---
 
@@ -213,18 +201,18 @@ The old `FACE_THEME` variable is **deprecated**. Current system uses:
 
 #### 3. Source Order Matters
 In shell scripts, functions must be defined before they're called. The source order in trigger.sh is:
-1. theme.sh (sources face-selection.sh, dynamic-color-calculation.sh)
-2. state.sh
-3. terminal.sh
+1. theme-config-loader.sh (sources face-selection.sh, dynamic-color-calculation.sh)
+2. session-state.sh
+3. terminal-osc-sequences.sh
 4. spinner.sh
-5. idle-worker.sh (uses shared functions from palette-mode-helpers.sh)
-6. detect.sh
+5. idle-worker-background.sh (uses shared functions from palette-mode-helpers.sh)
+6. terminal-detection.sh
 7. backgrounds.sh
-8. title.sh (sources title-state-persistence.sh)
+8. title-management.sh (sources title-state-persistence.sh)
 9. palette-mode-helpers.sh
 
 #### 4. Idle Worker Runs in Background
-`idle-worker.sh` functions run in a background subshell spawned by trigger.sh. They use file descriptor `>&3` for output. After Phase 2, idle-worker.sh uses the shared `should_send_bg_color()` and `_get_palette_mode()` functions from palette-mode-helpers.sh instead of its own `_idle_*` prefixed duplicates.
+`idle-worker-background.sh` functions run in a background subshell spawned by trigger.sh. They use file descriptor `>&3` for output. After Phase 2, idle-worker-background.sh uses the shared `should_send_bg_color()` and `_get_palette_mode()` functions from palette-mode-helpers.sh instead of its own `_idle_*` prefixed duplicates.
 
 #### 5. File Locations
 - **Working directory:** `/Users/cs/.claude/hooks/terminal-agent-visual-signals/.worktrees/refactor-modularization`
