@@ -19,7 +19,6 @@ Terminal detection relies on environment variables set by each terminal:
 """
 
 import os
-import pytest
 from conftest import run_bash, PROJECT_ROOT
 
 

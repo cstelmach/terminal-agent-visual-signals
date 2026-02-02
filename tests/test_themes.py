@@ -22,7 +22,7 @@ Verifies:
 """
 
 import pytest
-from conftest import source_and_run, run_bash, PROJECT_ROOT
+from conftest import run_bash, PROJECT_ROOT
 
 # Core states that have faces
 CORE_STATES = ['processing', 'permission', 'complete', 'compacting', 'reset']

@@ -25,8 +25,8 @@
 #
 # Dependencies (from other modules):
 #   - colors.sh: hex_to_rgb, rgb_to_hex, is_dark_color, shift_hue, etc.
-#   - detect.sh: query_terminal_bg_with_timeout, is_ssh_session, is_truecolor_mode
-#   - state.sh: read_session_colors, write_session_colors, has_session_colors
+#   - terminal-detection.sh: query_terminal_bg_with_timeout, is_ssh_session, is_truecolor_mode
+#   - session-state.sh: read_session_colors, write_session_colors, has_session_colors
 # ==============================================================================
 
 # ==============================================================================
@@ -50,7 +50,7 @@ _source_colors_if_needed() {
 # Source detection utilities if available
 _source_detect_if_needed() {
     if ! type query_terminal_bg &>/dev/null; then
-        local detect_script="${_THEME_SCRIPT_DIR:-$(dirname "$0")}/detect.sh"
+        local detect_script="${_THEME_SCRIPT_DIR:-$(dirname "$0")}/terminal-detection.sh"
         if [[ -f "$detect_script" ]]; then
             # shellcheck source=/dev/null
             source "$detect_script"
@@ -144,9 +144,9 @@ initialize_dynamic_colors() {
 # Load session colors if available, otherwise use theme defaults
 # Returns 0 if session colors were loaded, 1 if using defaults
 load_session_colors_or_defaults() {
-    # Source state.sh if needed for session color functions
+    # Source session-state.sh if needed for session color functions
     if ! type read_session_colors &>/dev/null; then
-        local state_script="${_THEME_SCRIPT_DIR:-$(dirname "$0")}/state.sh"
+        local state_script="${_THEME_SCRIPT_DIR:-$(dirname "$0")}/session-state.sh"
         if [[ -f "$state_script" ]]; then
             # shellcheck source=/dev/null
             source "$state_script"

@@ -28,6 +28,20 @@
 # Usage: _resolve_agent_faces <agent>
 _resolve_agent_faces() {
     local agent="$1"
+
+    # Security: Validate agent name to prevent shell injection via eval
+    # Only allow known agents or alphanumeric names
+    case "$agent" in
+        claude|gemini|codex|opencode|unknown) ;;  # Known agents - OK
+        *)
+            # Reject any name with non-alphanumeric characters
+            if [[ ! "$agent" =~ ^[a-zA-Z0-9_]+$ ]]; then
+                echo "Warning: Invalid agent name '$agent', using 'unknown'" >&2
+                agent="unknown"
+            fi
+            ;;
+    esac
+
     # Convert to uppercase for prefix (Bash 3.2 compatible)
     local prefix
     prefix="$(echo "$agent" | tr '[:lower:]' '[:upper:]')_"  # CLAUDE_, GEMINI_, etc.

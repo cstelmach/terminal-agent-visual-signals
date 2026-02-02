@@ -29,15 +29,17 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"
 
 # Source Core Modules
+# Note: palette-mode-helpers.sh must come before idle-worker-background.sh
+# because the background worker uses _get_palette_mode and should_send_bg_color
 source "$CORE_DIR/theme-config-loader.sh"
 source "$CORE_DIR/session-state.sh"
 source "$CORE_DIR/terminal-osc-sequences.sh"
 source "$CORE_DIR/spinner.sh"
+source "$CORE_DIR/palette-mode-helpers.sh"
 source "$CORE_DIR/idle-worker-background.sh"
 source "$CORE_DIR/terminal-detection.sh"
 source "$CORE_DIR/backgrounds.sh"
 source "$CORE_DIR/title-management.sh"
-source "$CORE_DIR/palette-mode-helpers.sh"
 
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \

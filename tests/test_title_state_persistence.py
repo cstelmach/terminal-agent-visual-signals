@@ -16,9 +16,7 @@ State file format: key="value" pairs, one per line.
 Values are escaped to prevent control character injection.
 """
 
-import os
 import tempfile
-import pytest
 from conftest import run_bash, PROJECT_ROOT
 
 
