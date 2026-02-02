@@ -29,14 +29,17 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"
 
 # Source Core Modules
-source "$CORE_DIR/theme.sh"
-source "$CORE_DIR/state.sh"
-source "$CORE_DIR/terminal.sh"
+# Note: palette-mode-helpers.sh must come before idle-worker-background.sh
+# because the background worker uses _get_palette_mode and should_send_bg_color
+source "$CORE_DIR/theme-config-loader.sh"
+source "$CORE_DIR/session-state.sh"
+source "$CORE_DIR/terminal-osc-sequences.sh"
 source "$CORE_DIR/spinner.sh"
-source "$CORE_DIR/idle-worker.sh"
-source "$CORE_DIR/detect.sh"
+source "$CORE_DIR/palette-mode-helpers.sh"
+source "$CORE_DIR/idle-worker-background.sh"
+source "$CORE_DIR/terminal-detection.sh"
 source "$CORE_DIR/backgrounds.sh"
-source "$CORE_DIR/title.sh"
+source "$CORE_DIR/title-management.sh"
 
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
@@ -104,59 +107,6 @@ debug_log_invocation "$@"
 
 # Exit silently if no TTY available
 [[ -z "$TTY_DEVICE" ]] && exit 0
-
-# Helper: Check if we should send background color
-# Returns 0 (true) if background color should be sent, 1 (false) to skip
-# Skips when: stylish backgrounds are active AND terminal supports images AND skip option enabled
-should_send_bg_color() {
-    [[ "$ENABLE_BACKGROUND_CHANGE" != "true" ]] && return 1
-
-    # Skip tint when background images are active (if option enabled)
-    if [[ "$STYLISH_SKIP_BG_TINT" == "true" ]] && \
-       [[ "$ENABLE_STYLISH_BACKGROUNDS" == "true" ]] && \
-       supports_background_images; then
-        return 1
-    fi
-
-    return 0
-}
-
-# Helper: Get current palette mode based on theme resolution
-# Returns "dark" or "light"
-# Uses IS_DARK_THEME from theme.sh (already respects FORCE_MODE and ENABLE_LIGHT_DARK_SWITCHING)
-_get_palette_mode() {
-    # 1. Respect explicit FORCE_MODE overrides
-    if [[ "$FORCE_MODE" == "light" ]]; then
-        echo "light"
-        return
-    elif [[ "$FORCE_MODE" == "dark" ]]; then
-        echo "dark"
-        return
-    fi
-
-    # 2. For auto/unset: use IS_DARK_THEME from theme.sh (if available)
-    #    This ensures palette stays in sync with background colors
-    if [[ "$IS_DARK_THEME" == "false" ]]; then
-        echo "light"
-        return
-    elif [[ "$IS_DARK_THEME" == "true" ]]; then
-        echo "dark"
-        return
-    fi
-
-    # 3. Fallback: only use system detection if auto dark mode is enabled
-    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
-        local system_mode
-        system_mode=$(get_system_mode)
-        if [[ "$system_mode" == "light" ]]; then
-            echo "light"
-            return
-        fi
-    fi
-
-    # 4. Final fallback: dark mode
-    echo "dark"
-}
 
 # Helper: Apply palette if enabled (must be called BEFORE background)
 # This prevents contrast flicker by setting colors before background changes

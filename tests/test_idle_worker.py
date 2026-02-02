@@ -1,5 +1,5 @@
 """
-Tests for src/core/idle-worker.sh - Idle timer and progression.
+Tests for src/core/idle-worker-background.sh - Idle timer and progression.
 
 Verifies:
 - Idle worker syntax is valid
@@ -16,16 +16,16 @@ class TestIdleWorkerSyntax:
 
     def test_syntax_valid(self):
         """idle-worker.sh should have valid bash syntax."""
-        result = run_bash('bash -n src/core/idle-worker.sh')
+        result = run_bash('bash -n src/core/idle-worker-background.sh')
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
     def test_can_be_sourced(self):
         """idle-worker.sh should be sourceable without error."""
         result = run_bash('''
-            source src/core/theme.sh
-            source src/core/state.sh
-            source src/core/terminal.sh
-            source src/core/idle-worker.sh
+            source src/core/theme-config-loader.sh
+            source src/core/session-state.sh
+            source src/core/terminal-osc-sequences.sh
+            source src/core/idle-worker-background.sh
             echo "OK"
         ''')
 
@@ -60,7 +60,7 @@ class TestIdleFaceKeyGeneration:
         """Worker should generate idle_N face keys."""
         # The code uses: idle_${current_stage}
         result = run_bash(
-            'grep "idle_" src/core/idle-worker.sh | grep -v "^#"'
+            'grep "idle_" src/core/idle-worker-background.sh | grep -v "^#"'
         )
 
         assert result.returncode == 0, "Should find idle face key usage"
@@ -73,7 +73,7 @@ class TestIdleWorkerFdPattern:
     def test_uses_fd3_for_color_writes(self):
         """Color writes should use >&3 file descriptor."""
         result = run_bash(
-            'grep -E "printf.*>&3" src/core/idle-worker.sh | head -3'
+            'grep -E "printf.*>&3" src/core/idle-worker-background.sh | head -3'
         )
 
         assert result.returncode == 0
@@ -82,7 +82,7 @@ class TestIdleWorkerFdPattern:
     def test_uses_fd3_for_title_writes(self):
         """Title writes should use >&3 file descriptor."""
         result = run_bash(
-            'grep -E \'printf.*\\]0;.*>&3\' src/core/idle-worker.sh'
+            'grep -E \'printf.*\\]0;.*>&3\' src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0, "Title writes should use >&3"
@@ -90,7 +90,7 @@ class TestIdleWorkerFdPattern:
     def test_opens_fd3_to_tty(self):
         """Worker should open fd 3 to tty device."""
         result = run_bash(
-            'grep -E "exec 3>" src/core/idle-worker.sh'
+            'grep -E "exec 3>" src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0
@@ -104,7 +104,7 @@ class TestIdleWorkerFaceComposition:
         """Worker should have inline face composition logic."""
         # Check for face lookup
         result = run_bash(
-            'grep -E "get_face.*idle_" src/core/idle-worker.sh'
+            'grep -E "get_face.*idle_" src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0, "Should find get_face call for idle states"
@@ -112,7 +112,7 @@ class TestIdleWorkerFaceComposition:
     def test_face_position_check_in_worker(self):
         """Worker should check FACE_POSITION."""
         result = run_bash(
-            'grep "FACE_POSITION" src/core/idle-worker.sh'
+            'grep "FACE_POSITION" src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0, "Should check FACE_POSITION"
@@ -120,7 +120,7 @@ class TestIdleWorkerFaceComposition:
     def test_anthropomorphising_check_in_worker(self):
         """Worker should check ENABLE_ANTHROPOMORPHISING."""
         result = run_bash(
-            'grep "ENABLE_ANTHROPOMORPHISING" src/core/idle-worker.sh'
+            'grep "ENABLE_ANTHROPOMORPHISING" src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0, "Should check ENABLE_ANTHROPOMORPHISING"
@@ -132,8 +132,8 @@ class TestGetUnifiedStage:
     def test_stage_0_for_short_elapsed(self):
         """Elapsed < first duration should return stage 0."""
         result = run_bash('''
-            source src/core/theme.sh
-            source src/core/idle-worker.sh
+            source src/core/theme-config-loader.sh
+            source src/core/idle-worker-background.sh
             get_unified_stage 30
             echo "$RESULT_STAGE"
         ''')
@@ -144,8 +144,8 @@ class TestGetUnifiedStage:
     def test_stage_increases_with_elapsed(self):
         """Stage should increase as elapsed time increases."""
         result = run_bash('''
-            source src/core/theme.sh
-            source src/core/idle-worker.sh
+            source src/core/theme-config-loader.sh
+            source src/core/idle-worker-background.sh
 
             # Test stage progression
             get_unified_stage 0
@@ -171,10 +171,10 @@ class TestKillIdleTimer:
     def test_kill_idle_timer_exists(self):
         """kill_idle_timer function should exist."""
         result = run_bash('''
-            source src/core/theme.sh
-            source src/core/state.sh
-            source src/core/terminal.sh
-            source src/core/idle-worker.sh
+            source src/core/theme-config-loader.sh
+            source src/core/session-state.sh
+            source src/core/terminal-osc-sequences.sh
+            source src/core/idle-worker-background.sh
             type kill_idle_timer
         ''')
 
@@ -184,10 +184,10 @@ class TestKillIdleTimer:
     def test_cleanup_stale_timers_exists(self):
         """cleanup_stale_timers function should exist."""
         result = run_bash('''
-            source src/core/theme.sh
-            source src/core/state.sh
-            source src/core/terminal.sh
-            source src/core/idle-worker.sh
+            source src/core/theme-config-loader.sh
+            source src/core/session-state.sh
+            source src/core/terminal-osc-sequences.sh
+            source src/core/idle-worker-background.sh
             type cleanup_stale_timers
         ''')
 

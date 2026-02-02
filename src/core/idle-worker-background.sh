@@ -3,61 +3,13 @@
 # Terminal Agent Visual Themes - Idle Worker
 # ==============================================================================
 # Contains the logic for the background idle timer.
+#
+# Note: This file uses shared helper functions from palette-mode-helpers.sh:
+#   - should_send_bg_color()  - Decides whether to send background color
+#   - _get_palette_mode()     - Gets current palette mode (dark/light)
+#
+# These are sourced by trigger.sh before idle-worker-background.sh, so they are available.
 # ==============================================================================
-
-# Helper: Check if we should send background color in idle worker
-# Returns 0 (true) if background color should be sent, 1 (false) to skip
-_idle_should_send_bg_color() {
-    [[ "$ENABLE_BACKGROUND_CHANGE" != "true" ]] && return 1
-
-    # Skip tint when background images are active (if option enabled)
-    if [[ "$STYLISH_SKIP_BG_TINT" == "true" ]] && \
-       [[ "$ENABLE_STYLISH_BACKGROUNDS" == "true" ]] && \
-       type supports_background_images &>/dev/null && \
-       supports_background_images; then
-        return 1
-    fi
-
-    return 0
-}
-
-# Helper: Get palette mode for idle worker
-# Uses IS_DARK_THEME from theme.sh (respects FORCE_MODE and ENABLE_LIGHT_DARK_SWITCHING)
-_idle_get_palette_mode() {
-    # 1. Respect explicit FORCE_MODE overrides
-    if [[ "$FORCE_MODE" == "light" ]]; then
-        echo "light"
-        return
-    elif [[ "$FORCE_MODE" == "dark" ]]; then
-        echo "dark"
-        return
-    fi
-
-    # 2. For auto/unset: use IS_DARK_THEME from theme.sh (if available)
-    #    This ensures palette stays in sync with background colors
-    if [[ "$IS_DARK_THEME" == "false" ]]; then
-        echo "light"
-        return
-    elif [[ "$IS_DARK_THEME" == "true" ]]; then
-        echo "dark"
-        return
-    fi
-
-    # 3. Fallback: only use system detection if auto dark mode is enabled
-    if [[ "$FORCE_MODE" == "auto" ]] && [[ "$ENABLE_LIGHT_DARK_SWITCHING" == "true" ]]; then
-        if type get_system_mode &>/dev/null; then
-            local system_mode
-            system_mode=$(get_system_mode)
-            if [[ "$system_mode" == "light" ]]; then
-                echo "light"
-                return
-            fi
-        fi
-    fi
-
-    # 4. Final fallback: dark mode
-    echo "dark"
-}
 
 # Helper: Send OSC 4 palette in idle worker (using file descriptor)
 # Usage: _idle_send_palette "dark" or "light" via fd 3
@@ -169,7 +121,7 @@ unified_timer_worker() {
             # Best effort reset (palette + background + title)
             {
                 _idle_reset_palette 2>/dev/null || true
-                _idle_should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
+                should_send_bg_color && printf "\033]111\033\\" >&3 2>/dev/null || true
                 printf "\033]0;%s\033\\" "$SHORT_CWD" >&3 2>/dev/null || true
             } &
             local reset_pid=$!
@@ -203,11 +155,11 @@ unified_timer_worker() {
             if [[ "$stage_color" == "reset" ]]; then
                 _idle_reset_palette
             else
-                _idle_send_palette "$(_idle_get_palette_mode)"
+                _idle_send_palette "$(_get_palette_mode)"
             fi
 
             # Apply Background Color (respects ENABLE_BACKGROUND_CHANGE and STYLISH_SKIP_BG_TINT)
-            if _idle_should_send_bg_color; then
+            if should_send_bg_color; then
                 if [[ "$stage_color" == "reset" ]]; then
                     printf "\033]111\033\\" >&3
                 else
