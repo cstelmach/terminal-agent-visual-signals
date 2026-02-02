@@ -13,11 +13,15 @@
 # ==============================================================================
 
 # Resolve script directory for sourcing
+# Works in both bash and zsh (matches theme-config-loader.sh pattern)
 if [[ -n "${BASH_SOURCE[0]:-}" ]]; then
-    _TITLE_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    _TITLE_THIS_SCRIPT="${BASH_SOURCE[0]}"
+elif [[ -n "${(%):-%x}" ]] 2>/dev/null; then
+    _TITLE_THIS_SCRIPT="${(%):-%x}"  # zsh-specific: current script path
 else
-    _TITLE_SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
+    _TITLE_THIS_SCRIPT="$0"  # Fallback (may not work when sourced)
 fi
+_TITLE_SCRIPT_DIR="$( cd "$( dirname "$_TITLE_THIS_SCRIPT" )" && pwd )"
 
 source "${_TITLE_SCRIPT_DIR}/title-state-persistence.sh"
 
