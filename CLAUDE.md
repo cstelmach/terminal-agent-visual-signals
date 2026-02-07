@@ -24,9 +24,11 @@ obsidian-view project PC17 --files
 
 ```bash
 # Test visual signals manually
-./src/core/trigger.sh processing   # Orange
-./src/core/trigger.sh complete     # Green
-./src/core/trigger.sh reset        # Default
+./src/core/trigger.sh processing     # Orange
+./src/core/trigger.sh complete       # Green
+./src/core/trigger.sh subagent-start # Golden-Yellow (NEW)
+./src/core/trigger.sh tool_error     # Orange-Red (NEW)
+./src/core/trigger.sh reset          # Default
 
 # Quick disable (run without visual signals)
 TAVS_STATUS=false claude
@@ -50,7 +52,7 @@ cd src/agents/opencode && npm install && npm run build
 
 | Platform | Support | Installation |
 |----------|---------|--------------|
-| Claude Code | ✅ Full (9 events) | Plugin marketplace or manual |
+| Claude Code | ✅ Full (12 events) | Plugin marketplace or manual |
 | Gemini CLI | ✅ Full (8 events) | `./install-gemini.sh` |
 | OpenCode | ✅ Good (4 events) | npm package |
 | Codex CLI | ⚠️ Limited (1 event) | `./install-codex.sh` |
@@ -64,6 +66,8 @@ cd src/agents/opencode && npm install && npm run build
 | Complete | Green | 🟢 | Response finished |
 | Idle | Purple (graduated) | 🟣 | Waiting for input |
 | Compacting | Teal | 🔄 | Context compression |
+| **Subagent** | Golden-Yellow | 🔀 | **NEW:** Task tool spawned subagent |
+| **Tool Error** | Orange-Red | ❌ | **NEW:** Tool execution failed |
 
 **TrueColor Mode Behavior:** When TrueColor is active (`COLORTERM=truecolor`),
 light/dark switching is skipped by default. TrueColor terminals have their own
