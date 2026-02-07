@@ -69,6 +69,25 @@ ls --color=auto
 ./src/core/trigger.sh reset
 ```
 
+### Test Session Icons
+
+```bash
+# Trigger reset to assign an icon (simulates SessionStart)
+./src/core/trigger.sh reset
+
+# Check icon was assigned
+cat ~/.cache/tavs/session-icon.*  # Should show an animal emoji
+
+# Check registry
+cat ~/.cache/tavs/session-icon-registry  # tty_key=emoji pairs
+
+# Verify icon appears in title
+./src/core/trigger.sh processing  # Icon should show in tab title
+
+# Clean up
+./src/core/trigger.sh reset
+```
+
 ### Test Terminal Title Mode
 
 ```bash
@@ -168,6 +187,9 @@ export DEBUG_ALL=1
 - [ ] Subagent counter resets on complete
 - [ ] Tool error shows orange-red flash
 - [ ] Tool error auto-returns to processing after 1.5s
+- [ ] Session icon assigned on reset (animal emoji in `~/.cache/tavs/`)
+- [ ] Session icon appears in tab title via `{ICON}` token
+- [ ] Concurrent sessions get unique icons (registry dedup)
 
 ## Common Test Scenarios
 
@@ -208,12 +230,22 @@ Trigger a tool that fails:
 - Title should show error face (e.g., `Ǝ[✕ ✕]E`) and ❌ emoji
 - After 1.5s, should auto-return to processing or subagent state
 
+### Session Icons
+
+Verify icon persistence and uniqueness:
+- Reset assigns a unique animal emoji per terminal tab
+- Icon persists across `/clear` (tied to TTY device)
+- Opening a second terminal tab gets a different icon
+- Closing a tab frees the icon for reuse (stale cleanup)
+- Icon shows in tab title between `{AGENTS}` and `{BASE}` tokens
+
 ### Session Reset
 
 End and start new session:
 - Background should reset to default
 - No lingering state from previous session
 - Subagent counter should be reset to 0
+- Session icon should be assigned (if `ENABLE_SESSION_ICONS=true`)
 
 ## Terminal-Specific Tests
 

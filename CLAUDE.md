@@ -98,6 +98,7 @@ Set in `~/.terminal-visual-signals/user.conf`.
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
 | `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
+| `src/core/session-icon.sh` | Unique animal emoji per terminal tab (registry-based dedup) |
 | `src/core/session-state.sh` | Session state tracking (current state, timer PID) |
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
 | `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
@@ -167,8 +168,8 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 # Optional: Force a specific base title
 # TAVS_TITLE_BASE="My Project"
 
-# Optional: Customize format (default includes {AGENTS} for subagent count)
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
+# Optional: Customize format (default includes {AGENTS} and {ICON})
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"
 # TAVS_AGENTS_FORMAT="+{N}"  # Format for subagent count ({N} = number)
 ```
 
@@ -187,10 +188,14 @@ The `TAVS_TITLE_FORMAT` template supports these placeholders:
 | `{FACE}` | Agent face expression | `Ǝ[• •]E` |
 | `{EMOJI}` | State emoji | `🟠` |
 | `{AGENTS}` | Active subagent count (empty when none) | `+2` |
+| `{ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
 
 The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
 It only appears when subagents are active (count > 0).
+
+The `{ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
+Each terminal tab gets a unique animal emoji from a pool of 25, persisting across `/clear`.
 
 ### Enabling Full Title Mode
 
