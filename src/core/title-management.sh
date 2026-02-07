@@ -252,32 +252,40 @@ compose_title() {
 
     # Get face if enabled
     if [[ "${TAVS_TITLE_SHOW_FACE:-true}" == "true" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
-        # Use animated spinner eyes for processing state in full mode
-        if [[ "$state" == "processing" && "${TAVS_TITLE_MODE:-skip-processing}" == "full" ]]; then
-            if type get_spinner_eyes &>/dev/null; then
-                local spinner_result
-                spinner_result=$(get_spinner_eyes)
-                if [[ "$spinner_result" != "FACE_VARIANT" && -n "$spinner_result" ]]; then
-                    # Build face with spinner eyes using agent-specific frame
-                    local left_eye="${spinner_result%% *}"
-                    local right_eye="${spinner_result##* }"
-                    # Use intermediate variable to avoid zsh brace expansion issues
-                    local _default_frame='[{L} {R}]'
-                    local frame="${SPINNER_FACE_FRAME:-$_default_frame}"
-                    # Substitute placeholders with spinner eyes
-                    face="${frame//\{L\}/$left_eye}"
-                    face="${face//\{R\}/$right_eye}"
+        if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
+            # Compact mode: emoji eyes in face frame (includes subagent count)
+            if type get_compact_face &>/dev/null; then
+                face=$(get_compact_face "$state")
+            fi
+        else
+            # Standard mode: text eyes with optional spinner animation
+            # Use animated spinner eyes for processing state in full mode
+            if [[ "$state" == "processing" && "${TAVS_TITLE_MODE:-skip-processing}" == "full" ]]; then
+                if type get_spinner_eyes &>/dev/null; then
+                    local spinner_result
+                    spinner_result=$(get_spinner_eyes)
+                    if [[ "$spinner_result" != "FACE_VARIANT" && -n "$spinner_result" ]]; then
+                        # Build face with spinner eyes using agent-specific frame
+                        local left_eye="${spinner_result%% *}"
+                        local right_eye="${spinner_result##* }"
+                        # Use intermediate variable to avoid zsh brace expansion issues
+                        local _default_frame='[{L} {R}]'
+                        local frame="${SPINNER_FACE_FRAME:-$_default_frame}"
+                        # Substitute placeholders with spinner eyes
+                        face="${frame//\{L\}/$left_eye}"
+                        face="${face//\{R\}/$right_eye}"
+                    fi
                 fi
             fi
-        fi
-        # Fallback to static random face if spinner not used/available
-        if [[ -z "$face" ]] && type get_random_face &>/dev/null; then
-            face=$(get_random_face "$state")
+            # Fallback to static random face if spinner not used/available
+            if [[ -z "$face" ]] && type get_random_face &>/dev/null; then
+                face=$(get_random_face "$state")
+            fi
         fi
     fi
 
-    # Get emoji if enabled
-    if [[ "${TAVS_TITLE_SHOW_EMOJI:-true}" == "true" ]]; then
+    # Get emoji if enabled (suppressed in compact mode - embedded in face eyes)
+    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" && "${TAVS_TITLE_SHOW_EMOJI:-true}" == "true" ]]; then
         case "$state" in
             processing) emoji="$EMOJI_PROCESSING" ;;
             permission) emoji="$EMOJI_PERMISSION" ;;
@@ -290,10 +298,12 @@ compose_title() {
         esac
     fi
 
-    # Get subagent count token (empty when no subagents active)
+    # Get subagent count token (suppressed in compact mode - embedded as right eye)
     local agents=""
-    if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
-        agents=$(get_subagent_title_suffix 2>/dev/null)
+    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" ]]; then
+        if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
+            agents=$(get_subagent_title_suffix 2>/dev/null)
+        fi
     fi
 
     # Get session icon (empty when disabled or no icon assigned)

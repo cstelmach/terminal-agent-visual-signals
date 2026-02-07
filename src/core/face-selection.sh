@@ -129,3 +129,75 @@ get_random_face() {
     local index=$((RANDOM % count))
     eval "echo \"\${${array_name}[$index]}\""
 }
+
+# ==============================================================================
+# COMPACT FACE SELECTION (Emoji Eyes)
+# ==============================================================================
+# Returns a face with emoji eyes from compact theme pools.
+# Embeds state info (emoji color) and optionally subagent count in the face.
+#
+# Usage: get_compact_face <state>
+# Returns: Face with emoji eyes (e.g., "Ǝ[🟠 🟠]E" or "Ǝ[🔶 +2]E")
+# ==============================================================================
+
+get_compact_face() {
+    local state="$1"
+    local theme="${TAVS_COMPACT_THEME:-semantic}"
+    local theme_upper
+    theme_upper="$(echo "$theme" | tr '[:lower:]' '[:upper:]')"
+
+    # Map state to array suffix (Bash 3.2 compatible - use tr instead of ^^)
+    local state_upper
+    case "$state" in
+        processing) state_upper="PROCESSING" ;;
+        permission) state_upper="PERMISSION" ;;
+        complete)   state_upper="COMPLETE" ;;
+        compacting) state_upper="COMPACTING" ;;
+        reset)      state_upper="RESET" ;;
+        idle_0)     state_upper="IDLE_0" ;;
+        idle_1)     state_upper="IDLE_1" ;;
+        idle_2)     state_upper="IDLE_2" ;;
+        idle_3)     state_upper="IDLE_3" ;;
+        idle_4)     state_upper="IDLE_4" ;;
+        idle_5)     state_upper="IDLE_5" ;;
+        idle)       state_upper="IDLE_1" ;;
+        subagent*)  state_upper="SUBAGENT" ;;
+        tool_error) state_upper="TOOL_ERROR" ;;
+        *)          echo ""; return ;;
+    esac
+
+    # Look up emoji eye pool: COMPACT_SEMANTIC_PROCESSING, etc.
+    local array_name="COMPACT_${theme_upper}_${state_upper}"
+    local count
+    eval "count=\${#${array_name}[@]}"
+
+    if [[ $count -eq 0 ]]; then
+        # Fallback: return standard face
+        get_random_face "$state"
+        return
+    fi
+
+    # Random pair selection from pool
+    local index=$((RANDOM % count))
+    local pair
+    eval "pair=\"\${${array_name}[$index]}\""
+    local left="${pair%% *}"
+    local right="${pair##* }"
+
+    # Override right eye with subagent count when active
+    if [[ "$state" == "processing" || "$state" == subagent* ]]; then
+        if type has_active_subagents &>/dev/null && has_active_subagents 2>/dev/null; then
+            local agent_count
+            agent_count=$(get_subagent_count 2>/dev/null)
+            [[ $agent_count -gt 0 ]] && right="+${agent_count}"
+        fi
+    fi
+
+    # Substitute into agent frame template (reuses spinner face frames)
+    local _default_frame='[{L} {R}]'
+    local frame="${SPINNER_FACE_FRAME:-$_default_frame}"
+    local face
+    face="${frame//\{L\}/$left}"
+    face="${face//\{R\}/$right}"
+    echo "$face"
+}

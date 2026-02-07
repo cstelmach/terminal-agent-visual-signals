@@ -176,8 +176,13 @@ unified_timer_worker() {
             # Apply Title (with face if anthropomorphising enabled)
             # Uses >&3 directly to avoid blocking - consistent with color writes
             local title_face=""
-            if [[ "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
-                # Use new agent-specific random face system if available, else fall back to legacy
+            if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
+                # Compact mode: emoji eyes in face frame (state info embedded)
+                if type get_compact_face &>/dev/null; then
+                    title_face=$(get_compact_face "idle_${current_stage}")
+                fi
+            elif [[ "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
+                # Standard mode: text-based eyes
                 if type get_random_face &>/dev/null; then
                     title_face=$(get_random_face "idle_${current_stage}")
                 elif type get_face &>/dev/null; then
@@ -188,7 +193,10 @@ unified_timer_worker() {
             # Apply Title (respects ENABLE_TITLE_PREFIX setting)
             if [[ "$ENABLE_TITLE_PREFIX" == "true" ]]; then
                 local title=""
-                if [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
+                if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
+                    # Compact: face already contains emoji, skip separate stage_emoji
+                    title="$title_face $SESSION_ICON $SHORT_CWD"
+                elif [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
                     if [[ -n "$title_face" ]]; then
                         if [[ "$FACE_POSITION" == "before" ]]; then
                             title="$title_face $stage_emoji $SESSION_ICON $SHORT_CWD"

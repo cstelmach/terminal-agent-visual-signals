@@ -134,6 +134,23 @@
 # TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
 
 # ==============================================================================
+# COMPACT FACE MODE
+# ==============================================================================
+# Replace text-based eyes with emoji. State color and subagent count are
+# embedded directly in the face, making titles shorter and more expressive.
+#
+#   Standard:  Ǝ[• •]E 🟠 +2 🦊 ~/proj
+#   Compact:   Ǝ[🟠 +2]E 🦊 ~/proj
+#
+# When compact is active, {EMOJI} and {AGENTS} tokens are auto-suppressed.
+#
+# TAVS_FACE_MODE="compact"          # "standard" (default) | "compact"
+# TAVS_COMPACT_THEME="semantic"     # "semantic" | "circles" | "squares" | "mixed"
+#
+# Override individual eye pools (format: "left right" pairs):
+# COMPACT_SEMANTIC_PROCESSING=('🟠 🟠' '🟧 🟠' '🟧 🟧' '🧡 🧡')
+
+# ==============================================================================
 # USER TITLE OVERRIDE BEHAVIOR
 # ==============================================================================
 # When TAVS detects you've manually renamed a tab, what should it do?
