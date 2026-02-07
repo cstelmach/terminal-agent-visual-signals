@@ -17,18 +17,22 @@ BELL_ON_COMPLETE=true
 BELL_ON_IDLE=false
 BELL_ON_COMPACTING=false
 BELL_ON_RESET=false
+BELL_ON_SUBAGENT=false
+BELL_ON_TOOL_ERROR=false
 
 # Send audible bell if enabled for the state
 send_bell_if_enabled() {
     local state="$1"
     local should_bell=false
     case "$state" in
-        processing) [[ "$BELL_ON_PROCESSING" == "true" ]] && should_bell=true ;;
-        permission) [[ "$BELL_ON_PERMISSION" == "true" ]] && should_bell=true ;;
-        complete)   [[ "$BELL_ON_COMPLETE" == "true" ]] && should_bell=true ;;
-        idle)       [[ "$BELL_ON_IDLE" == "true" ]] && should_bell=true ;;
-        compacting) [[ "$BELL_ON_COMPACTING" == "true" ]] && should_bell=true ;;
-        reset)      [[ "$BELL_ON_RESET" == "true" ]] && should_bell=true ;;
+        processing)  [[ "$BELL_ON_PROCESSING" == "true" ]] && should_bell=true ;;
+        permission)  [[ "$BELL_ON_PERMISSION" == "true" ]] && should_bell=true ;;
+        complete)    [[ "$BELL_ON_COMPLETE" == "true" ]] && should_bell=true ;;
+        idle)        [[ "$BELL_ON_IDLE" == "true" ]] && should_bell=true ;;
+        compacting)  [[ "$BELL_ON_COMPACTING" == "true" ]] && should_bell=true ;;
+        reset)       [[ "$BELL_ON_RESET" == "true" ]] && should_bell=true ;;
+        subagent)    [[ "$BELL_ON_SUBAGENT" == "true" ]] && should_bell=true ;;
+        tool_error)  [[ "$BELL_ON_TOOL_ERROR" == "true" ]] && should_bell=true ;;
     esac
     [[ "$should_bell" == "true" ]] && printf "\007" > "$TTY_DEVICE"
 }

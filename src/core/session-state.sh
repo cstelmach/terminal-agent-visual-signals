@@ -36,13 +36,15 @@ DEBUG_LOG_DIR="/tmp/terminal-visual-signals-debug"
 # Lower priority = easily overridden by any higher state
 get_state_priority() {
     case "$1" in
-        permission) echo 100 ;;  # Highest - waiting for user input
-        compacting) echo 50 ;;   # Mid - system operation
-        processing) echo 30 ;;   # Active work
-        complete)   echo 20 ;;   # Just finished
-        idle)       echo 15 ;;   # Lowest active - any activity overrides immediately
-        reset)      echo 10 ;;   # Baseline
-        *)          echo 0 ;;
+        permission)  echo 100 ;;  # Highest - waiting for user input
+        compacting)  echo 50 ;;   # Mid - system operation
+        tool_error)  echo 35 ;;   # Brief error flash, above processing
+        processing)  echo 30 ;;   # Active work
+        subagent)    echo 25 ;;   # Subagent work, between processing and complete
+        complete)    echo 20 ;;   # Just finished
+        idle)        echo 15 ;;   # Lowest active - any activity overrides immediately
+        reset)       echo 10 ;;   # Baseline
+        *)           echo 0 ;;
     esac
 }
 

@@ -284,8 +284,19 @@ compose_title() {
             complete)   emoji="$EMOJI_COMPLETE" ;;
             idle*)      emoji="$EMOJI_IDLE" ;;
             compacting) emoji="$EMOJI_COMPACTING" ;;
+            subagent*)  emoji="$EMOJI_SUBAGENT" ;;
+            tool_error) emoji="$EMOJI_TOOL_ERROR" ;;
             reset|*)    emoji="" ;;
         esac
+    fi
+
+    # Append subagent count suffix if processing or subagent state
+    if [[ "$state" == "processing" || "$state" == "subagent" ]] && type get_subagent_title_suffix &>/dev/null; then
+        local subagent_suffix
+        subagent_suffix=$(get_subagent_title_suffix 2>/dev/null)
+        if [[ -n "$subagent_suffix" ]]; then
+            base_title="$base_title $subagent_suffix"
+        fi
     fi
 
     # Compose using format template or default

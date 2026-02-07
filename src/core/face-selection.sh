@@ -50,6 +50,7 @@ _resolve_agent_faces() {
     local states=(
         PROCESSING PERMISSION COMPLETE COMPACTING RESET
         IDLE_0 IDLE_1 IDLE_2 IDLE_3 IDLE_4 IDLE_5
+        SUBAGENT TOOL_ERROR
     )
 
     local state count
@@ -80,6 +81,8 @@ _resolve_agent_faces() {
                     IDLE_3)      eval "FACES_${state}=('(¬‿¬)')" ;;
                     IDLE_4)      eval "FACES_${state}=('(-.-)zzZ')" ;;
                     IDLE_5)      eval "FACES_${state}=('(︶.︶)ᶻᶻ')" ;;
+                    SUBAGENT)    eval "FACES_${state}=('(⇆-⇆)')" ;;
+                    TOOL_ERROR)  eval "FACES_${state}=('(✕_✕)')" ;;
                 esac
             fi
         fi
@@ -111,6 +114,8 @@ get_random_face() {
         idle_4)     array_name="FACES_IDLE_4" ;;
         idle_5)     array_name="FACES_IDLE_5" ;;
         idle)       array_name="FACES_IDLE_1" ;;  # Default idle to stage 1
+        subagent*)  array_name="FACES_SUBAGENT" ;;
+        tool_error) array_name="FACES_TOOL_ERROR" ;;
         *)          echo ""; return ;;
     esac
 

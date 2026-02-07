@@ -109,12 +109,14 @@ initialize_dynamic_colors() {
     system_mode=$(_detect_system_mode)
 
     # Calculate state colors using hue-shift
-    local color_proc color_perm color_comp color_idle color_compact
+    local color_proc color_perm color_comp color_idle color_compact color_subagent color_tool_error
     color_proc=$(shift_hue "$base_color" "$HUE_PROCESSING")
     color_perm=$(shift_hue "$base_color" "$HUE_PERMISSION")
     color_comp=$(shift_hue "$base_color" "$HUE_COMPLETE")
     color_idle=$(shift_hue "$base_color" "$HUE_IDLE")
     color_compact=$(shift_hue "$base_color" "$HUE_COMPACTING")
+    color_subagent=$(shift_hue "$base_color" "${HUE_SUBAGENT:-50}")
+    color_tool_error=$(shift_hue "$base_color" "${HUE_TOOL_ERROR:-15}")
 
     # Store in session colors
     if [[ -n "$TTY_SAFE" ]]; then
@@ -129,6 +131,8 @@ initialize_dynamic_colors() {
     COLOR_COMPLETE="$color_comp"
     COLOR_IDLE="$color_idle"
     COLOR_COMPACTING="$color_compact"
+    COLOR_SUBAGENT="$color_subagent"
+    COLOR_TOOL_ERROR="$color_tool_error"
     IS_DARK_THEME="$is_dark"
 
     # Rebuild stage arrays with new colors
@@ -238,12 +242,14 @@ get_effective_color() {
 
     # Fall back to theme color
     case "$state" in
-        processing) echo "$COLOR_PROCESSING" ;;
-        permission) echo "$COLOR_PERMISSION" ;;
-        complete)   echo "$COLOR_COMPLETE" ;;
-        idle)       echo "$COLOR_IDLE" ;;
-        compacting) echo "$COLOR_COMPACTING" ;;
-        base)       echo "$COLOR_BASE" ;;
-        *)          echo "" ;;
+        processing)  echo "$COLOR_PROCESSING" ;;
+        permission)  echo "$COLOR_PERMISSION" ;;
+        complete)    echo "$COLOR_COMPLETE" ;;
+        idle)        echo "$COLOR_IDLE" ;;
+        compacting)  echo "$COLOR_COMPACTING" ;;
+        subagent*)   echo "$COLOR_SUBAGENT" ;;
+        tool_error)  echo "$COLOR_TOOL_ERROR" ;;
+        base)        echo "$COLOR_BASE" ;;
+        *)           echo "" ;;
     esac
 }
