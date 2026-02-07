@@ -290,24 +290,22 @@ compose_title() {
         esac
     fi
 
-    # Append subagent count suffix if processing or subagent state
-    if [[ "$state" == "processing" || "$state" == "subagent" ]] && type get_subagent_title_suffix &>/dev/null; then
-        local subagent_suffix
-        subagent_suffix=$(get_subagent_title_suffix 2>/dev/null)
-        if [[ -n "$subagent_suffix" ]]; then
-            base_title="$base_title $subagent_suffix"
-        fi
+    # Get subagent count token (empty when no subagents active)
+    local agents=""
+    if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
+        agents=$(get_subagent_title_suffix 2>/dev/null)
     fi
 
     # Compose using format template or default
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
-    local _default_format='{FACE} {EMOJI} {BASE}'
+    local _default_format='{FACE} {EMOJI} {AGENTS} {BASE}'
     local format="${TAVS_TITLE_FORMAT:-$_default_format}"
     local title="$format"
 
     # Substitute placeholders
     title="${title//\{FACE\}/$face}"
     title="${title//\{EMOJI\}/$emoji}"
+    title="${title//\{AGENTS\}/$agents}"
     title="${title//\{BASE\}/$base_title}"
 
     # Clean up multiple spaces and trim (use printf for safe string handling)

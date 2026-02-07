@@ -98,10 +98,8 @@ get_subagent_title_suffix() {
     count=$(get_subagent_count)
 
     if [[ $count -gt 0 ]]; then
-        if [[ $count -eq 1 ]]; then
-            echo "+1 subagent"
-        else
-            echo "+${count} subagents"
-        fi
+        local _default_fmt='+{N}'
+        local fmt="${TAVS_AGENTS_FORMAT:-$_default_fmt}"
+        echo "${fmt//\{N\}/$count}"
     fi
 }
