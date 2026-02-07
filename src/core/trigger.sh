@@ -40,6 +40,7 @@ source "$CORE_DIR/idle-worker-background.sh"
 source "$CORE_DIR/terminal-detection.sh"
 source "$CORE_DIR/backgrounds.sh"
 source "$CORE_DIR/title-management.sh"
+source "$CORE_DIR/subagent-counter.sh"  # NEW: Subagent tracking
 
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
@@ -197,6 +198,7 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         cleanup_stale_timers
+        reset_subagent_count  # Reset subagent tracking on complete
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
             # Apply palette FIRST (prevents contrast flicker)
@@ -255,6 +257,7 @@ case "$STATE" in
 
     reset)
         kill_idle_timer
+        reset_subagent_count  # Reset subagent tracking on session reset
         # Reset palette FIRST, then background
         _reset_palette_if_enabled
         should_send_bg_color && send_osc_bg "reset"
@@ -270,8 +273,85 @@ case "$STATE" in
         clear_title_state 2>/dev/null || true
         ;;
 
+    # ===========================================================================
+    # NEW: Subagent State (SubagentStart hook)
+    # ===========================================================================
+    # Fires when Task tool spawns a subagent (Explore, Plan, Bash, custom)
+    subagent|subagent-start)
+        should_change_state "subagent" || exit 0
+        increment_subagent_count
+        kill_idle_timer
+        if [[ "$ENABLE_SUBAGENT" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
+            should_send_bg_color && send_osc_bg "$COLOR_SUBAGENT"
+            should_send_title "subagent" && set_tavs_title "subagent"
+            set_state_background_image "subagent"
+        fi
+        send_bell_if_enabled "subagent"
+        record_state "subagent"
+        ;;
+
+    # ===========================================================================
+    # NEW: Subagent Stop (SubagentStop hook)
+    # ===========================================================================
+    # Fires when a subagent completes. Decrements counter.
+    # If no more subagents, returns to processing state.
+    subagent-stop)
+        local remaining_count
+        remaining_count=$(decrement_subagent_count)
+
+        if [[ $remaining_count -eq 0 ]]; then
+            # All subagents done - return to processing state
+            [[ "$DEBUG_ALL" == "1" ]] && echo "[TAVS] All subagents complete, returning to processing" >&2
+
+            if [[ "$ENABLE_PROCESSING" == "true" ]]; then
+                _apply_palette_if_enabled
+                should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
+                should_send_title "processing" && set_tavs_title "processing"
+                set_state_background_image "processing"
+            fi
+            record_state "processing"
+        else
+            [[ "$DEBUG_ALL" == "1" ]] && echo "[TAVS] Subagent complete, $remaining_count still active" >&2
+            # Stay in subagent state, update title with new count
+            should_send_title "subagent" && set_tavs_title "subagent"
+        fi
+        ;;
+
+    # ===========================================================================
+    # NEW: Tool Error State (PostToolUseFailure hook)
+    # ===========================================================================
+    # Fires when a tool execution fails. Shows brief error indication.
+    tool_error|tool-error)
+        # Don't check should_change_state - errors should always show briefly
+        kill_idle_timer
+        if [[ "$ENABLE_TOOL_ERROR" == "true" ]]; then
+            # Apply palette FIRST (prevents contrast flicker)
+            _apply_palette_if_enabled
+            should_send_bg_color && send_osc_bg "$COLOR_TOOL_ERROR"
+            should_send_title "tool_error" && set_tavs_title "tool_error"
+            set_state_background_image "tool_error"
+        fi
+        send_bell_if_enabled "tool_error"
+        record_state "tool_error"
+
+        # Auto-return to previous state after 1.5 seconds
+        # Use background process to avoid blocking the hook
+        (
+            sleep 1.5
+            # Return to processing or subagent state
+            if has_active_subagents 2>/dev/null; then
+                "$SCRIPT_DIR/trigger.sh" subagent
+            else
+                "$SCRIPT_DIR/trigger.sh" processing
+            fi
+        ) </dev/null >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+        ;;
+
     *)
-        echo "Usage: $0 {permission|idle|complete|processing|compacting|reset}" >&2
+        echo "Usage: $0 {permission|idle|complete|processing|compacting|reset|subagent|subagent-stop|tool_error}" >&2
         exit 1
         ;;
 esac
