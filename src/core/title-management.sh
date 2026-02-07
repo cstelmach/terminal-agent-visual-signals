@@ -296,6 +296,12 @@ compose_title() {
         agents=$(get_subagent_title_suffix 2>/dev/null)
     fi
 
+    # Get session icon (empty when disabled or no icon assigned)
+    local icon=""
+    if [[ "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && type get_session_icon &>/dev/null; then
+        icon=$(get_session_icon 2>/dev/null)
+    fi
+
     # Compose using format template or default
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
     local _default_format='{FACE} {EMOJI} {AGENTS} {BASE}'
@@ -306,6 +312,7 @@ compose_title() {
     title="${title//\{FACE\}/$face}"
     title="${title//\{EMOJI\}/$emoji}"
     title="${title//\{AGENTS\}/$agents}"
+    title="${title//\{ICON\}/$icon}"
     title="${title//\{BASE\}/$base_title}"
 
     # Clean up multiple spaces and trim (use printf for safe string handling)

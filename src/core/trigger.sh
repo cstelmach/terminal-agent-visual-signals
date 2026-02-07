@@ -40,7 +40,8 @@ source "$CORE_DIR/idle-worker-background.sh"
 source "$CORE_DIR/terminal-detection.sh"
 source "$CORE_DIR/backgrounds.sh"
 source "$CORE_DIR/title-management.sh"
-source "$CORE_DIR/subagent-counter.sh"  # NEW: Subagent tracking
+source "$CORE_DIR/subagent-counter.sh"  # Subagent tracking
+source "$CORE_DIR/session-icon.sh"     # Session icon per terminal tab
 
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
@@ -269,6 +270,8 @@ case "$STATE" in
         # Initialize session spinner if session identity is enabled
         reset_spinner
         [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
+        # Session icon: assign if not already assigned (idempotent, persists across /clear)
+        [[ "$ENABLE_SESSION_ICONS" == "true" ]] && assign_session_icon
         # Clear title state on full reset (new session)
         clear_title_state 2>/dev/null || true
         ;;

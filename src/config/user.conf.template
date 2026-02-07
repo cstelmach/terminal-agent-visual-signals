@@ -101,21 +101,37 @@
 #   {FACE}   - Agent face (e.g., "Ǝ[• •]E")
 #   {EMOJI}  - State emoji (e.g., "🟠")
 #   {AGENTS} - Active subagent count (e.g., "+2") - empty when none
+#   {ICON}   - Session icon (e.g., "🐙") - unique per terminal tab
 #   {BASE}   - Base title (your tab name or fallback)
 #
-# When {AGENTS} is empty (no subagents), double spaces are collapsed automatically.
+# Empty tokens (no subagents, icons disabled) collapse double spaces automatically.
 #
 # Examples:
-#   "{FACE} {EMOJI} {AGENTS} {BASE}" -> "Ǝ[• •]E 🟠 +2 My Project" (default)
-#   "{FACE} {EMOJI}{AGENTS} {BASE}"  -> "Ǝ[• •]E 🟠+2 My Project"  (tight)
-#   "{EMOJI} {AGENTS} {BASE}"        -> "🟠 +2 My Project" (no face)
-#   "{EMOJI} {BASE}"                 -> "🟠 My Project" (no count)
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
+#   "{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"  -> "Ǝ[• •]E 🟠 +2 🐙 ~/project" (default)
+#   "{FACE} {EMOJI} {AGENTS} {ICON}"          -> "Ǝ[• •]E 🟠 +2 🐙" (no path)
+#   "{EMOJI} {ICON} {BASE}"                   -> "🟠 🐙 ~/project" (minimal)
+#   "{FACE} {EMOJI} {AGENTS} {BASE}"          -> "Ǝ[• •]E 🟠 +2 ~/project" (no icon)
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"
 
 # Subagent count format. {N} = count number.
 # Only shown when count > 0. Empty string hides the counter entirely.
 # Examples: "+{N}" (concise), "+{N} subagents" (verbose), "({N})" (parens)
 # TAVS_AGENTS_FORMAT="+{N}"
+
+# ==============================================================================
+# SESSION ICONS
+# ==============================================================================
+# Each terminal tab gets a unique animal emoji for visual identification.
+# Icons persist across /clear (tied to the terminal tab, not session).
+# When all icons are taken by active tabs, duplicates are allowed.
+#
+# ENABLE_SESSION_ICONS="true"
+#
+# Custom icon pool (override the default ~25 animals):
+# TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
+#
+# To remove the icon from the title format entirely:
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
 
 # ==============================================================================
 # USER TITLE OVERRIDE BEHAVIOR
