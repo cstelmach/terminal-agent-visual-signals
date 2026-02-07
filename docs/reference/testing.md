@@ -10,16 +10,45 @@ Testing terminal visual signals involves verifying OSC escape sequences work cor
 
 ```bash
 # From repo root
-./src/core/trigger.sh processing   # Orange background
-./src/core/trigger.sh permission   # Red background
-./src/core/trigger.sh complete     # Green background
-./src/core/trigger.sh idle         # Purple background
-./src/core/trigger.sh compacting   # Teal background
-./src/core/trigger.sh reset        # Reset to default
+./src/core/trigger.sh processing     # Orange background
+./src/core/trigger.sh permission     # Red background
+./src/core/trigger.sh complete       # Green background
+./src/core/trigger.sh idle           # Purple background
+./src/core/trigger.sh compacting     # Teal background
+./src/core/trigger.sh subagent-start # Golden-Yellow background
+./src/core/trigger.sh subagent-stop  # Returns to processing
+./src/core/trigger.sh tool_error     # Orange-Red (auto-returns after 1.5s)
+./src/core/trigger.sh reset          # Reset to default
 
 # Test light mode
 FORCE_MODE=light ./src/core/trigger.sh processing
 FORCE_MODE=light ./src/core/trigger.sh reset
+```
+
+### Test Subagent Counter
+
+```bash
+# Simulate multiple subagents spawning
+./src/core/trigger.sh subagent-start  # Counter: 1
+./src/core/trigger.sh subagent-start  # Counter: 2 (title shows +2)
+./src/core/trigger.sh subagent-stop   # Counter: 1 (title shows +1)
+./src/core/trigger.sh subagent-stop   # Counter: 0 (returns to processing)
+
+# Verify counter resets on complete
+./src/core/trigger.sh subagent-start
+./src/core/trigger.sh complete        # Counter resets to 0
+./src/core/trigger.sh reset
+```
+
+### Test Tool Error Auto-Return
+
+```bash
+# Tool error should flash orange-red then return to processing
+./src/core/trigger.sh processing
+./src/core/trigger.sh tool_error     # Flashes orange-red
+sleep 2                               # Wait for auto-return
+# Terminal should be back to processing (orange)
+./src/core/trigger.sh reset
 ```
 
 ### Test Palette Theming
@@ -133,6 +162,12 @@ export DEBUG_ALL=1
 - [ ] Palette theming applies to ls/git (when enabled)
 - [ ] Title mode respects TAVS_TITLE_MODE setting
 - [ ] Spinner animation works (when TAVS_TITLE_MODE=full)
+- [ ] Subagent state shows golden-yellow background
+- [ ] Subagent counter increments/decrements correctly
+- [ ] Subagent title shows "+N" count via {AGENTS} token
+- [ ] Subagent counter resets on complete
+- [ ] Tool error shows orange-red flash
+- [ ] Tool error auto-returns to processing after 1.5s
 
 ## Common Test Scenarios
 
@@ -158,11 +193,27 @@ Wait after completion:
 - Continue through all 6 stages
 - New prompt resets to processing
 
+### Subagent Lifecycle
+
+Trigger a prompt that spawns Task tool subagents:
+- Background should turn golden-yellow
+- Title should show subagent face (e.g., `Ǝ[⇆ ⇆]E`) and `+N` count
+- As subagents complete, count decrements
+- When all complete, returns to processing (orange)
+
+### Tool Error Flash
+
+Trigger a tool that fails:
+- Background should flash orange-red briefly
+- Title should show error face (e.g., `Ǝ[✕ ✕]E`) and ❌ emoji
+- After 1.5s, should auto-return to processing or subagent state
+
 ### Session Reset
 
 End and start new session:
 - Background should reset to default
 - No lingering state from previous session
+- Subagent counter should be reset to 0
 
 ## Terminal-Specific Tests
 

@@ -29,11 +29,19 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 │  │                    Core System                          │    │
 │  │                 src/core/trigger.sh                     │    │
 │  │                                                         │    │
-│  │  ┌───────────┐  ┌─────────┐  ┌──────────┐ ┌─────────┐ │    │
-│  │  │ theme.sh  │  │state.sh │  │terminal.sh│ │idle-    │ │    │
-│  │  │agent-     │  │         │  │           │ │worker.sh│ │    │
-│  │  │ theme.sh  │  │         │  │spinner.sh │ │         │ │    │
-│  │  └───────────┘  └─────────┘  └──────────┘ └─────────┘ │    │
+│  │  ┌──────────────┐ ┌─────────────┐ ┌──────────────────┐ │    │
+│  │  │theme-config- │ │session-     │ │terminal-osc-     │ │    │
+│  │  │ loader.sh    │ │ state.sh    │ │ sequences.sh     │ │    │
+│  │  │face-         │ │             │ │                   │ │    │
+│  │  │ selection.sh │ │             │ │spinner.sh        │ │    │
+│  │  └──────────────┘ └─────────────┘ └──────────────────┘ │    │
+│  │                                                         │    │
+│  │  ┌──────────────┐ ┌─────────────┐ ┌──────────────────┐ │    │
+│  │  │title-        │ │idle-worker- │ │subagent-         │ │    │
+│  │  │ management.sh│ │ background  │ │ counter.sh       │ │    │
+│  │  │title-        │ │ .sh         │ │palette-mode-     │ │    │
+│  │  │ iterm2.sh    │ │             │ │ helpers.sh       │ │    │
+│  │  └──────────────┘ └─────────────┘ └──────────────────┘ │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
 │                          ▼                                      │
@@ -54,51 +62,61 @@ Terminal Agent Visual Signals provides terminal state indicators for multiple AI
 ### trigger.sh (Entry Point)
 
 Main dispatcher that handles state transitions:
-- Receives state parameter (processing, permission, complete, idle, compacting, reset)
+- Receives state parameter (processing, permission, complete, idle, compacting, subagent-start, subagent-stop, tool_error, reset)
 - Sources configuration modules
 - Executes appropriate OSC sequences
 - Manages idle timer lifecycle
+- Coordinates subagent counter and auto-return for tool errors
 
-### theme.sh (Configuration)
+### theme-config-loader.sh (Configuration)
 
-Defines visual appearance and loads configuration hierarchy:
-- Colors for each state (Catppuccin Frappe palette default)
-- Toggle switches for features (ENABLE_BACKGROUND_CHANGE, ENABLE_TITLE_PREFIX)
-- Anthropomorphising configuration
-- Sources agent-theme.sh for agent-specific theming
+Loads configuration hierarchy and resolves agent-specific variables:
+- Master defaults from `src/config/defaults.conf`
+- User overrides from `~/.terminal-visual-signals/user.conf`
+- Theme preset loading (Catppuccin, Nord, Dracula, etc.)
+- AGENT_ prefix resolution (e.g., `CLAUDE_DARK_PROCESSING` -> `DARK_PROCESSING`)
+- Color resolution based on dark/light/muted mode
 
-### agent-theme.sh (Agent Theming)
+### face-selection.sh (Face Selection)
 
-Agent-specific face, color, and background management:
-- `load_agent_faces()` - Load faces.conf from agent data directory
-- `get_random_face()` - Random face selection from pool for each state
-- `load_agent_colors()` - Optional per-agent color overrides
-- `get_agent_background_path()` - Agent-specific background image resolution
-- Fallback to minimal faces for unknown agents
+Random face selection from per-agent face pools:
+- `get_random_face()` - Select random face for a state from AGENT_FACES_ arrays
+- Supports all states including subagent and tool_error
+- Fallback to UNKNOWN_ faces for unrecognized agents
 
-### themes.sh (Legacy Compatibility)
-
-Backward-compatible wrapper for old `get_face()` calls:
-- Delegates to `get_random_face()` when agent-theme.sh is loaded
-- Falls back to minimal faces if agent-theme.sh unavailable
-- **Deprecated:** New code should use `get_random_face()` directly
-
-### state.sh (State Management)
+### session-state.sh (State Management)
 
 Session state tracking:
 - Records current state to file
 - Manages state transitions
 - Prevents duplicate signals
 
-### terminal.sh (OSC Functions)
+### terminal-osc-sequences.sh (OSC Functions)
 
 Terminal escape sequence functions:
 - `send_osc_bg` - Change background color (OSC 11)
-- `send_osc_title` - Update tab title (OSC 0, integrates spinner for processing state)
 - `send_osc_palette` - Modify 16-color ANSI palette (OSC 4)
 - `send_osc_palette_reset` - Reset palette to terminal defaults (OSC 104)
 - `send_bell_if_enabled` - Notification bell (BEL)
 - `_build_osc_palette_seq` - Build palette sequence (shared by trigger and idle-worker)
+
+### title-management.sh (Title Composition)
+
+Title management with user override detection:
+- `compose_title()` - Build title from `{FACE}`, `{EMOJI}`, `{AGENTS}`, `{BASE}` tokens
+- `set_tavs_title()` - Set title with full state tracking and user override respect
+- `reset_tavs_title()` - Reset title to base (remove TAVS prefix)
+- User title detection on iTerm2 via OSC 1337
+- Title lock/unlock for explicit user control
+
+### subagent-counter.sh (Subagent Tracking)
+
+Tracks active subagent count for visual state and title display:
+- `increment_subagent_count()` - Called on SubagentStart hook
+- `decrement_subagent_count()` - Called on SubagentStop hook
+- `get_subagent_title_suffix()` - Returns formatted count (e.g., `+2`) for title
+- `reset_subagent_count()` - Resets on complete/reset states
+- Session-isolated via TTY-safe temp files
 
 ### spinner.sh (Animated Spinners)
 
@@ -109,7 +127,7 @@ Manages animated spinner frames for processing state titles (when `TAVS_TITLE_MO
 - Per-agent face frames: `{L}` and `{R}` placeholders replaced with spinner characters
 - Secure state storage: `~/.cache/tavs/` (not `/tmp`) with safe file parsing
 
-### idle-worker.sh (Idle Timer)
+### idle-worker-background.sh (Idle Timer)
 
 Background process for graduated idle states:
 - Spawns after completion
@@ -122,7 +140,8 @@ Background process for graduated idle states:
 
 - **Method:** JSON hooks in `~/.claude/settings.json`
 - **Path:** `${CLAUDE_PLUGIN_ROOT}` variable
-- **Features:** Full event coverage (9 events)
+- **Features:** Full event coverage (14 hook routes across 11 event types)
+- **Events:** UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, Stop, Notification (permission_prompt, idle_prompt), SessionStart, SessionEnd, PreCompact (auto, manual), SubagentStart, SubagentStop
 - **Plugin:** Marketplace installation supported
 
 ### Gemini CLI (Shell Hooks)
@@ -148,13 +167,15 @@ Background process for graduated idle states:
 
 ## Visual States
 
-| State | Color (Hex) | Emoji | Description |
-|-------|-------------|-------|-------------|
-| Processing | `#ef9f76` | 🟠 | Agent working |
-| Permission | `#e78284` | 🔴 | Needs user approval |
-| Complete | `#a6d189` | 🟢 | Response finished |
-| Idle (6 stages) | `#ca9ee6` → deeper | 🟣 | Graduated idle |
-| Compacting | `#81c8be` | 🔄 | Context compression |
+| State | Color | Emoji | Description |
+|-------|-------|-------|-------------|
+| Processing | Orange | 🟠 | Agent working |
+| Permission | Red | 🔴 | Needs user approval |
+| Complete | Green | 🟢 | Response finished |
+| Idle (6 stages) | Purple → deeper | 🟣 | Graduated idle |
+| Compacting | Teal | 🔄 | Context compression |
+| Subagent | Golden-Yellow | 🔀 | Task tool spawned subagent |
+| Tool Error | Orange-Red | ❌ | Tool execution failed (auto-returns after 1.5s) |
 | Reset | Default | - | Clear state |
 
 ## Data Flow
@@ -172,27 +193,53 @@ Agent trigger.sh called with "processing"
 Core trigger.sh:
   1. Kill any existing idle timer
   2. Check state change needed
-  3. Send OSC 11 (background color)
-  4. Check TAVS_TITLE_MODE (full/skip-processing/off)
-  5. Send OSC 0 (title with emoji/face/spinner)
-  6. Record state
+  3. Apply palette if enabled (OSC 4)
+  4. Send OSC 11 (background color)
+  5. Check TAVS_TITLE_MODE (full/prefix-only/skip-processing/off)
+  6. Compose title with {FACE} {EMOJI} {AGENTS} {BASE} tokens
+  7. Send OSC 0 (title)
+  8. Record state
        │
        ▼
 [Agent works, tools execute...]
+       │
+       ├──► Tool fails → PostToolUseFailure hook
+       │         │
+       │         ▼
+       │    trigger.sh "tool_error"
+       │      - Orange-red bg, ❌ emoji
+       │      - Auto-returns to processing after 1.5s
+       │
+       ├──► Task tool spawns subagent → SubagentStart hook
+       │         │
+       │         ▼
+       │    trigger.sh "subagent-start"
+       │      - Increment counter
+       │      - Golden-yellow bg, 🔀 emoji
+       │      - Title shows "+N" subagent count
+       │
+       ├──► Subagent completes → SubagentStop hook
+       │         │
+       │         ▼
+       │    trigger.sh "subagent-stop"
+       │      - Decrement counter
+       │      - If count=0, return to processing
+       │      - Otherwise update title with new count
        │
        ▼
 CLI Hook fires (Stop/AfterAgent/onAgentResponse)
        │
        ▼
 Core trigger.sh called with "complete"
-  1. Send complete signals
-  2. Spawn idle-worker.sh background process
+  1. Reset subagent counter
+  2. Send complete signals
+  3. Spawn idle-worker background process
        │
        ▼
 [30+ seconds pass without activity]
        │
        ▼
-idle-worker.sh transitions through idle stages
+idle-worker transitions through 6 idle stages
 ```
 
 ## Configuration Files

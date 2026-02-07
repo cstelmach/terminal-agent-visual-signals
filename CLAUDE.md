@@ -52,7 +52,7 @@ cd src/agents/opencode && npm install && npm run build
 
 | Platform | Support | Installation |
 |----------|---------|--------------|
-| Claude Code | ✅ Full (12 events) | Plugin marketplace or manual |
+| Claude Code | ✅ Full (14 hooks) | Plugin marketplace or manual |
 | Gemini CLI | ✅ Full (8 events) | `./install-gemini.sh` |
 | OpenCode | ✅ Good (4 events) | npm package |
 | Codex CLI | ⚠️ Limited (1 event) | `./install-codex.sh` |
@@ -66,8 +66,8 @@ cd src/agents/opencode && npm install && npm run build
 | Complete | Green | 🟢 | Response finished |
 | Idle | Purple (graduated) | 🟣 | Waiting for input |
 | Compacting | Teal | 🔄 | Context compression |
-| **Subagent** | Golden-Yellow | 🔀 | **NEW:** Task tool spawned subagent |
-| **Tool Error** | Orange-Red | ❌ | **NEW:** Tool execution failed |
+| Subagent | Golden-Yellow | 🔀 | Task tool spawned subagent |
+| Tool Error | Orange-Red | ❌ | Tool execution failed (auto-returns after 1.5s) |
 
 **TrueColor Mode Behavior:** When TrueColor is active (`COLORTERM=truecolor`),
 light/dark switching is skipped by default. TrueColor terminals have their own
@@ -87,18 +87,24 @@ Set in `~/.terminal-visual-signals/user.conf`.
 
 | File | Purpose |
 |------|---------|
-| `src/core/trigger.sh` | Main signal dispatcher |
-| `src/core/theme.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
-| `src/core/terminal.sh` | OSC sequences (OSC 4/11 for palette/background) |
-| `src/core/title.sh` | Title management with user override detection |
+| `src/core/trigger.sh` | Main signal dispatcher (all states including subagent/tool_error) |
+| `src/core/theme-config-loader.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
+| `src/core/terminal-osc-sequences.sh` | OSC sequences (OSC 4/11 for palette/background) |
+| `src/core/title-management.sh` | Title management with user override detection |
 | `src/core/title-iterm2.sh` | iTerm2-specific title detection via OSC 1337 |
+| `src/core/title-state-persistence.sh` | Title state persistence across invocations |
 | `src/core/spinner.sh` | Animated spinner system for processing state titles |
+| `src/core/face-selection.sh` | Random face selection from per-agent face pools |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
-| `src/core/detect.sh` | Terminal type, capabilities, color mode detection |
+| `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
+| `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
+| `src/core/session-state.sh` | Session state tracking (current state, timer PID) |
+| `src/core/idle-worker-background.sh` | Background process for graduated idle states |
+| `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
 | `src/config/user.conf.template` | Template for user overrides (copy to ~/.terminal-visual-signals/) |
 | `configure.sh` | Interactive configuration wizard (includes title mode setup) |
-| `hooks/hooks.json` | Claude Code plugin hooks |
+| `hooks/hooks.json` | Claude Code plugin hooks (14 hook routes) |
 
 ## User Configuration
 
@@ -150,6 +156,7 @@ TAVS can control terminal tab titles with animated spinners during processing. F
 Best for users who manually name their terminal tabs. TAVS adds a status prefix without losing your custom name.
 
 **Example:** `My Project` becomes `Ǝ[• •]E 🟠 My Project` during processing.
+With active subagents: `Ǝ[⇆ ⇆]E 🔀 +2 My Project`
 
 1. Run `./configure.sh` and select "Prefix Only" in Step 6, OR
 2. Add to `~/.terminal-visual-signals/user.conf`:
@@ -160,8 +167,9 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 # Optional: Force a specific base title
 # TAVS_TITLE_BASE="My Project"
 
-# Optional: Customize format
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {BASE}"  # or "{EMOJI} {BASE}" for minimal
+# Optional: Customize format (default includes {AGENTS} for subagent count)
+# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
+# TAVS_AGENTS_FORMAT="+{N}"  # Format for subagent count ({N} = number)
 ```
 
 **Fallback options** (when no user title is set):
@@ -169,6 +177,20 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 - `session-path` - Session ID + path: `134eed79 ~/projects`
 - `path-session` - Path + session ID: `~/projects 134eed79`
 - `session` - Session ID only: `134eed79`
+
+### Title Format Tokens
+
+The `TAVS_TITLE_FORMAT` template supports these placeholders:
+
+| Token | Description | Example |
+|-------|-------------|---------|
+| `{FACE}` | Agent face expression | `Ǝ[• •]E` |
+| `{EMOJI}` | State emoji | `🟠` |
+| `{AGENTS}` | Active subagent count (empty when none) | `+2` |
+| `{BASE}` | Base title (user-set or fallback) | `~/projects` |
+
+The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
+It only appears when subagents are active (count > 0).
 
 ### Enabling Full Title Mode
 
@@ -238,6 +260,9 @@ All hooks use `async: true` for non-blocking execution:
 ./src/core/trigger.sh complete
 ./src/core/trigger.sh idle
 ./src/core/trigger.sh compacting
+./src/core/trigger.sh subagent-start   # Golden-Yellow, increments counter
+./src/core/trigger.sh subagent-stop    # Decrements counter, returns to processing
+./src/core/trigger.sh tool_error       # Orange-Red, auto-returns after 1.5s
 ./src/core/trigger.sh reset
 
 # Test light mode explicitly

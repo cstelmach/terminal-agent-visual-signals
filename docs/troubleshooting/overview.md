@@ -21,6 +21,9 @@ Quick reference for common issues with Terminal Agent Visual Signals.
 | Ghostty title override | Ghostty resets title after commands | [Ghostty configuration](#ghostty-configuration) |
 | Ghostty locked title | Title stops working after manual rename | [Ghostty manual tab naming](#ghostty-manual-tab-naming-known-limitation) |
 | Empty variables in zsh | Config values empty in Claude Code | [Shell compatibility](#shell-compatibility-issues) |
+| Subagent state not showing | No golden-yellow during Task tool | [Subagent state issues](#subagent-state-issues) |
+| Tool error not flashing | No orange-red on tool failure | [Tool error issues](#tool-error-issues) |
+| Subagent count wrong | Title shows wrong +N number | [Subagent counter issues](#subagent-counter-issues) |
 
 ## Quick Fixes
 
@@ -357,6 +360,76 @@ zsh -c 'source src/core/theme.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
 # Update plugin cache with fixed code
 CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
 cp src/core/*.sh "$CACHE/src/core/"
+```
+
+### Subagent State Issues
+
+Subagent golden-yellow background not appearing when Task tool spawns subagents.
+
+**Common causes:**
+1. **ENABLE_SUBAGENT disabled** - Feature toggle is off
+2. **Plugin cache outdated** - Cached version doesn't have subagent support
+3. **Claude Code version** - SubagentStart/SubagentStop hooks require recent Claude Code
+
+**Check feature toggle:**
+```bash
+grep "ENABLE_SUBAGENT" ~/.terminal-visual-signals/user.conf
+# Should be: ENABLE_SUBAGENT="true" (default)
+```
+
+**Solution 1: Update plugin cache**
+```bash
+CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
+```
+
+**Solution 2: Test manually**
+```bash
+./src/core/trigger.sh subagent-start  # Should show golden-yellow
+./src/core/trigger.sh reset
+```
+
+### Tool Error Issues
+
+Tool error orange-red flash not appearing when tools fail.
+
+**Common causes:**
+1. **ENABLE_TOOL_ERROR disabled** - Feature toggle is off
+2. **Plugin cache outdated** - Cached version doesn't have PostToolUseFailure hook
+3. **Auto-return too fast** - The 1.5s flash may be missed
+
+**Check feature toggle:**
+```bash
+grep "ENABLE_TOOL_ERROR" ~/.terminal-visual-signals/user.conf
+# Should be: ENABLE_TOOL_ERROR="true" (default)
+```
+
+**Test manually:**
+```bash
+./src/core/trigger.sh tool_error  # Should flash orange-red, returns after 1.5s
+```
+
+### Subagent Counter Issues
+
+Title shows wrong subagent count or count doesn't reset.
+
+**Common causes:**
+1. **Stale counter file** - Previous session left counter file
+2. **TTY mismatch** - Counter uses TTY-based file isolation
+
+**Solution: Clear stale counter files**
+```bash
+rm -f /tmp/tavs-subagent-count-*
+./src/core/trigger.sh reset
+```
+
+**Verify counter works:**
+```bash
+./src/core/trigger.sh subagent-start  # +1
+./src/core/trigger.sh subagent-start  # +2 (title should show +2)
+./src/core/trigger.sh subagent-stop   # +1
+./src/core/trigger.sh subagent-stop   # 0 (returns to processing)
+./src/core/trigger.sh reset
 ```
 
 ### OpenCode Build Issues
