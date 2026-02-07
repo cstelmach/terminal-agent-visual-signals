@@ -1,6 +1,6 @@
 {
   "name": "terminal-visual-signals",
-  "description": "Visual terminal state indicators for Claude Code sessions using OSC escape sequences. Changes background color and tab title based on Claude's state (processing, permission, idle, complete, compacting).",
+  "description": "Visual terminal state indicators for Claude Code sessions using OSC escape sequences. Changes background color and tab title based on Claude's state (processing, permission, idle, complete, compacting, subagent, tool_error).",
   "version": "1.2.0",
   "author": {
     "name": "cstelmach"
