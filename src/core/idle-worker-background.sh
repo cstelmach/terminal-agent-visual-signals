@@ -94,6 +94,12 @@ unified_timer_worker() {
     local SHORT_CWD
     SHORT_CWD=$(get_short_cwd)
 
+    # Read session icon once (persists for worker lifetime)
+    local SESSION_ICON=""
+    if [[ "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && type get_session_icon &>/dev/null; then
+        SESSION_ICON=$(get_session_icon 2>/dev/null)
+    fi
+
     # Initial state: complete
     write_session_state "complete" "$my_pid"
 
@@ -185,18 +191,21 @@ unified_timer_worker() {
                 if [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
                     if [[ -n "$title_face" ]]; then
                         if [[ "$FACE_POSITION" == "before" ]]; then
-                            title="$title_face $stage_emoji $SHORT_CWD"
+                            title="$title_face $stage_emoji $SESSION_ICON $SHORT_CWD"
                         else
-                            title="$stage_emoji $title_face $SHORT_CWD"
+                            title="$stage_emoji $title_face $SESSION_ICON $SHORT_CWD"
                         fi
                     else
-                        title="$stage_emoji $SHORT_CWD"
+                        title="$stage_emoji $SESSION_ICON $SHORT_CWD"
                     fi
                 elif [[ -n "$title_face" ]]; then
-                    title="$title_face $SHORT_CWD"
+                    title="$title_face $SESSION_ICON $SHORT_CWD"
                 else
-                    title="$SHORT_CWD"
+                    title="$SESSION_ICON $SHORT_CWD"
                 fi
+                # Collapse double spaces (when SESSION_ICON is empty)
+                title="${title//  / }"
+                title="${title# }"
                 printf "\033]0;%s\033\\" "$title" >&3
             fi
         fi
