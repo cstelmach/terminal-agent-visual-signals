@@ -7,16 +7,21 @@
 #
 # When subagents spawn (SubagentStart), counter increments.
 # When subagents complete (SubagentStop), counter decrements.
-# When complete fires, counter resets to 0.
+# When complete fires or new prompt starts, counter resets to 0.
 #
 # This enables:
 #   1. Distinct subagent visual state (when count > 0)
 #   2. Title display showing "+N subagents"
 #   3. Proper state transitions back to processing when all subagents complete
+#
+# Dependencies:
+#   - get_spinner_state_dir() from spinner.sh (secure dir helper)
+#   - TTY_SAFE environment variable
 # ==============================================================================
 
-# Use TTY-safe path for session isolation (set by trigger.sh)
-SUBAGENT_COUNT_FILE="/tmp/tavs-subagent-count-${TTY_SAFE:-$$}"
+# Use secure state dir for session isolation (consistent with spinner/session-icon)
+_TAVS_SUBAGENT_STATE_DIR=$(get_spinner_state_dir)
+SUBAGENT_COUNT_FILE="${_TAVS_SUBAGENT_STATE_DIR}/subagent-count.${TTY_SAFE:-unknown}"
 
 # ==============================================================================
 # increment_subagent_count
@@ -25,9 +30,11 @@ SUBAGENT_COUNT_FILE="/tmp/tavs-subagent-count-${TTY_SAFE:-$$}"
 # Called when SubagentStart hook fires.
 # ==============================================================================
 increment_subagent_count() {
-    local count
+    local count tmp_file
     count=$(cat "$SUBAGENT_COUNT_FILE" 2>/dev/null || echo 0)
-    echo $((count + 1)) > "$SUBAGENT_COUNT_FILE"
+    tmp_file=$(mktemp "${SUBAGENT_COUNT_FILE}.XXXXXX")
+    echo $((count + 1)) > "$tmp_file"
+    mv -f "$tmp_file" "$SUBAGENT_COUNT_FILE"
 
     [[ "$DEBUG_ALL" == "1" ]] && echo "[TAVS] Subagent count incremented: $((count + 1))" >&2
 }
@@ -40,11 +47,13 @@ increment_subagent_count() {
 # Returns the new count (useful for state transition decisions).
 # ==============================================================================
 decrement_subagent_count() {
-    local count
+    local count tmp_file
     count=$(cat "$SUBAGENT_COUNT_FILE" 2>/dev/null || echo 0)
 
     if [[ $count -gt 0 ]]; then
-        echo $((count - 1)) > "$SUBAGENT_COUNT_FILE"
+        tmp_file=$(mktemp "${SUBAGENT_COUNT_FILE}.XXXXXX")
+        echo $((count - 1)) > "$tmp_file"
+        mv -f "$tmp_file" "$SUBAGENT_COUNT_FILE"
         [[ "$DEBUG_ALL" == "1" ]] && echo "[TAVS] Subagent count decremented: $((count - 1))" >&2
         echo $((count - 1))
     else
@@ -67,7 +76,7 @@ get_subagent_count() {
 # reset_subagent_count
 # ==============================================================================
 # Reset the subagent counter to 0 and remove the state file.
-# Called when complete hook fires or session ends.
+# Called when complete hook fires, session ends, or new prompt starts.
 # ==============================================================================
 reset_subagent_count() {
     rm -f "$SUBAGENT_COUNT_FILE"

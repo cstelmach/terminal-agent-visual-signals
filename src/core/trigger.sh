@@ -162,6 +162,8 @@ STATE="${1:-}"
 
 case "$STATE" in
     processing)
+        # Reset stale subagent counter on new prompt (not on PostToolUse)
+        [[ "${2:-}" == "new-prompt" ]] && reset_subagent_count
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
