@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Themes - Idle Worker
+# TAVS - Terminal Agent Visual Signals — Idle Worker
 # ==============================================================================
 # Contains the logic for the background idle timer.
 #

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Wizard Utilities
+# TAVS - Terminal Agent Visual Signals — Configure Wizard Utilities
 # ==============================================================================
 # Shared utilities for the configuration wizard:
 #   - Terminal color definitions
@@ -48,7 +48,7 @@ print_header() {
     clear
     echo ""
     echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BOLD}${CYAN}║         Terminal Agent Visual Signals - Configuration          ║${NC}"
+    echo -e "${BOLD}${CYAN}║               TAVS - Configuration Wizard                      ║${NC}"
     echo -e "${BOLD}${CYAN}║                     Dynamic Theming System                     ║${NC}"
     echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════╝${NC}"
     echo ""

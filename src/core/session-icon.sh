@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Session Icon Module
+# TAVS - Terminal Agent Visual Signals — Session Icon Module
 # ==============================================================================
 # Assigns a unique animal emoji per terminal tab for visual identification.
 # Icons persist across /clear (tied to TTY device, not session ID).

@@ -1,9 +1,9 @@
-# CLAUDE.md - Terminal Agent Visual Signals
+# CLAUDE.md - TAVS - Terminal Agent Visual Signals
 
 ## Project Tracking
 
-**Obsidian Project:** `IPC17_terminal-agent-visual-signals`
-**Location:** `/Users/cs/Obsidian/_/kn/projects/IPC17_terminal-agent-visual-signals.md`
+**Obsidian Project:** `IPC17_tavs`
+**Location:** `/Users/cs/Obsidian/_/kn/projects/IPC17_tavs.md`
 
 ### View Project Status
 
@@ -79,7 +79,7 @@ color schemes that TAVS respects. Override with `TRUECOLOR_MODE_OVERRIDE`:
 | `"muted"` | Allow light/dark switching with muted colors (reduced contrast) |
 | `"full"` | Allow light/dark switching with regular colors |
 
-Set in `~/.terminal-visual-signals/user.conf`.
+Set in `~/.tavs/user.conf`.
 
 ---
 
@@ -103,16 +103,16 @@ Set in `~/.terminal-visual-signals/user.conf`.
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
 | `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
-| `src/config/user.conf.template` | Template for user overrides (copy to ~/.terminal-visual-signals/) |
+| `src/config/user.conf.template` | Template for user overrides (copy to ~/.tavs/) |
 | `configure.sh` | Interactive configuration wizard (includes title mode setup) |
 | `hooks/hooks.json` | Claude Code plugin hooks (14 hook routes) |
 
 ## User Configuration
 
-All user settings are stored in `~/.terminal-visual-signals/user.conf`:
+All user settings are stored in `~/.tavs/user.conf`:
 
 ```
-~/.terminal-visual-signals/
+~/.tavs/
 ├── user.conf              # All user overrides (global + per-agent)
 └── backgrounds/           # Background images (if enabled)
     ├── dark/
@@ -124,7 +124,7 @@ All user settings are stored in `~/.terminal-visual-signals/user.conf`:
 - Per-agent overrides: `CLAUDE_DARK_BASE`, `GEMINI_FACES_PROCESSING`, etc.
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
 
-**Run `./configure.sh`** to set up interactively, or copy `src/config/user.conf.template` to `~/.terminal-visual-signals/user.conf` and edit directly.
+**Run `./configure.sh`** to set up interactively, or copy `src/config/user.conf.template` to `~/.tavs/user.conf` and edit directly.
 
 ---
 
@@ -160,7 +160,7 @@ Best for users who manually name their terminal tabs. TAVS adds a status prefix 
 With active subagents: `Ǝ[⇆ ⇆]E 🔀 +2 My Project`
 
 1. Run `./configure.sh` and select "Prefix Only" in Step 6, OR
-2. Add to `~/.terminal-visual-signals/user.conf`:
+2. Add to `~/.tavs/user.conf`:
 ```bash
 TAVS_TITLE_MODE="prefix-only"
 TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
@@ -200,7 +200,7 @@ Each terminal tab gets a unique animal emoji from a pool of 25, persisting acros
 ### Enabling Full Title Mode
 
 1. Run `./configure.sh` and select "Full" in Step 6, OR
-2. Add to `~/.terminal-visual-signals/user.conf`:
+2. Add to `~/.tavs/user.conf`:
 ```bash
 TAVS_TITLE_MODE="full"
 TAVS_SPINNER_STYLE="random"      # braille, circle, block, eye-animate, none, random
@@ -240,7 +240,7 @@ STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + status icon + count + ses
 COMPACT:   Ǝ[🟧 +2]E 🦊 ~/proj         (emoji eyes + count as right eye)
 ```
 
-**Enable in `~/.terminal-visual-signals/user.conf`:**
+**Enable in `~/.tavs/user.conf`:**
 ```bash
 TAVS_FACE_MODE="compact"           # "standard" (default) | "compact"
 TAVS_COMPACT_THEME="semantic"      # "semantic" | "circles" | "squares" | "mixed"
@@ -267,11 +267,11 @@ Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. The plu
 
 ```bash
 # Install plugin
-claude plugin marketplace add cstelmach/terminal-agent-visual-signals
-claude plugin install terminal-visual-signals@terminal-visual-signals
+claude plugin marketplace add cstelmach/tavs
+claude plugin install tavs@tavs
 
 # Enable plugin
-/plugin → select terminal-visual-signals
+/plugin → select tavs
 ```
 
 ### Async Hooks
@@ -314,24 +314,24 @@ bash src/core/detect.sh test
 
 ```bash
 # Quick update: Copy all core files to plugin cache
-CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
 echo "Plugin cache updated - submit a prompt to test"
 ```
 
 **Full update script:**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
-REPO="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
+CACHE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
+REPO="/Users/cs/.claude/hooks/tavs"
 cp "$REPO/src/core/"*.sh "$CACHE/src/core/"
 mkdir -p "$CACHE/src/config" && cp "$REPO/src/config/"*.conf "$CACHE/src/config/"
 cp "$REPO/src/agents/claude/trigger.sh" "$CACHE/src/agents/claude/"
 ```
 
 **Key locations:**
-- Source repo: `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`
-- Plugin cache: `~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/`
-- User config: `~/.terminal-visual-signals/user.conf` (changes here work immediately)
+- Source repo: `/Users/cs/.claude/hooks/tavs/`
+- Plugin cache: `~/.claude/plugins/cache/tavs/tavs/2.0.0/`
+- User config: `~/.tavs/user.conf` (changes here work immediately)
 
 See [Development Testing](docs/reference/development-testing.md) for the full workflow.
 
@@ -385,7 +385,7 @@ Each agent has its own face theme with random selection per trigger:
 | Unknown | Kaomoji fallback | `(°-°)` | 1 per state |
 
 **All faces defined in:** `src/config/defaults.conf` (search for `AGENT_FACES_`)
-**User overrides:** Add `CLAUDE_FACES_PROCESSING=('custom' 'faces')` to `~/.terminal-visual-signals/user.conf`
+**User overrides:** Add `CLAUDE_FACES_PROCESSING=('custom' 'faces')` to `~/.tavs/user.conf`
 
 See [Agent Themes Reference](docs/reference/agent-themes.md) for customization guide.
 
@@ -404,15 +404,15 @@ Background images per state, with automatic fallback:
 2. Enable "Background Image" (can leave path empty)
 3. Without this, OSC 1337 background commands are ignored
 
-**Enable in `~/.terminal-visual-signals/user.conf`:**
+**Enable in `~/.tavs/user.conf`:**
 ```bash
 ENABLE_STYLISH_BACKGROUNDS="true"
-STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
+STYLISH_BACKGROUNDS_DIR="$HOME/.tavs/backgrounds"
 ```
 
 **Generate sample images:**
 ```bash
-./assets/backgrounds/generate-samples.sh ~/.terminal-visual-signals/backgrounds
+./assets/backgrounds/generate-samples.sh ~/.tavs/backgrounds
 ```
 
 This is a global setting - supported terminals show images, unsupported terminals automatically fall back to solid colors.
@@ -422,7 +422,7 @@ This is a global setting - supported terminals show images, unsupported terminal
 TAVS can modify the terminal's 16-color ANSI palette for cohesive light/dark themes.
 This affects shell prompts, `ls` output, `git status`, and other CLI tools.
 
-**Enable in `~/.terminal-visual-signals/user.conf`:**
+**Enable in `~/.tavs/user.conf`:**
 ```bash
 ENABLE_PALETTE_THEMING="auto"  # or "true"
 ```
@@ -475,7 +475,7 @@ Select in `configure.sh` or set `THEME_PRESET` in user.conf.
 claude plugin list | grep visual
 
 # Verify hooks in settings
-grep -A5 "terminal-visual-signals" ~/.claude/settings.json
+grep -A5 "tavs" ~/.claude/settings.json
 
 # Verify signals work
 ./src/core/trigger.sh processing && sleep 2 && ./src/core/trigger.sh reset

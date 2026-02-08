@@ -1,4 +1,4 @@
-# SPEC: Terminal Visual Signals — Anthropomorphising Feature
+# SPEC: TAVS — Anthropomorphising Feature
 
 **Version:** 1.0
 **Last Updated:** 2026-01-11
@@ -68,7 +68,7 @@ New file: `src/core/themes.sh`
 ```bash
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals — Face Themes
+# TAVS — Face Themes
 # ==============================================================================
 # Defines ASCII face expressions for each state, organized by theme.
 # ==============================================================================

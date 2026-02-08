@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures for terminal-agent-visual-signals tests.
+Pytest configuration and shared fixtures for TAVS tests.
 
 These tests verify the anthropomorphising feature (ASCII faces in terminal titles).
 Uses subprocess to invoke bash scripts and verify their output.

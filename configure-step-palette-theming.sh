@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 7: Palette Theming
+# TAVS - Terminal Agent Visual Signals — Configure Step 7: Palette Theming
 # ==============================================================================
 # Interactive configuration of OSC 4 palette theming.
 # Part of the TAVS configuration wizard.

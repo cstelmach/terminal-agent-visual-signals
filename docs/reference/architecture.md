@@ -2,13 +2,13 @@
 
 ## Overview
 
-Terminal Agent Visual Signals provides terminal state indicators for multiple AI CLI tools through a unified core system with platform-specific adapters.
+TAVS - Terminal Agent Visual Signals provides terminal state indicators for multiple AI CLI tools through a unified core system with platform-specific adapters.
 
 ## Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     Terminal Visual Signals                      │
+│                              TAVS                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │
@@ -74,7 +74,7 @@ Main dispatcher that handles state transitions:
 
 Loads configuration hierarchy and resolves agent-specific variables:
 - Master defaults from `src/config/defaults.conf`
-- User overrides from `~/.terminal-visual-signals/user.conf`
+- User overrides from `~/.tavs/user.conf`
 - Theme preset loading (Catppuccin, Nord, Dracula, etc.)
 - AGENT_ prefix resolution (e.g., `CLAUDE_DARK_PROCESSING` -> `DARK_PROCESSING`)
 - Color resolution based on dark/light/muted mode
@@ -178,7 +178,7 @@ Background process for graduated idle states:
 - **Method:** npm package with TypeScript
 - **Path:** Resolved via `__dirname`
 - **Features:** 4 events (SessionStart, ToolUse, AgentResponse, etc.)
-- **Package:** `@terminal-visual-signals/opencode-plugin`
+- **Package:** `@tavs/opencode-plugin`
 
 ## Visual States
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-colors.sh - Visual test for color modes in Terminal Agent Visual Signals
+# test-colors.sh - Visual test for color modes in TAVS
 #
 # Usage:
 #   ./test-colors.sh              # Run all tests interactively
@@ -209,7 +209,7 @@ test_truecolor_behavior() {
 }
 
 run_all_tests() {
-    print_header "Terminal Agent Visual Signals - Color Test Suite"
+    print_header "TAVS - Terminal Agent Visual Signals — Color Test Suite"
     echo "This test will cycle through different color configurations."
     echo "Watch your terminal background change."
     echo

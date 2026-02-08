@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - iTerm2 Title Detection
+# TAVS - Terminal Agent Visual Signals — iTerm2 Title Detection
 # ==============================================================================
 # Provides enhanced title management for iTerm2 using OSC 1337 ReportVariable.
 # This module is sourced conditionally when TERM_PROGRAM=iTerm.app

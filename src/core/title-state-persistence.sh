@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Title State Persistence Module
+# TAVS - Terminal Agent Visual Signals — Title State Persistence Module
 # ==============================================================================
 # Manages title state persistence per-TTY session.
 # Extracted from title-management.sh for modularization.
@@ -30,14 +30,14 @@
 # ==============================================================================
 
 # Title state database (separate from main state for clean separation)
-TITLE_STATE_DB="/tmp/terminal-visual-signals.title"
+TITLE_STATE_DB="/tmp/tavs.title"
 
 # ==============================================================================
 # STATE FILE PATH
 # ==============================================================================
 
 # Get title state file path for current TTY
-# Returns: Path to state file (e.g., /tmp/terminal-visual-signals.title.dev_ttys001)
+# Returns: Path to state file (e.g., /tmp/tavs.title.dev_ttys001)
 get_title_state_file() {
     echo "${TITLE_STATE_DB}.${TTY_SAFE:-unknown}"
 }

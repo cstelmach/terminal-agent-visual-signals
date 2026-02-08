@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 1: Operating Mode
+# TAVS - Terminal Agent Visual Signals — Configure Step 1: Operating Mode
 # ==============================================================================
 # Interactive selection of operating mode (static, dynamic, preset).
 # Part of the TAVS configuration wizard.

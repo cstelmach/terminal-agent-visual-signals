@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Background Image Support
+# TAVS - Terminal Agent Visual Signals — Background Image Support
 # ==============================================================================
 # Provides stylish background images for supported terminals (iTerm2, Kitty).
 # Falls back silently to solid colors on unsupported terminals.
@@ -200,10 +200,10 @@ set_state_background_image() {
     local agent="${TAVS_AGENT:-claude}"
 
     # Get paths
-    local user_agent_dir="$HOME/.terminal-visual-signals/agents/$agent/backgrounds"
+    local user_agent_dir="$HOME/.tavs/agents/$agent/backgrounds"
     local src_agent_dir
     src_agent_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../agents/$agent/data/backgrounds" 2>/dev/null && pwd )" || true
-    local global_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.terminal-visual-signals/backgrounds}"
+    local global_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.tavs/backgrounds}"
 
     # Priority 1: User agent override with mode
     if [[ -f "${user_agent_dir}/${mode_dir}/${filename}" ]]; then
@@ -293,7 +293,7 @@ get_background_info() {
     echo "Supports Images: $(supports_background_images && echo "yes" || echo "no")"
 
     # List available images
-    local dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.terminal-visual-signals/backgrounds}"
+    local dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.tavs/backgrounds}"
     if [[ -d "$dir" ]]; then
         echo "Available Images:"
         find "$dir" -name "*.png" -o -name "*.jpg" 2>/dev/null | while read -r img; do
@@ -329,7 +329,7 @@ _test_backgrounds() {
         echo "Testing image setting (will set then clear in 2s)..."
 
         # Try to set a test image
-        local test_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.terminal-visual-signals/backgrounds}"
+        local test_dir="${STYLISH_BACKGROUNDS_DIR:-$HOME/.tavs/backgrounds}"
         if [[ -f "${test_dir}/processing.png" ]] || [[ -f "${test_dir}/dark/processing.png" ]]; then
             set_state_background_image "processing"
             echo "  Set processing image"

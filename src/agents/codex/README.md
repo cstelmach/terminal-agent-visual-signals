@@ -19,7 +19,7 @@ The `notify` configuration fires on `agent-turn-complete`:
 
 ```toml
 # ~/.codex/config.toml
-notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "-lc", "~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete"]
 ```
 
 **Result:** Terminal turns green (🟢) when Codex completes a turn.

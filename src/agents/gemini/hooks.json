@@ -1,5 +1,5 @@
 {
-  "_comment": "Gemini CLI Hooks Configuration for Terminal Visual Signals",
+  "_comment": "Gemini CLI Hooks Configuration for TAVS",
   "_documentation": "See HOOKS_REFERENCE.md in this directory for detailed documentation",
   "_version": "2.1.0",
   "_updated": "2026-01-26",

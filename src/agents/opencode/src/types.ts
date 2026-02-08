@@ -1,5 +1,5 @@
 /**
- * Terminal Visual Signals - OpenCode Plugin Types
+ * TAVS - OpenCode Plugin Types
  *
  * Type definitions for the OpenCode plugin API and internal state management.
  */

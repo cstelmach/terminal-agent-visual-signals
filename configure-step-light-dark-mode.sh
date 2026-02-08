@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 3: Light/Dark Mode
+# TAVS - Terminal Agent Visual Signals — Configure Step 3: Light/Dark Mode
 # ==============================================================================
 # Interactive configuration of light/dark mode switching.
 # Part of the TAVS configuration wizard.

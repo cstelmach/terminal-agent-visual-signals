@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Codex CLI Installer
+# TAVS - Terminal Agent Visual Signals - Codex CLI Installer
 # ==============================================================================
 # Standalone installer for Codex CLI visual signals.
 #
@@ -25,7 +25,7 @@ CODEX_CONFIG_DIR="$HOME/.codex"
 CONFIG_FILE="$CODEX_CONFIG_DIR/config.toml"
 TRIGGER_SCRIPT="$REPO_ROOT/src/agents/codex/trigger.sh"
 
-echo -e "${BLUE}=== Terminal Agent Visual Signals - Codex CLI Installer ===${NC}"
+echo -e "${BLUE}=== TAVS - Terminal Agent Visual Signals - Codex CLI Installer ===${NC}"
 echo -e "Repository: $REPO_ROOT"
 echo ""
 
@@ -72,7 +72,7 @@ fi
 # Check if notify is already configured
 NOTIFY_LINE="notify = [\"bash\", \"-lc\", \"$TRIGGER_SCRIPT complete\"]"
 
-if echo "$EXISTING_CONFIG" | grep -q "terminal-agent-visual-signals.*trigger.sh"; then
+if echo "$EXISTING_CONFIG" | grep -q "tavs.*trigger.sh"; then
     echo -e "${GREEN}✓ Visual signals already configured in $CONFIG_FILE${NC}"
     echo ""
     echo "Current notify configuration:"
@@ -110,7 +110,7 @@ if [[ "$response" =~ ^[yY] ]]; then
 
     # Append notify configuration
     echo "" >> "$CONFIG_FILE"
-    echo "# Terminal Agent Visual Signals (complete signal only)" >> "$CONFIG_FILE"
+    echo "# TAVS - Terminal Agent Visual Signals (complete signal only)" >> "$CONFIG_FILE"
     echo "$NOTIFY_LINE" >> "$CONFIG_FILE"
 
     echo ""

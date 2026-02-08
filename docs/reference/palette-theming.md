@@ -19,7 +19,7 @@ TAVS can optionally modify the terminal's 16-color ANSI palette (OSC 4) for cohe
 
 ### Enabling Palette Theming
 
-Add to `~/.terminal-visual-signals/user.conf`:
+Add to `~/.tavs/user.conf`:
 
 ```bash
 ENABLE_PALETTE_THEMING="auto"  # or "true"

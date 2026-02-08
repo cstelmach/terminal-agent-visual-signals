@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Face Selection Module
+# TAVS - Terminal Agent Visual Signals — Face Selection Module
 # ==============================================================================
 # Provides agent-specific face selection with randomization.
 # Extracted from theme-config-loader.sh for modularization.

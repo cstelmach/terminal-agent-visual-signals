@@ -146,6 +146,6 @@ ls -la "$OUTPUT_DIR/dark/" "$OUTPUT_DIR/light/" 2>/dev/null || true
 
 echo ""
 echo "To use these images:"
-echo "  1. Copy to ~/.terminal-visual-signals/backgrounds/"
+echo "  1. Copy to ~/.tavs/backgrounds/"
 echo "  2. Enable in configuration: ENABLE_STYLISH_BACKGROUNDS=\"true\""
 echo "  3. Run ./configure.sh to set up via wizard"

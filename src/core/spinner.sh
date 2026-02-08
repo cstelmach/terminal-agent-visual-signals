@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Spinner Module
+# TAVS - Terminal Agent Visual Signals — Spinner Module
 # ==============================================================================
 # Manages animated spinner frames for processing state eye display.
 # Used when TAVS_TITLE_MODE="full" to replace face eyes with spinners.

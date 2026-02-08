@@ -181,7 +181,7 @@ This script tests:
 ### Claude Code
 
 1. Remove visual signals from settings (if manually added)
-2. Enable plugin: `/plugin` → select terminal-visual-signals
+2. Enable plugin: `/plugin` → select tavs
 3. Restart Claude Code
 4. Submit a prompt → verify orange background
 5. Wait for response → verify green background
@@ -215,7 +215,7 @@ Enable debug logging:
 ```bash
 export DEBUG_ALL=1
 ./src/core/trigger.sh processing
-# Check ~/.claude/hooks/terminal-agent-visual-signals/debug/ for logs
+# Check ~/.claude/hooks/tavs/debug/ for logs
 ```
 
 ## Verification Checklist

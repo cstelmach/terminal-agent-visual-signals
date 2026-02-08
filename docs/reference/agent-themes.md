@@ -44,10 +44,10 @@ src/agents/
 
 ### User Overrides
 
-User customizations go in `~/.terminal-visual-signals/agents/`:
+User customizations go in `~/.tavs/agents/`:
 
 ```
-~/.terminal-visual-signals/
+~/.tavs/
 ├── user.conf                   # Global settings
 └── agents/
     ├── claude/
@@ -148,7 +148,7 @@ Colors are optional overrides in `colors.conf`:
 
 ```bash
 #!/bin/bash
-# Example: ~/.terminal-visual-signals/agents/claude/colors.conf
+# Example: ~/.tavs/agents/claude/colors.conf
 
 # Dark mode overrides
 DARK_PROCESSING="#473D2F"
@@ -186,9 +186,9 @@ UNIFORM_PROCESSING="#FF8C00"
 
 ### Image Resolution Priority
 
-1. User agent override: `~/.terminal-visual-signals/agents/{agent}/backgrounds/{mode}/{state}.png`
+1. User agent override: `~/.tavs/agents/{agent}/backgrounds/{mode}/{state}.png`
 2. Source agent data: `src/agents/{agent}/data/backgrounds/{mode}/{state}.png`
-3. Global user backgrounds: `~/.terminal-visual-signals/backgrounds/{mode}/{state}.png`
+3. Global user backgrounds: `~/.tavs/backgrounds/{mode}/{state}.png`
 4. Single image fallback: `STYLISH_SINGLE_IMAGE` config
 5. Default image: `{dir}/{mode}/default.png`
 
@@ -206,7 +206,7 @@ UNIFORM_PROCESSING="#FF8C00"
 
 ### Adding Custom Faces
 
-**Do:** Override in `~/.terminal-visual-signals/user.conf`:
+**Do:** Override in `~/.tavs/user.conf`:
 ```bash
 # Override Claude's subagent faces
 CLAUDE_FACES_SUBAGENT=('Ǝ[⟷ ⟷]E' 'Ǝ[⇔ ⇔]E')
@@ -217,8 +217,8 @@ CLAUDE_FACES_TOOL_ERROR=('Ǝ[✘ ✘]E')
 
 Or create a user override file:
 ```bash
-mkdir -p ~/.terminal-visual-signals/agents/claude
-cp src/agents/claude/data/faces.conf ~/.terminal-visual-signals/agents/claude/
+mkdir -p ~/.tavs/agents/claude
+cp src/agents/claude/data/faces.conf ~/.tavs/agents/claude/
 # Edit the copy with your custom faces
 ```
 
@@ -250,7 +250,7 @@ cp src/agents/claude/data/faces.conf ~/.terminal-visual-signals/agents/claude/
 To use global defaults instead of agent-specific faces:
 
 ```bash
-# In ~/.terminal-visual-signals/user.conf
+# In ~/.tavs/user.conf
 ENABLE_ANTHROPOMORPHISING="false"
 ```
 

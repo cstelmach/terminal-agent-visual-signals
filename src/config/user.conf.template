@@ -1,8 +1,8 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - User Configuration
+# TAVS - Terminal Agent Visual Signals — User Configuration
 # ==============================================================================
-# Copy this file to: ~/.terminal-visual-signals/user.conf
+# Copy this file to: ~/.tavs/user.conf
 #
 # How it works:
 #   - Uncomment and modify settings you want to override
@@ -245,7 +245,7 @@
 
 # Stylish Backgrounds (Images) - iTerm2/Kitty only
 # ENABLE_STYLISH_BACKGROUNDS="false"
-# STYLISH_BACKGROUNDS_DIR="$HOME/.terminal-visual-signals/backgrounds"
+# STYLISH_BACKGROUNDS_DIR="$HOME/.tavs/backgrounds"
 # STYLISH_SINGLE_IMAGE=""
 # STYLISH_DISABLE_SSH="true"
 # STYLISH_SKIP_BG_TINT="false"

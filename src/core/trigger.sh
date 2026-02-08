@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Unified Trigger
+# TAVS - Terminal Agent Visual Signals — Unified Trigger
 # ==============================================================================
 # Single entry point for all agent visual state changes.
 # Used by Claude, Gemini, and (future) Codex hooks.

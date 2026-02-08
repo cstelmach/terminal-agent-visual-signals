@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 4: ASCII Faces
+# TAVS - Terminal Agent Visual Signals — Configure Step 4: ASCII Faces
 # ==============================================================================
 # Interactive configuration of anthropomorphising (ASCII faces in titles).
 # Part of the TAVS configuration wizard.

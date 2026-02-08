@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 2: Theme Preset
+# TAVS - Terminal Agent Visual Signals — Configure Step 2: Theme Preset
 # ==============================================================================
 # Interactive selection of theme preset (when SELECTED_MODE=preset).
 # Part of the TAVS configuration wizard.

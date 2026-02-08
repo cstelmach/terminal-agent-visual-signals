@@ -1,4 +1,4 @@
-# Gemini CLI Hooks Reference for Terminal Visual Signals
+# Gemini CLI Hooks Reference for TAVS
 
 **Last Updated:** 2026-01-07
 **Gemini CLI Version:** v0.24.0+
@@ -1150,7 +1150,7 @@ tail -f /tmp/gemini-hooks.log
 
 **Solution:** Clear the state file:
 ```bash
-rm /tmp/terminal-visual-signals.state
+rm /tmp/tavs.state
 ```
 
 ### Issue: "compacting" Shows at Start
@@ -1231,7 +1231,7 @@ rm /tmp/terminal-visual-signals.state
 ### Related Projects
 
 - [Claude Code Hooks Mastery](https://github.com/disler/claude-code-hooks-mastery)
-- [Terminal Agent Visual Signals](https://github.com/cstelmach/terminal-agent-visual-signals)
+- [TAVS - Terminal Agent Visual Signals](https://github.com/cstelmach/tavs)
 
 ---
 

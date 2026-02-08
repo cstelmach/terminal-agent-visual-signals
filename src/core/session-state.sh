@@ -1,12 +1,12 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Themes - State Management
+# TAVS - Terminal Agent Visual Signals — State Management
 # ==============================================================================
 # Handles state persistence, priority locking, and TTY state tracking.
 # ==============================================================================
 
 # Consolidated state file: TTY_SAFE state priority timestamp timer_pid
-STATE_DB="/tmp/terminal-visual-signals.state"
+STATE_DB="/tmp/tavs.state"
 STATE_GRACE_PERIOD_MS=400  # Milliseconds to protect high-priority states
 
 # Get current time in milliseconds (for sub-second grace period)
@@ -29,7 +29,7 @@ IDLE_DEBUG_LOG="/tmp/terminal-agent-idle-timer.log"
 # === FULL DEBUG LOGGING ===
 # Set to 1 to capture complete invocation context for all triggers
 DEBUG_ALL="${DEBUG_ALL:-0}"  # Set to 1 to enable debug logging
-DEBUG_LOG_DIR="/tmp/terminal-visual-signals-debug"
+DEBUG_LOG_DIR="/tmp/tavs-debug"
 
 # Get numeric priority for a state name
 # Higher priority = harder to override (requires grace period to pass)
@@ -132,7 +132,7 @@ check_and_clear_skip_signal() {
 # Format: TTY_SAFE agent base_color is_dark system_mode proc perm comp idle compact
 # ==============================================================================
 
-SESSION_COLORS_DB="/tmp/terminal-visual-signals.colors"
+SESSION_COLORS_DB="/tmp/tavs.colors"
 
 # Write session colors for the current TTY
 # Usage: write_session_colors agent base_color is_dark system_mode proc perm comp idle compact

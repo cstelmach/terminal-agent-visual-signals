@@ -1,5 +1,5 @@
 /**
- * Terminal Visual Signals - OpenCode Plugin
+ * TAVS - OpenCode Plugin
  *
  * Visual terminal state indicators for OpenCode (opencode.ai) sessions.
  * Changes terminal background color and title based on agent state.
@@ -38,7 +38,7 @@ function createPlugin(config?: PluginConfig): OpenCodePlugin {
   let isProcessing = false;
 
   return {
-    name: 'terminal-visual-signals',
+    name: 'tavs',
 
     /**
      * Session started - reset terminal state
@@ -110,7 +110,7 @@ function createPlugin(config?: PluginConfig): OpenCodePlugin {
  *
  * ```json
  * {
- *   "plugins": ["@terminal-visual-signals/opencode-plugin"]
+ *   "plugins": ["@tavs/opencode-plugin"]
  * }
  * ```
  */
@@ -124,14 +124,14 @@ export default plugin;
  * Use this if you need custom configuration:
  *
  * ```typescript
- * import { createTerminalVisualSignalsPlugin } from '@terminal-visual-signals/opencode-plugin';
+ * import { createTAVSPlugin } from '@tavs/opencode-plugin';
  *
- * const plugin = createTerminalVisualSignalsPlugin({
+ * const plugin = createTAVSPlugin({
  *   idleTimeout: 60000,
  *   debug: true
  * });
  * ```
  */
-export function createTerminalVisualSignalsPlugin(config?: PluginConfig): OpenCodePlugin {
+export function createTAVSPlugin(config?: PluginConfig): OpenCodePlugin {
   return createPlugin(config);
 }

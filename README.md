@@ -1,4 +1,4 @@
-# Terminal Agent Visual Signals
+# TAVS - Terminal Agent Visual Signals
 
 > Visual terminal state indicators for Claude Code sessions using OSC escape sequences
 
@@ -68,12 +68,12 @@ Install as a Claude Code plugin in two steps:
 
 **Step 1:** Add the marketplace (one-time setup)
 ```bash
-claude plugin marketplace add cstelmach/terminal-agent-visual-signals
+claude plugin marketplace add cstelmach/tavs
 ```
 
 **Step 2:** Install the plugin
 ```bash
-claude plugin install terminal-visual-signals@terminal-visual-signals
+claude plugin install tavs@tavs
 ```
 
 That's it! Restart Claude Code to apply the visual signals.
@@ -87,18 +87,18 @@ If you prefer manual setup or need to customize hooks:
 **1. Clone the repository:**
 
 ```bash
-git clone https://github.com/cstelmach/terminal-agent-visual-signals.git ~/.claude/hooks/terminal-agent-visual-signals
+git clone https://github.com/cstelmach/tavs.git ~/.claude/hooks/tavs
 ```
 
 **2. Make executable:**
 
 ```bash
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/tavs/scripts/claude-code-visual-signal.sh
 ```
 
 **3. Add hooks to `~/.claude/settings.json`:**
 
-Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path: `~/.claude/hooks/terminal-agent-visual-signals`.
+Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path: `~/.claude/hooks/tavs`.
 
 **4. Restart Claude Code**
 
@@ -330,7 +330,7 @@ A consolidated state file (`/tmp/claude-visual-signals.state`) tracks all active
 
 ```bash
 # Ensure script is executable
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/tavs/scripts/claude-code-visual-signal.sh
 ```
 
 ### Title not updating
@@ -368,11 +368,11 @@ Run the setup script to create a version-independent symlink and add hooks direc
 **Step 1:** Run the setup script (after plugin install)
 ```bash
 # Find and run the setup script from the plugin cache
-bash ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/setup-hooks-workaround.sh --install
+bash ~/.claude/plugins/cache/tavs/tavs/*/setup-hooks-workaround.sh --install
 ```
 
 This creates:
-- A stable symlink at `~/.claude/hooks/terminal-visual-signals-current/`
+- A stable symlink at `~/.claude/hooks/tavs-current/`
 - A session-start script that auto-updates the symlink when the plugin version changes
 
 **Step 2:** Copy the hooks output to `~/.claude/settings.json`
@@ -405,7 +405,7 @@ All other hooks use the stable symlink path
 When Claude Code bug #14410 is fixed:
 
 ```bash
-bash ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/setup-hooks-workaround.sh --uninstall
+bash ~/.claude/plugins/cache/tavs/tavs/*/setup-hooks-workaround.sh --uninstall
 ```
 
 Then remove the visual signal hooks from your `settings.json`. The native plugin hooks will take over.

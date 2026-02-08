@@ -1,5 +1,5 @@
 /**
- * Terminal Visual Signals - Signal Bridge
+ * TAVS - Signal Bridge
  *
  * Bridge module that connects the OpenCode plugin to the core trigger system.
  * Executes the shared trigger.sh script to send OSC escape sequences.
@@ -36,9 +36,9 @@ function findTriggerScript(configPath?: string): string | null {
   // 3. Common installation locations
   const home = process.env.HOME || process.env.USERPROFILE || '';
   candidates.push(
-    path.join(home, '.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh'),
-    path.join(home, '.opencode/plugins/terminal-visual-signals/trigger.sh'),
-    '/usr/local/share/terminal-visual-signals/trigger.sh'
+    path.join(home, '.claude/hooks/tavs/src/core/trigger.sh'),
+    path.join(home, '.opencode/plugins/tavs/trigger.sh'),
+    '/usr/local/share/tavs/trigger.sh'
   );
 
   // Find first existing script
@@ -74,9 +74,9 @@ export class SignalBridge {
 
     if (this.config.debug) {
       if (this.triggerScript) {
-        console.log(`[terminal-visual-signals] Using trigger script: ${this.triggerScript}`);
+        console.log(`[tavs] Using trigger script: ${this.triggerScript}`);
       } else {
-        console.warn('[terminal-visual-signals] Trigger script not found - signals disabled');
+        console.warn('[tavs] Trigger script not found - signals disabled');
       }
     }
   }
@@ -102,7 +102,7 @@ export class SignalBridge {
     this.lastState = state;
 
     if (this.config.debug) {
-      console.log(`[terminal-visual-signals] Sending signal: ${state}`);
+      console.log(`[tavs] Sending signal: ${state}`);
     }
 
     try {
@@ -118,7 +118,7 @@ export class SignalBridge {
     } catch (error) {
       // Fail silently - don't break OpenCode
       if (this.config.debug) {
-        console.error(`[terminal-visual-signals] Error sending signal:`, error);
+        console.error(`[tavs] Error sending signal:`, error);
       }
     }
   }
@@ -139,7 +139,7 @@ export class SignalBridge {
     } catch (error) {
       // Fail silently
       if (this.config.debug) {
-        console.error(`[terminal-visual-signals] Error sending sync signal:`, error);
+        console.error(`[tavs] Error sending sync signal:`, error);
       }
     }
   }

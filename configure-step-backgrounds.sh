@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 5: Stylish Backgrounds
+# TAVS - Terminal Agent Visual Signals — Configure Step 5: Stylish Backgrounds
 # ==============================================================================
 # Interactive configuration of background images for visual states.
 # Part of the TAVS configuration wizard.
@@ -60,12 +60,12 @@ select_stylish_backgrounds() {
         echo ""
         echo "  Where should background images be stored?"
         echo ""
-        print_info "Default: ~/.terminal-visual-signals/backgrounds/"
+        print_info "Default: ~/.tavs/backgrounds/"
         print_info "Create processing.png, complete.png, etc. in this directory."
         print_info "Or organize by mode: dark/processing.png, light/processing.png"
         echo ""
 
-        local default_dir="$HOME/.terminal-visual-signals/backgrounds"
+        local default_dir="$HOME/.tavs/backgrounds"
         local custom_dir
         custom_dir=$(read_choice "Directory path" "$default_dir")
         SELECTED_STYLISH_DIR="${custom_dir:-$default_dir}"

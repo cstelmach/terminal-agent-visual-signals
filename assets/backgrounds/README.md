@@ -123,7 +123,7 @@ Copy your images to the backgrounds directory:
 
 ```bash
 # Default location
-cp -r dark light ~/.terminal-visual-signals/backgrounds/
+cp -r dark light ~/.tavs/backgrounds/
 
 # Or specify custom location in config
 STYLISH_BACKGROUNDS_DIR="/path/to/your/backgrounds"

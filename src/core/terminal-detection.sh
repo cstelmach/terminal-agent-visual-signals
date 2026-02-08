@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Terminal Detection Module
+# TAVS - Terminal Agent Visual Signals — Terminal Detection Module
 # ==============================================================================
 # Provides terminal background color query, system dark mode detection,
 # SSH detection, and terminal type identification.

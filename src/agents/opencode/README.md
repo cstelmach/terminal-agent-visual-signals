@@ -11,14 +11,14 @@ Visual terminal state indicators for [OpenCode](https://opencode.ai) sessions us
 ### Option 1: npm (Recommended)
 
 ```bash
-npm install @terminal-visual-signals/opencode-plugin
+npm install @tavs/opencode-plugin
 ```
 
 Add to your `opencode.json` or `~/.opencode/config.json`:
 
 ```json
 {
-  "plugins": ["@terminal-visual-signals/opencode-plugin"]
+  "plugins": ["@tavs/opencode-plugin"]
 }
 ```
 
@@ -26,16 +26,16 @@ Add to your `opencode.json` or `~/.opencode/config.json`:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cstelmach/terminal-agent-visual-signals.git \
-  ~/.opencode/plugins/terminal-visual-signals
+git clone https://github.com/cstelmach/tavs.git \
+  ~/.opencode/plugins/tavs
 
 # Build the plugin
-cd ~/.opencode/plugins/terminal-visual-signals/src/agents/opencode
+cd ~/.opencode/plugins/tavs/src/agents/opencode
 npm install
 npm run build
 
 # Add to config
-echo '{"plugins": ["~/.opencode/plugins/terminal-visual-signals/src/agents/opencode"]}' > opencode.json
+echo '{"plugins": ["~/.opencode/plugins/tavs/src/agents/opencode"]}' > opencode.json
 ```
 
 ## Supported States
@@ -60,7 +60,7 @@ echo '{"plugins": ["~/.opencode/plugins/terminal-visual-signals/src/agents/openc
 
 ```json
 {
-  "plugins": ["@terminal-visual-signals/opencode-plugin"]
+  "plugins": ["@tavs/opencode-plugin"]
 }
 ```
 
@@ -69,9 +69,9 @@ echo '{"plugins": ["~/.opencode/plugins/terminal-visual-signals/src/agents/openc
 Create a custom plugin instance in your project:
 
 ```typescript
-import { createTerminalVisualSignalsPlugin } from '@terminal-visual-signals/opencode-plugin';
+import { createTAVSPlugin } from '@tavs/opencode-plugin';
 
-const plugin = createTerminalVisualSignalsPlugin({
+const plugin = createTAVSPlugin({
   // Idle timeout in milliseconds (default: 30000)
   idleTimeout: 60000,
 
@@ -132,8 +132,8 @@ Works with terminals that support OSC escape sequences:
 2. **Enable debug mode:**
    ```json
    {
-     "plugins": ["@terminal-visual-signals/opencode-plugin"],
-     "terminal-visual-signals": {
+     "plugins": ["@tavs/opencode-plugin"],
+     "tavs": {
        "debug": true
      }
    }
@@ -141,14 +141,14 @@ Works with terminals that support OSC escape sequences:
 
 3. **Verify trigger script exists:**
    ```bash
-   ls -la ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
+   ls -la ~/.claude/hooks/tavs/src/core/trigger.sh
    ```
 
 4. **Test trigger script directly:**
    ```bash
-   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh processing
-   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh complete
-   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh reset
+   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh processing
+   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh complete
+   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh reset
    ```
 
 ### Terminal not changing color

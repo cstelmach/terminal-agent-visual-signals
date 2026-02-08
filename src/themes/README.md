@@ -1,6 +1,6 @@
 # Theme Presets
 
-This directory contains shareable theme presets for Terminal Agent Visual Signals.
+This directory contains shareable theme presets for TAVS.
 
 ## Using Presets
 
@@ -9,7 +9,7 @@ This directory contains shareable theme presets for Terminal Agent Visual Signal
 Edit your config to use a preset:
 
 ```bash
-# In ~/.terminal-visual-signals/user.conf
+# In ~/.tavs/user.conf
 THEME_MODE="preset"
 THEME_PRESET="nord"
 ```

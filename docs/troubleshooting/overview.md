@@ -53,7 +53,7 @@ Claude Code uses local settings that override global.
 ```json
 {
   "enabledPlugins": {
-    "terminal-visual-signals@terminal-visual-signals": true
+    "tavs@tavs": true
   }
 }
 ```
@@ -64,7 +64,7 @@ Hooks may not be in settings file.
 
 **Check Claude Code:**
 ```bash
-grep -A5 "terminal-visual-signals" ~/.claude/settings.json
+grep -A5 "tavs" ~/.claude/settings.json
 ```
 
 **Check Gemini CLI:**
@@ -94,7 +94,7 @@ Wrong faces appearing (e.g., round brackets instead of square for Claude).
 **Solution 1: Update plugin cache**
 ```bash
 # Copy updated files to plugin cache
-CACHE_DIR="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/*/src"
+CACHE_DIR="$HOME/.claude/plugins/cache/tavs/tavs/*/src"
 cp src/core/agent-theme.sh "$CACHE_DIR/core/"
 cp src/agents/claude/data/faces.conf "$CACHE_DIR/agents/claude/data/"
 ```
@@ -102,7 +102,7 @@ cp src/agents/claude/data/faces.conf "$CACHE_DIR/agents/claude/data/"
 **Solution 2: Check for user overrides**
 ```bash
 # Check if user override exists
-ls ~/.terminal-visual-signals/agents/claude/faces.conf
+ls ~/.tavs/agents/claude/faces.conf
 # If exists but outdated, remove or update it
 ```
 
@@ -164,7 +164,7 @@ alias claude='TERM=xterm-256color COLORTERM= claude'
 
 **Solution 3: Enable palette theming**
 ```bash
-# In ~/.terminal-visual-signals/user.conf
+# In ~/.tavs/user.conf
 ENABLE_PALETTE_THEMING="auto"  # or "true"
 ```
 
@@ -188,7 +188,7 @@ Spinner not animating during processing - shows static face instead of animated 
 
 **Check title mode:**
 ```bash
-grep "TAVS_TITLE_MODE" ~/.terminal-visual-signals/user.conf
+grep "TAVS_TITLE_MODE" ~/.tavs/user.conf
 # Should show: TAVS_TITLE_MODE="full"
 ```
 
@@ -200,7 +200,7 @@ Spinner showing wrong style (e.g., blocks instead of braille).
 
 **Check current settings:**
 ```bash
-grep "TAVS_SPINNER" ~/.terminal-visual-signals/user.conf
+grep "TAVS_SPINNER" ~/.tavs/user.conf
 ```
 
 **Available styles:** `braille`, `circle`, `block`, `eye-animate`, `none`, `random`
@@ -209,7 +209,7 @@ grep "TAVS_SPINNER" ~/.terminal-visual-signals/user.conf
 
 **Solution 1: Set spinner style**
 ```bash
-# Add to ~/.terminal-visual-signals/user.conf
+# Add to ~/.tavs/user.conf
 TAVS_SPINNER_STYLE="braille"
 TAVS_SPINNER_EYE_MODE="sync"
 ```
@@ -222,7 +222,7 @@ rm -f ~/.cache/tavs/session-spinner.* ~/.cache/tavs/spinner-idx.*
 
 **Verify spinner works:**
 ```bash
-cd /path/to/terminal-agent-visual-signals
+cd /path/to/tavs
 zsh -c '
 source src/core/theme.sh
 source src/core/spinner.sh
@@ -252,7 +252,7 @@ echo $TTY
 
 **Check title mode:**
 ```bash
-grep "TAVS_TITLE_MODE" ~/.terminal-visual-signals/user.conf
+grep "TAVS_TITLE_MODE" ~/.tavs/user.conf
 # Valid values: full, prefix-only, skip-processing, off
 ```
 
@@ -269,7 +269,7 @@ Setting up full title mode with animated spinner.
 
 **Step 1: Enable full mode in TAVS**
 ```bash
-# Add to ~/.terminal-visual-signals/user.conf
+# Add to ~/.tavs/user.conf
 TAVS_TITLE_MODE="full"
 ```
 
@@ -358,7 +358,7 @@ zsh -c 'source src/core/theme.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
 **If issue persists after updating:**
 ```bash
 # Update plugin cache with fixed code
-CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/tavs/tavs/1.2.0"
 cp src/core/*.sh "$CACHE/src/core/"
 ```
 
@@ -373,13 +373,13 @@ Subagent golden-yellow background not appearing when Task tool spawns subagents.
 
 **Check feature toggle:**
 ```bash
-grep "ENABLE_SUBAGENT" ~/.terminal-visual-signals/user.conf
+grep "ENABLE_SUBAGENT" ~/.tavs/user.conf
 # Should be: ENABLE_SUBAGENT="true" (default)
 ```
 
 **Solution 1: Update plugin cache**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/tavs/tavs/1.2.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 ```
 
@@ -400,7 +400,7 @@ Tool error orange-red flash not appearing when tools fail.
 
 **Check feature toggle:**
 ```bash
-grep "ENABLE_TOOL_ERROR" ~/.terminal-visual-signals/user.conf
+grep "ENABLE_TOOL_ERROR" ~/.tavs/user.conf
 # Should be: ENABLE_TOOL_ERROR="true" (default)
 ```
 
@@ -466,10 +466,10 @@ export DEBUG_ALL=1
 ./src/core/trigger.sh processing
 ```
 
-Logs saved to: `~/.claude/hooks/terminal-agent-visual-signals/debug/`
+Logs saved to: `~/.claude/hooks/tavs/debug/`
 
 ## Still Stuck?
 
 1. Check the [Architecture](../reference/architecture.md) to understand how it works
 2. Read agent-specific README files in `src/agents/*/`
-3. Open an issue: https://github.com/cstelmach/terminal-agent-visual-signals/issues
+3. Open an issue: https://github.com/cstelmach/tavs/issues

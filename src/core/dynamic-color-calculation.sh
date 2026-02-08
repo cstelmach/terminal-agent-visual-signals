@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Dynamic Color Calculation Module
+# TAVS - Terminal Agent Visual Signals — Dynamic Color Calculation Module
 # ==============================================================================
 # Handles dynamic mode color calculations based on terminal background.
 # Extracted from theme-config-loader.sh for modularization.

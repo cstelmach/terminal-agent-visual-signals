@@ -222,7 +222,7 @@ git diff    # Review changes
 ### Environment Requirements
 
 - [ ] Bash 3.2+ (macOS default)
-- [ ] Working terminal-agent-visual-signals installation
+- [ ] Working tavs installation
 - [ ] Terminal with Unicode support (recommended) or ASCII fallback
 
 ### Codebase State
@@ -506,7 +506,7 @@ git diff    # Review changes
 1. **Create configure.sh skeleton**
    ```bash
    #!/bin/bash
-   # Terminal Agent Visual Signals - Configuration Script
+   # TAVS - Configuration Script
 
    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
    THEME_FILE="$SCRIPT_DIR/src/core/theme.sh"
@@ -573,7 +573,7 @@ git diff    # Review changes
 6. **Main flow**
    ```bash
    main() {
-       echo "=== Terminal Visual Signals Configuration ==="
+       echo "=== TAVS Configuration ==="
        echo ""
 
        # Step 1: Enable feature?

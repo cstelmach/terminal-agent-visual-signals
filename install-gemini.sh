@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Gemini CLI Installer
+# TAVS - Terminal Agent Visual Signals - Gemini CLI Installer
 # ==============================================================================
 # Standalone installer for Gemini CLI visual signals.
 # Features:
@@ -25,7 +25,7 @@ GEMINI_CONFIG_DIR="$HOME/.gemini"
 SETTINGS_FILE="$GEMINI_CONFIG_DIR/settings.json"
 HOOKS_SOURCE="$REPO_ROOT/src/agents/gemini/hooks.json"
 
-echo -e "${BLUE}=== Terminal Agent Visual Signals - Gemini CLI Installer ===${NC}"
+echo -e "${BLUE}=== TAVS - Terminal Agent Visual Signals - Gemini CLI Installer ===${NC}"
 echo -e "Repository: $REPO_ROOT"
 echo ""
 

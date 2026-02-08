@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals — Face Themes (Legacy Compatibility)
+# TAVS - Terminal Agent Visual Signals — Face Themes (Legacy Compatibility)
 # ==============================================================================
 # This file provides backward compatibility for code using the old get_face()
 # function. New code should use get_random_face() from agent-theme.sh instead.

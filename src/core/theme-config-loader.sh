@@ -1,10 +1,10 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Themes - Theme Definitions & Config Loader
+# TAVS - Terminal Agent Visual Signals — Theme Definitions & Config Loader
 # ==============================================================================
 # Loads configuration from consolidated defaults and user overrides:
 #   1. Master defaults (src/config/defaults.conf) - global + all agents
-#   2. User overrides (~/.terminal-visual-signals/user.conf)
+#   2. User overrides (~/.tavs/user.conf)
 #   3. Theme preset (src/themes/{preset}.conf) if THEME_MODE="preset"
 #   4. Resolve AGENT_prefixed variables to generic names
 #
@@ -23,7 +23,7 @@ fi
 _THEME_SCRIPT_DIR="$( cd "$( dirname "$_THIS_SCRIPT" )" && pwd )"
 _CONFIG_DIR="$_THEME_SCRIPT_DIR/../config"
 _THEMES_DIR="$_THEME_SCRIPT_DIR/../themes"
-_USER_CONFIG_DIR="$HOME/.terminal-visual-signals"
+_USER_CONFIG_DIR="$HOME/.tavs"
 _USER_CONFIG="$_USER_CONFIG_DIR/user.conf"
 
 # ==============================================================================

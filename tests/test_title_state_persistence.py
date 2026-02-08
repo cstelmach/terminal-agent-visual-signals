@@ -36,7 +36,7 @@ class TestGetTitleStateFile:
         assert result.returncode == 0
         path = result.stdout.strip()
         assert path.endswith(".dev_ttys001")
-        assert "terminal-visual-signals.title" in path
+        assert "tavs.title" in path
 
     def test_uses_unknown_when_tty_safe_empty(self):
         """Should use 'unknown' when TTY_SAFE is not set."""

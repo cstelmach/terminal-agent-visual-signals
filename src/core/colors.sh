@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Color Manipulation Utilities
+# TAVS - Terminal Agent Visual Signals — Color Manipulation Utilities
 # ==============================================================================
 # Provides HSL/RGB color conversion, hue shifting, luminance calculation,
 # and color interpolation for dynamic theming.

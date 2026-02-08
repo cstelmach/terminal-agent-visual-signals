@@ -1,4 +1,4 @@
-# Claude Code Hooks Reference for Terminal Visual Signals
+# Claude Code Hooks Reference for TAVS
 
 **Last Updated:** 2026-01-08
 **Claude Code Version:** v2.0.45+
@@ -1000,7 +1000,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh reset"
+            "command": "~/.claude/hooks/tavs/trigger.sh reset"
           }
         ]
       }
@@ -1010,7 +1010,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh reset"
+            "command": "~/.claude/hooks/tavs/trigger.sh reset"
           }
         ]
       }
@@ -1020,7 +1020,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh processing"
+            "command": "~/.claude/hooks/tavs/trigger.sh processing"
           }
         ]
       }
@@ -1031,7 +1031,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh processing"
+            "command": "~/.claude/hooks/tavs/trigger.sh processing"
           }
         ]
       }
@@ -1042,7 +1042,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh processing"
+            "command": "~/.claude/hooks/tavs/trigger.sh processing"
           }
         ]
       }
@@ -1053,7 +1053,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh permission"
+            "command": "~/.claude/hooks/tavs/trigger.sh permission"
           }
         ]
       }
@@ -1064,7 +1064,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh permission"
+            "command": "~/.claude/hooks/tavs/trigger.sh permission"
           }
         ]
       },
@@ -1073,7 +1073,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh idle"
+            "command": "~/.claude/hooks/tavs/trigger.sh idle"
           }
         ]
       }
@@ -1083,7 +1083,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh complete"
+            "command": "~/.claude/hooks/tavs/trigger.sh complete"
           }
         ]
       }
@@ -1094,7 +1094,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh compacting"
+            "command": "~/.claude/hooks/tavs/trigger.sh compacting"
           }
         ]
       },
@@ -1103,7 +1103,7 @@ Higher priority states are protected during a grace period to prevent rapid stat
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/trigger.sh compacting"
+            "command": "~/.claude/hooks/tavs/trigger.sh compacting"
           }
         ]
       }
@@ -1299,7 +1299,7 @@ echo "Git status: $(git status --short)"
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/terminal-visual-signals/src/agents/claude/trigger.sh complete"
+            "command": "~/.claude/hooks/tavs/src/agents/claude/trigger.sh complete"
           }
         ]
       }
@@ -1351,7 +1351,7 @@ $CLAUDE_PROJECT_DIR/.claude/hooks/script.sh
 
 **Solution:** Clear state file:
 ```bash
-rm /tmp/terminal-visual-signals.state
+rm /tmp/tavs.state
 ```
 
 ### Issue: Hook Output Not Visible
@@ -1433,7 +1433,7 @@ echo "Exit code: $?"
 ### Community Resources
 
 - [Claude Code Hooks Mastery](https://github.com/disler/claude-code-hooks-mastery)
-- [Terminal Agent Visual Signals](https://github.com/cstelmach/terminal-agent-visual-signals)
+- [TAVS - Terminal Agent Visual Signals](https://github.com/cstelmach/tavs)
 
 ---
 

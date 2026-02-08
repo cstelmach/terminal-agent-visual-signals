@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Palette Mode Helpers Module
+# TAVS - Terminal Agent Visual Signals — Palette Mode Helpers Module
 # ==============================================================================
 # Shared palette mode detection and background color decision logic.
 # Extracted from trigger.sh to eliminate duplication with idle-worker.sh.

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Configure Step 6: Terminal Title Mode
+# TAVS - Terminal Agent Visual Signals — Configure Step 6: Terminal Title Mode
 # ==============================================================================
 # Interactive configuration of terminal title mode and spinner settings.
 # Part of the TAVS configuration wizard.

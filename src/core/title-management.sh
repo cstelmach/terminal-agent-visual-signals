@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Signals - Title Management Module
+# TAVS - Terminal Agent Visual Signals — Title Management Module
 # ==============================================================================
 # Manages terminal tab/window titles with user override detection.
 # Supports multiple modes: full, prefix-only, skip-processing, off

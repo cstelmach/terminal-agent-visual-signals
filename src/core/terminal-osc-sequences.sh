@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# Terminal Agent Visual Themes - Terminal Interaction
+# TAVS - Terminal Agent Visual Signals — Terminal Interaction
 # ==============================================================================
 # Handles low-level OSC escape sequences and TTY detection.
 # ==============================================================================

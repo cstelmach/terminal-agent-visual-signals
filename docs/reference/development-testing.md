@@ -2,7 +2,7 @@
 
 ## Overview
 
-When developing Terminal Agent Visual Signals, changes need to be deployed to the plugin cache before they take effect in Claude Code. This document provides the workflow for testing changes live.
+When developing TAVS, changes need to be deployed to the plugin cache before they take effect in Claude Code. This document provides the workflow for testing changes live.
 
 ## Quick Reference
 
@@ -10,7 +10,7 @@ When developing Terminal Agent Visual Signals, changes need to be deployed to th
 
 ```bash
 # Copy all core files from repo to plugin cache
-CACHE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null; echo "Cache updated"
 ```
 
@@ -27,7 +27,7 @@ cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 
 ### 1. Make Changes in Repository
 
-Edit files in `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`:
+Edit files in `/Users/cs/.claude/hooks/tavs/`:
 
 | Change Type | Files to Edit |
 |-------------|---------------|
@@ -55,8 +55,8 @@ bash -c 'source src/core/theme.sh && load_agent_config claude && echo "COLOR_PRO
 The plugin cache is where Claude Code actually loads the code from:
 
 ```bash
-CACHE_BASE="$HOME/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0"
-REPO_BASE="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
+CACHE_BASE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
+REPO_BASE="/Users/cs/.claude/hooks/tavs"
 
 # Core files (most common)
 cp "$REPO_BASE/src/core/theme.sh" "$CACHE_BASE/src/core/"
@@ -83,29 +83,29 @@ After updating the cache, the next prompt you submit will use the new code.
 
 ### 5. User Config Location
 
-User settings are in `~/.terminal-visual-signals/user.conf`. Changes here take effect immediately (no cache update needed).
+User settings are in `~/.tavs/user.conf`. Changes here take effect immediately (no cache update needed).
 
 ## File Locations Summary
 
 | Purpose | Location |
 |---------|----------|
-| Source repo | `/Users/cs/.claude/hooks/terminal-agent-visual-signals/` |
-| Plugin cache | `~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/` |
-| User config | `~/.terminal-visual-signals/user.conf` |
-| Debug logs | `~/.claude/hooks/terminal-agent-visual-signals/debug/` |
+| Source repo | `/Users/cs/.claude/hooks/tavs/` |
+| Plugin cache | `~/.claude/plugins/cache/tavs/tavs/2.0.0/` |
+| User config | `~/.tavs/user.conf` |
+| Debug logs | `~/.claude/hooks/tavs/debug/` |
 
 ## Common Tasks
 
 ### Change a Color
 
 1. Edit `src/config/defaults.conf` (find `DARK_PROCESSING` or similar)
-2. Copy to cache: `cp src/config/defaults.conf ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/src/config/`
+2. Copy to cache: `cp src/config/defaults.conf ~/.claude/plugins/cache/tavs/tavs/2.0.0/src/config/`
 3. Submit a prompt to see the change
 
 ### Change Behavior Logic
 
 1. Edit `src/core/theme.sh` or `src/core/trigger.sh`
-2. Copy to cache: `cp src/core/*.sh ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/src/core/`
+2. Copy to cache: `cp src/core/*.sh ~/.claude/plugins/cache/tavs/tavs/2.0.0/src/core/`
 3. Submit a prompt to see the change
 
 ### Debug Issues
@@ -116,7 +116,7 @@ export DEBUG_ALL=1
 ./src/core/trigger.sh processing
 
 # Check logs
-ls -la ~/.claude/hooks/terminal-agent-visual-signals/debug/
+ls -la ~/.claude/hooks/tavs/debug/
 ```
 
 ## Troubleshooting
@@ -125,7 +125,7 @@ ls -la ~/.claude/hooks/terminal-agent-visual-signals/debug/
 
 1. **Verify cache was updated:**
    ```bash
-   ls -la ~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/src/core/theme.sh
+   ls -la ~/.claude/plugins/cache/tavs/tavs/2.0.0/src/core/theme.sh
    # Should show recent timestamp
    ```
 
@@ -141,7 +141,7 @@ ls -la ~/.claude/hooks/terminal-agent-visual-signals/debug/
 
 ### Wrong Colors Showing
 
-1. Check user config override: `cat ~/.terminal-visual-signals/user.conf`
+1. Check user config override: `cat ~/.tavs/user.conf`
 2. Check which agent is being used: `echo $TAVS_AGENT`
 3. Verify color variables: `bash -c 'source src/core/theme.sh && load_agent_config claude && echo "COLOR_PROCESSING=$COLOR_PROCESSING"'`
 
