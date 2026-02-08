@@ -68,7 +68,7 @@
 #
 # Options:
 #   "full"            - TAVS owns all titles (requires Claude Code setting, see below)
-#   "prefix-only"     - TAVS adds face+emoji prefix, preserves user's base title
+#   "prefix-only"     - TAVS adds face+status icon prefix, preserves user's base title
 #   "skip-processing" - Let Claude Code handle processing titles, TAVS handles others (DEFAULT)
 #   "off"             - No title changes at all, colors/backgrounds only
 #
@@ -99,19 +99,19 @@
 # ==============================================================================
 # Customize how the title is composed. Placeholders:
 #   {FACE}   - Agent face (e.g., "Ǝ[• •]E")
-#   {EMOJI}  - State emoji (e.g., "🟠")
+#   {STATUS_ICON}  - State status icon (e.g., "🟠")
 #   {AGENTS} - Active subagent count (e.g., "+2") - empty when none
-#   {ICON}   - Session icon (e.g., "🐙") - unique per terminal tab
+#   {SESSION_ICON}   - Session icon (e.g., "🐙") - unique per terminal tab
 #   {BASE}   - Base title (your tab name or fallback)
 #
 # Empty tokens (no subagents, icons disabled) collapse double spaces automatically.
 #
 # Examples:
-#   "{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"  -> "Ǝ[• •]E 🟠 +2 🐙 ~/project" (default)
-#   "{FACE} {EMOJI} {AGENTS} {ICON}"          -> "Ǝ[• •]E 🟠 +2 🐙" (no path)
-#   "{EMOJI} {ICON} {BASE}"                   -> "🟠 🐙 ~/project" (minimal)
-#   "{FACE} {EMOJI} {AGENTS} {BASE}"          -> "Ǝ[• •]E 🟠 +2 ~/project" (no icon)
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"
+#   "{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"  -> "Ǝ[• •]E 🟠 +2 🐙 ~/project" (default)
+#   "{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON}"          -> "Ǝ[• •]E 🟠 +2 🐙" (no path)
+#   "{STATUS_ICON} {SESSION_ICON} {BASE}"                   -> "🟠 🐙 ~/project" (minimal)
+#   "{FACE} {STATUS_ICON} {AGENTS} {BASE}"          -> "Ǝ[• •]E 🟠 +2 ~/project" (no icon)
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
 
 # Subagent count format. {N} = count number.
 # Only shown when count > 0. Empty string hides the counter entirely.
@@ -131,7 +131,7 @@
 # TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
 #
 # To remove the icon from the title format entirely:
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {BASE}"
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {BASE}"
 
 # ==============================================================================
 # COMPACT FACE MODE
@@ -142,7 +142,7 @@
 #   Standard:  Ǝ[• •]E 🟠 +2 🦊 ~/proj
 #   Compact:   Ǝ[🟠 +2]E 🦊 ~/proj
 #
-# When compact is active, {EMOJI} and {AGENTS} tokens are auto-suppressed.
+# When compact is active, {STATUS_ICON} and {AGENTS} tokens are auto-suppressed.
 #
 # TAVS_FACE_MODE="compact"          # "standard" (default) | "compact"
 # TAVS_COMPACT_THEME="semantic"     # "semantic" | "circles" | "squares" | "mixed"
@@ -155,7 +155,7 @@
 # ==============================================================================
 # When TAVS detects you've manually renamed a tab, what should it do?
 #
-#   "prefix" - Add face+emoji prefix, keep your base name (recommended)
+#   "prefix" - Add face+status icon prefix, keep your base name (recommended)
 #   "full"   - Completely respect your title (no changes at all)
 #   "ignore" - Always overwrite your title (legacy behavior)
 # TAVS_RESPECT_USER_TITLE="prefix"
@@ -165,7 +165,7 @@
 # ==============================================================================
 # Fine-grained control over what appears in the title.
 # TAVS_TITLE_SHOW_FACE="true"     # Include face in title
-# TAVS_TITLE_SHOW_EMOJI="true"    # Include emoji in title
+# TAVS_TITLE_SHOW_STATUS_ICON="true"    # Include status icon in title
 # TAVS_TITLE_SHOW_SESSION="true"  # Include session ID in fallback
 # TAVS_TITLE_SHOW_PATH="true"     # Include path in fallback
 
@@ -216,12 +216,12 @@
 # ENABLE_ANTHROPOMORPHISING="true"
 # FACE_POSITION="before"  # "before" or "after"
 
-# Emojis
-# EMOJI_PROCESSING="🟠"
-# EMOJI_PERMISSION="🔴"
-# EMOJI_COMPLETE="🟢"
-# EMOJI_IDLE="🟣"
-# EMOJI_COMPACTING="🔄"
+# Status Icons
+# STATUS_ICON_PROCESSING="🟠"
+# STATUS_ICON_PERMISSION="🔴"
+# STATUS_ICON_COMPLETE="🟢"
+# STATUS_ICON_IDLE="🟣"
+# STATUS_ICON_COMPACTING="🔄"
 
 # Dynamic Mode Settings
 # HUE_PROCESSING=30

@@ -25,7 +25,7 @@ class TestBashZshConfigParity:
         'TAVS_TITLE_FORMAT',
         'TAVS_TITLE_FALLBACK',
         'TAVS_RESPECT_USER_TITLE',
-        'EMOJI_PROCESSING',
+        'STATUS_ICON_PROCESSING',
         'ENABLE_ANTHROPOMORPHISING',
         'FACE_POSITION',
     ]
@@ -109,7 +109,7 @@ class TestScriptPathResolution:
 class TestBraceExpansionSafety:
     """Default values with braces must work in both shells.
 
-    The original bug: ${TAVS_TITLE_FORMAT:-{FACE} {EMOJI} {BASE}}
+    The original bug: ${TAVS_TITLE_FORMAT:-{FACE} {STATUS_ICON} {BASE}}
     In zsh, the braces were interpreted differently, causing empty values
     or corrupted output.
     """
@@ -121,8 +121,8 @@ class TestBraceExpansionSafety:
         )
         assert result.returncode == 0
         output = result.stdout.strip()
-        assert output == '{FACE} {EMOJI} {BASE}', \
-            f"Expected '{{FACE}} {{EMOJI}} {{BASE}}', got '{output}'"
+        assert output == '{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}', \
+            f"Expected '{{FACE}} {{STATUS_ICON}} {{AGENTS}} {{SESSION_ICON}} {{BASE}}', got '{output}'"
 
     def test_title_format_default_zsh(self):
         """TAVS_TITLE_FORMAT default should be correct in zsh."""
@@ -131,8 +131,8 @@ class TestBraceExpansionSafety:
         )
         assert result.returncode == 0
         output = result.stdout.strip()
-        assert output == '{FACE} {EMOJI} {BASE}', \
-            f"Expected '{{FACE}} {{EMOJI}} {{BASE}}', got '{output}'"
+        assert output == '{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}', \
+            f"Expected '{{FACE}} {{STATUS_ICON}} {{AGENTS}} {{SESSION_ICON}} {{BASE}}', got '{output}'"
 
     def test_title_format_parity(self):
         """TAVS_TITLE_FORMAT must be identical in both shells."""
@@ -147,8 +147,8 @@ class TestBraceExpansionSafety:
             f"TAVS_TITLE_FORMAT differs: bash='{bash_val}', zsh='{zsh_val}'"
         assert '{FACE}' in bash_val, \
             f"Format should contain '{{FACE}}': {bash_val}"
-        assert '{EMOJI}' in bash_val, \
-            f"Format should contain '{{EMOJI}}': {bash_val}"
+        assert '{STATUS_ICON}' in bash_val, \
+            f"Format should contain '{{STATUS_ICON}}': {bash_val}"
         assert '{BASE}' in bash_val, \
             f"Format should contain '{{BASE}}': {bash_val}"
 
@@ -167,8 +167,8 @@ class TestBraceExpansionSafety:
         # Should NOT have brace corruption
         assert '}}' not in output, f"Brace corruption detected: {output}"
         assert '{{' not in output, f"Brace corruption detected: {output}"
-        # Should have the emoji
-        assert '🟠' in output, f"Missing processing emoji: {output}"
+        # Should have the status icon
+        assert '🟠' in output, f"Missing processing status icon: {output}"
 
     def test_compose_title_no_corruption_zsh(self):
         """compose_title should not corrupt output in zsh."""
@@ -185,8 +185,8 @@ class TestBraceExpansionSafety:
         # Should NOT have brace corruption
         assert '}}' not in output, f"Brace corruption detected: {output}"
         assert '{{' not in output, f"Brace corruption detected: {output}"
-        # Should have the emoji
-        assert '🟠' in output, f"Missing processing emoji: {output}"
+        # Should have the status icon
+        assert '🟠' in output, f"Missing processing status icon: {output}"
 
     def test_compose_title_parity(self):
         """compose_title structure must match between bash and zsh.
@@ -215,9 +215,9 @@ class TestBraceExpansionSafety:
         assert 'TestProject' in bash_title, f"Missing base in bash: {bash_title}"
         assert 'TestProject' in zsh_title, f"Missing base in zsh: {zsh_title}"
 
-        # Both should have the processing emoji
-        assert '🟠' in bash_title, f"Missing emoji in bash: {bash_title}"
-        assert '🟠' in zsh_title, f"Missing emoji in zsh: {zsh_title}"
+        # Both should have the processing status icon
+        assert '🟠' in bash_title, f"Missing status icon in bash: {bash_title}"
+        assert '🟠' in zsh_title, f"Missing status icon in zsh: {zsh_title}"
 
         # Structure: No corruption (base appears exactly once)
         assert bash_title.count('TestProject') == 1, f"Duplicated base in bash: {bash_title}"
@@ -249,28 +249,28 @@ class TestConfigLoadingPaths:
         assert result.returncode == 0, f"Load failed in zsh: {result.stderr}"
         assert 'loaded' in result.stdout
 
-    def test_emoji_variables_load_in_both_shells(self):
-        """Emoji variables should be set correctly in both shells."""
+    def test_status_icon_variables_load_in_both_shells(self):
+        """Status icon variables should be set correctly in both shells."""
         results = run_in_both_shells(
-            'source src/core/theme-config-loader.sh && echo "$EMOJI_PROCESSING $EMOJI_COMPLETE"'
+            'source src/core/theme-config-loader.sh && echo "$STATUS_ICON_PROCESSING $STATUS_ICON_COMPLETE"'
         )
 
         # Both should succeed
         assert results['bash'].returncode == 0
         assert results['zsh'].returncode == 0
 
-        bash_emojis = results['bash'].stdout.strip()
-        zsh_emojis = results['zsh'].stdout.strip()
+        bash_status_icons = results['bash'].stdout.strip()
+        zsh_status_icons = results['zsh'].stdout.strip()
 
-        # Should contain the emojis
-        assert '🟠' in bash_emojis, f"Missing processing emoji in bash: {bash_emojis}"
-        assert '🟢' in bash_emojis, f"Missing complete emoji in bash: {bash_emojis}"
-        assert '🟠' in zsh_emojis, f"Missing processing emoji in zsh: {zsh_emojis}"
-        assert '🟢' in zsh_emojis, f"Missing complete emoji in zsh: {zsh_emojis}"
+        # Should contain the status icons
+        assert '🟠' in bash_status_icons, f"Missing processing status icon in bash: {bash_status_icons}"
+        assert '🟢' in bash_status_icons, f"Missing complete status icon in bash: {bash_status_icons}"
+        assert '🟠' in zsh_status_icons, f"Missing processing status icon in zsh: {zsh_status_icons}"
+        assert '🟢' in zsh_status_icons, f"Missing complete status icon in zsh: {zsh_status_icons}"
 
         # Values should match
-        assert bash_emojis == zsh_emojis, \
-            f"Emoji values differ: bash='{bash_emojis}', zsh='{zsh_emojis}'"
+        assert bash_status_icons == zsh_status_icons, \
+            f"Status icon values differ: bash='{bash_status_icons}', zsh='{zsh_status_icons}'"
 
 
 class TestInlineFallbacks:
@@ -297,8 +297,8 @@ class TestInlineFallbacks:
         critical_vars = [
             'ENABLE_ANTHROPOMORPHISING',
             'FACE_POSITION',
-            'EMOJI_PROCESSING',
-            'EMOJI_COMPLETE',
+            'STATUS_ICON_PROCESSING',
+            'STATUS_ICON_COMPLETE',
         ]
 
         for var in critical_vars:

@@ -211,14 +211,14 @@ send_osc_title() {
 
 ### Idle Stage Integration
 
-The existing `UNIFIED_STAGE_EMOJIS` array handles idle progression. Face progression is handled separately via `idle_0` through `idle_5` keys in each theme.
+The existing `UNIFIED_STAGE_STATUS_ICONS` array handles idle progression. Face progression is handled separately via `idle_0` through `idle_5` keys in each theme.
 
 Modified `idle-worker.sh` to pass stage index:
 
 ```bash
 # In stage transition:
 local idle_face_key="idle_${stage_index}"
-send_osc_title "${UNIFIED_STAGE_EMOJIS[$stage_index]}" "$(get_short_cwd)" "$idle_face_key"
+send_osc_title "${UNIFIED_STAGE_STATUS_ICONS[$stage_index]}" "$(get_short_cwd)" "$idle_face_key"
 ```
 
 ---

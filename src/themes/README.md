@@ -83,14 +83,14 @@ LIGHT_COMPACTING="#XXXXXX"
 # FACE_THEME="minimal"
 
 # =============================================================================
-# EMOJIS (Optional)
+# STATUS ICONS (Optional)
 # =============================================================================
 # Override state emojis
-# EMOJI_PROCESSING="🟠"
-# EMOJI_PERMISSION="🔴"
-# EMOJI_COMPLETE="🟢"
-# EMOJI_IDLE="🟣"
-# EMOJI_COMPACTING="🔄"
+# STATUS_ICON_PROCESSING="🟠"
+# STATUS_ICON_PERMISSION="🔴"
+# STATUS_ICON_COMPLETE="🟢"
+# STATUS_ICON_IDLE="🟣"
+# STATUS_ICON_COMPACTING="🔄"
 ```
 
 ### Color Guidelines

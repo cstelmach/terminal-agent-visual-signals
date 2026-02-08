@@ -62,7 +62,7 @@ select_title_mode() {
     print_info "Safe default - no title conflicts."
     echo ""
     echo -e "  ${YELLOW}2)${NC} ${BOLD}Prefix Only${NC}"
-    print_info "TAVS adds face+emoji prefix while preserving your tab names."
+    print_info "TAVS adds face+status icon prefix while preserving your tab names."
     print_info "Example: 'My Project' becomes 'Ǝ[• •]E 🟠 My Project'"
     print_info "Best for users who manually name their tabs."
     echo ""

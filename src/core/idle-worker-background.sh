@@ -155,7 +155,7 @@ unified_timer_worker() {
             fi
 
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
-            local stage_emoji="${UNIFIED_STAGE_EMOJIS[$current_stage]}"
+            local stage_status_icon="${UNIFIED_STAGE_STATUS_ICONS[$current_stage]}"
 
             # Apply Palette FIRST (prevents contrast flicker)
             if [[ "$stage_color" == "reset" ]]; then
@@ -177,7 +177,7 @@ unified_timer_worker() {
             # Uses >&3 directly to avoid blocking - consistent with color writes
             local title_face=""
             if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
-                # Compact mode: emoji eyes in face frame (state info embedded)
+                # Compact mode: emoji eyes in face frame (status info embedded)
                 if type get_compact_face &>/dev/null; then
                     title_face=$(get_compact_face "idle_${current_stage}")
                 fi
@@ -194,17 +194,17 @@ unified_timer_worker() {
             if [[ "$ENABLE_TITLE_PREFIX" == "true" ]]; then
                 local title=""
                 if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
-                    # Compact: face already contains emoji, skip separate stage_emoji
+                    # Compact: face already contains status info, skip separate stage_status_icon
                     title="$title_face $SESSION_ICON $SHORT_CWD"
-                elif [[ -n "$stage_emoji" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
+                elif [[ -n "$stage_status_icon" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
                     if [[ -n "$title_face" ]]; then
                         if [[ "$FACE_POSITION" == "before" ]]; then
-                            title="$title_face $stage_emoji $SESSION_ICON $SHORT_CWD"
+                            title="$title_face $stage_status_icon $SESSION_ICON $SHORT_CWD"
                         else
-                            title="$stage_emoji $title_face $SESSION_ICON $SHORT_CWD"
+                            title="$stage_status_icon $title_face $SESSION_ICON $SHORT_CWD"
                         fi
                     else
-                        title="$stage_emoji $SESSION_ICON $SHORT_CWD"
+                        title="$stage_status_icon $SESSION_ICON $SHORT_CWD"
                     fi
                 elif [[ -n "$title_face" ]]; then
                     title="$title_face $SESSION_ICON $SHORT_CWD"

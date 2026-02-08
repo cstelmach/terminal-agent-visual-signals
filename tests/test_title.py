@@ -233,7 +233,7 @@ class TestFormatSubstitution:
     """Test format template substitution in compose_title."""
 
     def test_default_format_has_all_placeholders(self):
-        """Default format should include FACE, EMOJI, and BASE."""
+        """Default format should include FACE, STATUS_ICON, and BASE."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
             echo "$TAVS_TITLE_FORMAT"
@@ -248,7 +248,7 @@ class TestFormatSubstitution:
 
         # Format should have all placeholders
         assert '{FACE}' in bash_format, f"Missing {{FACE}}: {bash_format}"
-        assert '{EMOJI}' in bash_format, f"Missing {{EMOJI}}: {bash_format}"
+        assert '{STATUS_ICON}' in bash_format, f"Missing {{STATUS_ICON}}: {bash_format}"
         assert '{BASE}' in bash_format, f"Missing {{BASE}}: {bash_format}"
 
     def test_custom_format_respected(self):
@@ -256,7 +256,7 @@ class TestFormatSubstitution:
         # Set format AFTER sourcing config (simulating user.conf override)
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
-            export TAVS_TITLE_FORMAT="{EMOJI} [{BASE}]"
+            export TAVS_TITLE_FORMAT="{STATUS_ICON} [{BASE}]"
             export ENABLE_ANTHROPOMORPHISING="false"
             source src/core/title-management.sh
             compose_title "processing" "Test"
@@ -265,16 +265,16 @@ class TestFormatSubstitution:
         bash_title = results['bash'].stdout.strip()
         zsh_title = results['zsh'].stdout.strip()
 
-        # Should have brackets around base and emoji
-        assert '🟠' in bash_title, f"Missing emoji in bash: {bash_title}"
-        assert '🟠' in zsh_title, f"Missing emoji in zsh: {zsh_title}"
+        # Should have brackets around base and status icon
+        assert '🟠' in bash_title, f"Missing status icon in bash: {bash_title}"
+        assert '🟠' in zsh_title, f"Missing status icon in zsh: {zsh_title}"
         assert '[Test]' in bash_title, f"Custom format not applied in bash: {bash_title}"
         assert '[Test]' in zsh_title, f"Custom format not applied in zsh: {zsh_title}"
 
-    def test_emoji_only_format(self):
-        """Format with only emoji should work."""
+    def test_status_icon_only_format(self):
+        """Format with only status icon should work."""
         results = run_in_both_shells('''
-            export TAVS_TITLE_FORMAT="{EMOJI} {BASE}"
+            export TAVS_TITLE_FORMAT="{STATUS_ICON} {BASE}"
             export ENABLE_ANTHROPOMORPHISING="false"
             source src/core/theme-config-loader.sh
             source src/core/title-management.sh
@@ -284,10 +284,10 @@ class TestFormatSubstitution:
         bash_title = results['bash'].stdout.strip()
         zsh_title = results['zsh'].stdout.strip()
 
-        # Should have emoji and base
-        assert '🟢' in bash_title, f"Missing emoji: {bash_title}"
+        # Should have status icon and base
+        assert '🟢' in bash_title, f"Missing status icon: {bash_title}"
         assert 'MyApp' in bash_title, f"Missing base: {bash_title}"
-        assert '🟢' in zsh_title, f"Missing emoji: {zsh_title}"
+        assert '🟢' in zsh_title, f"Missing status icon: {zsh_title}"
         assert 'MyApp' in zsh_title, f"Missing base: {zsh_title}"
 
 

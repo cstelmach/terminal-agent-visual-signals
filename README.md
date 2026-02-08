@@ -150,8 +150,8 @@ ENABLE_IDLE_STAGE_INDICATORS=true
 IDLE_COLORS=("#443147" "#423148" "#3f3248" "#3a3348" "#373348" "reset")
 
 # Emojis for each stage (can use clock faces for time indication)
-IDLE_EMOJIS=("🟣" "🟣" "🟣" "🟣" "🟣" "")        # Subtle
-# IDLE_EMOJIS=("🕐" "🕑" "🕒" "🕓" "🕔" "")      # Clock progression
+IDLE_STATUS_ICONS=("🟣" "🟣" "🟣" "🟣" "🟣" "")        # Subtle
+# IDLE_STATUS_ICONS=("🕐" "🕑" "🕒" "🕓" "🕔" "")      # Clock progression
 
 # Duration per stage (seconds) - total idle time = sum of all durations
 IDLE_STAGE_DURATIONS=(180 180 180 180 180 180)  # 18 minutes total
@@ -220,14 +220,14 @@ COLOR_COMPACTING="#2B4645"   # Muted teal
 
 > **Tip:** If using a different theme, adjust colors to complement your terminal's background. The goal is subtle tinting, not jarring color changes.
 
-### Emojis
+### Status Icons
 
 ```bash
-EMOJI_PROCESSING="🟠"
-EMOJI_PERMISSION="🔴"
-EMOJI_COMPLETE="🟢"
-EMOJI_IDLE="🟣"
-EMOJI_COMPACTING="🔄"
+STATUS_ICON_PROCESSING="🟠"
+STATUS_ICON_PERMISSION="🔴"
+STATUS_ICON_COMPLETE="🟢"
+STATUS_ICON_IDLE="🟣"
+STATUS_ICON_COMPACTING="🔄"
 ```
 
 ### Alternative Color Themes

@@ -117,7 +117,7 @@ Assigns a unique animal emoji per terminal tab for visual identification:
 ### title-management.sh (Title Composition)
 
 Title management with user override detection:
-- `compose_title()` - Build title from `{FACE}`, `{EMOJI}`, `{AGENTS}`, `{ICON}`, `{BASE}` tokens
+- `compose_title()` - Build title from `{FACE}`, `{STATUS_ICON}`, `{AGENTS}`, `{SESSION_ICON}`, `{BASE}` tokens
 - `set_tavs_title()` - Set title with full state tracking and user override respect
 - `reset_tavs_title()` - Reset title to base (remove TAVS prefix)
 - User title detection on iTerm2 via OSC 1337
@@ -212,7 +212,7 @@ Core trigger.sh:
   4. Apply palette if enabled (OSC 4)
   5. Send OSC 11 (background color)
   6. Check TAVS_TITLE_MODE (full/prefix-only/skip-processing/off)
-  7. Compose title with {FACE} {EMOJI} {AGENTS} {ICON} {BASE} tokens
+  7. Compose title with {FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE} tokens
   8. Send OSC 0 (title)
   9. Record state
        │
@@ -261,7 +261,7 @@ Session Start (reset):
   1. Assign session icon (unique animal emoji per TTY)
   2. Icon persists across /clear (tied to terminal tab)
   3. Stale icons from dead TTYs cleaned up automatically
-  4. Icon appears as {ICON} token in title format
+  4. Icon appears as {SESSION_ICON} token in title format
 ```
 
 ## Configuration Files

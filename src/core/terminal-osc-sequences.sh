@@ -142,7 +142,7 @@ send_osc_palette_reset() {
 }
 
 send_osc_title() {
-    local emoji="$1"
+    local status_icon="$1"
     local text="$2"
     local state="${3:-}"
     [[ -z "$TTY_DEVICE" ]] && return
@@ -164,9 +164,9 @@ send_osc_title() {
                 if type get_random_face &>/dev/null; then
                     face=$(get_random_face "$state")
                 fi
-                title="$emoji $face $text"
+                title="$status_icon $face $text"
             else
-                title="$emoji $text"
+                title="$status_icon $text"
             fi
         elif [[ -n "$spinner_result" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
             # With face: build face with spinner eyes using agent-specific frame
@@ -179,18 +179,18 @@ send_osc_title() {
             face="${frame//\{L\}/$left_eye}"
             face="${face//\{R\}/$right_eye}"
             if [[ "$FACE_POSITION" == "before" ]]; then
-                title="$face $emoji $text"
+                title="$face $status_icon $text"
             else
-                title="$emoji $face $text"
+                title="$status_icon $face $text"
             fi
         elif [[ -n "$spinner_result" ]]; then
             # No face (ENABLE_ANTHROPOMORPHISING=false): just spinner + path
             # Extract first eye character for single spinner
             local single_spinner="${spinner_result%% *}"
-            title="$emoji $single_spinner $text"
+            title="$status_icon $single_spinner $text"
         else
             # Fallback if spinner not available
-            title="$emoji $text"
+            title="$status_icon $text"
         fi
     else
         # Non-processing states OR skip-processing mode - use normal face selection
@@ -204,16 +204,16 @@ send_osc_title() {
         fi
 
         # Compose title based on what's available
-        if [[ -n "$emoji" && -n "$face" ]]; then
+        if [[ -n "$status_icon" && -n "$face" ]]; then
             if [[ "$FACE_POSITION" == "before" ]]; then
-                title="$face $emoji $text"
+                title="$face $status_icon $text"
             else
-                title="$emoji $face $text"
+                title="$status_icon $face $text"
             fi
         elif [[ -n "$face" ]]; then
             title="$face $text"
-        elif [[ -n "$emoji" ]]; then
-            title="$emoji $text"
+        elif [[ -n "$status_icon" ]]; then
+            title="$status_icon $text"
         else
             title="$text"
         fi

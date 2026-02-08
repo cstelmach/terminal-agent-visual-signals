@@ -119,11 +119,11 @@ detect_user_title_change() {
 _extract_base_from_title() {
     local title="$1"
 
-    # Pattern: remove face + emoji prefix
+    # Pattern: remove face + status icon prefix
     # Faces are typically: Ǝ[...]E, ʕ...ʔ, ฅ^...^ฅ, (...)
-    # Emojis: 🟠 🟢 🔴 🟣 🔄
+    # Status icons: 🟠 🟢 🔴 🟣 🔄
 
-    # Try to extract everything after the last emoji
+    # Try to extract everything after the last status icon
     local base="$title"
 
     # Remove leading face patterns (non-greedy)
@@ -133,8 +133,8 @@ _extract_base_from_title() {
         base="${BASH_REMATCH[1]}"
     fi
 
-    # Remove leading emoji and space
-    # Pattern: emoji followed by optional space followed by base
+    # Remove leading status icon and space
+    # Pattern: status icon followed by optional space followed by base
     if [[ "$base" =~ ^[🟠🟢🔴🟣🔄][[:space:]]*(.*) ]]; then
         base="${BASH_REMATCH[1]}"
     fi
@@ -237,7 +237,7 @@ get_fallback_title() {
     esac
 }
 
-# Compose the full title with face, emoji, and base
+# Compose the full title with face, status icon, and base
 # Usage: compose_title "processing" -> "Ǝ[• •]E 🟠 ~/projects"
 compose_title() {
     local state="${1:-}"
@@ -248,7 +248,7 @@ compose_title() {
 
     # Get components based on state and configuration
     local face=""
-    local emoji=""
+    local status_icon=""
 
     # Get face if enabled
     if [[ "${TAVS_TITLE_SHOW_FACE:-true}" == "true" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
@@ -284,17 +284,17 @@ compose_title() {
         fi
     fi
 
-    # Get emoji if enabled (suppressed in compact mode - embedded in face eyes)
-    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" && "${TAVS_TITLE_SHOW_EMOJI:-true}" == "true" ]]; then
+    # Get status icon if enabled (suppressed in compact mode - embedded in face eyes)
+    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" && "${TAVS_TITLE_SHOW_STATUS_ICON:-true}" == "true" ]]; then
         case "$state" in
-            processing) emoji="$EMOJI_PROCESSING" ;;
-            permission) emoji="$EMOJI_PERMISSION" ;;
-            complete)   emoji="$EMOJI_COMPLETE" ;;
-            idle*)      emoji="$EMOJI_IDLE" ;;
-            compacting) emoji="$EMOJI_COMPACTING" ;;
-            subagent*)  emoji="$EMOJI_SUBAGENT" ;;
-            tool_error) emoji="$EMOJI_TOOL_ERROR" ;;
-            reset|*)    emoji="" ;;
+            processing) status_icon="$STATUS_ICON_PROCESSING" ;;
+            permission) status_icon="$STATUS_ICON_PERMISSION" ;;
+            complete)   status_icon="$STATUS_ICON_COMPLETE" ;;
+            idle*)      status_icon="$STATUS_ICON_IDLE" ;;
+            compacting) status_icon="$STATUS_ICON_COMPACTING" ;;
+            subagent*)  status_icon="$STATUS_ICON_SUBAGENT" ;;
+            tool_error) status_icon="$STATUS_ICON_TOOL_ERROR" ;;
+            reset|*)    status_icon="" ;;
         esac
     fi
 
@@ -307,22 +307,22 @@ compose_title() {
     fi
 
     # Get session icon (empty when disabled or no icon assigned)
-    local icon=""
+    local session_icon=""
     if [[ "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && type get_session_icon &>/dev/null; then
-        icon=$(get_session_icon 2>/dev/null)
+        session_icon=$(get_session_icon 2>/dev/null)
     fi
 
     # Compose using format template or default
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
-    local _default_format='{FACE} {EMOJI} {AGENTS} {BASE}'
+    local _default_format='{FACE} {STATUS_ICON} {AGENTS} {BASE}'
     local format="${TAVS_TITLE_FORMAT:-$_default_format}"
     local title="$format"
 
     # Substitute placeholders
     title="${title//\{FACE\}/$face}"
-    title="${title//\{EMOJI\}/$emoji}"
+    title="${title//\{STATUS_ICON\}/$status_icon}"
     title="${title//\{AGENTS\}/$agents}"
-    title="${title//\{ICON\}/$icon}"
+    title="${title//\{SESSION_ICON\}/$session_icon}"
     title="${title//\{BASE\}/$base_title}"
 
     # Clean up multiple spaces and trim (use printf for safe string handling)

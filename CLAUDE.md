@@ -148,7 +148,7 @@ TAVS can control terminal tab titles with animated spinners during processing. F
 | Mode | Description |
 |------|-------------|
 | `skip-processing` | **(Default)** Let Claude Code handle processing titles, TAVS handles others |
-| `prefix-only` | Add face+emoji prefix while preserving user's tab names |
+| `prefix-only` | Add face+status icon prefix while preserving user's tab names |
 | `full` | TAVS owns all titles with animated spinner eyes in face |
 | `off` | No title changes, only background colors/images |
 
@@ -168,8 +168,8 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 # Optional: Force a specific base title
 # TAVS_TITLE_BASE="My Project"
 
-# Optional: Customize format (default includes {AGENTS} and {ICON})
-# TAVS_TITLE_FORMAT="{FACE} {EMOJI} {AGENTS} {ICON} {BASE}"
+# Optional: Customize format (default includes {AGENTS} and {SESSION_ICON})
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
 # TAVS_AGENTS_FORMAT="+{N}"  # Format for subagent count ({N} = number)
 ```
 
@@ -186,15 +186,15 @@ The `TAVS_TITLE_FORMAT` template supports these placeholders:
 | Token | Description | Example |
 |-------|-------------|---------|
 | `{FACE}` | Agent face expression | `Ǝ[• •]E` |
-| `{EMOJI}` | State emoji | `🟠` |
+| `{STATUS_ICON}` | State emoji | `🟠` |
 | `{AGENTS}` | Active subagent count (empty when none) | `+2` |
-| `{ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
+| `{SESSION_ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
 
 The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
 It only appears when subagents are active (count > 0).
 
-The `{ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
+The `{SESSION_ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
 Each terminal tab gets a unique animal emoji from a pool of 25, persisting across `/clear`.
 
 ### Enabling Full Title Mode
@@ -236,7 +236,7 @@ The `{L}` and `{R}` placeholders are replaced with animated spinner characters.
 Replaces text-based eyes with emoji. State info and subagent count are embedded directly in the face, producing a more information-dense title.
 
 ```
-STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + emoji + count + icon + path)
+STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + status icon + count + session icon + path)
 COMPACT:   Ǝ[🟧 +2]E 🦊 ~/proj         (emoji eyes + count as right eye)
 ```
 
@@ -253,7 +253,7 @@ TAVS_COMPACT_THEME="semantic"      # "semantic" | "circles" | "squares" | "mixed
 | squares | Bold block emoji | `🟧 🟧`, `🟥 🟥`, `🟩 🟩` |
 | mixed | Asymmetric pairs | `🟧 🟠`, `🟥 ⭕`, `✅ 🟢` |
 
-In compact mode, `{EMOJI}` and `{AGENTS}` tokens are auto-suppressed since that info is embedded in the face. The right eye becomes `+N` when subagents are active.
+In compact mode, `{STATUS_ICON}` and `{AGENTS}` tokens are auto-suppressed since that info is embedded in the face. The right eye becomes `+N` when subagents are active.
 
 ---
 

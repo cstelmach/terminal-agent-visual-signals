@@ -111,10 +111,10 @@ else:               text
 1. In each state case, add the state name as 3rd argument to `send_osc_title`:
    ```bash
    # BEFORE:
-   send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)"
+   send_osc_title "$STATUS_ICON_PROCESSING" "$(get_short_cwd)"
 
    # AFTER:
-   send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
+   send_osc_title "$STATUS_ICON_PROCESSING" "$(get_short_cwd)" "processing"
    ```
 
 2. States to update:
@@ -428,7 +428,7 @@ git diff    # Review changes
        kill_idle_timer
        if [[ "$ENABLE_PROCESSING" == "true" ]]; then
            [[ "$ENABLE_BACKGROUND_CHANGE" == "true" ]] && send_osc_bg "$COLOR_PROCESSING"
-           [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$EMOJI_PROCESSING" "$(get_short_cwd)" "processing"
+           [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && send_osc_title "$STATUS_ICON_PROCESSING" "$(get_short_cwd)" "processing"
        # ... rest unchanged
    ```
 
@@ -467,7 +467,7 @@ git diff    # Review changes
 **Implementation Steps:**
 
 1. **Identify stage transition code in idle-worker.sh**
-   Look for where `UNIFIED_STAGE_EMOJIS[$stage]` is used
+   Look for where `UNIFIED_STAGE_STATUS_ICONS[$stage]` is used
 
 2. **Add idle stage face key**
    ```bash
@@ -476,7 +476,7 @@ git diff    # Review changes
 
    # Update title with stage emoji and face
    [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && \
-       send_osc_title "${UNIFIED_STAGE_EMOJIS[$stage_index]}" "$(get_short_cwd)" "$idle_face_key"
+       send_osc_title "${UNIFIED_STAGE_STATUS_ICONS[$stage_index]}" "$(get_short_cwd)" "$idle_face_key"
    ```
 
 3. **Verify stage 0 (complete) maps to idle_0**

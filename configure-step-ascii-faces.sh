@@ -50,8 +50,8 @@ select_faces() {
         # Position
         echo ""
         echo "  Face position:"
-        echo -e "  ${YELLOW}1)${NC} Before emoji: $(get_face "$SELECTED_FACE_THEME" processing) 🟠 ~/path"
-        echo -e "  ${YELLOW}2)${NC} After emoji:  🟠 $(get_face "$SELECTED_FACE_THEME" processing) ~/path"
+        echo -e "  ${YELLOW}1)${NC} Before status icon: $(get_face "$SELECTED_FACE_THEME" processing) 🟠 ~/path"
+        echo -e "  ${YELLOW}2)${NC} After status icon:  🟠 $(get_face "$SELECTED_FACE_THEME" processing) ~/path"
         echo ""
 
         local pos_choice

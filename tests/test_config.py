@@ -184,14 +184,14 @@ class TestOtherConfigVariables:
             value = result.stdout.strip()
             assert value.startswith("#"), f"{color} should be a hex color, got '{value}'"
 
-    def test_emoji_variables_exist(self):
-        """Emoji variables should be defined."""
+    def test_status_icon_variables_exist(self):
+        """Status icon variables should be defined."""
         emojis = {
-            "EMOJI_PROCESSING": "🟠",
-            "EMOJI_PERMISSION": "🔴",
-            "EMOJI_COMPLETE": "🟢",
-            "EMOJI_IDLE": "🟣",
-            "EMOJI_COMPACTING": "🔄",
+            "STATUS_ICON_PROCESSING": "🟠",
+            "STATUS_ICON_PERMISSION": "🔴",
+            "STATUS_ICON_COMPLETE": "🟢",
+            "STATUS_ICON_IDLE": "🟣",
+            "STATUS_ICON_COMPACTING": "🔄",
         }
 
         for var, expected in emojis.items():

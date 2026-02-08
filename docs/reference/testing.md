@@ -236,12 +236,12 @@ export DEBUG_ALL=1
 - [ ] Subagent counter resets on new prompt (abort recovery)
 - [ ] PostToolUse does not reset subagent counter mid-prompt
 - [ ] Compact face mode shows emoji eyes in agent frame
-- [ ] Compact mode suppresses separate {EMOJI} and {AGENTS} tokens
+- [ ] Compact mode suppresses separate {STATUS_ICON} and {AGENTS} tokens
 - [ ] Compact mode subagent count appears as right eye (+N)
 - [ ] Tool error shows orange-red flash
 - [ ] Tool error auto-returns to processing after 1.5s
 - [ ] Session icon assigned on reset (animal emoji in `~/.cache/tavs/`)
-- [ ] Session icon appears in tab title via `{ICON}` token
+- [ ] Session icon appears in tab title via `{SESSION_ICON}` token
 - [ ] Concurrent sessions get unique icons (registry dedup)
 
 ## Common Test Scenarios
