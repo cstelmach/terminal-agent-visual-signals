@@ -38,6 +38,21 @@ FORCE_MODE=light ./src/core/trigger.sh reset
 ./src/core/trigger.sh subagent-start
 ./src/core/trigger.sh complete        # Counter resets to 0
 ./src/core/trigger.sh reset
+
+# Verify counter resets on new prompt (abort recovery)
+./src/core/trigger.sh subagent-start   # Counter: 1
+./src/core/trigger.sh subagent-start   # Counter: 2
+# Simulate abort: no subagent-stop, no complete
+./src/core/trigger.sh processing new-prompt  # Counter reset to 0
+# Counter file should be removed:
+ls ~/.cache/tavs/subagent-count.* 2>/dev/null  # No matches
+
+# Verify PostToolUse does NOT reset counter
+./src/core/trigger.sh subagent-start           # Counter: 1
+./src/core/trigger.sh processing               # PostToolUse (no flag)
+cat ~/.cache/tavs/subagent-count.*             # Should still show 1
+./src/core/trigger.sh subagent-stop
+./src/core/trigger.sh reset
 ```
 
 ### Test Tool Error Auto-Return
@@ -85,6 +100,39 @@ cat ~/.cache/tavs/session-icon-registry  # tty_key=emoji pairs
 ./src/core/trigger.sh processing  # Icon should show in tab title
 
 # Clean up
+./src/core/trigger.sh reset
+```
+
+### Test Compact Face Mode
+
+```bash
+# Test compact mode with semantic theme (emoji eyes in face frame)
+TAVS_FACE_MODE=compact TAVS_COMPACT_THEME=semantic ./src/core/trigger.sh processing
+# Should show: Ǝ[🟠 🟠]E or similar emoji-eye face
+
+TAVS_FACE_MODE=compact ./src/core/trigger.sh permission   # Ǝ[🔴 🔴]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh complete      # Ǝ[✅ ✅]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh tool_error    # Ǝ[❌ ❌]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh reset
+
+# Test all 4 themes
+TAVS_FACE_MODE=compact TAVS_COMPACT_THEME=circles ./src/core/trigger.sh processing  # Ǝ[🟠 🟠]E
+TAVS_FACE_MODE=compact TAVS_COMPACT_THEME=squares ./src/core/trigger.sh processing  # Ǝ[🟧 🟧]E
+TAVS_FACE_MODE=compact TAVS_COMPACT_THEME=mixed ./src/core/trigger.sh processing    # Ǝ[🟧 🟠]E
+
+# Test subagent count as right eye in compact mode
+TAVS_FACE_MODE=compact ./src/core/trigger.sh subagent-start  # Ǝ[🔶 +1]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh subagent-start  # Ǝ[🔶 +2]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh subagent-stop   # Ǝ[🔶 +1]E
+TAVS_FACE_MODE=compact ./src/core/trigger.sh subagent-stop
+./src/core/trigger.sh reset
+
+# Test other agent frames in compact mode
+TAVS_FACE_MODE=compact TAVS_AGENT=gemini ./src/core/trigger.sh processing   # ʕ🟠ᴥ🟠ʔ
+TAVS_FACE_MODE=compact TAVS_AGENT=codex ./src/core/trigger.sh processing    # ฅ^🟠ﻌ🟠^ฅ
+
+# Standard mode still works
+TAVS_FACE_MODE=standard ./src/core/trigger.sh processing     # Ǝ[• •]E 🟠
 ./src/core/trigger.sh reset
 ```
 
@@ -185,6 +233,11 @@ export DEBUG_ALL=1
 - [ ] Subagent counter increments/decrements correctly
 - [ ] Subagent title shows "+N" count via {AGENTS} token
 - [ ] Subagent counter resets on complete
+- [ ] Subagent counter resets on new prompt (abort recovery)
+- [ ] PostToolUse does not reset subagent counter mid-prompt
+- [ ] Compact face mode shows emoji eyes in agent frame
+- [ ] Compact mode suppresses separate {EMOJI} and {AGENTS} tokens
+- [ ] Compact mode subagent count appears as right eye (+N)
 - [ ] Tool error shows orange-red flash
 - [ ] Tool error auto-returns to processing after 1.5s
 - [ ] Session icon assigned on reset (animal emoji in `~/.cache/tavs/`)

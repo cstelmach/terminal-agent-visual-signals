@@ -414,14 +414,24 @@ grep "ENABLE_TOOL_ERROR" ~/.terminal-visual-signals/user.conf
 Title shows wrong subagent count or count doesn't reset.
 
 **Common causes:**
-1. **Stale counter file** - Previous session left counter file
+1. **Stale counter file** - Previous session left counter file in `~/.cache/tavs/`
 2. **TTY mismatch** - Counter uses TTY-based file isolation
+3. **Aborted prompt** - Counter resets on each new prompt via `new-prompt` flag, but old `/tmp/` files from pre-v1.2.0 may persist
 
 **Solution: Clear stale counter files**
 ```bash
+# Current location (v1.2.0+)
+rm -f ~/.cache/tavs/subagent-count.*
+
+# Legacy location (pre-v1.2.0)
 rm -f /tmp/tavs-subagent-count-*
+
 ./src/core/trigger.sh reset
 ```
+
+**Note:** Since v1.2.0, the counter automatically resets on each new prompt
+(`UserPromptSubmit` passes `new-prompt` flag). Stale counts from aborted
+operations (Ctrl+C, ESC) are cleared when the next prompt starts.
 
 **Verify counter works:**
 ```bash

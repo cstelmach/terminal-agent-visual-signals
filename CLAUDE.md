@@ -94,7 +94,7 @@ Set in `~/.terminal-visual-signals/user.conf`.
 | `src/core/title-iterm2.sh` | iTerm2-specific title detection via OSC 1337 |
 | `src/core/title-state-persistence.sh` | Title state persistence across invocations |
 | `src/core/spinner.sh` | Animated spinner system for processing state titles |
-| `src/core/face-selection.sh` | Random face selection from per-agent face pools |
+| `src/core/face-selection.sh` | Face selection: standard (text) and compact (emoji eyes) modes |
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
 | `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
@@ -231,6 +231,30 @@ Each agent's face style is preserved during spinner animations:
 
 The `{L}` and `{R}` placeholders are replaced with animated spinner characters.
 
+### Compact Face Mode (Emoji Eyes)
+
+Replaces text-based eyes with emoji. State info and subagent count are embedded directly in the face, producing a more information-dense title.
+
+```
+STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + emoji + count + icon + path)
+COMPACT:   Ǝ[🟧 +2]E 🦊 ~/proj         (emoji eyes + count as right eye)
+```
+
+**Enable in `~/.terminal-visual-signals/user.conf`:**
+```bash
+TAVS_FACE_MODE="compact"           # "standard" (default) | "compact"
+TAVS_COMPACT_THEME="semantic"      # "semantic" | "circles" | "squares" | "mixed"
+```
+
+| Theme | Style | Example |
+|-------|-------|---------|
+| semantic | Meaningful emoji per state | `🟧 🟠`, `✅ 🟢`, `❌ ⭕` |
+| circles | Uniform round emoji | `🟠 🟠`, `🔴 🔴`, `🟢 🟢` |
+| squares | Bold block emoji | `🟧 🟧`, `🟥 🟥`, `🟩 🟩` |
+| mixed | Asymmetric pairs | `🟧 🟠`, `🟥 ⭕`, `✅ 🟢` |
+
+In compact mode, `{EMOJI}` and `{AGENTS}` tokens are auto-suppressed since that info is embedded in the face. The right eye becomes `+N` when subagents are active.
+
 ---
 
 ## Development Notes
@@ -265,9 +289,10 @@ All hooks use `async: true` for non-blocking execution:
 ./src/core/trigger.sh complete
 ./src/core/trigger.sh idle
 ./src/core/trigger.sh compacting
-./src/core/trigger.sh subagent-start   # Golden-Yellow, increments counter
-./src/core/trigger.sh subagent-stop    # Decrements counter, returns to processing
-./src/core/trigger.sh tool_error       # Orange-Red, auto-returns after 1.5s
+./src/core/trigger.sh subagent-start       # Golden-Yellow, increments counter
+./src/core/trigger.sh subagent-stop        # Decrements counter, returns to processing
+./src/core/trigger.sh tool_error           # Orange-Red, auto-returns after 1.5s
+./src/core/trigger.sh processing new-prompt # Simulates UserPromptSubmit (resets counter)
 ./src/core/trigger.sh reset
 
 # Test light mode explicitly

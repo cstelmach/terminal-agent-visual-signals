@@ -83,8 +83,10 @@ Loads configuration hierarchy and resolves agent-specific variables:
 
 Random face selection from per-agent face pools:
 - `get_random_face()` - Select random face for a state from AGENT_FACES_ arrays
+- `get_compact_face()` - Compact mode: emoji eyes in agent frame, subagent count as right eye
 - Supports all states including subagent and tool_error
 - Fallback to UNKNOWN_ faces for unrecognized agents
+- Compact mode: `TAVS_FACE_MODE="compact"` replaces text eyes with emoji from theme pools (semantic, circles, squares, mixed)
 
 ### session-state.sh (State Management)
 
@@ -124,11 +126,12 @@ Title management with user override detection:
 ### subagent-counter.sh (Subagent Tracking)
 
 Tracks active subagent count for visual state and title display:
-- `increment_subagent_count()` - Called on SubagentStart hook
-- `decrement_subagent_count()` - Called on SubagentStop hook
+- `increment_subagent_count()` - Called on SubagentStart hook (atomic mktemp+mv writes)
+- `decrement_subagent_count()` - Called on SubagentStop hook (atomic, clamped to 0)
 - `get_subagent_title_suffix()` - Returns formatted count (e.g., `+2`) for title
-- `reset_subagent_count()` - Resets on complete/reset states
-- Session-isolated via TTY-safe temp files
+- `reset_subagent_count()` - Resets on complete, reset, and new prompt (UserPromptSubmit)
+- Session-isolated via TTY-safe files in `~/.cache/tavs/`
+- New prompt resets counter via `new-prompt` flag to prevent stale counts after abort
 
 ### spinner.sh (Animated Spinners)
 
@@ -199,18 +202,19 @@ User submits prompt
 CLI Hook fires (UserPromptSubmit/BeforeAgent/onUserPrompt)
        │
        ▼
-Agent trigger.sh called with "processing"
+Agent trigger.sh called with "processing new-prompt"
        │
        ▼
 Core trigger.sh:
-  1. Kill any existing idle timer
-  2. Check state change needed
-  3. Apply palette if enabled (OSC 4)
-  4. Send OSC 11 (background color)
-  5. Check TAVS_TITLE_MODE (full/prefix-only/skip-processing/off)
-  6. Compose title with {FACE} {EMOJI} {AGENTS} {ICON} {BASE} tokens
-  7. Send OSC 0 (title)
-  8. Record state
+  1. Reset stale subagent counter (new-prompt flag)
+  2. Kill any existing idle timer
+  3. Check state change needed
+  4. Apply palette if enabled (OSC 4)
+  5. Send OSC 11 (background color)
+  6. Check TAVS_TITLE_MODE (full/prefix-only/skip-processing/off)
+  7. Compose title with {FACE} {EMOJI} {AGENTS} {ICON} {BASE} tokens
+  8. Send OSC 0 (title)
+  9. Record state
        │
        ▼
 [Agent works, tools execute...]
