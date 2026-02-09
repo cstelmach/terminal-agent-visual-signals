@@ -215,7 +215,7 @@ After Phase 4:  362 passing, 0 failing (3 new tests for modular structure)
 - ✅ Configure wizard works (--help, --list)
 - ✅ Plugin cache updated (old renamed files removed, 16 core files)
 
-**Plugin cache location:** `~/.claude/plugins/cache/terminal-visual-signals/terminal-visual-signals/1.2.0/`
+**Plugin cache location:** `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/`
 
 ---
 
