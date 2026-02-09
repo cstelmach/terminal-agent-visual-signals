@@ -22,9 +22,18 @@ Thumbs.db
 
 # Backup files
 *.bak
+*.bak.*
 *.backup
+*.backup.*
 __pycache__/
 .pytest_cache/
+
+# Agent config (symlinked or generated per-machine)
+AGENTS.md
+AGENTS.backup.*
+
+# Stale state artifacts
+not a tty
 
 # Git worktrees
 .worktrees/
