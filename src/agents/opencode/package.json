@@ -22,11 +22,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cstelmach/tavs"
+    "url": "https://github.com/cstelmach/terminal-agent-visual-signals"
   },
-  "homepage": "https://github.com/cstelmach/tavs#opencode",
+  "homepage": "https://github.com/cstelmach/terminal-agent-visual-signals#opencode",
   "bugs": {
-    "url": "https://github.com/cstelmach/tavs/issues"
+    "url": "https://github.com/cstelmach/terminal-agent-visual-signals/issues"
   },
   "files": [
     "dist",

@@ -215,7 +215,7 @@ Enable debug logging:
 ```bash
 export DEBUG_ALL=1
 ./src/core/trigger.sh processing
-# Check ~/.claude/hooks/tavs/debug/ for logs
+# Check ~/.claude/hooks/terminal-agent-visual-signals/debug/ for logs
 ```
 
 ## Verification Checklist

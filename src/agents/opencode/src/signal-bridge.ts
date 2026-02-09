@@ -36,7 +36,7 @@ function findTriggerScript(configPath?: string): string | null {
   // 3. Common installation locations
   const home = process.env.HOME || process.env.USERPROFILE || '';
   candidates.push(
-    path.join(home, '.claude/hooks/tavs/src/core/trigger.sh'),
+    path.join(home, '.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh'),
     path.join(home, '.opencode/plugins/tavs/trigger.sh'),
     '/usr/local/share/tavs/trigger.sh'
   );

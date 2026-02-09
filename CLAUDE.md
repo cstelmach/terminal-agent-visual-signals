@@ -267,8 +267,8 @@ Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. The plu
 
 ```bash
 # Install plugin
-claude plugin marketplace add cstelmach/tavs
-claude plugin install tavs@tavs
+claude plugin marketplace add cstelmach/terminal-agent-visual-signals
+claude plugin install tavs@terminal-agent-visual-signals
 
 # Enable plugin
 /plugin → select tavs
@@ -314,23 +314,23 @@ bash src/core/detect.sh test
 
 ```bash
 # Quick update: Copy all core files to plugin cache
-CACHE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
 echo "Plugin cache updated - submit a prompt to test"
 ```
 
 **Full update script:**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/tavs/tavs/2.0.0"
-REPO="/Users/cs/.claude/hooks/tavs"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+REPO="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
 cp "$REPO/src/core/"*.sh "$CACHE/src/core/"
 mkdir -p "$CACHE/src/config" && cp "$REPO/src/config/"*.conf "$CACHE/src/config/"
 cp "$REPO/src/agents/claude/trigger.sh" "$CACHE/src/agents/claude/"
 ```
 
 **Key locations:**
-- Source repo: `/Users/cs/.claude/hooks/tavs/`
-- Plugin cache: `~/.claude/plugins/cache/tavs/tavs/2.0.0/`
+- Source repo: `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`
+- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/`
 - User config: `~/.tavs/user.conf` (changes here work immediately)
 
 See [Development Testing](docs/reference/development-testing.md) for the full workflow.

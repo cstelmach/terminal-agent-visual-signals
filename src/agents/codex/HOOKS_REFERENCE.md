@@ -116,7 +116,7 @@ event_type=$(echo "$payload" | jq -r '.type')
 # Only handle agent-turn-complete
 if [[ "$event_type" == "agent-turn-complete" ]]; then
     # Trigger visual signal
-    ~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete
+    ~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete
 fi
 ```
 
@@ -378,7 +378,7 @@ Use the single `notify` event to trigger complete, then rely on a timer to reset
 #!/bin/bash
 # ~/.codex/hooks/on-complete.sh
 
-TRIGGER="$HOME/.claude/hooks/tavs/src/agents/codex/trigger.sh"
+TRIGGER="$HOME/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh"
 
 # Set complete state
 "$TRIGGER" complete
@@ -397,7 +397,7 @@ For non-interactive use, wrap `codex exec --json`:
 #!/bin/bash
 # codex-wrapper.sh
 
-TRIGGER="$HOME/.claude/hooks/tavs/src/agents/codex/trigger.sh"
+TRIGGER="$HOME/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh"
 
 # Start processing indicator
 "$TRIGGER" processing
@@ -428,9 +428,9 @@ Bind a keyboard shortcut to manually trigger states.
 
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
-alias codex-processing='~/.claude/hooks/tavs/src/agents/codex/trigger.sh processing'
-alias codex-complete='~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete'
-alias codex-reset='~/.claude/hooks/tavs/src/agents/codex/trigger.sh reset'
+alias codex-processing='~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh processing'
+alias codex-complete='~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete'
+alias codex-reset='~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh reset'
 ```
 
 **Limitation:** Requires manual intervention.
@@ -445,7 +445,7 @@ alias codex-reset='~/.claude/hooks/tavs/src/agents/codex/trigger.sh reset'
 # ~/.codex/config.toml
 
 # Trigger visual signal on completion
-notify = ["bash", "-lc", "~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
 ```
 
 ### With Desktop Notifications
@@ -454,7 +454,7 @@ notify = ["bash", "-lc", "~/.claude/hooks/tavs/src/agents/codex/trigger.sh compl
 # ~/.codex/config.toml
 
 # Visual signal on completion
-notify = ["bash", "-lc", "~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
 
 # Desktop notifications for awareness
 [tui]
@@ -482,7 +482,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] agent-turn-complete" >> ~/.codex/hooks.log
 echo "$payload" | jq . >> ~/.codex/hooks.log
 
 # Trigger visual signal
-~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete
+~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete
 ```
 
 ---
@@ -502,7 +502,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh reset"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh reset"
         }
       ]
     }
@@ -512,7 +512,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh reset"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh reset"
         }
       ]
     }
@@ -522,7 +522,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh processing"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh processing"
         }
       ]
     }
@@ -532,7 +532,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh complete"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"
         }
       ]
     }
@@ -543,7 +543,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh processing"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh processing"
         }
       ]
     }
@@ -554,7 +554,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh processing"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh processing"
         }
       ]
     }
@@ -564,7 +564,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh permission"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh permission"
         }
       ]
     }
@@ -574,7 +574,7 @@ Replace the placeholder with actual hook definitions:
       "hooks": [
         {
           "type": "command",
-          "command": "~/.claude/hooks/tavs/src/agents/codex/trigger.sh compacting"
+          "command": "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh compacting"
         }
       ]
     }

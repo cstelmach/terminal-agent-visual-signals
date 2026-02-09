@@ -53,7 +53,7 @@ Claude Code uses local settings that override global.
 ```json
 {
   "enabledPlugins": {
-    "tavs@tavs": true
+    "tavs@terminal-agent-visual-signals": true
   }
 }
 ```
@@ -94,7 +94,7 @@ Wrong faces appearing (e.g., round brackets instead of square for Claude).
 **Solution 1: Update plugin cache**
 ```bash
 # Copy updated files to plugin cache
-CACHE_DIR="$HOME/.claude/plugins/cache/tavs/tavs/*/src"
+CACHE_DIR="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src"
 cp src/core/agent-theme.sh "$CACHE_DIR/core/"
 cp src/agents/claude/data/faces.conf "$CACHE_DIR/agents/claude/data/"
 ```
@@ -358,7 +358,7 @@ zsh -c 'source src/core/theme.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
 **If issue persists after updating:**
 ```bash
 # Update plugin cache with fixed code
-CACHE="$HOME/.claude/plugins/cache/tavs/tavs/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/1.2.0"
 cp src/core/*.sh "$CACHE/src/core/"
 ```
 
@@ -379,7 +379,7 @@ grep "ENABLE_SUBAGENT" ~/.tavs/user.conf
 
 **Solution 1: Update plugin cache**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/tavs/tavs/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/1.2.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 ```
 
@@ -466,10 +466,10 @@ export DEBUG_ALL=1
 ./src/core/trigger.sh processing
 ```
 
-Logs saved to: `~/.claude/hooks/tavs/debug/`
+Logs saved to: `~/.claude/hooks/terminal-agent-visual-signals/debug/`
 
 ## Still Stuck?
 
 1. Check the [Architecture](../reference/architecture.md) to understand how it works
 2. Read agent-specific README files in `src/agents/*/`
-3. Open an issue: https://github.com/cstelmach/tavs/issues
+3. Open an issue: https://github.com/cstelmach/terminal-agent-visual-signals/issues

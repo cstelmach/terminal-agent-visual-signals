@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "tavs",
+  "name": "terminal-agent-visual-signals",
   "owner": {
     "name": "cstelmach",
     "email": "chrisp.stel@gmail.com"

@@ -5,8 +5,8 @@
   "author": {
     "name": "cstelmach"
   },
-  "homepage": "https://github.com/cstelmach/tavs",
-  "repository": "https://github.com/cstelmach/tavs",
+  "homepage": "https://github.com/cstelmach/terminal-agent-visual-signals",
+  "repository": "https://github.com/cstelmach/terminal-agent-visual-signals",
   "license": "MIT",
   "keywords": [
     "hooks",

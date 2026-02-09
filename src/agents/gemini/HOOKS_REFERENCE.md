@@ -1231,7 +1231,7 @@ rm /tmp/tavs.state
 ### Related Projects
 
 - [Claude Code Hooks Mastery](https://github.com/disler/claude-code-hooks-mastery)
-- [TAVS - Terminal Agent Visual Signals](https://github.com/cstelmach/tavs)
+- [TAVS - Terminal Agent Visual Signals](https://github.com/cstelmach/terminal-agent-visual-signals)
 
 ---
 

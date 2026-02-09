@@ -9,7 +9,7 @@
 set -euo pipefail
 
 STABLE_LINK="$HOME/.claude/hooks/tavs-current"
-PLUGIN_BASE="$HOME/.claude/plugins/cache/tavs/tavs"
+PLUGIN_BASE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs"
 HOOKS_DIR="$HOME/.claude/hooks"
 
 print_hooks_json() {
@@ -83,7 +83,7 @@ create_session_start_script() {
 # Runs once per session - very fast if symlink already current
 
 STABLE_LINK="$HOME/.claude/hooks/tavs-current"
-PLUGIN_BASE="$HOME/.claude/plugins/cache/tavs/tavs"
+PLUGIN_BASE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs"
 
 # Find current installed version
 VERSION_DIR=$(find "$PLUGIN_BASE" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1)
@@ -120,8 +120,8 @@ do_install() {
         echo "Error: Plugin not found at $PLUGIN_BASE"
         echo ""
         echo "Install the plugin first:"
-        echo "  claude plugin marketplace add cstelmach/tavs"
-        echo "  claude plugin install tavs@tavs"
+        echo "  claude plugin marketplace add cstelmach/terminal-agent-visual-signals"
+        echo "  claude plugin install tavs@terminal-agent-visual-signals"
         exit 1
     fi
 

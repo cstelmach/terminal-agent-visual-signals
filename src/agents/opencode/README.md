@@ -26,7 +26,7 @@ Add to your `opencode.json` or `~/.opencode/config.json`:
 
 ```bash
 # Clone the repository
-git clone https://github.com/cstelmach/tavs.git \
+git clone https://github.com/cstelmach/terminal-agent-visual-signals.git \
   ~/.opencode/plugins/tavs
 
 # Build the plugin
@@ -141,14 +141,14 @@ Works with terminals that support OSC escape sequences:
 
 3. **Verify trigger script exists:**
    ```bash
-   ls -la ~/.claude/hooks/tavs/src/core/trigger.sh
+   ls -la ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
    ```
 
 4. **Test trigger script directly:**
    ```bash
-   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh processing
-   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh complete
-   ~/.claude/hooks/tavs/src/agents/opencode/trigger.sh reset
+   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh processing
+   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh complete
+   ~/.claude/hooks/terminal-agent-visual-signals/src/agents/opencode/trigger.sh reset
    ```
 
 ### Terminal not changing color
