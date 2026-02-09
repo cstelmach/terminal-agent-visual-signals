@@ -78,7 +78,7 @@ grep -A5 "trigger.sh" ~/.gemini/settings.json
 
 Colors may be configured for a different palette.
 
-**Check:** `src/core/theme.sh` for color definitions.
+**Check:** `src/core/theme-config-loader.sh` for color definitions.
 
 **Solution:** Modify theme colors or use a different terminal that renders colors correctly.
 
@@ -95,8 +95,8 @@ Wrong faces appearing (e.g., round brackets instead of square for Claude).
 ```bash
 # Copy updated files to plugin cache
 CACHE_DIR="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src"
-cp src/core/agent-theme.sh "$CACHE_DIR/core/"
-cp src/agents/claude/data/faces.conf "$CACHE_DIR/agents/claude/data/"
+cp src/core/*.sh "$CACHE_DIR/core/"
+cp src/config/*.conf "$CACHE_DIR/../config/" 2>/dev/null
 ```
 
 **Solution 2: Check for user overrides**
@@ -116,7 +116,8 @@ pkill -f "idle-worker"
 ```bash
 /bin/bash -c '
     export TAVS_AGENT=claude
-    source src/core/agent-theme.sh
+    source src/config/defaults.conf
+    source src/core/face-selection.sh
     echo "Processing: $(get_random_face processing)"
 '
 # Should show: Ǝ[• •]E (square brackets for Claude)
@@ -132,7 +133,7 @@ ps aux | grep idle-worker
 ```
 
 **Solution:**
-1. Verify `ENABLE_IDLE=true` in theme.sh
+1. Verify `ENABLE_IDLE=true` in `src/config/defaults.conf` or `~/.tavs/user.conf`
 2. Check for processes killing the timer
 3. Increase idle timeout if needed
 
@@ -148,7 +149,7 @@ Palette theming enabled but `ls`, `git` colors unchanged.
 **Check TrueColor status:**
 ```bash
 echo $COLORTERM  # "truecolor" means palette won't work
-bash src/core/detect.sh test  # Shows "Palette Theming" status
+bash src/core/terminal-detection.sh test  # Shows "Palette Theming" status
 ```
 
 **Solution 1: Launch in 256-color mode**
@@ -224,9 +225,9 @@ rm -f ~/.cache/tavs/session-spinner.* ~/.cache/tavs/spinner-idx.*
 ```bash
 cd /path/to/tavs
 zsh -c '
-source src/core/theme.sh
+source src/core/theme-config-loader.sh
 source src/core/spinner.sh
-source src/core/title.sh
+source src/core/title-management.sh
 export TAVS_TITLE_MODE="full"
 for i in 1 2 3 4 5; do
     compose_title "processing" "Test"
@@ -346,19 +347,20 @@ Variables empty or wrong values when running in Claude Code (zsh) vs direct bash
 **Check if affected:**
 ```bash
 # Run in both shells and compare
-bash -c 'source src/core/theme.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
-zsh -c 'source src/core/theme.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
+bash -c 'source src/core/theme-config-loader.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
+zsh -c 'source src/core/theme-config-loader.sh && echo "TAVS_TITLE_FORMAT=$TAVS_TITLE_FORMAT"'
 # Both should show the same non-empty value
 ```
 
-**Solution:** Update to latest code (commit 3aab004+) which includes zsh compatibility fixes:
+**Solution:** Update to latest code which includes zsh compatibility fixes:
 - Uses `${(%):-%x}` fallback for path resolution in zsh
 - Uses intermediate variables to avoid brace expansion issues
+- Uses `${arr[@]:$index:1}` slice syntax for zsh-safe array indexing
 
 **If issue persists after updating:**
 ```bash
 # Update plugin cache with fixed code
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
 cp src/core/*.sh "$CACHE/src/core/"
 ```
 
@@ -379,7 +381,7 @@ grep "ENABLE_SUBAGENT" ~/.tavs/user.conf
 
 **Solution 1: Update plugin cache**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/1.2.0"
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 ```
 
@@ -416,20 +418,15 @@ Title shows wrong subagent count or count doesn't reset.
 **Common causes:**
 1. **Stale counter file** - Previous session left counter file in `~/.cache/tavs/`
 2. **TTY mismatch** - Counter uses TTY-based file isolation
-3. **Aborted prompt** - Counter resets on each new prompt via `new-prompt` flag, but old `/tmp/` files from pre-v1.2.0 may persist
+3. **Aborted prompt** - Counter resets on each new prompt via `new-prompt` flag
 
 **Solution: Clear stale counter files**
 ```bash
-# Current location (v1.2.0+)
 rm -f ~/.cache/tavs/subagent-count.*
-
-# Legacy location (pre-v1.2.0)
-rm -f /tmp/tavs-subagent-count-*
-
 ./src/core/trigger.sh reset
 ```
 
-**Note:** Since v1.2.0, the counter automatically resets on each new prompt
+**Note:** The counter automatically resets on each new prompt
 (`UserPromptSubmit` passes `new-prompt` flag). Stale counts from aborted
 operations (Ctrl+C, ESC) are cleared when the next prompt starts.
 

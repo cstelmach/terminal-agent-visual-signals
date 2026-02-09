@@ -259,11 +259,11 @@ In compact mode, `{STATUS_ICON}` and `{AGENTS}` tokens are auto-suppressed since
 
 ## Development Notes
 
-### Plugin System (v1.2.0)
+### Plugin System (v2.0.0)
 
 Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. The plugin now works natively via the marketplace.
 
-**Current plugin version:** 1.2.0
+**Current plugin version:** 2.0.0
 
 ```bash
 # Install plugin
@@ -305,7 +305,7 @@ ls --color=auto  # Check if ls colors match theme
 ./src/core/trigger.sh reset
 
 # Check terminal capabilities
-bash src/core/detect.sh test
+bash src/core/terminal-detection.sh test
 ```
 
 ### Deploy Changes to Plugin Cache

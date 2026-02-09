@@ -31,12 +31,15 @@ Edit files in `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`:
 
 | Change Type | Files to Edit |
 |-------------|---------------|
-| Colors | `src/config/defaults.conf`, `src/core/theme.sh` |
-| Faces | `src/config/defaults.conf` (search `FACES_`) |
-| Behavior | `src/core/trigger.sh`, `src/core/theme.sh` |
-| Idle timer | `src/core/idle-worker.sh` |
+| Colors | `src/config/defaults.conf`, `src/core/theme-config-loader.sh` |
+| Faces | `src/config/defaults.conf` (search `FACES_`), `src/core/face-selection.sh` |
+| Behavior | `src/core/trigger.sh`, `src/core/theme-config-loader.sh` |
+| Titles | `src/core/title-management.sh`, `src/core/spinner.sh` |
+| Session icons | `src/core/session-icon.sh` |
+| Idle timer | `src/core/idle-worker-background.sh` |
 | Backgrounds | `src/core/backgrounds.sh` |
-| Terminal OSC | `src/core/terminal.sh` |
+| Terminal OSC | `src/core/terminal-osc-sequences.sh` |
+| Subagents | `src/core/subagent-counter.sh` |
 
 ### 2. Test Locally First
 
@@ -47,7 +50,7 @@ sleep 2
 ./src/core/trigger.sh reset
 
 # Test specific theme loading
-bash -c 'source src/core/theme.sh && load_agent_config claude && echo "COLOR_PROCESSING=$COLOR_PROCESSING"'
+bash -c 'source src/core/theme-config-loader.sh && load_agent_config claude && echo "COLOR_PROCESSING=$COLOR_PROCESSING"'
 ```
 
 ### 3. Update Plugin Cache
@@ -58,14 +61,8 @@ The plugin cache is where Claude Code actually loads the code from:
 CACHE_BASE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
 REPO_BASE="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
 
-# Core files (most common)
-cp "$REPO_BASE/src/core/theme.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/trigger.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/terminal.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/idle-worker.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/backgrounds.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/detect.sh" "$CACHE_BASE/src/core/"
-cp "$REPO_BASE/src/core/spinner.sh" "$CACHE_BASE/src/core/"
+# All core files (recommended — ensures consistency)
+cp "$REPO_BASE/src/core/"*.sh "$CACHE_BASE/src/core/"
 
 # Config files
 mkdir -p "$CACHE_BASE/src/config"
@@ -104,7 +101,7 @@ User settings are in `~/.tavs/user.conf`. Changes here take effect immediately (
 
 ### Change Behavior Logic
 
-1. Edit `src/core/theme.sh` or `src/core/trigger.sh`
+1. Edit `src/core/theme-config-loader.sh` or `src/core/trigger.sh`
 2. Copy to cache: `cp src/core/*.sh ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/core/`
 3. Submit a prompt to see the change
 
@@ -125,25 +122,25 @@ ls -la ~/.claude/hooks/terminal-agent-visual-signals/debug/
 
 1. **Verify cache was updated:**
    ```bash
-   ls -la ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/core/theme.sh
+   ls -la ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/core/trigger.sh
    # Should show recent timestamp
    ```
 
 2. **Check for syntax errors:**
    ```bash
-   bash -n src/core/theme.sh  # Syntax check only
+   bash -n src/core/trigger.sh  # Syntax check only
    ```
 
 3. **Source and test manually:**
    ```bash
-   bash -c 'source src/core/theme.sh && echo "Loaded OK"'
+   bash -c 'source src/core/theme-config-loader.sh && echo "Loaded OK"'
    ```
 
 ### Wrong Colors Showing
 
 1. Check user config override: `cat ~/.tavs/user.conf`
 2. Check which agent is being used: `echo $TAVS_AGENT`
-3. Verify color variables: `bash -c 'source src/core/theme.sh && load_agent_config claude && echo "COLOR_PROCESSING=$COLOR_PROCESSING"'`
+3. Verify color variables: `bash -c 'source src/core/theme-config-loader.sh && load_agent_config claude && echo "COLOR_PROCESSING=$COLOR_PROCESSING"'`
 
 ## Related
 

@@ -76,9 +76,9 @@ claude plugin marketplace add cstelmach/terminal-agent-visual-signals
 claude plugin install tavs@terminal-agent-visual-signals
 ```
 
-That's it! Restart Claude Code to apply the visual signals.
+Then enable the plugin via `/plugin` in Claude Code and restart.
 
-> **⚠️ Known Issue:** Due to [Claude Code bug #14410](https://github.com/anthropics/claude-code/issues/14410), plugin hooks may not execute automatically. If visual signals don't work after plugin install, see [Workaround for Bug #14410](#workaround-for-bug-14410) below.
+> **Note:** Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. If you're on an older version, see [Workaround for Bug #14410](#workaround-for-bug-14410) below.
 
 ### Option 2: Manual Install
 
@@ -93,12 +93,12 @@ git clone https://github.com/cstelmach/terminal-agent-visual-signals.git ~/.clau
 **2. Make executable:**
 
 ```bash
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
 ```
 
 **3. Add hooks to `~/.claude/settings.json`:**
 
-Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path: `~/.claude/hooks/terminal-agent-visual-signals`.
+Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path to the cloned repo.
 
 **4. Restart Claude Code**
 
@@ -190,7 +190,7 @@ BELL_ON_RESET=false
 
 ## Configuration Reference
 
-Edit the top of `scripts/claude-code-visual-signal.sh` to customize:
+Edit `~/.tavs/user.conf` (or `src/config/defaults.conf` for defaults) to customize:
 
 ### Feature Toggles
 
@@ -256,12 +256,14 @@ COLOR_COMPACTING="#D1ECF1"
 
 ```bash
 # Test each state
-./scripts/claude-code-visual-signal.sh processing   # 🟠 Orange
-./scripts/claude-code-visual-signal.sh permission   # 🔴 Red
-./scripts/claude-code-visual-signal.sh complete     # 🟢 Green
-./scripts/claude-code-visual-signal.sh idle         # 🟣 Purple (starts timer)
-./scripts/claude-code-visual-signal.sh compacting   # 🔄 Teal
-./scripts/claude-code-visual-signal.sh reset        # Default background
+./src/core/trigger.sh processing     # 🟠 Orange
+./src/core/trigger.sh permission     # 🔴 Red
+./src/core/trigger.sh complete       # 🟢 Green
+./src/core/trigger.sh idle           # 🟣 Purple (starts timer)
+./src/core/trigger.sh compacting     # 🔄 Teal
+./src/core/trigger.sh subagent-start # 🔀 Golden-Yellow
+./src/core/trigger.sh tool_error     # ❌ Orange-Red
+./src/core/trigger.sh reset          # Default background
 ```
 
 ---
@@ -323,14 +325,14 @@ A consolidated state file (`/tmp/claude-visual-signals.state`) tracks all active
 
 1. **Test your terminal** — Run `./test-terminal.sh` to verify OSC support
 2. **Check the script path** — Ensure paths in `settings.json` match your install location
-3. **Test manually** — Run `./scripts/claude-code-visual-signal.sh processing`
+3. **Test manually** — Run `./src/core/trigger.sh processing`
 4. **Check TTY detection** — The script needs to find the parent process TTY
 
 ### Permission errors
 
 ```bash
 # Ensure script is executable
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/scripts/claude-code-visual-signal.sh
+chmod +x ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
 ```
 
 ### Title not updating

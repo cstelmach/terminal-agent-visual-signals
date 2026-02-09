@@ -176,7 +176,7 @@ printf "\033]104\033\\"
 
 2. **Verify palette theming is enabled:**
    ```bash
-   bash src/core/detect.sh test  # Shows "Palette Theming" status
+   bash src/core/terminal-detection.sh test  # Shows "Palette Theming" status
    ```
 
 3. **Force enable for testing:**
