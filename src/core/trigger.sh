@@ -264,18 +264,17 @@ case "$STATE" in
         # Reset palette FIRST, then background
         _reset_palette_if_enabled
         should_send_bg_color && send_osc_bg "reset"
-        # Use new title system - reset to base title
-        should_send_title "reset" && reset_tavs_title
         clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
         # Initialize session spinner if session identity is enabled
         reset_spinner
         [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
-        # Session icon: assign if not already assigned (idempotent, persists across /clear)
+        # Assign session icon BEFORE title (so compose_title includes it)
         [[ "$ENABLE_SESSION_ICONS" == "true" ]] && assign_session_icon
-        # Clear title state on full reset (new session)
+        # Clear stale title state, then set composed title (includes session icon)
         clear_title_state 2>/dev/null || true
+        should_send_title "reset" && set_tavs_title "reset"
         ;;
 
     # ===========================================================================
