@@ -284,8 +284,13 @@ compose_title() {
         fi
     fi
 
-    # Get status icon if enabled (suppressed in compact mode - embedded in face eyes)
-    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" && "${TAVS_TITLE_SHOW_STATUS_ICON:-true}" == "true" ]]; then
+    # Get status icon if enabled
+    # In compact mode, status icon is embedded as face emoji eyes — suppress the
+    # separate {STATUS_ICON} token. But if faces are disabled, fall back to showing
+    # the status icon separately (otherwise both face AND icon would be empty).
+    local _compact_with_face=false
+    [[ "${TAVS_FACE_MODE:-standard}" == "compact" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]] && _compact_with_face=true
+    if [[ "$_compact_with_face" != "true" && "${TAVS_TITLE_SHOW_STATUS_ICON:-true}" == "true" ]]; then
         case "$state" in
             processing) status_icon="$STATUS_ICON_PROCESSING" ;;
             permission) status_icon="$STATUS_ICON_PERMISSION" ;;
@@ -298,9 +303,10 @@ compose_title() {
         esac
     fi
 
-    # Get subagent count token (suppressed in compact mode - embedded as right eye)
+    # Get subagent count token (suppressed in compact mode — embedded as right eye)
+    # Same logic: only suppress when compact mode AND faces are actually rendering
     local agents=""
-    if [[ "${TAVS_FACE_MODE:-standard}" != "compact" ]]; then
+    if [[ "$_compact_with_face" != "true" ]]; then
         if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
             agents=$(get_subagent_title_suffix 2>/dev/null)
         fi

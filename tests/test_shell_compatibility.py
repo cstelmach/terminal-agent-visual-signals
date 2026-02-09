@@ -155,8 +155,9 @@ class TestBraceExpansionSafety:
     def test_compose_title_no_corruption_bash(self):
         """compose_title should not corrupt output in bash."""
         result = run_bash('''
-            export ENABLE_ANTHROPOMORPHISING="true"
             source src/core/theme-config-loader.sh
+            ENABLE_ANTHROPOMORPHISING="true"
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -173,8 +174,9 @@ class TestBraceExpansionSafety:
     def test_compose_title_no_corruption_zsh(self):
         """compose_title should not corrupt output in zsh."""
         result = run_zsh('''
-            export ENABLE_ANTHROPOMORPHISING="true"
             source src/core/theme-config-loader.sh
+            ENABLE_ANTHROPOMORPHISING="true"
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -192,14 +194,12 @@ class TestBraceExpansionSafety:
         """compose_title structure must match between bash and zsh.
 
         Note: The actual face characters may differ because they are randomly
-        selected from an array. Due to a known zsh array indexing issue
-        (zsh uses 1-based indexing), faces may sometimes be empty when
-        RANDOM % count == 0. We verify essential structure is correct.
+        selected from an array. We verify essential structure is correct.
         """
-        # Explicitly enable anthropomorphising to ensure face can appear
         results = run_in_both_shells('''
-            export ENABLE_ANTHROPOMORPHISING="true"
             source src/core/theme-config-loader.sh
+            ENABLE_ANTHROPOMORPHISING="true"
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "processing" "TestProject"
         ''')
@@ -223,8 +223,8 @@ class TestBraceExpansionSafety:
         assert bash_title.count('TestProject') == 1, f"Duplicated base in bash: {bash_title}"
         assert zsh_title.count('TestProject') == 1, f"Duplicated base in zsh: {zsh_title}"
 
-        # Face may or may not appear due to random selection
-        # (known issue: zsh 1-based indexing can cause empty face when RANDOM%count==0)
+        # Face may differ between runs due to random selection
+        # (zsh 1-based indexing issue was fixed by using [@]:offset:1 slice syntax)
         # The key test is that there's no corruption
 
 

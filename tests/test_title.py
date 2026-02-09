@@ -26,6 +26,7 @@ class TestTitleComposition:
         """Each state should produce correct emoji in bash."""
         result = run_bash(f'''
             source src/core/theme-config-loader.sh
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
@@ -43,6 +44,7 @@ class TestTitleComposition:
         """Each state should produce correct emoji in zsh."""
         result = run_zsh(f'''
             source src/core/theme-config-loader.sh
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
@@ -83,6 +85,7 @@ class TestTitleComposition:
         """compose_title should handle empty base gracefully."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "processing" ""
         ''')
@@ -91,7 +94,7 @@ class TestTitleComposition:
         assert results['bash'].returncode == 0
         assert results['zsh'].returncode == 0
 
-        # Should still have emoji
+        # Should still have status icon emoji
         assert '🟠' in results['bash'].stdout
         assert '🟠' in results['zsh'].stdout
 
@@ -253,11 +256,12 @@ class TestFormatSubstitution:
 
     def test_custom_format_respected(self):
         """Custom TAVS_TITLE_FORMAT should be respected when set after config load."""
-        # Set format AFTER sourcing config (simulating user.conf override)
+        # Set overrides AFTER sourcing config (simulating user.conf override)
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
-            export TAVS_TITLE_FORMAT="{STATUS_ICON} [{BASE}]"
-            export ENABLE_ANTHROPOMORPHISING="false"
+            TAVS_TITLE_FORMAT="{STATUS_ICON} [{BASE}]"
+            ENABLE_ANTHROPOMORPHISING="false"
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -273,10 +277,12 @@ class TestFormatSubstitution:
 
     def test_status_icon_only_format(self):
         """Format with only status icon should work."""
+        # Set overrides AFTER sourcing config to prevent user.conf from overwriting
         results = run_in_both_shells('''
-            export TAVS_TITLE_FORMAT="{STATUS_ICON} {BASE}"
-            export ENABLE_ANTHROPOMORPHISING="false"
             source src/core/theme-config-loader.sh
+            TAVS_TITLE_FORMAT="{STATUS_ICON} {BASE}"
+            ENABLE_ANTHROPOMORPHISING="false"
+            TAVS_FACE_MODE="standard"
             source src/core/title-management.sh
             compose_title "complete" "MyApp"
         ''')

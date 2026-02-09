@@ -127,7 +127,9 @@ get_random_face() {
         return
     fi
     local index=$((RANDOM % count))
-    eval "echo \"\${${array_name}[$index]}\""
+    # Use [@]:offset:1 slice syntax for zsh compatibility (zsh arrays are 1-based,
+    # so direct ${arr[0]} returns empty; slice syntax works in both shells)
+    eval "echo \"\${${array_name}[@]:$index:1}\""
 }
 
 # ==============================================================================
@@ -178,9 +180,10 @@ get_compact_face() {
     fi
 
     # Random pair selection from pool
+    # Use [@]:offset:1 slice for zsh compatibility (1-based arrays)
     local index=$((RANDOM % count))
     local pair
-    eval "pair=\"\${${array_name}[$index]}\""
+    eval "pair=\"\${${array_name}[@]:$index:1}\""
     local left="${pair%% *}"
     local right="${pair##* }"
 
