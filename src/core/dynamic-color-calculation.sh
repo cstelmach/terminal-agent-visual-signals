@@ -118,6 +118,17 @@ initialize_dynamic_colors() {
     color_subagent=$(shift_hue "$base_color" "${HUE_SUBAGENT:-50}")
     color_tool_error=$(shift_hue "$base_color" "${HUE_TOOL_ERROR:-15}")
 
+    # Override processing hue for permission mode (plan/acceptEdits/bypassPermissions)
+    if [[ "${ENABLE_MODE_AWARE_PROCESSING:-true}" == "true" ]]; then
+        local _pmode="${TAVS_PERMISSION_MODE:-default}"
+        [[ "$_pmode" == "dontAsk" ]] && _pmode="acceptEdits"
+        case "$_pmode" in
+            plan)              color_proc=$(shift_hue "$base_color" "${HUE_PROCESSING_PLAN:-50}") ;;
+            acceptEdits)       color_proc=$(shift_hue "$base_color" "${HUE_PROCESSING_ACCEPT:-33}") ;;
+            bypassPermissions) color_proc=$(shift_hue "$base_color" "${HUE_PROCESSING_BYPASS:-12}") ;;
+        esac
+    fi
+
     # Store in session colors
     if [[ -n "$TTY_SAFE" ]]; then
         write_session_colors "$TAVS_AGENT" "$base_color" "$is_dark" "$system_mode" \

@@ -84,18 +84,25 @@ debug_log_invocation() {
         echo "CORE_DIR: $CORE_DIR"
         echo "BASH_SOURCE[0]: ${BASH_SOURCE[0]}"
         echo ""
-        echo "=== STDIN ==="
-        # Non-blocking stdin capture (read with 0.1s timeout)
-        if read -t 0.1 -r stdin_line 2>/dev/null; then
-            echo "First line: $stdin_line"
-            # Capture remaining stdin (up to 100 lines)
-            local count=1
-            while read -t 0.1 -r stdin_line && [[ $count -lt 100 ]]; do
-                echo "Line $((++count)): $stdin_line"
-            done
+        echo "=== HOOK PAYLOAD / STDIN ==="
+        # Use pre-captured payload from agent trigger (if available)
+        if [[ -n "${_TAVS_HOOK_PAYLOAD:-}" ]]; then
+            echo "$_TAVS_HOOK_PAYLOAD"
         else
-            echo "(no stdin data)"
+            # Fallback: try reading stdin directly (non-Claude agents)
+            if read -t 0.1 -r stdin_line 2>/dev/null; then
+                echo "First line: $stdin_line"
+                local count=1
+                while read -t 0.1 -r stdin_line && [[ $count -lt 100 ]]; do
+                    echo "Line $((++count)): $stdin_line"
+                done
+            else
+                echo "(no stdin data)"
+            fi
         fi
+        echo ""
+        echo "=== PERMISSION MODE ==="
+        echo "TAVS_PERMISSION_MODE: ${TAVS_PERMISSION_MODE:-<unset>}"
         echo ""
         echo "=== END DEBUG LOG ==="
     } > "$log_file" 2>&1

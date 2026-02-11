@@ -106,6 +106,11 @@ _resolve_agent_variables() {
         LIGHT_BASE LIGHT_PROCESSING LIGHT_PERMISSION LIGHT_COMPLETE LIGHT_IDLE LIGHT_COMPACTING LIGHT_SUBAGENT LIGHT_TOOL_ERROR
         MUTED_DARK_BASE MUTED_DARK_PROCESSING MUTED_DARK_PERMISSION MUTED_DARK_COMPLETE MUTED_DARK_IDLE MUTED_DARK_COMPACTING MUTED_DARK_SUBAGENT MUTED_DARK_TOOL_ERROR
         MUTED_LIGHT_BASE MUTED_LIGHT_PROCESSING MUTED_LIGHT_PERMISSION MUTED_LIGHT_COMPLETE MUTED_LIGHT_IDLE MUTED_LIGHT_COMPACTING MUTED_LIGHT_SUBAGENT MUTED_LIGHT_TOOL_ERROR
+        # Mode-aware processing color variants (permission mode)
+        DARK_PROCESSING_PLAN DARK_PROCESSING_ACCEPT DARK_PROCESSING_BYPASS
+        LIGHT_PROCESSING_PLAN LIGHT_PROCESSING_ACCEPT LIGHT_PROCESSING_BYPASS
+        MUTED_DARK_PROCESSING_PLAN MUTED_DARK_PROCESSING_ACCEPT MUTED_DARK_PROCESSING_BYPASS
+        MUTED_LIGHT_PROCESSING_PLAN MUTED_LIGHT_PROCESSING_ACCEPT MUTED_LIGHT_PROCESSING_BYPASS
         SPINNER_FACE_FRAME
     )
 
@@ -121,7 +126,7 @@ _resolve_agent_variables() {
         fi
 
         # Fall back to DEFAULT_ if still not set (for colors and spinner frame)
-        if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING || "$var" == *_SUBAGENT || "$var" == *_TOOL_ERROR || "$var" == "SPINNER_FACE_FRAME" ]]; then
+        if [[ -z "$value" ]] && [[ "$var" == *_BASE || "$var" == *_PROCESSING || "$var" == *_PERMISSION || "$var" == *_COMPLETE || "$var" == *_IDLE || "$var" == *_COMPACTING || "$var" == *_SUBAGENT || "$var" == *_TOOL_ERROR || "$var" == *_PROCESSING_PLAN || "$var" == *_PROCESSING_ACCEPT || "$var" == *_PROCESSING_BYPASS || "$var" == "SPINNER_FACE_FRAME" ]]; then
             eval "value=\${DEFAULT_${var}:-}"
         fi
 
@@ -157,6 +162,7 @@ _set_inline_defaults() {
     ENABLE_COMPACTING="${ENABLE_COMPACTING:-true}"
     ENABLE_SUBAGENT="${ENABLE_SUBAGENT:-true}"
     ENABLE_TOOL_ERROR="${ENABLE_TOOL_ERROR:-true}"
+    ENABLE_MODE_AWARE_PROCESSING="${ENABLE_MODE_AWARE_PROCESSING:-true}"
 
     # Anthropomorphising
     ENABLE_ANTHROPOMORPHISING="${ENABLE_ANTHROPOMORPHISING:-true}"
@@ -257,6 +263,51 @@ _set_inline_defaults() {
 }
 
 # ==============================================================================
+# MODE-AWARE PROCESSING COLORS
+# ==============================================================================
+# Override COLOR_PROCESSING based on Claude Code permission mode.
+# Uses TAVS_PERMISSION_MODE env var (set by agent trigger from stdin JSON).
+# Modes: default (no change), plan, acceptEdits, dontAsk, bypassPermissions.
+
+_apply_mode_aware_processing() {
+    [[ "${ENABLE_MODE_AWARE_PROCESSING:-true}" != "true" ]] && return 0
+
+    local mode="${TAVS_PERMISSION_MODE:-default}"
+    # dontAsk uses same colors as acceptEdits (both auto-approve)
+    [[ "$mode" == "dontAsk" ]] && mode="acceptEdits"
+    # Default mode uses standard COLOR_PROCESSING (no override)
+    [[ "$mode" == "default" ]] && return 0
+
+    # Map mode to variable suffix
+    local suffix=""
+    case "$mode" in
+        plan)              suffix="PLAN" ;;
+        acceptEdits)       suffix="ACCEPT" ;;
+        bypassPermissions) suffix="BYPASS" ;;
+        *)                 return 0 ;;  # Unknown mode, no change
+    esac
+
+    # Select the right color variant based on current brightness/muted state
+    local mode_color=""
+    if [[ "${IS_MUTED_THEME:-false}" == "true" ]]; then
+        if [[ "${IS_DARK_THEME:-true}" == "true" ]]; then
+            eval "mode_color=\${MUTED_DARK_PROCESSING_${suffix}:-}"
+        else
+            eval "mode_color=\${MUTED_LIGHT_PROCESSING_${suffix}:-}"
+        fi
+    else
+        if [[ "${IS_DARK_THEME:-true}" == "true" ]]; then
+            eval "mode_color=\${DARK_PROCESSING_${suffix}:-}"
+        else
+            eval "mode_color=\${LIGHT_PROCESSING_${suffix}:-}"
+        fi
+    fi
+
+    # Apply override if a mode-specific color was found
+    [[ -n "$mode_color" ]] && COLOR_PROCESSING="$mode_color"
+}
+
+# ==============================================================================
 # COLOR RESOLUTION
 # ==============================================================================
 
@@ -325,6 +376,7 @@ _resolve_colors() {
             COLOR_SUBAGENT="${MUTED_DARK_SUBAGENT}"
             COLOR_TOOL_ERROR="${MUTED_DARK_TOOL_ERROR}"
             IS_DARK_THEME="true"
+            IS_MUTED_THEME="true"
         else
             COLOR_BASE="${MUTED_LIGHT_BASE}"
             COLOR_PROCESSING="${MUTED_LIGHT_PROCESSING}"
@@ -335,6 +387,7 @@ _resolve_colors() {
             COLOR_SUBAGENT="${MUTED_LIGHT_SUBAGENT}"
             COLOR_TOOL_ERROR="${MUTED_LIGHT_TOOL_ERROR}"
             IS_DARK_THEME="false"
+            IS_MUTED_THEME="true"
         fi
     else
         # Use regular colors
@@ -348,6 +401,7 @@ _resolve_colors() {
             COLOR_SUBAGENT="${DARK_SUBAGENT}"
             COLOR_TOOL_ERROR="${DARK_TOOL_ERROR}"
             IS_DARK_THEME="true"
+            IS_MUTED_THEME="false"
         else
             COLOR_BASE="${LIGHT_BASE}"
             COLOR_PROCESSING="${LIGHT_PROCESSING}"
@@ -358,8 +412,12 @@ _resolve_colors() {
             COLOR_SUBAGENT="${LIGHT_SUBAGENT}"
             COLOR_TOOL_ERROR="${LIGHT_TOOL_ERROR}"
             IS_DARK_THEME="false"
+            IS_MUTED_THEME="false"
         fi
     fi
+
+    # Apply mode-aware processing color override (plan/acceptEdits/bypassPermissions)
+    _apply_mode_aware_processing
 
     # Build unified stage arrays for backward compatibility
     _build_stage_arrays

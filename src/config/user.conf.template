@@ -61,6 +61,24 @@
 # ENABLE_COMPACTING="true"
 
 # ==============================================================================
+# PERMISSION MODE COLORS (Processing state variants)
+# ==============================================================================
+# Subtle processing color shifts based on Claude Code permission mode.
+# When enabled, the processing background shifts slightly based on active mode:
+#   plan            -> olive/yellow-green tinge (read-only, thinking)
+#   acceptEdits     -> barely warmer (auto-approve edits)
+#   dontAsk         -> same as acceptEdits
+#   bypassPermissions -> reddish danger tinge
+#
+# Enabled by default. Set to "false" for uniform processing color:
+# ENABLE_MODE_AWARE_PROCESSING="false"
+#
+# Override mode-specific colors per agent:
+# CLAUDE_DARK_PROCESSING_PLAN="#48432E"
+# CLAUDE_DARK_PROCESSING_ACCEPT="#493D2D"
+# CLAUDE_DARK_PROCESSING_BYPASS="#4B312A"
+
+# ==============================================================================
 # TERMINAL TITLE MODE
 # ==============================================================================
 # Controls how TAVS handles terminal tab titles when used with Claude Code.
