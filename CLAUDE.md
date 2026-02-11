@@ -69,6 +69,19 @@ cd src/agents/opencode && npm install && npm run build
 | Subagent | Golden-Yellow | 🔀 | Task tool spawned subagent |
 | Tool Error | Orange-Red | ❌ | Tool execution failed (auto-returns after 1.5s) |
 
+**Mode-Aware Processing:** When enabled (`ENABLE_MODE_AWARE_PROCESSING="true"`, default),
+the processing color shifts subtly based on Claude Code's permission mode:
+
+| Mode | Color Shift | Description |
+|------|-------------|-------------|
+| `default` | Standard orange | Normal processing (no change) |
+| `plan` | Green-yellow tinge | Plan mode (read-only, thinking) |
+| `acceptEdits` | Barely warmer | Auto-approve edits mode |
+| `dontAsk` | Same as acceptEdits | Auto-approve all |
+| `bypassPermissions` | Reddish tinge | Dangerous mode (all bypassed) |
+
+Set `ENABLE_MODE_AWARE_PROCESSING="false"` in `~/.tavs/user.conf` to disable.
+
 **TrueColor Mode Behavior:** When TrueColor is active (`COLORTERM=truecolor`),
 light/dark switching is skipped by default. TrueColor terminals have their own
 color schemes that TAVS respects. Override with `TRUECOLOR_MODE_OVERRIDE`:
@@ -88,7 +101,7 @@ Set in `~/.tavs/user.conf`.
 | File | Purpose |
 |------|---------|
 | `src/core/trigger.sh` | Main signal dispatcher (all states including subagent/tool_error) |
-| `src/core/theme-config-loader.sh` | Config loader, color/face resolution, AGENT_ prefix handling |
+| `src/core/theme-config-loader.sh` | Config loader, color/face resolution, AGENT_ prefix handling, mode-aware colors |
 | `src/core/terminal-osc-sequences.sh` | OSC sequences (OSC 4/11 for palette/background) |
 | `src/core/title-management.sh` | Title management with user override detection |
 | `src/core/title-iterm2.sh` | iTerm2-specific title detection via OSC 1337 |
@@ -123,6 +136,7 @@ All user settings are stored in `~/.tavs/user.conf`:
 - Global settings: `THEME_MODE`, `ENABLE_ANTHROPOMORPHISING`, etc.
 - Per-agent overrides: `CLAUDE_DARK_BASE`, `GEMINI_FACES_PROCESSING`, etc.
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
+- Mode-aware colors: `CLAUDE_DARK_PROCESSING_PLAN`, `DEFAULT_LIGHT_PROCESSING_BYPASS`, etc.
 
 **Run `./configure.sh`** to set up interactively, or copy `src/config/user.conf.template` to `~/.tavs/user.conf` and edit directly.
 
@@ -298,6 +312,12 @@ All hooks use `async: true` for non-blocking execution:
 # Test light mode explicitly
 FORCE_MODE=light ./src/core/trigger.sh processing
 FORCE_MODE=light ./src/core/trigger.sh reset
+
+# Test mode-aware processing colors
+TAVS_PERMISSION_MODE=plan ./src/core/trigger.sh processing          # Green-yellow
+TAVS_PERMISSION_MODE=acceptEdits ./src/core/trigger.sh processing   # Barely warmer
+TAVS_PERMISSION_MODE=bypassPermissions ./src/core/trigger.sh processing  # Reddish
+./src/core/trigger.sh reset
 
 # Test palette theming (requires 256-color mode)
 ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing

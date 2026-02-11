@@ -78,6 +78,7 @@ Loads configuration hierarchy and resolves agent-specific variables:
 - Theme preset loading (Catppuccin, Nord, Dracula, etc.)
 - AGENT_ prefix resolution (e.g., `CLAUDE_DARK_PROCESSING` -> `DARK_PROCESSING`)
 - Color resolution based on dark/light/muted mode
+- Mode-aware processing color override based on `TAVS_PERMISSION_MODE`
 
 ### face-selection.sh (Face Selection)
 
