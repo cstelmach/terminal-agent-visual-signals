@@ -13,14 +13,12 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Set agent identifier for theme loading
 export TAVS_AGENT="claude"
 
-# Capture stdin (JSON payload from Claude Code hooks) with short timeout
-# Non-blocking: if no stdin available, proceed with defaults
+# Capture stdin (JSON payload from Claude Code hooks)
+# Claude Code pipes JSON to hook commands; cat reads the full payload
+# and returns when the pipe closes. [[ ! -t 0 ]] skips if stdin is a terminal.
 _tavs_stdin=""
-if read -t 0.1 -r _tavs_line 2>/dev/null; then
-    _tavs_stdin="$_tavs_line"
-    while read -t 0.01 -r _tavs_line 2>/dev/null; do
-        _tavs_stdin="${_tavs_stdin}${_tavs_line}"
-    done
+if [[ ! -t 0 ]]; then
+    _tavs_stdin=$(cat 2>/dev/null)
 fi
 
 # Extract permission_mode from JSON without jq dependency
