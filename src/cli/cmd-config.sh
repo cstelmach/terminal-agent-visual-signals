@@ -82,7 +82,8 @@ _config_edit() {
 
     local editor="${EDITOR:-${VISUAL:-vi}}"
     cli_info "Opening $TAVS_USER_CONFIG with $editor"
-    "$editor" "$TAVS_USER_CONFIG"
+    # Use eval to support EDITOR values with flags (e.g., "code --wait")
+    eval "$editor" '"$TAVS_USER_CONFIG"'
 }
 
 _config_reset() {

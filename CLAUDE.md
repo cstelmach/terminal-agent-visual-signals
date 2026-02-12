@@ -349,7 +349,7 @@ echo "Plugin cache updated - submit a prompt to test"
 ```
 
 **Key locations:**
-- Source repo: `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`
+- Source repo: `~/.claude/hooks/terminal-agent-visual-signals/`
 - Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/`
 - User config: `~/.tavs/user.conf` (changes here work immediately)
 

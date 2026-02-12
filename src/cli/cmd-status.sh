@@ -208,7 +208,10 @@ _show_face() {
     local label="$1"
     local array_var="$2"
 
-    # Use eval to access the array by name
+    # Validate array_var is a safe identifier before eval
+    if [[ ! "$array_var" =~ ^[A-Z_][A-Z0-9_]*$ ]]; then
+        return 1
+    fi
     local face
     eval "face=\"\${${array_var}[0]:-}\""
 

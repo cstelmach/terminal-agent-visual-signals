@@ -74,11 +74,10 @@ resolve_alias() {
             ;;
     esac
 
-    # Accept raw variable names: must contain ONLY uppercase letters, digits,
-    # and underscores. This rejects shell metacharacters ($, `, (, ), ;, etc.)
-    # that could cause injection via eval in get_config_value.
-    local _sanitized="${key//[A-Za-z0-9_]/}"
-    if [[ -z "$_sanitized" && -n "$key" ]]; then
+    # Accept raw variable names: must be valid shell identifiers starting with
+    # a letter or underscore, containing only uppercase letters, digits, and
+    # underscores. Rejects names like "1BAD" and shell metacharacters.
+    if [[ -n "$key" && "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
         echo "$key"
         return 0
     fi
