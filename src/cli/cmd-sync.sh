@@ -38,7 +38,7 @@ EOF
     elif [[ -d "$cache_base" ]]; then
         # Try to find any version directory
         local latest
-        latest=$(ls -1d "$cache_base"/*/ 2>/dev/null | tail -1)
+        latest=$(ls -1d "$cache_base"/*/ 2>/dev/null | tail -1) || true
         if [[ -n "$latest" ]]; then
             cache_dir="${latest%/}"
         fi

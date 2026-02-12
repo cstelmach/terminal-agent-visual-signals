@@ -108,12 +108,8 @@ case "${1:-}" in
         ;;
     help|-h|--help)
         shift 2>/dev/null || true
-        if [[ -n "${1:-}" && -f "$CLI_DIR/cmd-${1}.sh" ]]; then
-            source "$CLI_DIR/cmd-${1}.sh"
-            "cmd_${1}" --help 2>/dev/null || show_usage
-        else
-            show_usage
-        fi
+        source "$CLI_DIR/cmd-help.sh"
+        cmd_help "$@"
         ;;
     version|-v|--version)
         echo "TAVS v${TAVS_VERSION}"

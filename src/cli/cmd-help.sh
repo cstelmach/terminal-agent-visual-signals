@@ -46,6 +46,14 @@ EOF
     fi
 
     # Topic-specific help: delegate to the command's --help
+    # Validate topic contains only lowercase letters and hyphens (no path traversal)
+    local _sanitized_topic="${topic//[a-z-]/}"
+    if [[ -n "$_sanitized_topic" ]]; then
+        cli_error "Invalid command name: $topic"
+        cli_info "Run 'tavs help' for a list of commands."
+        return 1
+    fi
+
     local cmd_file="$CLI_DIR/cmd-${topic}.sh"
     if [[ -f "$cmd_file" ]]; then
         source "$cmd_file"

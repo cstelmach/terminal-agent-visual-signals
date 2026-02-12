@@ -45,12 +45,22 @@ EOF
     fi
 
     local agent="$1"
+
+    # Validate agent name against known agents (prevents path traversal)
+    case "$agent" in
+        gemini|codex) ;;
+        *)
+            cli_error "Unknown agent: $agent"
+            echo ""
+            echo "Available agents: gemini, codex"
+            return 1
+            ;;
+    esac
+
     local script="$install_dir/install-${agent}.sh"
 
     if [[ ! -f "$script" ]]; then
-        cli_error "Unknown agent: $agent"
-        echo ""
-        echo "Available agents: gemini, codex"
+        cli_error "Install script not found: $script"
         return 1
     fi
 

@@ -150,7 +150,7 @@ EOF
 
         # Show status icons alongside
         echo ""
-        printf "    %-14s %s  %s  %s  %s  %s  %s  %s  %s\n" \
+        printf "    %-14s %s  %s  %s  %s  %s  %s  %s\n" \
             "Status icons" \
             "${STATUS_ICON_PROCESSING:-🟠}" \
             "${STATUS_ICON_PERMISSION:-🔴}" \

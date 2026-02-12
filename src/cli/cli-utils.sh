@@ -89,7 +89,8 @@ get_config_value() {
         source "$TAVS_ROOT/src/config/defaults.conf"
     fi
     load_user_config 2>/dev/null || true
-    eval echo "\${${var}:-}"
+    # Use indirect expansion instead of eval to prevent code injection
+    echo "${!var:-}"
 }
 
 # Set a config value in user.conf
@@ -127,8 +128,9 @@ HEADER
         # Array value — write as-is
         value_str="${var}=${value}"
     else
-        # Scalar value — quote it
-        value_str="${var}=\"${value}\""
+        # Scalar value — escape embedded double quotes, then wrap in quotes
+        local clean_value="${value//\"/\\\"}"
+        value_str="${var}=\"${clean_value}\""
     fi
 
     # Check if variable exists in file (commented or uncommented)
