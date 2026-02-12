@@ -1,57 +1,185 @@
 #!/bin/bash
 # ==============================================================================
-# TAVS - Terminal Agent Visual Signals — User Configuration
+# TAVS - Terminal Agent Visual Signals — User Configuration (v3)
 # ==============================================================================
-# Copy this file to: ~/.tavs/user.conf
+# Quick config:  tavs set <key> <value>     (e.g., tavs set theme nord)
+# Full wizard:   tavs wizard                (interactive 7-step setup)
+# See current:   tavs status                (visual summary with color preview)
+# Validate:      tavs config validate       (check for errors)
 #
 # How it works:
 #   - Uncomment and modify settings you want to override
 #   - Global settings affect all agents
-#   - Use AGENT_ prefix (CLAUDE_, GEMINI_, etc.) to override specific agents
+#   - Use AGENT_ prefix (CLAUDE_, GEMINI_, etc.) for per-agent overrides
 #   - Leave settings commented to use defaults from defaults.conf
 #
-# Quick disable (without editing this file):
-#   TAVS_STATUS=false claude
+# Quick disable (without editing): TAVS_STATUS=false claude
 # ==============================================================================
 
-# ==============================================================================
-# GLOBAL SETTINGS (affect all agents)
-# ==============================================================================
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 1: ESSENTIAL SETTINGS                                           ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
 
 # Operating Mode: "static", "dynamic", or "preset"
+#   static  - Fixed colors from defaults.conf
+#   dynamic - Query terminal for current background, compute colors dynamically
+#   preset  - Use a named theme from src/themes/ (recommended)
 # THEME_MODE="static"
 
 # Theme preset (when THEME_MODE="preset")
-# Options: catppuccin-latte, catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
-#          nord, dracula, solarized-dark, solarized-light, tokyo-night
+#   catppuccin-frappe, catppuccin-latte, catppuccin-macchiato, catppuccin-mocha,
+#   nord, dracula, solarized-dark, solarized-light, tokyo-night
 # THEME_PRESET=""
 
-# ==============================================================================
-# LIGHT/DARK MODE
-# ==============================================================================
-# ENABLE_LIGHT_DARK_SWITCHING - Auto-detect system light/dark mode
-#   "false" - Always use dark backgrounds (default)
-#   "true"  - Switch based on system appearance
+# Light/Dark Mode
+#   ENABLE_LIGHT_DARK_SWITCHING: Auto-detect system appearance
+#     "false" (default) - Always use dark backgrounds
+#     "true"  - Switch based on system appearance
+#   FORCE_MODE: Explicit override (takes priority over auto-detection)
+#     "auto" (default), "dark", or "light"
+# ENABLE_LIGHT_DARK_SWITCHING="false"
+# FORCE_MODE="auto"
+
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 2: VISUAL FEATURES                                              ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# ASCII Faces (Anthropomorphising) — face expressions in terminal titles
+# ENABLE_ANTHROPOMORPHISING="true"
+# FACE_POSITION="before"    # "before" or "after" the title text
+
+# Face Mode — standard text eyes or compact emoji eyes
+#   "standard" (default) - Text eyes: Ǝ[• •]E 🟠 +2 🦊 ~/proj
+#   "compact"  - Emoji eyes: Ǝ[🟧 +2]E 🦊 ~/proj (more info-dense)
+# TAVS_FACE_MODE="standard"
+# TAVS_COMPACT_THEME="semantic"    # semantic, circles, squares, mixed
+
+# Stylish Backgrounds (Images) — iTerm2 and Kitty only
+# ENABLE_STYLISH_BACKGROUNDS="false"
+# STYLISH_BACKGROUNDS_DIR="$HOME/.tavs/backgrounds"
+
+# Palette Theming (OSC 4) — modify terminal's 16-color ANSI palette
+#   "false" (default) - Background colors only
+#   "auto"  - Enable when NOT in TrueColor mode
+#   "true"  - Always apply palette (affects shell tools, ls colors, etc.)
+# ENABLE_PALETTE_THEMING="false"
+
+# Status Icons — emoji shown per state in titles
+# STATUS_ICON_PROCESSING="🟠"
+# STATUS_ICON_PERMISSION="🔴"
+# STATUS_ICON_COMPLETE="🟢"
+# STATUS_ICON_IDLE="🟣"
+# STATUS_ICON_COMPACTING="🔄"
+# STATUS_ICON_SUBAGENT="🔀"
+# STATUS_ICON_TOOL_ERROR="❌"
+
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 3: TITLE SYSTEM                                                 ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# Title Mode — how TAVS handles terminal tab titles
+#   "skip-processing" (default) - Let Claude Code handle processing, TAVS handles others
+#   "prefix-only" - Add face+status prefix, preserve your tab names
+#   "full"   - TAVS owns all titles with animated spinner eyes
+#   "off"    - No title changes, only background colors/images
 #
-# FORCE_MODE - Explicit override (takes priority over auto-detection)
-#   "auto", "dark", or "light"
-#
-# TRUECOLOR_MODE_OVERRIDE - Special handling for TrueColor terminals
+# For "full" mode, add to ~/.claude/settings.json:
+#   "env": { "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1" }
+# TAVS_TITLE_MODE="skip-processing"
+
+# Title Fallback — when no user-set tab name exists
+#   "path"         (default) - Current directory: ~/projects
+#   "session-path" - Session ID + path: 134eed79 ~/projects
+#   "path-session" - Path + session ID: ~/projects 134eed79
+#   "session"      - Session ID only: 134eed79
+# TAVS_TITLE_FALLBACK="path"
+
+# Title Format — customize composition template
+#   {FACE}         Agent face expression (Ǝ[• •]E)
+#   {STATUS_ICON}  State emoji (🟠)
+#   {AGENTS}       Subagent count (+2) — empty when none
+#   {SESSION_ICON} Unique animal emoji per tab (🦊)
+#   {BASE}         Base title (your tab name or fallback)
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
+
+# Subagent count format — {N} = count number
+# TAVS_AGENTS_FORMAT="+{N}"
+
+# Session Icons — unique animal emoji per terminal tab
+# ENABLE_SESSION_ICONS="true"
+# Custom icon pool (override the default ~25 animals):
+# TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
+
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 4: SPINNER (when TAVS_TITLE_MODE="full")                       ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# Spinner Style — animation pattern for eyes during processing
+#   "braille"     - Rotating dots: ⠋ ⠙ ⠹ ⠸
+#   "circle"      - Filling circles: ○ ◔ ◑ ◕ ●
+#   "block"       - Pulsing bars: ▁ ▂ ▃ ▄ ▅ ▆ ▇ █
+#   "eye-animate" - Random eye characters
+#   "none"        - Use existing face variants (no animation)
+#   "random"      - Random selection per session (recommended)
+# TAVS_SPINNER_STYLE="random"
+
+# Eye Synchronization Mode — how the two eyes animate together
+#   "sync"      - Both eyes same frame
+#   "opposite"  - Eyes half-cycle apart
+#   "stagger"   - Left leads, right follows
+#   "clockwise" - Both rotate clockwise (braille)
+#   "counter"   - Both rotate counter-clockwise
+#   "mirror"    - Left increases, right decreases
+#   "mirror_inv"- Left decreases, right increases
+#   "random"    - Random per session (recommended)
+# TAVS_SPINNER_EYE_MODE="random"
+
+# Session Identity — consistent visual identity per session
+#   When true, random selections are made once at session start
+# TAVS_SESSION_IDENTITY="true"
+
+# Custom spinner frames (override defaults)
+# TAVS_SPINNER_FRAMES_BRAILLE=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+# TAVS_SPINNER_FRAMES_CIRCLE=("○" "◔" "◑" "◕" "●" "◕" "◑" "◔")
+# TAVS_SPINNER_FRAMES_BLOCK=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█" "▇" "▆" "▅" "▄" "▃" "▂")
+
+# Per-agent spinner face frames — {L} and {R} are eye placeholders
+# CLAUDE_SPINNER_FACE_FRAME='Ǝ[{L} {R}]E'
+# GEMINI_SPINNER_FACE_FRAME='ʕ{L}ᴥ{R}ʔ'
+# CODEX_SPINNER_FACE_FRAME='ฅ^{L}ﻌ{R}^ฅ'
+# OPENCODE_SPINNER_FACE_FRAME='({L}-{R})'
+
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 5: ADVANCED SETTINGS                                            ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# Mode-Aware Processing Colors — subtle color shift based on permission mode
+#   When enabled, the processing background shifts based on Claude Code's mode:
+#     plan            → olive/yellow-green tinge (thinking mode)
+#     acceptEdits     → barely warmer (auto-approve edits)
+#     bypassPermissions → reddish danger tinge
+# ENABLE_MODE_AWARE_PROCESSING="true"
+
+# TrueColor Mode Override — behavior for TrueColor terminals
 #   TrueColor terminals (Ghostty, iTerm2, etc.) have their own color schemes.
 #   This controls how TAVS behaves when ENABLE_LIGHT_DARK_SWITCHING="true":
-#
-#   "off"   - (Default) Skip auto-detect in TrueColor, always use dark.
-#             Respects your terminal's color scheme.
-#   "muted" - Allow light/dark switching with muted colors (reduced contrast).
-#             Good if you want mode switching without jarring color changes.
-#   "full"  - Allow light/dark switching with regular colors.
-#             May clash with your terminal's color scheme.
-#
-# ENABLE_LIGHT_DARK_SWITCHING="true"
-# FORCE_MODE="auto"
+#     "off"   (default) - Skip auto-detect, always use dark
+#     "muted" - Allow switching with reduced contrast
+#     "full"  - Allow switching with regular colors
 # TRUECOLOR_MODE_OVERRIDE="off"
 
-# Feature Toggles
+# Bell/Notification Settings
+# ENABLE_BELL_PERMISSION="true"     # Bell on permission requests
+# ENABLE_BELL_COMPLETE="false"      # Bell on task completion
+# ENABLE_BELL_PROCESSING="false"    # Bell on processing start
+# ENABLE_BELL_COMPACTING="false"    # Bell on context compaction
+
+# Feature Toggles — disable specific states
 # ENABLE_BACKGROUND_CHANGE="true"
 # ENABLE_TITLE_PREFIX="true"
 # ENABLE_PROCESSING="true"
@@ -60,188 +188,12 @@
 # ENABLE_IDLE="true"
 # ENABLE_COMPACTING="true"
 
-# ==============================================================================
-# PERMISSION MODE COLORS (Processing state variants)
-# ==============================================================================
-# Subtle processing color shifts based on Claude Code permission mode.
-# When enabled, the processing background shifts slightly based on active mode:
-#   plan            -> olive/yellow-green tinge (read-only, thinking)
-#   acceptEdits     -> barely warmer (auto-approve edits)
-#   dontAsk         -> same as acceptEdits
-#   bypassPermissions -> reddish danger tinge
-#
-# Enabled by default. Set to "false" for uniform processing color:
-# ENABLE_MODE_AWARE_PROCESSING="false"
-#
-# Override mode-specific colors per agent:
-# CLAUDE_DARK_PROCESSING_PLAN="#48432E"
-# CLAUDE_DARK_PROCESSING_ACCEPT="#493D2D"
-# CLAUDE_DARK_PROCESSING_BYPASS="#4B312A"
+# Idle Timer Configuration
+# ENABLE_STAGE_INDICATORS="true"
+# STAGE_DURATIONS=(60 30 30 30 30 30 30)
+# IDLE_CHECK_INTERVAL=15
 
-# ==============================================================================
-# TERMINAL TITLE MODE
-# ==============================================================================
-# Controls how TAVS handles terminal tab titles when used with Claude Code.
-# Claude Code sets its own animated spinner title during processing.
-#
-# Options:
-#   "full"            - TAVS owns all titles (requires Claude Code setting, see below)
-#   "prefix-only"     - TAVS adds face+status icon prefix, preserves user's base title
-#   "skip-processing" - Let Claude Code handle processing titles, TAVS handles others (DEFAULT)
-#   "off"             - No title changes at all, colors/backgrounds only
-#
-# For "full" mode, add to ~/.claude/settings.json:
-#   "env": { "CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1" }
-# Then restart Claude Code.
-#
-# TAVS_TITLE_MODE="skip-processing"
-
-# ==============================================================================
-# TITLE BASE & FALLBACK (for prefix-only and full modes)
-# ==============================================================================
-# When you manually rename a tab, TAVS preserves your name and adds a prefix.
-# If no manual name is set, TAVS uses the fallback setting below.
-#
-# User-set title override: Set this to always use a specific base title
-# TAVS_TITLE_BASE="My Project"
-
-# Fallback when no user title is set:
-#   "session-path" - Session ID + path: "134eed79 ~/projects"
-#   "path-session" - Path + session ID: "~/projects 134eed79"
-#   "session"      - Session ID only: "134eed79"
-#   "path"         - Path only (default): "~/projects"
-# TAVS_TITLE_FALLBACK="path"
-
-# ==============================================================================
-# TITLE FORMAT TEMPLATE
-# ==============================================================================
-# Customize how the title is composed. Placeholders:
-#   {FACE}   - Agent face (e.g., "Ǝ[• •]E")
-#   {STATUS_ICON}  - State status icon (e.g., "🟠")
-#   {AGENTS} - Active subagent count (e.g., "+2") - empty when none
-#   {SESSION_ICON}   - Session icon (e.g., "🐙") - unique per terminal tab
-#   {BASE}   - Base title (your tab name or fallback)
-#
-# Empty tokens (no subagents, icons disabled) collapse double spaces automatically.
-#
-# Examples:
-#   "{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"  -> "Ǝ[• •]E 🟠 +2 🐙 ~/project" (default)
-#   "{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON}"          -> "Ǝ[• •]E 🟠 +2 🐙" (no path)
-#   "{STATUS_ICON} {SESSION_ICON} {BASE}"                   -> "🟠 🐙 ~/project" (minimal)
-#   "{FACE} {STATUS_ICON} {AGENTS} {BASE}"          -> "Ǝ[• •]E 🟠 +2 ~/project" (no icon)
-# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
-
-# Subagent count format. {N} = count number.
-# Only shown when count > 0. Empty string hides the counter entirely.
-# Examples: "+{N}" (concise), "+{N} subagents" (verbose), "({N})" (parens)
-# TAVS_AGENTS_FORMAT="+{N}"
-
-# ==============================================================================
-# SESSION ICONS
-# ==============================================================================
-# Each terminal tab gets a unique animal emoji for visual identification.
-# Icons persist across /clear (tied to the terminal tab, not session).
-# When all icons are taken by active tabs, duplicates are allowed.
-#
-# ENABLE_SESSION_ICONS="true"
-#
-# Custom icon pool (override the default ~25 animals):
-# TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
-#
-# To remove the icon from the title format entirely:
-# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {BASE}"
-
-# ==============================================================================
-# COMPACT FACE MODE
-# ==============================================================================
-# Replace text-based eyes with emoji. State color and subagent count are
-# embedded directly in the face, making titles shorter and more expressive.
-#
-#   Standard:  Ǝ[• •]E 🟠 +2 🦊 ~/proj
-#   Compact:   Ǝ[🟠 +2]E 🦊 ~/proj
-#
-# When compact is active, {STATUS_ICON} and {AGENTS} tokens are auto-suppressed.
-#
-# TAVS_FACE_MODE="compact"          # "standard" (default) | "compact"
-# TAVS_COMPACT_THEME="semantic"     # "semantic" | "circles" | "squares" | "mixed"
-#
-# Override individual eye pools (format: "left right" pairs):
-# COMPACT_SEMANTIC_PROCESSING=('🟠 🟠' '🟧 🟠' '🟧 🟧' '🧡 🧡')
-
-# ==============================================================================
-# USER TITLE OVERRIDE BEHAVIOR
-# ==============================================================================
-# When TAVS detects you've manually renamed a tab, what should it do?
-#
-#   "prefix" - Add face+status icon prefix, keep your base name (recommended)
-#   "full"   - Completely respect your title (no changes at all)
-#   "ignore" - Always overwrite your title (legacy behavior)
-# TAVS_RESPECT_USER_TITLE="prefix"
-
-# ==============================================================================
-# TITLE COMPONENT TOGGLES
-# ==============================================================================
-# Fine-grained control over what appears in the title.
-# TAVS_TITLE_SHOW_FACE="true"     # Include face in title
-# TAVS_TITLE_SHOW_STATUS_ICON="true"    # Include status icon in title
-# TAVS_TITLE_SHOW_SESSION="true"  # Include session ID in fallback
-# TAVS_TITLE_SHOW_PATH="true"     # Include path in fallback
-
-# ==============================================================================
-# SPINNER CONFIGURATION (for TAVS_TITLE_MODE="full")
-# ==============================================================================
-# When TAVS owns the processing title, these settings control eye animation.
-
-# Spinner Style - animation pattern for eyes during processing
-#   "braille"     - Rotating dots ⠋ ⠙ ⠹ ⠸ (Claude-style)
-#   "circle"      - Filling circles ○ ◔ ◑ ◕ ●
-#   "block"       - Pulsing vertical bars ▁ ▂ ▃ ▄ ▅ ▆ ▇ █
-#   "eye-animate" - Random eye characters from variety pool
-#   "none"        - Use existing face variants (no spinner)
-#   "random"      - Random selection per session (recommended)
-# TAVS_SPINNER_STYLE="random"
-
-# Eye Synchronization Mode - how the two "eyes" animate together
-#   "sync"        - Both eyes show same frame
-#   "opposite"    - Eyes half-cycle apart (e.g., ◐ ◑)
-#   "stagger"     - Left leads, right follows (2 frames behind)
-#   "clockwise"   - Both rotate clockwise (braille)
-#   "counter"     - Both rotate counter-clockwise
-#   "mirror"      - Left increases, right decreases
-#   "mirror_inv"  - Left decreases, right increases
-#   "random"      - Random selection per session (recommended)
-# TAVS_SPINNER_EYE_MODE="random"
-
-# Session Identity - consistent visual identity per session
-# When true, random selections are made once at session start
-# TAVS_SESSION_IDENTITY="true"
-
-# Custom spinner frames (override defaults)
-# TAVS_SPINNER_FRAMES_BRAILLE=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
-# TAVS_SPINNER_FRAMES_CIRCLE=("○" "◔" "◑" "◕" "●" "◕" "◑" "◔")
-# TAVS_SPINNER_FRAMES_BLOCK=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█" "▇" "▆" "▅" "▄" "▃" "▂")
-# TAVS_SPINNER_FRAMES_EYE_ANIMATE=("•" "◦" "·" "°" "○" "◌" "◎" "●" "◉" "⊙" "⊚" "⦿")
-
-# Spinner face frames - the face outline with {L} and {R} placeholders for eyes
-# Each agent has a different face style. Override per-agent:
-# CLAUDE_SPINNER_FACE_FRAME='Ǝ[{L} {R}]E'  # Pincer style
-# GEMINI_SPINNER_FACE_FRAME='ʕ{L}ᴥ{R}ʔ'    # Bear style
-# CODEX_SPINNER_FACE_FRAME='ฅ^{L}ﻌ{R}^ฅ'  # Cat style
-# OPENCODE_SPINNER_FACE_FRAME='({L}-{R})'  # Kaomoji style
-# DEFAULT_SPINNER_FACE_FRAME='[{L} {R}]'   # Fallback
-
-# Anthropomorphising (ASCII Faces)
-# ENABLE_ANTHROPOMORPHISING="true"
-# FACE_POSITION="before"  # "before" or "after"
-
-# Status Icons
-# STATUS_ICON_PROCESSING="🟠"
-# STATUS_ICON_PERMISSION="🔴"
-# STATUS_ICON_COMPLETE="🟢"
-# STATUS_ICON_IDLE="🟣"
-# STATUS_ICON_COMPACTING="🔄"
-
-# Dynamic Mode Settings
+# Dynamic Mode Settings (when THEME_MODE="dynamic")
 # HUE_PROCESSING=30
 # HUE_PERMISSION=0
 # HUE_COMPLETE=120
@@ -250,39 +202,23 @@
 # DYNAMIC_QUERY_TIMEOUT="0.1"
 # DYNAMIC_DISABLE_SSH="true"
 
-# Idle Timer Configuration
-# ENABLE_STAGE_INDICATORS="true"
-# STAGE_DURATIONS=(60 30 30 30 30 30 30)
-# IDLE_CHECK_INTERVAL=15
-
-# Bell/Notification Settings
-# ENABLE_BELL_PROCESSING="false"
-# ENABLE_BELL_PERMISSION="true"
-# ENABLE_BELL_COMPLETE="false"
-# ENABLE_BELL_COMPACTING="false"
-
-# Stylish Backgrounds (Images) - iTerm2/Kitty only
-# ENABLE_STYLISH_BACKGROUNDS="false"
-# STYLISH_BACKGROUNDS_DIR="$HOME/.tavs/backgrounds"
-# STYLISH_SINGLE_IMAGE=""
-# STYLISH_DISABLE_SSH="true"
-# STYLISH_SKIP_BG_TINT="false"
-
-# iTerm2-Specific
-# ITERM2_IMAGE_MODE="aspect_fill"
-
-# Kitty-Specific
-# KITTY_IMAGE_LAYOUT="scaled"
-# KITTY_IMAGE_TINT="0.8"
-
-# Advanced Settings
+# Debug Logging
 # DEBUG_ALL="0"
 # IDLE_DEBUG="0"
+
+# State Grace Period (ms) — debounce rapid state changes
 # STATE_GRACE_PERIOD_MS=400
 
-# ==============================================================================
-# DEFAULT COLORS (fallback when agent has no specific colors)
-# ==============================================================================
+
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║  SECTION 6: PER-AGENT OVERRIDES                                          ║
+# ╠════════════════════════════════════════════════════════════════════════════╣
+# ║  Override any default setting for a specific agent.                       ║
+# ║  Prefix: CLAUDE_, GEMINI_, CODEX_, OPENCODE_, UNKNOWN_                   ║
+# ║  Example: CLAUDE_DARK_PROCESSING="#473D2F"                               ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# ── Default Colors (fallback when agent has no specific colors) ──────────────
 
 # Dark Mode
 # DEFAULT_DARK_BASE="#303446"
@@ -300,12 +236,8 @@
 # DEFAULT_LIGHT_IDLE="#ebe5f5"
 # DEFAULT_LIGHT_COMPACTING="#e0f0f0"
 
-# ==============================================================================
-# CLAUDE CODE OVERRIDES
-# ==============================================================================
-# Only uncomment settings you want to change for Claude specifically.
+# ── Claude Code ──────────────────────────────────────────────────────────────
 
-# Agent name (shown in some contexts)
 # CLAUDE_AGENT_NAME="Claude Code"
 
 # Colors - Dark Mode
@@ -324,11 +256,18 @@
 # CLAUDE_LIGHT_IDLE="#E8E0F0"
 # CLAUDE_LIGHT_COMPACTING="#D8F0F0"
 
-# Faces - Override with custom arrays (6 variants per state)
+# Mode-aware processing colors
+# CLAUDE_DARK_PROCESSING_PLAN="#48432E"
+# CLAUDE_DARK_PROCESSING_ACCEPT="#493D2D"
+# CLAUDE_DARK_PROCESSING_BYPASS="#4B312A"
+
+# Faces — 6 variants per state (one picked randomly each trigger)
 # CLAUDE_FACES_PROCESSING=('Ǝ[• •]E' 'Ǝ[• ◕]E' 'Ǝ[■ ■]E' 'Ǝ[◔ ◔]E' 'Ǝ[｡ ｡]E' 'Ǝ[. .]E')
 # CLAUDE_FACES_PERMISSION=('Ǝ[° °]E' 'Ǝ[○ ○]E' 'Ǝ[□ □]E' 'Ǝ[ʘ ʘ]E' 'Ǝ[՞ ՞]E' 'Ǝ[o o]E')
 # CLAUDE_FACES_COMPLETE=('Ǝ[✦ ✦]E' 'Ǝ[★ ★]E' 'Ǝ[✧ ✧]E' 'Ǝ[❀ ❀]E' 'Ǝ[✿ ✿]E' 'Ǝ[* *]E')
 # CLAUDE_FACES_COMPACTING=('Ǝ[@ @]E' 'Ǝ[◎ ◎]E' 'Ǝ[▣ ▣]E' 'Ǝ[× ×]E' 'Ǝ[＠ ＠]E' 'Ǝ[@ @]E')
+# CLAUDE_FACES_SUBAGENT=('Ǝ[⇆ ⇆]E')
+# CLAUDE_FACES_TOOL_ERROR=('Ǝ[✕ ✕]E')
 # CLAUDE_FACES_RESET=('Ǝ[• •]E')
 # CLAUDE_FACES_IDLE_0=('Ǝ[◕ ◕]E')
 # CLAUDE_FACES_IDLE_1=('Ǝ[• •]E')
@@ -337,9 +276,7 @@
 # CLAUDE_FACES_IDLE_4=('Ǝ[- -]E zZ')
 # CLAUDE_FACES_IDLE_5=('Ǝ[= =]E ᶻᶻ')
 
-# ==============================================================================
-# GEMINI CLI OVERRIDES
-# ==============================================================================
+# ── Gemini CLI ───────────────────────────────────────────────────────────────
 
 # GEMINI_AGENT_NAME="Gemini CLI"
 
@@ -359,22 +296,15 @@
 # GEMINI_LIGHT_IDLE="#D8E0F5"
 # GEMINI_LIGHT_COMPACTING="#D0F0F5"
 
-# Faces - Bear style
+# Faces — Bear style
 # GEMINI_FACES_PROCESSING=('ʕ•ᴥ•ʔ')
 # GEMINI_FACES_PERMISSION=('ʕ๏ᴥ๏ʔ')
 # GEMINI_FACES_COMPLETE=('ʕ♥ᴥ♥ʔ')
 # GEMINI_FACES_COMPACTING=('ʕ•_•ʔ')
 # GEMINI_FACES_RESET=('ʕ-ᴥ-ʔ')
 # GEMINI_FACES_IDLE_0=('ʕ•ᴥ•ʔ')
-# GEMINI_FACES_IDLE_1=('ʕ‾ᴥ‾ʔ')
-# GEMINI_FACES_IDLE_2=('ʕ︶ᴥ︶ʔ')
-# GEMINI_FACES_IDLE_3=('ʕ¬ᴥ¬ʔ')
-# GEMINI_FACES_IDLE_4=('ʕ-ᴥ-ʔzZ')
-# GEMINI_FACES_IDLE_5=('ʕ︶ᴥ︶ʔᶻᶻ')
 
-# ==============================================================================
-# CODEX CLI OVERRIDES
-# ==============================================================================
+# ── Codex CLI ────────────────────────────────────────────────────────────────
 
 # CODEX_AGENT_NAME="Codex CLI"
 
@@ -386,30 +316,14 @@
 # CODEX_DARK_IDLE="#3A3540"
 # CODEX_DARK_COMPACTING="#304040"
 
-# Colors - Light Mode
-# CODEX_LIGHT_BASE="#F0F0F2"
-# CODEX_LIGHT_PROCESSING="#E8E0D8"
-# CODEX_LIGHT_PERMISSION="#E8D8D8"
-# CODEX_LIGHT_COMPLETE="#D8E8D8"
-# CODEX_LIGHT_IDLE="#E0D8E8"
-# CODEX_LIGHT_COMPACTING="#D8E8E8"
-
-# Faces - Cat style
+# Faces — Cat style
 # CODEX_FACES_PROCESSING=('ฅ^•ﻌ•^ฅ')
 # CODEX_FACES_PERMISSION=('ฅ^◉ﻌ◉^ฅ')
 # CODEX_FACES_COMPLETE=('ฅ^♥ﻌ♥^ฅ')
 # CODEX_FACES_COMPACTING=('ฅ^•_•^ฅ')
 # CODEX_FACES_RESET=('ฅ^-ﻌ-^ฅ')
-# CODEX_FACES_IDLE_0=('ฅ^•ﻌ•^ฅ')
-# CODEX_FACES_IDLE_1=('ฅ^‾ﻌ‾^ฅ')
-# CODEX_FACES_IDLE_2=('ฅ^︶ﻌ︶^ฅ')
-# CODEX_FACES_IDLE_3=('ฅ^¬ﻌ¬^ฅ')
-# CODEX_FACES_IDLE_4=('ฅ^-ﻌ-^ฅzZ')
-# CODEX_FACES_IDLE_5=('ฅ^︶ﻌ︶^ฅᶻᶻ')
 
-# ==============================================================================
-# OPENCODE OVERRIDES
-# ==============================================================================
+# ── OpenCode ─────────────────────────────────────────────────────────────────
 
 # OPENCODE_AGENT_NAME="OpenCode"
 
@@ -421,42 +335,9 @@
 # OPENCODE_DARK_IDLE="#453840"
 # OPENCODE_DARK_COMPACTING="#354540"
 
-# Colors - Light Mode
-# OPENCODE_LIGHT_BASE="#F5F0E8"
-# OPENCODE_LIGHT_PROCESSING="#F8E0C8"
-# OPENCODE_LIGHT_PERMISSION="#F8D0C8"
-# OPENCODE_LIGHT_COMPLETE="#E8F0D8"
-# OPENCODE_LIGHT_IDLE="#F0E0E8"
-# OPENCODE_LIGHT_COMPACTING="#E0F0E8"
-
-# Faces - Minimal kaomoji
+# Faces — Minimal kaomoji
 # OPENCODE_FACES_PROCESSING=('(°-°)')
 # OPENCODE_FACES_PERMISSION=('(°□°)')
 # OPENCODE_FACES_COMPLETE=('(^‿^)')
 # OPENCODE_FACES_COMPACTING=('(@_@)')
 # OPENCODE_FACES_RESET=('(-_-)')
-# OPENCODE_FACES_IDLE_0=('(•‿•)')
-# OPENCODE_FACES_IDLE_1=('(‿‿)')
-# OPENCODE_FACES_IDLE_2=('(︶‿︶)')
-# OPENCODE_FACES_IDLE_3=('(¬‿¬)')
-# OPENCODE_FACES_IDLE_4=('(-.-)zzZ')
-# OPENCODE_FACES_IDLE_5=('(︶.︶)ᶻᶻ')
-
-# ==============================================================================
-# UNKNOWN AGENT OVERRIDES (fallback for unrecognized agents)
-# ==============================================================================
-
-# UNKNOWN_AGENT_NAME="Unknown Agent"
-
-# Faces - Minimal kaomoji (customize if desired)
-# UNKNOWN_FACES_PROCESSING=('(°-°)')
-# UNKNOWN_FACES_PERMISSION=('(°□°)')
-# UNKNOWN_FACES_COMPLETE=('(^‿^)')
-# UNKNOWN_FACES_COMPACTING=('(@_@)')
-# UNKNOWN_FACES_RESET=('(-_-)')
-# UNKNOWN_FACES_IDLE_0=('(•‿•)')
-# UNKNOWN_FACES_IDLE_1=('(‿‿)')
-# UNKNOWN_FACES_IDLE_2=('(︶‿︶)')
-# UNKNOWN_FACES_IDLE_3=('(¬‿¬)')
-# UNKNOWN_FACES_IDLE_4=('(-.-)zzZ')
-# UNKNOWN_FACES_IDLE_5=('(︶.︶)ᶻᶻ')
