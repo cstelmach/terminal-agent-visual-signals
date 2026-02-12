@@ -5,120 +5,14 @@
 # Maps friendly CLI names to actual config variable names.
 # Provides validation, descriptions, and compound alias handling.
 #
+# Bash 3.2+ compatible — uses case statements instead of associative arrays.
+#
 # Usage:
 #   source aliases.sh
 #   resolve_alias "theme"          # → "COMPOUND:THEME_PRESET+THEME_MODE"
 #   resolve_alias "faces"          # → "ENABLE_ANTHROPOMORPHISING"
 #   validate_value "THEME_MODE" "preset"  # → 0 (success)
 # ==============================================================================
-
-# Requires bash 4+ for associative arrays
-if (( BASH_VERSINFO[0] < 4 )); then
-    echo "Error: TAVS CLI requires bash 4.0 or later." >&2
-    echo "Current version: ${BASH_VERSION}" >&2
-    return 1 2>/dev/null || exit 1
-fi
-
-# ==============================================================================
-# ALIAS DEFINITIONS
-# ==============================================================================
-# Format: alias → variable name
-# Compound aliases use "COMPOUND:VAR1+VAR2" format
-
-declare -A SETTING_ALIASES=(
-    # Core Settings
-    ["theme"]="COMPOUND:THEME_PRESET+THEME_MODE"
-    ["mode"]="THEME_MODE"
-    ["light-dark"]="ENABLE_LIGHT_DARK_SWITCHING"
-    ["force-mode"]="FORCE_MODE"
-
-    # Visual Features
-    ["faces"]="ENABLE_ANTHROPOMORPHISING"
-    ["face-mode"]="TAVS_FACE_MODE"
-    ["face-position"]="FACE_POSITION"
-    ["compact-theme"]="TAVS_COMPACT_THEME"
-    ["backgrounds"]="ENABLE_STYLISH_BACKGROUNDS"
-    ["palette"]="ENABLE_PALETTE_THEMING"
-
-    # Title System
-    ["title-mode"]="TAVS_TITLE_MODE"
-    ["title-fallback"]="TAVS_TITLE_FALLBACK"
-    ["title-format"]="TAVS_TITLE_FORMAT"
-    ["session-icons"]="ENABLE_SESSION_ICONS"
-    ["agents-format"]="TAVS_AGENTS_FORMAT"
-
-    # Spinner (when title-mode=full)
-    ["spinner"]="TAVS_SPINNER_STYLE"
-    ["eye-mode"]="TAVS_SPINNER_EYE_MODE"
-    ["session-identity"]="TAVS_SESSION_IDENTITY"
-
-    # Advanced
-    ["mode-aware"]="ENABLE_MODE_AWARE_PROCESSING"
-    ["truecolor-override"]="TRUECOLOR_MODE_OVERRIDE"
-    ["bell-permission"]="ENABLE_BELL_PERMISSION"
-    ["bell-complete"]="ENABLE_BELL_COMPLETE"
-    ["debug"]="DEBUG_ALL"
-)
-
-# ==============================================================================
-# VALID VALUES PER VARIABLE
-# ==============================================================================
-# Space-separated list of valid values. Empty = any value accepted.
-
-declare -A SETTING_VALUES=(
-    ["THEME_MODE"]="static dynamic preset"
-    ["THEME_PRESET"]="catppuccin-frappe catppuccin-latte catppuccin-macchiato catppuccin-mocha nord dracula solarized-dark solarized-light tokyo-night"
-    ["ENABLE_LIGHT_DARK_SWITCHING"]="true false"
-    ["FORCE_MODE"]="auto dark light"
-    ["ENABLE_ANTHROPOMORPHISING"]="true false"
-    ["TAVS_FACE_MODE"]="standard compact"
-    ["FACE_POSITION"]="before after"
-    ["TAVS_COMPACT_THEME"]="semantic circles squares mixed"
-    ["ENABLE_STYLISH_BACKGROUNDS"]="true false"
-    ["ENABLE_PALETTE_THEMING"]="false auto true"
-    ["TAVS_TITLE_MODE"]="skip-processing prefix-only full off"
-    ["TAVS_TITLE_FALLBACK"]="path session-path path-session session"
-    ["ENABLE_SESSION_ICONS"]="true false"
-    ["TAVS_SPINNER_STYLE"]="braille circle block eye-animate none random"
-    ["TAVS_SPINNER_EYE_MODE"]="sync opposite stagger clockwise counter mirror mirror_inv random"
-    ["TAVS_SESSION_IDENTITY"]="true false"
-    ["ENABLE_MODE_AWARE_PROCESSING"]="true false"
-    ["TRUECOLOR_MODE_OVERRIDE"]="off muted full"
-    ["ENABLE_BELL_PERMISSION"]="true false"
-    ["ENABLE_BELL_COMPLETE"]="true false"
-    ["DEBUG_ALL"]="0 1"
-    # Free-form values (no validation): TAVS_TITLE_FORMAT, TAVS_AGENTS_FORMAT
-)
-
-# ==============================================================================
-# FRIENDLY DESCRIPTIONS
-# ==============================================================================
-
-declare -A SETTING_DESCRIPTIONS=(
-    ["theme"]="Color theme preset (nord, dracula, catppuccin-*, etc.)"
-    ["mode"]="Operating mode (static, dynamic, or preset)"
-    ["light-dark"]="Auto-detect system light/dark mode"
-    ["force-mode"]="Force light or dark mode (auto, dark, light)"
-    ["faces"]="Enable ASCII faces in titles"
-    ["face-mode"]="Face display mode (standard or compact emoji)"
-    ["face-position"]="Face position in title (before or after)"
-    ["compact-theme"]="Compact face theme (semantic, circles, squares, mixed)"
-    ["backgrounds"]="Enable stylish background images (iTerm2/Kitty)"
-    ["palette"]="Terminal palette theming (false, auto, true)"
-    ["title-mode"]="Title control mode (skip-processing, prefix-only, full, off)"
-    ["title-fallback"]="Fallback when no user title (path, session-path, etc.)"
-    ["title-format"]="Title composition template ({FACE} {STATUS_ICON} etc.)"
-    ["session-icons"]="Unique animal emoji per terminal tab"
-    ["agents-format"]="Subagent count format in title ({N} = count)"
-    ["spinner"]="Processing spinner style (braille, circle, random, etc.)"
-    ["eye-mode"]="Spinner eye sync mode (sync, opposite, mirror, etc.)"
-    ["session-identity"]="Consistent visual identity per session"
-    ["mode-aware"]="Permission mode-aware processing colors"
-    ["truecolor-override"]="TrueColor terminal behavior (off, muted, full)"
-    ["bell-permission"]="Bell sound on permission requests"
-    ["bell-complete"]="Bell sound on task completion"
-    ["debug"]="Debug logging (0 or 1)"
-)
 
 # ==============================================================================
 # ALIAS RESOLUTION
@@ -130,23 +24,71 @@ declare -A SETTING_DESCRIPTIONS=(
 resolve_alias() {
     local key="$1"
 
-    # Check if it's a known alias
-    if [[ -n "${SETTING_ALIASES[$key]+x}" ]]; then
-        echo "${SETTING_ALIASES[$key]}"
-        return 0
-    fi
+    case "$key" in
+        # Core Settings
+        theme)              echo "COMPOUND:THEME_PRESET+THEME_MODE"; return 0 ;;
+        mode)               echo "THEME_MODE"; return 0 ;;
+        light-dark)         echo "ENABLE_LIGHT_DARK_SWITCHING"; return 0 ;;
+        force-mode)         echo "FORCE_MODE"; return 0 ;;
 
-    # Check if it's already a raw variable name (in our validation set)
-    if [[ -n "${SETTING_VALUES[$key]+x}" ]]; then
-        echo "$key"
-        return 0
-    fi
+        # Visual Features
+        faces)              echo "ENABLE_ANTHROPOMORPHISING"; return 0 ;;
+        face-mode)          echo "TAVS_FACE_MODE"; return 0 ;;
+        face-position)      echo "FACE_POSITION"; return 0 ;;
+        compact-theme)      echo "TAVS_COMPACT_THEME"; return 0 ;;
+        backgrounds)        echo "ENABLE_STYLISH_BACKGROUNDS"; return 0 ;;
+        palette)            echo "ENABLE_PALETTE_THEMING"; return 0 ;;
 
-    # Check if it looks like a valid config variable (UPPER_CASE with underscores)
-    if [[ "$key" =~ ^[A-Z_]+$ ]]; then
-        echo "$key"
-        return 0
-    fi
+        # Title System
+        title-mode)         echo "TAVS_TITLE_MODE"; return 0 ;;
+        title-fallback)     echo "TAVS_TITLE_FALLBACK"; return 0 ;;
+        title-format)       echo "TAVS_TITLE_FORMAT"; return 0 ;;
+        session-icons)      echo "ENABLE_SESSION_ICONS"; return 0 ;;
+        agents-format)      echo "TAVS_AGENTS_FORMAT"; return 0 ;;
+
+        # Spinner (when title-mode=full)
+        spinner)            echo "TAVS_SPINNER_STYLE"; return 0 ;;
+        eye-mode)           echo "TAVS_SPINNER_EYE_MODE"; return 0 ;;
+        session-identity)   echo "TAVS_SESSION_IDENTITY"; return 0 ;;
+
+        # Advanced
+        mode-aware)         echo "ENABLE_MODE_AWARE_PROCESSING"; return 0 ;;
+        truecolor-override) echo "TRUECOLOR_MODE_OVERRIDE"; return 0 ;;
+        bell-permission)    echo "ENABLE_BELL_PERMISSION"; return 0 ;;
+        bell-complete)      echo "ENABLE_BELL_COMPLETE"; return 0 ;;
+        debug)              echo "DEBUG_ALL"; return 0 ;;
+    esac
+
+    # Check if it's a raw variable name we know about
+    case "$key" in
+        THEME_MODE|THEME_PRESET|ENABLE_LIGHT_DARK_SWITCHING|FORCE_MODE|\
+        ENABLE_ANTHROPOMORPHISING|TAVS_FACE_MODE|FACE_POSITION|\
+        TAVS_COMPACT_THEME|ENABLE_STYLISH_BACKGROUNDS|ENABLE_PALETTE_THEMING|\
+        TAVS_TITLE_MODE|TAVS_TITLE_FALLBACK|TAVS_TITLE_FORMAT|\
+        ENABLE_SESSION_ICONS|TAVS_AGENTS_FORMAT|\
+        TAVS_SPINNER_STYLE|TAVS_SPINNER_EYE_MODE|TAVS_SESSION_IDENTITY|\
+        ENABLE_MODE_AWARE_PROCESSING|TRUECOLOR_MODE_OVERRIDE|\
+        ENABLE_BELL_PERMISSION|ENABLE_BELL_COMPLETE|DEBUG_ALL)
+            echo "$key"
+            return 0
+            ;;
+    esac
+
+    # Accept raw variable names: must not contain hyphens (aliases use hyphens,
+    # variables use underscores), and must not be all-lowercase.
+    # This allows per-agent overrides like CLAUDE_DARK_BASE that aren't in
+    # the known list above.
+    case "$key" in
+        *-*) ;;  # Contains hyphens → unknown alias, fall through to return 1
+        *[abcdefghijklmnopqrstuvwxyz]*)
+            # Contains lowercase — not a standard config var, reject
+            ;;
+        ?*)
+            # Non-empty, no hyphens, no lowercase → treat as raw variable name
+            echo "$key"
+            return 0
+            ;;
+    esac
 
     return 1
 }
@@ -154,12 +96,58 @@ resolve_alias() {
 # Check if an alias is a compound alias
 is_compound_alias() {
     local resolved="$1"
-    [[ "$resolved" == COMPOUND:* ]]
+    case "$resolved" in
+        COMPOUND:*) return 0 ;;
+        *)          return 1 ;;
+    esac
 }
 
 # ==============================================================================
-# VALIDATION
+# VALID VALUES
 # ==============================================================================
+
+# Get valid values for a variable (space-separated string)
+# Returns empty string for free-form variables (no validation)
+get_valid_values() {
+    local var="$1"
+
+    case "$var" in
+        THEME_MODE)
+            echo "static dynamic preset" ;;
+        THEME_PRESET)
+            echo "catppuccin-frappe catppuccin-latte catppuccin-macchiato catppuccin-mocha nord dracula solarized-dark solarized-light tokyo-night" ;;
+        ENABLE_LIGHT_DARK_SWITCHING|ENABLE_ANTHROPOMORPHISING|\
+        ENABLE_STYLISH_BACKGROUNDS|ENABLE_SESSION_ICONS|\
+        TAVS_SESSION_IDENTITY|ENABLE_MODE_AWARE_PROCESSING|\
+        ENABLE_BELL_PERMISSION|ENABLE_BELL_COMPLETE)
+            echo "true false" ;;
+        FORCE_MODE)
+            echo "auto dark light" ;;
+        TAVS_FACE_MODE)
+            echo "standard compact" ;;
+        FACE_POSITION)
+            echo "before after" ;;
+        TAVS_COMPACT_THEME)
+            echo "semantic circles squares mixed" ;;
+        ENABLE_PALETTE_THEMING)
+            echo "false auto true" ;;
+        TAVS_TITLE_MODE)
+            echo "skip-processing prefix-only full off" ;;
+        TAVS_TITLE_FALLBACK)
+            echo "path session-path path-session session" ;;
+        TAVS_SPINNER_STYLE)
+            echo "braille circle block eye-animate none random" ;;
+        TAVS_SPINNER_EYE_MODE)
+            echo "sync opposite stagger clockwise counter mirror mirror_inv random" ;;
+        TRUECOLOR_MODE_OVERRIDE)
+            echo "off muted full" ;;
+        DEBUG_ALL)
+            echo "0 1" ;;
+        *)
+            # Free-form values (TAVS_TITLE_FORMAT, TAVS_AGENTS_FORMAT, etc.)
+            echo "" ;;
+    esac
+}
 
 # Validate a value for a variable
 # Returns: 0 if valid, 1 if invalid
@@ -167,9 +155,8 @@ validate_value() {
     local var="$1"
     local value="$2"
 
-    # Get valid values for this variable
-    local _valid_default=""
-    local valid_values="${SETTING_VALUES[$var]:-$_valid_default}"
+    local valid_values
+    valid_values=$(get_valid_values "$var")
 
     # If no validation list, accept any value
     [[ -z "$valid_values" ]] && return 0
@@ -183,33 +170,79 @@ validate_value() {
     return 1
 }
 
-# Get valid values for a variable (space-separated string)
-get_valid_values() {
-    local var="$1"
-    local _default=""
-    echo "${SETTING_VALUES[$var]:-$_default}"
-}
-
 # ==============================================================================
-# DESCRIPTION & LISTING
+# DESCRIPTIONS
 # ==============================================================================
 
 # Get description for a setting alias
 get_description() {
     local key="$1"
-    local _default="No description available"
-    echo "${SETTING_DESCRIPTIONS[$key]:-$_default}"
+
+    case "$key" in
+        theme)              echo "Color theme preset (nord, dracula, catppuccin-*, etc.)" ;;
+        mode)               echo "Operating mode (static, dynamic, or preset)" ;;
+        light-dark)         echo "Auto-detect system light/dark mode" ;;
+        force-mode)         echo "Force light or dark mode (auto, dark, light)" ;;
+        faces)              echo "Enable ASCII faces in titles" ;;
+        face-mode)          echo "Face display mode (standard or compact emoji)" ;;
+        face-position)      echo "Face position in title (before or after)" ;;
+        compact-theme)      echo "Compact face theme (semantic, circles, squares, mixed)" ;;
+        backgrounds)        echo "Enable stylish background images (iTerm2/Kitty)" ;;
+        palette)            echo "Terminal palette theming (false, auto, true)" ;;
+        title-mode)         echo "Title control mode (skip-processing, prefix-only, full, off)" ;;
+        title-fallback)     echo "Fallback when no user title (path, session-path, etc.)" ;;
+        title-format)       echo "Title composition template ({FACE} {STATUS_ICON} etc.)" ;;
+        session-icons)      echo "Unique animal emoji per terminal tab" ;;
+        agents-format)      echo "Subagent count format in title ({N} = count)" ;;
+        spinner)            echo "Processing spinner style (braille, circle, random, etc.)" ;;
+        eye-mode)           echo "Spinner eye sync mode (sync, opposite, mirror, etc.)" ;;
+        session-identity)   echo "Consistent visual identity per session" ;;
+        mode-aware)         echo "Permission mode-aware processing colors" ;;
+        truecolor-override) echo "TrueColor terminal behavior (off, muted, full)" ;;
+        bell-permission)    echo "Bell sound on permission requests" ;;
+        bell-complete)      echo "Bell sound on task completion" ;;
+        debug)              echo "Debug logging (0 or 1)" ;;
+        *)                  echo "No description available" ;;
+    esac
 }
+
+# ==============================================================================
+# LISTING
+# ==============================================================================
 
 # List all available aliases (sorted)
 list_aliases() {
-    printf "%s\n" "${!SETTING_ALIASES[@]}" | sort
+    cat <<'EOF'
+agents-format
+backgrounds
+bell-complete
+bell-permission
+compact-theme
+debug
+eye-mode
+face-mode
+face-position
+faces
+force-mode
+light-dark
+mode
+mode-aware
+palette
+session-icons
+session-identity
+spinner
+theme
+title-fallback
+title-format
+title-mode
+truecolor-override
+EOF
 }
 
 # List aliases with descriptions (for help output)
 list_aliases_with_descriptions() {
-    local alias
-    for alias in $(list_aliases); do
-        printf "  %-20s %s\n" "$alias" "$(get_description "$alias")"
-    done
+    local alias_name
+    while IFS= read -r alias_name; do
+        printf "  %-20s %s\n" "$alias_name" "$(get_description "$alias_name")"
+    done <<< "$(list_aliases)"
 }
