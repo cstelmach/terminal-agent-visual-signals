@@ -6,11 +6,11 @@
 # Designed for screen recording to showcase TAVS in a multi-agent environment.
 #
 # Usage:
-#   ./scripts/demo-showcase.sh                # 6 sessions, 90 seconds
-#   ./scripts/demo-showcase.sh --sessions 8   # 8 sessions
-#   ./scripts/demo-showcase.sh --duration 120 # 2 minutes
-#   ./scripts/demo-showcase.sh --backgrounds  # Enable background images
-#   ./scripts/demo-showcase.sh --terminal     # Auto-detect and use terminal API
+#   ./scripts/demo-multi-session.sh                # 6 sessions, 90 seconds
+#   ./scripts/demo-multi-session.sh --sessions 8   # 8 sessions
+#   ./scripts/demo-multi-session.sh --duration 120 # 2 minutes
+#   ./scripts/demo-multi-session.sh --backgrounds  # Enable background images
+#   ./scripts/demo-multi-session.sh --terminal     # Auto-detect and use terminal API
 #
 # Supports:
 #   - iTerm2: Opens split panes via AppleScript
@@ -29,7 +29,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-SESSION_SCRIPT="$SCRIPT_DIR/demo-session.sh"
+SESSION_SCRIPT="$SCRIPT_DIR/demo-simulate-session.sh"
 
 # ==============================================================================
 # CONFIGURATION
@@ -195,7 +195,7 @@ launch_manual() {
         local entry="${SESSIONS[$i]}"
         local persona="${entry%%:*}"
         local label="${entry#*:}"
-        printf "  ${DIM}Tab %d:${RESET}  ./scripts/demo-session.sh --persona %-10s --label %-16s --duration %s %s\n" \
+        printf "  ${DIM}Tab %d:${RESET}  ./scripts/demo-simulate-session.sh --persona %-10s --label %-16s --duration %s %s\n" \
             "$((i + 1))" "$persona" "\"$label\"" "$DURATION" "$BACKGROUNDS"
     done
 

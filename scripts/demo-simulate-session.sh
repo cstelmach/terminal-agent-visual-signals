@@ -6,11 +6,11 @@
 # Run 5-10 instances in separate terminal tabs for a multi-agent showcase.
 #
 # Usage:
-#   ./scripts/demo-session.sh                    # Random persona, 2 minutes
-#   ./scripts/demo-session.sh --persona coding   # Specific workflow
-#   ./scripts/demo-session.sh --duration 180     # 3-minute session
-#   ./scripts/demo-session.sh --backgrounds      # Enable background images
-#   ./scripts/demo-session.sh --label "Auth API" # Custom title label
+#   ./scripts/demo-simulate-session.sh                    # Random persona, 2 minutes
+#   ./scripts/demo-simulate-session.sh --persona coding   # Specific workflow
+#   ./scripts/demo-simulate-session.sh --duration 180     # 3-minute session
+#   ./scripts/demo-simulate-session.sh --backgrounds      # Enable background images
+#   ./scripts/demo-simulate-session.sh --label "Auth API" # Custom title label
 #
 # Personas:
 #   coding    — Long processing bursts, occasional permissions, some subagents
@@ -22,12 +22,12 @@
 # Multi-session recording:
 #   Open 5-10 terminal tabs, run in each with different personas:
 #
-#   Tab 1:  ./scripts/demo-session.sh --persona coding --label "Auth API"
-#   Tab 2:  ./scripts/demo-session.sh --persona research --label "Docs"
-#   Tab 3:  ./scripts/demo-session.sh --persona review --label "PR #42"
-#   Tab 4:  ./scripts/demo-session.sh --persona debug --label "Fix crash"
-#   Tab 5:  ./scripts/demo-session.sh --persona coding --label "Tests"
-#   Tab 6:  ./scripts/demo-session.sh --persona refactor --label "Cleanup"
+#   Tab 1:  ./scripts/demo-simulate-session.sh --persona coding --label "Auth API"
+#   Tab 2:  ./scripts/demo-simulate-session.sh --persona research --label "Docs"
+#   Tab 3:  ./scripts/demo-simulate-session.sh --persona review --label "PR #42"
+#   Tab 4:  ./scripts/demo-simulate-session.sh --persona debug --label "Fix crash"
+#   Tab 5:  ./scripts/demo-simulate-session.sh --persona coding --label "Tests"
+#   Tab 6:  ./scripts/demo-simulate-session.sh --persona refactor --label "Cleanup"
 #
 #   Then screen-record the whole display (Cmd+Shift+5 or OBS).
 # ==============================================================================

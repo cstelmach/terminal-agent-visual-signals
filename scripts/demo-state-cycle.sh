@@ -6,13 +6,13 @@
 # recording tools (asciinema, native screen capture, OBS, etc.).
 #
 # Usage:
-#   ./scripts/demo.sh              Full showcase (~45 seconds)
-#   ./scripts/demo.sh --quick      Quick cycle (~15 seconds)
-#   ./scripts/demo.sh --states     States only, no intro text
+#   ./scripts/demo-state-cycle.sh              Full showcase (~45 seconds)
+#   ./scripts/demo-state-cycle.sh --quick      Quick cycle (~15 seconds)
+#   ./scripts/demo-state-cycle.sh --states     States only, no intro text
 #
 # See also:
-#   ./scripts/demo-session.sh      Realistic single-session simulator
-#   ./scripts/demo-showcase.sh     Multi-session launcher (5-10 tabs)
+#   ./scripts/demo-simulate-session.sh     Realistic single-session simulator
+#   ./scripts/demo-multi-session.sh        Multi-session launcher (5-10 tabs)
 # ==============================================================================
 
 set -euo pipefail
