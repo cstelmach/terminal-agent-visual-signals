@@ -1,284 +1,305 @@
 # TAVS - Terminal Agent Visual Signals
 
-> Visual terminal state indicators for Claude Code sessions using OSC escape sequences
-
-<!-- TODO: Add GIF demos after recording -->
-<!-- GIF 1: All States (terminals showing all colors) -->
-<!-- GIF 2: Graduated Idle Timer (purple fading through stages) -->
-<!-- GIF 3: Practical Usage (processing → permission → complete flow) -->
+> Visual terminal feedback for AI coding sessions — background colors, tab titles, and faces that show you what's happening at a glance.
 
 ## Why?
 
-When running multiple Claude Code sessions (12+ terminals side by side), you need to quickly identify which ones need attention. This hook system provides instant visual feedback through background colors, emoji indicators, and optional audible bells.
+When running multiple AI sessions (12+ terminals side by side), you need to instantly see which ones need attention. TAVS provides visual feedback through background colors, emoji indicators, animated faces, and optional audible bells.
 
-| State | Color | Emoji | Meaning |
-|-------|-------|-------|---------|
-| Permission | 🔴 Red | 🔴 | **Needs attention** — Approval required |
-| Processing | 🟠 Orange | 🟠 | **Working** — Claude is processing |
-| Idle | 🟣 Purple | 🟣→🕐 | **Idle** — Graduated fade over time |
-| Complete | 🟢 Green | 🟢 | **Done** — Task completed |
-| Compacting | 🔵 Teal | 🔄 | **Compacting** — Context being compressed |
+| State | Color | Icon | Meaning |
+|-------|-------|------|---------|
+| Processing | Orange | 🟠 | Agent is working |
+| Permission | Red | 🔴 | Needs your approval |
+| Complete | Green | 🟢 | Response finished |
+| Idle | Purple | 🟣 | Waiting for input (fades over time) |
+| Compacting | Teal | 🔄 | Context being compressed |
+| Subagent | Golden | 🔀 | Spawned a subagent |
+| Tool Error | Orange-Red | ❌ | Tool execution failed |
 
-## Features
+Works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex CLI**.
 
-- **Background color changes** based on Claude Code state
-- **Tab title prefixes** with emoji indicators
-- **Graduated idle timer** — Progressive color fade with stage indicators
-- **Audible bells** — Optional per-state audio notifications
-- **Multi-session support** — Works across concurrent Claude Code sessions
-- **State priority system** — Higher priority states (permission) protected from override
-- **Optimized performance** — Uses bash builtins, minimal subprocess spawning
-- **Configurable** — Enable/disable states, customize colors, adjust timing
+---
 
-## Compatible Terminals
+## Install
 
-This script uses standard OSC escape sequences supported by many modern terminals:
+### Plugin (Recommended — Claude Code)
 
-| Terminal | Background | Reset | Title | Status |
-|----------|-----------|-------|-------|--------|
-| **Ghostty** | ✅ | ✅ | ✅ | **Recommended** |
-| Kitty | ✅ | ✅ | ✅ | Supported |
-| WezTerm | ✅ | ✅ | ✅ | Supported |
-| iTerm2 | ✅ | ✅ | ✅ | Tested |
-| VS Code / Cursor | ✅ | ✅ | ✅ | Tested |
-| GNOME Terminal | ✅ | ✅ | ✅ | Supported |
-| Windows Terminal | ✅ | ✅ | ✅ | 2025+ |
-| Foot | ✅ | ✅ | ✅ | Supported |
-| Alacritty | ⚠️ | ⚠️ | ✅ | Untested |
-| macOS Terminal.app | ❌ | ❌ | ✅ | No OSC 11 |
-
-### Why Ghostty?
-
-[Ghostty](https://ghostty.org/) is recommended for Claude Code sessions because:
-
-- **Excellent performance** — GPU-accelerated rendering handles rapid output smoothly
-- **No flickering** — Unlike many terminals, Ghostty rarely exhibits the "flickering bug" that can occur with Claude Code's rapid screen updates
-- **Full OSC support** — Native support for OSC 11/111 background color changes
-
-**Test your terminal:**
 ```bash
-./test-terminal.sh
-```
-
-## Quick Start
-
-### Option 1: Plugin Install (Recommended)
-
-Install as a Claude Code plugin in two steps:
-
-**Step 1:** Add the marketplace (one-time setup)
-```bash
+# Add marketplace (one-time)
 claude plugin marketplace add cstelmach/terminal-agent-visual-signals
-```
 
-**Step 2:** Install the plugin
-```bash
+# Install
 claude plugin install tavs@terminal-agent-visual-signals
 ```
 
-Then enable the plugin via `/plugin` in Claude Code and restart.
+Then enable via `/plugin` in Claude Code and restart.
 
-> **Note:** Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. If you're on an older version, see [Workaround for Bug #14410](#workaround-for-bug-14410) below.
-
-### Option 2: Manual Install
-
-If you prefer manual setup or need to customize hooks:
-
-**1. Clone the repository:**
+### Other Agents
 
 ```bash
-git clone https://github.com/cstelmach/terminal-agent-visual-signals.git ~/.claude/hooks/terminal-agent-visual-signals
+# Gemini CLI (full support, 8 events)
+./tavs install gemini
+
+# Codex CLI (limited, 1 event)
+./tavs install codex
+
+# OpenCode (npm package — see docs/)
+cd src/agents/opencode && npm install && npm run build
 ```
 
-**2. Make executable:**
+### Manual Install (Claude Code)
 
 ```bash
+# Clone
+git clone https://github.com/cstelmach/terminal-agent-visual-signals.git \
+    ~/.claude/hooks/terminal-agent-visual-signals
+
+# Make executable
 chmod +x ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
 ```
 
-**3. Add hooks to `~/.claude/settings.json`:**
-
-Copy the hook configuration from `hooks/hooks.json` in this repository into your `settings.json`. Replace `${CLAUDE_PLUGIN_ROOT}` with the full path to the cloned repo.
-
-**4. Restart Claude Code**
-
-The visual signals will activate on your next session.
+Copy hooks from `hooks/hooks.json` into `~/.claude/settings.json`, replacing
+`${CLAUDE_PLUGIN_ROOT}` with the full clone path. Restart Claude Code.
 
 ---
 
-## Quick Disable (Environment Variable)
+## Configuration — Three Ways
 
-Temporarily disable visual signals without changing configuration:
+TAVS works in three tiers. Pick the one that fits you.
+
+### 1. Just Use the Defaults
+
+**Do nothing.** After installing, TAVS works immediately with sensible defaults:
+
+- Catppuccin Frappe dark theme (muted, professional colors)
+- ASCII faces in tab titles: `Ǝ[• •]E 🟠 ~/project`
+- Background color changes per state
+- Session icons (unique animal emoji per tab)
+- Mode-aware processing (subtle color shift in plan mode)
+
+This is enough for most users. The colors are designed to be noticeable but not
+distracting — subtle tints that blend with your terminal background.
+
+**Check what you're running:**
+```bash
+./tavs status
+```
+
+### 2. Change a Setting
+
+One command to tweak anything. No files to edit.
+
+**Switch theme:**
+```bash
+./tavs set theme nord           # Arctic blue palette
+./tavs set theme dracula        # Vibrant dark theme
+./tavs set theme tokyo-night    # City lights aesthetic
+```
+
+**Switch face mode:**
+```bash
+./tavs set face-mode compact    # Emoji eyes: Ǝ[🟧 +2]E instead of Ǝ[• •]E 🟠 +2
+```
+
+**Turn faces off:**
+```bash
+./tavs set faces off            # Colors only, no faces in titles
+```
+
+**Control titles:**
+```bash
+./tavs set title-mode full      # TAVS owns all titles with animated spinners
+./tavs set title-mode off       # No title changes, colors only
+```
+
+**See all available settings:**
+```bash
+./tavs set                      # Lists all 23 settings with descriptions
+```
+
+**Interactive picker** — omit the value to choose from a menu:
+```bash
+./tavs set theme                # Shows all 9 themes → pick one
+./tavs set spinner              # Shows all spinner styles → pick one
+```
+
+**Preview your changes:**
+```bash
+./tavs status                   # Visual summary with color swatches
+./tavs status --colors          # Just the color preview
+```
+
+### 3. Customize Everything
+
+For full control over all 65+ settings, use the interactive wizard:
 
 ```bash
-# Disable for a single session
-TAVS_STATUS=false claude
-
-# Disable for all sessions in current terminal
-export TAVS_STATUS=false
-
-# Re-enable
-unset TAVS_STATUS
-# or
-export TAVS_STATUS=true
+./tavs wizard
 ```
 
-Recognized disabled values (case-insensitive): `false`, `0`, `off`, `no`, `disabled`
+This walks you through 7 steps:
 
-Useful for presentations, screen sharing, or when you need a "quiet" terminal.
+**Step 1 — Operating Mode**
+Choose how colors are determined:
+- `static` — Fixed colors from defaults (simplest)
+- `dynamic` — Query your terminal's current background, compute matching colors
+- `preset` — Use a named theme (Nord, Dracula, etc.)
 
----
-
-## Graduated Idle Timer
-
-When Claude enters idle state, the terminal progressively fades through stages instead of showing a static color. This provides a visual sense of how long Claude has been waiting.
-
-```
-Stage 0 → Stage 1 → Stage 2 → Stage 3 → Stage 4 → Stage 5 (reset)
-  🟣        🟣        🟣        🟣        🟣      (clear)
- dark     fading...                              default
-purple                                          background
+**Step 2 — Theme Preset** (if you chose `preset`)
+Pick from 9 built-in themes. Each includes dark colors, light colors, and a 16-color
+ANSI palette. Preview them first:
+```bash
+./tavs theme --preview          # Side-by-side color swatches for all themes
 ```
 
-### Configuration
+**Step 3 — Light/Dark Mode**
+- Auto-detect your system appearance (macOS dark mode → dark colors)
+- Or force a specific mode
+
+**Step 4 — ASCII Faces**
+Enable/disable the character faces in titles. Choose standard text eyes or
+compact emoji eyes:
+```
+Standard:  Ǝ[• •]E 🟠 +2 🦊 ~/project
+Compact:   Ǝ[🟧 +2]E 🦊 ~/project
+```
+Compact mode embeds the status icon and subagent count directly into the face.
+
+**Step 5 — Background Images** (iTerm2/Kitty only)
+Use images instead of solid colors for state backgrounds.
+
+**Step 6 — Terminal Titles**
+Four modes:
+
+| Mode | What happens |
+|------|-------------|
+| `skip-processing` | (Default) TAVS handles non-processing states, Claude handles processing |
+| `prefix-only` | Adds face + status to your existing tab name |
+| `full` | TAVS owns all titles with animated spinner eyes |
+| `off` | No title changes at all |
+
+For `full` mode, choose a spinner style (braille, circle, block, eye-animate) and
+eye sync mode (sync, opposite, mirror, stagger).
+
+**Step 7 — Palette Theming**
+Optionally modify your terminal's 16-color ANSI palette to match the theme. This
+affects `ls` colors, `git status`, shell prompts, etc.
+
+#### Direct Config Editing
+
+After the wizard (or instead of it), you can edit the config file directly:
 
 ```bash
-# Enable/disable stage indicators in title (emoji progression)
-ENABLE_IDLE_STAGE_INDICATORS=true
-
-# Colors for each stage (final stage = "reset" returns to terminal default)
-IDLE_COLORS=("#443147" "#423148" "#3f3248" "#3a3348" "#373348" "reset")
-
-# Emojis for each stage (can use clock faces for time indication)
-IDLE_STATUS_ICONS=("🟣" "🟣" "🟣" "🟣" "🟣" "")        # Subtle
-# IDLE_STATUS_ICONS=("🕐" "🕑" "🕒" "🕓" "🕔" "")      # Clock progression
-
-# Duration per stage (seconds) - total idle time = sum of all durations
-IDLE_STAGE_DURATIONS=(180 180 180 180 180 180)  # 18 minutes total
-
-# How often timer checks for stage transitions
-# Must be <= shortest stage duration for smooth transitions
-IDLE_CHECK_INTERVAL=60  # Check every minute
+./tavs config edit              # Opens ~/.tavs/user.conf in your $EDITOR
 ```
 
-**Testing configuration:**
-```bash
-# Quick testing (5 seconds per stage, 30 seconds total)
-IDLE_STAGE_DURATIONS=(5 5 5 5 5 5)
-IDLE_CHECK_INTERVAL=2
-```
-
----
-
-## Bell Configuration
-
-Optional audible notifications for specific states. Useful for getting attention when working on other tasks.
+The config file is organized into 5 sections with inline documentation.
+Every setting is commented with valid values and what it does.
 
 ```bash
-# Enable/disable bell per state
-BELL_ON_PROCESSING=false
-BELL_ON_PERMISSION=true     # Alert: Claude needs permission
-BELL_ON_COMPLETE=true       # Alert: Claude finished responding
-BELL_ON_IDLE=false
-BELL_ON_COMPACTING=false
-BELL_ON_RESET=false
-```
-
-**Note:** Bells work best with terminals that support audio notifications. Some terminals may need configuration to enable sound.
-
----
-
-## Configuration Reference
-
-Edit `~/.tavs/user.conf` (or `src/config/defaults.conf` for defaults) to customize:
-
-### Feature Toggles
-
-```bash
-ENABLE_BACKGROUND_CHANGE=true    # Change terminal background color
-ENABLE_TITLE_PREFIX=true         # Add emoji prefix to terminal title
-
-# Per-state enable/disable
-ENABLE_PROCESSING=true
-ENABLE_PERMISSION=true
-ENABLE_COMPLETE=true
-ENABLE_IDLE=true
-ENABLE_COMPACTING=true
-```
-
-### Colors
-
-Default colors are muted tints designed for the [Catppuccin Frappe](https://github.com/catppuccin/catppuccin) dark theme. They blend subtly with the background while remaining distinguishable:
-
-```bash
-COLOR_PROCESSING="#473D2F"   # Muted orange
-COLOR_PERMISSION="#4A2021"   # Muted red
-COLOR_COMPLETE="#473046"     # Muted purple-green
-COLOR_IDLE="#473046"         # Muted purple
-COLOR_COMPACTING="#2B4645"   # Muted teal
-```
-
-> **Tip:** If using a different theme, adjust colors to complement your terminal's background. The goal is subtle tinting, not jarring color changes.
-
-### Status Icons
-
-```bash
-STATUS_ICON_PROCESSING="🟠"
-STATUS_ICON_PERMISSION="🔴"
-STATUS_ICON_COMPLETE="🟢"
-STATUS_ICON_IDLE="🟣"
-STATUS_ICON_COMPACTING="🔄"
-```
-
-### Alternative Color Themes
-
-**Brighter colors (more noticeable):**
-```bash
-COLOR_PROCESSING="#5C4A28"
-COLOR_PERMISSION="#5C2828"
-COLOR_COMPLETE="#285C3D"
-COLOR_IDLE="#4A285C"
-COLOR_COMPACTING="#28525C"
-```
-
-**Light theme compatible:**
-```bash
-COLOR_PROCESSING="#FFF3CD"
-COLOR_PERMISSION="#F8D7DA"
-COLOR_COMPLETE="#D4EDDA"
-COLOR_IDLE="#E2D9F3"
-COLOR_COMPACTING="#D1ECF1"
+./tavs config validate          # Check for typos or invalid values
+./tavs config show              # Print current config
+./tavs config reset             # Backup and start fresh
 ```
 
 ---
 
-## Manual Testing
+## Available Themes
+
+All themes include dark colors, light colors, and a 16-color ANSI palette.
+
+| Theme | Style |
+|-------|-------|
+| `catppuccin-frappe` | Muted, subdued dark (default) |
+| `catppuccin-latte` | Warm, light pastels |
+| `catppuccin-macchiato` | Medium contrast dark |
+| `catppuccin-mocha` | The darkest Catppuccin |
+| `nord` | Arctic blue palette |
+| `dracula` | Vibrant high-contrast dark |
+| `solarized-dark` | Precision colors for readability |
+| `solarized-light` | Light variant of Solarized |
+| `tokyo-night` | Inspired by Tokyo city lights |
 
 ```bash
-# Test each state
-./src/core/trigger.sh processing     # 🟠 Orange
-./src/core/trigger.sh permission     # 🔴 Red
-./src/core/trigger.sh complete       # 🟢 Green
-./src/core/trigger.sh idle           # 🟣 Purple (starts timer)
-./src/core/trigger.sh compacting     # 🔄 Teal
-./src/core/trigger.sh subagent-start # 🔀 Golden-Yellow
-./src/core/trigger.sh tool_error     # ❌ Orange-Red
-./src/core/trigger.sh reset          # Default background
+./tavs theme                    # List all with descriptions
+./tavs theme --preview          # Color swatches for each
+./tavs set theme nord           # Apply one
 ```
+
+---
+
+## Compatible Terminals
+
+| Terminal | Background | Titles | Images | Status |
+|----------|-----------|--------|--------|--------|
+| **Ghostty** | ✅ | ✅ | ❌ | **Recommended** |
+| Kitty | ✅ | ✅ | ✅ | Full support |
+| iTerm2 | ✅ | ✅ | ✅ | Full support |
+| WezTerm | ✅ | ✅ | ❌ | Supported |
+| VS Code / Cursor | ✅ | ✅ | ❌ | Tested |
+| GNOME Terminal | ✅ | ✅ | ❌ | Supported |
+| Windows Terminal | ✅ | ✅ | ❌ | 2025+ |
+| Foot | ✅ | ✅ | ❌ | Supported |
+| Alacritty | ⚠️ | ✅ | ❌ | Untested |
+| macOS Terminal.app | ❌ | ✅ | ❌ | No OSC 11 |
+
+**Test your terminal:**
+```bash
+./tavs test --terminal          # Show capabilities
+./tavs test                     # Full 8-state visual cycle
+./tavs test --quick             # Quick 3-state test
+```
+
+### Ghostty Users
+
+Ghostty's shell integration manages tab titles, which conflicts with TAVS titles.
+Add to your Ghostty config:
+
+```ini
+# ~/Library/Application Support/com.mitchellh.ghostty/config
+shell-integration-features = no-title
+```
+
+This only disables title management — cursor shapes and other integrations stay active.
+
+---
+
+## Quick Disable
+
+Temporarily disable without changing configuration:
+
+```bash
+TAVS_STATUS=false claude        # Single session
+export TAVS_STATUS=false        # All sessions in current terminal
+unset TAVS_STATUS               # Re-enable
+```
+
+---
+
+## Migrating from v2
+
+If you have an existing `~/.tavs/user.conf` from before v3:
+
+```bash
+./tavs migrate                  # Detects old config, backs up, migrates
+```
+
+Your settings are preserved — the migration reorganizes the file into the new
+5-section v3 format while keeping your values intact.
 
 ---
 
 ## How It Works
 
-### OSC Escape Sequences
+TAVS uses [OSC escape sequences](https://invisible-island.net/xterm/ctlseqs/ctlseqs.html)
+sent directly to the TTY device (`/dev/ttysXXX`), bypassing stdout capture:
 
 | Sequence | Purpose |
 |----------|---------|
 | `OSC 11` | Set terminal background color |
 | `OSC 111` | Reset background to default |
+| `OSC 4` | Modify 16-color ANSI palette (optional) |
 | `OSC 0` | Set window/tab title |
-
-These are sent directly to the TTY device (`/dev/ttysXXX`) to bypass Claude Code's stdout capture.
 
 ### Hook Event Flow
 
@@ -293,29 +314,34 @@ PermissionRequest → permission (red)
     ↓
 User approves → PostToolUse → processing (orange)
     ↓
-Stop → complete (green)
+Stop → complete (green) → idle timer starts
     ↓
-60+ sec idle → Notification → idle (purple, starts graduated timer)
-    ↓
-Stage transitions every N seconds → color fades → reset
+60+ sec idle → graduated purple fade → reset
 ```
 
-### State Priority System
+### State Priority
 
-Higher priority states are protected from being overwritten for a brief period:
+Higher priority states are protected from being overwritten:
 
 | State | Priority | Notes |
 |-------|----------|-------|
-| Permission | 100 | Highest - never overwritten |
+| Permission | 100 | Never overwritten |
 | Idle | 90 | Protected during idle |
-| Compacting | 50 | Medium priority |
+| Compacting | 50 | Medium |
 | Processing | 30 | Common state |
 | Complete | 20 | Brief flash |
 | Reset | 10 | Lowest |
 
-### Multi-Session Support
+---
 
-A consolidated state file (`/tmp/claude-visual-signals.state`) tracks all active sessions by their TTY identifier. Each session maintains its own state independently.
+## Supported Platforms
+
+| Platform | Support | Events | Install |
+|----------|---------|--------|---------|
+| Claude Code | Full | 14 hooks | Plugin marketplace |
+| Gemini CLI | Full | 8 events | `./tavs install gemini` |
+| OpenCode | Good | 4 events | npm package |
+| Codex CLI | Limited | 1 event | `./tavs install codex` |
 
 ---
 
@@ -323,94 +349,27 @@ A consolidated state file (`/tmp/claude-visual-signals.state`) tracks all active
 
 ### Colors not appearing
 
-1. **Test your terminal** — Run `./test-terminal.sh` to verify OSC support
-2. **Check the script path** — Ensure paths in `settings.json` match your install location
-3. **Test manually** — Run `./src/core/trigger.sh processing`
-4. **Check TTY detection** — The script needs to find the parent process TTY
+1. Run `./tavs test --terminal` to verify OSC support
+2. Run `./src/core/trigger.sh processing` to test manually
+3. Check that paths in `settings.json` match your install location
+4. Ensure the script is executable: `chmod +x src/core/trigger.sh`
 
-### Permission errors
+### Titles not updating
 
-```bash
-# Ensure script is executable
-chmod +x ~/.claude/hooks/terminal-agent-visual-signals/src/core/trigger.sh
-```
-
-### Title not updating
-
+- **Ghostty**: Add `shell-integration-features = no-title` to config
+- **Full mode**: Add `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` to Claude Code env
 - Some window managers may override OSC 0 titles
-- Try toggling `ENABLE_TITLE_PREFIX` in the script
 
 ### Idle timer not progressing
 
-- Ensure `IDLE_CHECK_INTERVAL` is less than or equal to the shortest `IDLE_STAGE_DURATIONS` value
-- For testing, use short durations (5s) with matching check interval (2-5s)
+- Ensure `IDLE_CHECK_INTERVAL` <= shortest `IDLE_STAGE_DURATIONS` value
+- For testing, use short durations: `IDLE_STAGE_DURATIONS=(5 5 5 5 5 5)`
 
 ### Hooks not firing
 
-- Ensure `settings.json` is valid JSON (use a JSON validator)
+- Validate `settings.json` is valid JSON
 - Check Claude Code logs for hook errors
-- For fastest response, place these hooks **first** in each hook array
-
----
-
-## Workaround for Bug #14410
-
-Due to [Claude Code bug #14410](https://github.com/anthropics/claude-code/issues/14410), plugin hooks defined in `hooks/hooks.json` may be matched but never executed. This affects all hook types when installed via the plugin system.
-
-### Symptoms
-
-- Plugin installs successfully
-- Visual signals don't appear
-- No errors in Claude Code logs
-
-### Solution
-
-Run the setup script to create a version-independent symlink and add hooks directly to `settings.json`:
-
-**Step 1:** Run the setup script (after plugin install)
-```bash
-# Find and run the setup script from the plugin cache
-bash ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/setup-hooks-workaround.sh --install
-```
-
-This creates:
-- A stable symlink at `~/.claude/hooks/tavs-current/`
-- A session-start script that auto-updates the symlink when the plugin version changes
-
-**Step 2:** Copy the hooks output to `~/.claude/settings.json`
-
-The script prints the exact JSON to add. Merge these hooks with your existing `settings.json` hooks, placing the visual signal hooks **first** in each array for fastest response.
-
-**Step 3:** Restart Claude Code
-
-### How It Works
-
-```
-SessionStart hook runs
-    ↓
-Checks if symlink points to current plugin version
-    ↓
-Updates symlink if version changed (plugin update)
-    ↓
-Calls reset script
-    ↓
-All other hooks use the stable symlink path
-```
-
-**Benefits:**
-- **Version-independent** — Symlink auto-updates when plugin updates
-- **One-time setup** — No manual intervention needed after plugin updates
-- **Easy removal** — When bug is fixed, run `--uninstall`
-
-### Removing the Workaround
-
-When Claude Code bug #14410 is fixed:
-
-```bash
-bash ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/setup-hooks-workaround.sh --uninstall
-```
-
-Then remove the visual signal hooks from your `settings.json`. The native plugin hooks will take over.
+- Place TAVS hooks **first** in each hook array for fastest response
 
 ---
 
@@ -418,53 +377,51 @@ Then remove the visual signal hooks from your `settings.json`. The native plugin
 
 Optimized using bash builtins to minimize subprocess spawning:
 
-| Operation | Before | After |
-|-----------|--------|-------|
-| Get parent PID | `ps -o ppid=` | `$PPID` built-in |
-| Remove spaces | `\| tr -d ' '` | `${var// /}` |
-| Count slashes | `echo \| tr \| wc \| tr` | `${cwd//[!\/]/}` |
-| basename/dirname | External commands | Parameter expansion |
-| Elapsed time | `$(date +%s)` | `$SECONDS` built-in |
-| Function returns | `$(func)` subshell | Global variable |
+| Operation | Method |
+|-----------|--------|
+| Parent PID | `$PPID` built-in |
+| String manipulation | Parameter expansion (`${var// /}`) |
+| Elapsed time | `$SECONDS` built-in |
+| Function returns | Global variable (no subshell) |
 
-**Result:** Timer worker spawns ~1-2 external processes per iteration vs ~6-8 previously.
+All hooks run asynchronously with timeouts (5s processing, 10s idle/complete).
 
 ---
 
 ## Requirements
 
 - A [compatible terminal](#compatible-terminals) with OSC 11/111 support
-- [Claude Code](https://claude.ai/code) CLI
 - Bash 3.2+ (macOS default works)
 - macOS or Linux
+- Optional: [fzf](https://github.com/junegunn/fzf) for interactive pickers
 
 ---
 
 ## Security
 
-This script sanitizes `$PWD` before writing to the terminal to prevent [terminal escape sequence injection](https://dgl.cx/2023/09/ansi-terminal-security).
+Path values are sanitized before writing to the terminal to prevent
+[terminal escape sequence injection](https://dgl.cx/2023/09/ansi-terminal-security).
+All ASCII control characters (0x00-0x1F, 0x7F) are stripped while preserving Unicode.
 
-**Threat model:** On Unix, directory names can contain escape bytes (0x1B). A malicious directory name could inject OSC sequences to manipulate clipboard (OSC 52) or spoof UI.
-
-**Mitigation:** The `sanitize_for_terminal()` function strips all ASCII control characters (0x00-0x1F, 0x7F) while preserving Unicode for international path support.
+Config input is validated — variable names are restricted to `[A-Za-z0-9_]`, values
+are escaped before writing, and command names are validated against allowlists.
 
 ---
 
 ## Contributing
 
-Issues and PRs welcome! If you've tested on additional terminals or have alternative color schemes to share, please contribute.
+Issues and PRs welcome at [github.com/cstelmach/terminal-agent-visual-signals](https://github.com/cstelmach/terminal-agent-visual-signals).
 
-**Ideas for contribution:**
+**Ideas:**
 - Additional color themes
 - Terminal compatibility reports
-- Alternative emoji sets
 - Integration with other AI coding tools
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE) file
+MIT — see [LICENSE](LICENSE)
 
 ---
 
