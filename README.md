@@ -1,5 +1,10 @@
 # TAVS - Terminal Agent Visual Signals
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-3.0.0-green.svg)](CHANGELOG.md)
+[![Bash 3.2+](https://img.shields.io/badge/bash-3.2%2B-orange.svg)](#requirements)
+[![Platforms](https://img.shields.io/badge/agents-Claude%20%7C%20Gemini%20%7C%20Codex%20%7C%20OpenCode-purple.svg)](#supported-platforms)
+
 > Visual terminal feedback for AI coding sessions — background colors, tab titles, and faces that show you what's happening at a glance.
 
 ## Why?
@@ -408,14 +413,38 @@ are escaped before writing, and command names are validated against allowlists.
 
 ---
 
+## FAQ
+
+**Will TAVS slow down my AI agent?**
+No. All hooks run asynchronously with timeouts (5s processing, 10s idle). TAVS uses
+bash builtins to minimize subprocess spawning. Your agent never waits for TAVS.
+
+**Can I use TAVS with multiple agents at the same time?**
+Yes. Each agent writes to its own TTY device, so signals don't interfere. You can run
+Claude Code, Gemini CLI, and Codex CLI simultaneously with independent visual feedback.
+
+**My terminal doesn't change colors — what's wrong?**
+Run `./tavs test --terminal` to check OSC support. If your terminal doesn't support
+OSC 11, background colors won't work (e.g., macOS Terminal.app). See
+[Troubleshooting](#troubleshooting).
+
+**Can I disable it temporarily without uninstalling?**
+Yes: `TAVS_STATUS=false claude` for a single session. See [Quick Disable](#quick-disable).
+
+**How do I create a custom theme?**
+Copy an existing theme from `src/themes/` (e.g., `nord.conf`), modify the colors,
+and set `THEME_PRESET` to your filename. See [CONTRIBUTING.md](CONTRIBUTING.md#adding-themes).
+
+---
+
 ## Contributing
 
-Issues and PRs welcome at [github.com/cstelmach/terminal-agent-visual-signals](https://github.com/cstelmach/terminal-agent-visual-signals).
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
 
-**Ideas:**
-- Additional color themes
-- Terminal compatibility reports
-- Integration with other AI coding tools
+- Reporting bugs and requesting features
+- Adding themes, terminals, or agent support
+- Code style (Bash 3.2 compatibility)
+- Testing and commit conventions
 
 ---
 
@@ -427,4 +456,6 @@ MIT — see [LICENSE](LICENSE)
 
 ## Credits
 
-Created for the Claude Code community. Share your setups on [r/ClaudeAI](https://reddit.com/r/ClaudeAI)!
+Created for the AI coding community. Feedback and setups welcome on
+[r/ClaudeAI](https://reddit.com/r/ClaudeAI) and
+[GitHub Discussions](https://github.com/cstelmach/terminal-agent-visual-signals/discussions).
