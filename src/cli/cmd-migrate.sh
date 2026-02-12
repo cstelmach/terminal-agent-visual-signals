@@ -63,7 +63,7 @@ EOF
         [[ "$line" == *"="* ]] || continue
 
         settings+=("$line")
-        ((setting_count++))
+        setting_count=$((setting_count + 1))
     done < "$TAVS_USER_CONFIG"
 
     if [[ $setting_count -eq 0 ]]; then
@@ -75,6 +75,9 @@ EOF
 
     # Step 2: Backup old config
     local backup="${TAVS_USER_CONFIG}.v2.bak"
+    if [[ -f "$backup" ]]; then
+        backup="${backup}.$(date +%Y%m%d-%H%M%S)"
+    fi
     cp "$TAVS_USER_CONFIG" "$backup"
     echo "  Backup: $backup"
 
@@ -128,7 +131,7 @@ HEADER
                 # Append to end of file
                 echo "${var}=${value}" >> "$TAVS_USER_CONFIG"
             fi
-            ((applied++))
+            applied=$((applied + 1))
         fi
     done
 

@@ -129,6 +129,10 @@ _config_validate() {
         [[ "$var" =~ ^[[:space:]]*# ]] && continue
         [[ -z "$var" ]] && continue
 
+        # Strip leading/trailing whitespace from var
+        var="${var#"${var%%[![:space:]]*}"}"
+        var="${var%"${var##*[![:space:]]}"}"
+
         # Strip quotes from value
         value="${value%\"}"
         value="${value#\"}"
@@ -139,7 +143,7 @@ _config_validate() {
         if [[ -n "$valid_values" ]]; then
             if ! validate_value "$var" "$value"; then
                 echo "  ERROR: $var=\"$value\" — valid: $valid_values"
-                ((errors++))
+                errors=$((errors + 1))
             fi
         fi
     done < "$TAVS_USER_CONFIG"

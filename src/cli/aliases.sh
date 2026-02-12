@@ -74,21 +74,14 @@ resolve_alias() {
             ;;
     esac
 
-    # Accept raw variable names: must not contain hyphens (aliases use hyphens,
-    # variables use underscores), and must not be all-lowercase.
-    # This allows per-agent overrides like CLAUDE_DARK_BASE that aren't in
-    # the known list above.
-    case "$key" in
-        *-*) ;;  # Contains hyphens → unknown alias, fall through to return 1
-        *[abcdefghijklmnopqrstuvwxyz]*)
-            # Contains lowercase — not a standard config var, reject
-            ;;
-        ?*)
-            # Non-empty, no hyphens, no lowercase → treat as raw variable name
-            echo "$key"
-            return 0
-            ;;
-    esac
+    # Accept raw variable names: must contain ONLY uppercase letters, digits,
+    # and underscores. This rejects shell metacharacters ($, `, (, ), ;, etc.)
+    # that could cause injection via eval in get_config_value.
+    local _sanitized="${key//[A-Za-z0-9_]/}"
+    if [[ -z "$_sanitized" && -n "$key" ]]; then
+        echo "$key"
+        return 0
+    fi
 
     return 1
 }
