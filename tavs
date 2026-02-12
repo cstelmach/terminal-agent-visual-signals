@@ -1,0 +1,129 @@
+#!/bin/bash
+# ==============================================================================
+# TAVS - Terminal Agent Visual Signals — CLI Tool
+# ==============================================================================
+# Unified command-line interface for configuring and managing TAVS.
+#
+# Usage: tavs <command> [options]
+#
+# Three tiers of configuration:
+#   1. Zero Config  - Install plugin and go (works immediately)
+#   2. Quick Config - tavs set theme nord, tavs set faces off
+#   3. Full Control - tavs wizard, tavs config edit
+# ==============================================================================
+
+set -euo pipefail
+
+TAVS_VERSION="3.0.0"
+TAVS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLI_DIR="$TAVS_ROOT/src/cli"
+
+show_usage() {
+    cat <<'EOF'
+tavs - Terminal Agent Visual Signals CLI
+
+Usage: tavs <command> [options]
+
+Commands:
+  set <key> [value]     Set a configuration value (interactive if no value)
+  status                Show current configuration with visual preview
+  wizard                Run interactive configuration wizard
+  theme [name]          List or apply a theme preset
+  test [--quick]        Test visual signals in current terminal
+  migrate               Migrate old config to v3 format
+  config <action>       Manage configuration (show, edit, reset, validate)
+  install <agent>       Install TAVS for an agent (gemini, codex)
+  sync                  Sync source to plugin cache (developer tool)
+  help [command]        Show help for a command
+  version               Show version information
+
+Examples:
+  tavs set theme nord              Set theme to Nord preset
+  tavs set title-mode full         Enable full title control
+  tavs set faces off               Disable ASCII faces
+  tavs set spinner                 Interactive spinner picker
+  tavs status                      Show current config with preview
+  tavs wizard                      Run full configuration wizard
+  tavs theme --preview             Preview all theme colors
+  tavs install gemini              Install for Gemini CLI
+  tavs test --quick                Quick visual signal test
+
+See 'tavs help <command>' for more information on a specific command.
+EOF
+}
+
+# Ensure CLI directory exists
+if [[ ! -d "$CLI_DIR" ]]; then
+    echo "Error: CLI directory not found at $CLI_DIR" >&2
+    echo "Is TAVS installed correctly?" >&2
+    exit 1
+fi
+
+# Command dispatcher — lazy-load only the needed subcommand
+case "${1:-}" in
+    set)
+        shift
+        source "$CLI_DIR/cmd-set.sh"
+        cmd_set "$@"
+        ;;
+    status)
+        shift
+        source "$CLI_DIR/cmd-status.sh"
+        cmd_status "$@"
+        ;;
+    wizard)
+        shift
+        source "$CLI_DIR/cmd-wizard.sh"
+        cmd_wizard "$@"
+        ;;
+    theme)
+        shift
+        source "$CLI_DIR/cmd-theme.sh"
+        cmd_theme "$@"
+        ;;
+    test)
+        shift
+        source "$CLI_DIR/cmd-test.sh"
+        cmd_test "$@"
+        ;;
+    migrate)
+        shift
+        source "$CLI_DIR/cmd-migrate.sh"
+        cmd_migrate "$@"
+        ;;
+    config)
+        shift
+        source "$CLI_DIR/cmd-config.sh"
+        cmd_config "$@"
+        ;;
+    install)
+        shift
+        source "$CLI_DIR/cmd-install.sh"
+        cmd_install "$@"
+        ;;
+    sync)
+        shift
+        source "$CLI_DIR/cmd-sync.sh"
+        cmd_sync "$@"
+        ;;
+    help|-h|--help)
+        shift 2>/dev/null || true
+        if [[ -n "${1:-}" && -f "$CLI_DIR/cmd-${1}.sh" ]]; then
+            source "$CLI_DIR/cmd-${1}.sh"
+            "cmd_${1}" --help 2>/dev/null || show_usage
+        else
+            show_usage
+        fi
+        ;;
+    version|-v|--version)
+        echo "TAVS v${TAVS_VERSION}"
+        ;;
+    "")
+        show_usage
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'tavs help' for usage." >&2
+        exit 1
+        ;;
+esac
