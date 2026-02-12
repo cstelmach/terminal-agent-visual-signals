@@ -6,7 +6,7 @@
 # Part of the TAVS configuration wizard.
 #
 # Requires: configure-utilities.sh must be sourced before this file.
-# Requires: SCRIPT_DIR variable must be set by main configure.sh
+# Requires: TAVS_ROOT variable must be set by main configure.sh
 # Sets: SELECTED_PRESET, may change SELECTED_MODE to static if no presets found
 # ==============================================================================
 
@@ -24,10 +24,10 @@ select_theme_preset() {
 
     # Get available themes
     local themes=()
-    if [[ -d "$SCRIPT_DIR/src/themes" ]]; then
+    if [[ -d "$TAVS_ROOT/src/themes" ]]; then
         while IFS= read -r theme; do
             themes+=("$theme")
-        done < <(find "$SCRIPT_DIR/src/themes" -name "*.conf" -exec basename {} .conf \; | sort)
+        done < <(find "$TAVS_ROOT/src/themes" -name "*.conf" -exec basename {} .conf \; | sort)
     fi
 
     if [[ ${#themes[@]} -eq 0 ]]; then
@@ -40,7 +40,7 @@ select_theme_preset() {
     for theme in "${themes[@]}"; do
         # Get description from theme file if available
         local desc
-        desc=$(grep -m1 "^# Description:" "$SCRIPT_DIR/src/themes/${theme}.conf" 2>/dev/null | sed 's/# Description: //' || echo "")
+        desc=$(grep -m1 "^# Description:" "$TAVS_ROOT/src/themes/${theme}.conf" 2>/dev/null | sed 's/# Description: //' || echo "")
         echo -e "  ${YELLOW}$i)${NC} ${BOLD}$theme${NC}"
         [[ -n "$desc" ]] && print_info "$desc"
         ((i++))

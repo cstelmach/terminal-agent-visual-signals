@@ -7,13 +7,13 @@
   },
   "metadata": {
     "description": "Visual terminal state indicators for Claude Code sessions",
-    "version": "2.0.0"
+    "version": "3.0.0"
   },
   "plugins": [
     {
       "name": "tavs",
-      "description": "Changes terminal background color and tab title based on Claude Code state (processing, permission, idle, complete, compacting, subagent, tool_error)",
-      "version": "2.0.0",
+      "description": "Changes terminal background color and tab title based on Claude Code state (processing, permission, idle, complete, compacting, subagent, tool_error). Includes tavs CLI for quick configuration.",
+      "version": "3.0.0",
       "source": "./",
       "category": "productivity",
       "keywords": ["hooks", "terminal", "visual", "ghostty", "notifications", "osc", "background-color", "catppuccin"]

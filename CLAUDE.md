@@ -23,24 +23,26 @@ obsidian-view project PC17 --files
 ## Quick Start
 
 ```bash
-# Test visual signals manually
-./src/core/trigger.sh processing     # Orange
-./src/core/trigger.sh complete       # Green
-./src/core/trigger.sh subagent-start # Golden-Yellow (NEW)
-./src/core/trigger.sh tool_error     # Orange-Red (NEW)
-./src/core/trigger.sh reset          # Default
+# Configure with CLI (quick one-liners)
+./tavs set theme nord              # Apply Nord theme
+./tavs set title-mode full         # Full title control
+./tavs set faces off               # Disable ASCII faces
+./tavs status                      # Show current config with preview
+
+# Full interactive setup
+./tavs wizard
+
+# Test visual signals
+./tavs test --quick                # Quick 3-state test
+./tavs test                        # Full 8-state cycle
+./tavs test --terminal             # Show terminal capabilities
 
 # Quick disable (run without visual signals)
 TAVS_STATUS=false claude
 
-# Test terminal compatibility
-./test-terminal.sh
-
-# Install for Gemini CLI
-./install-gemini.sh
-
-# Install for Codex CLI (limited)
-./install-codex.sh
+# Install for other agents
+./tavs install gemini              # Gemini CLI
+./tavs install codex               # Codex CLI (limited)
 
 # Build OpenCode plugin
 cd src/agents/opencode && npm install && npm run build
@@ -53,9 +55,9 @@ cd src/agents/opencode && npm install && npm run build
 | Platform | Support | Installation |
 |----------|---------|--------------|
 | Claude Code | ✅ Full (14 hooks) | Plugin marketplace or manual |
-| Gemini CLI | ✅ Full (8 events) | `./install-gemini.sh` |
+| Gemini CLI | ✅ Full (8 events) | `./tavs install gemini` |
 | OpenCode | ✅ Good (4 events) | npm package |
-| Codex CLI | ⚠️ Limited (1 event) | `./install-codex.sh` |
+| Codex CLI | ⚠️ Limited (1 event) | `./tavs install codex` |
 
 ## Visual States
 
@@ -116,8 +118,10 @@ Set in `~/.tavs/user.conf`.
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
 | `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
-| `src/config/user.conf.template` | Template for user overrides (copy to ~/.tavs/) |
-| `configure.sh` | Interactive configuration wizard (includes title mode setup) |
+| `src/config/user.conf.template` | Template for user overrides (v3 format, organized sections) |
+| `tavs` | CLI entry point: `./tavs set`, `./tavs status`, `./tavs wizard`, etc. |
+| `src/cli/*.sh` | CLI subcommand implementations (set, status, theme, etc.) |
+| `src/wizard/configure.sh` | Interactive 7-step configuration wizard |
 | `hooks/hooks.json` | Claude Code plugin hooks (14 hook routes) |
 
 ## User Configuration
@@ -138,7 +142,9 @@ All user settings are stored in `~/.tavs/user.conf`:
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
 - Mode-aware colors: `CLAUDE_DARK_PROCESSING_PLAN`, `DEFAULT_LIGHT_PROCESSING_BYPASS`, etc.
 
-**Run `./configure.sh`** to set up interactively, or copy `src/config/user.conf.template` to `~/.tavs/user.conf` and edit directly.
+**Quick config:** `./tavs set theme nord`, `./tavs set faces off`
+**Full wizard:** `./tavs wizard` (interactive 7-step setup)
+**Manual edit:** Copy `src/config/user.conf.template` to `~/.tavs/user.conf` and edit directly.
 
 ---
 
@@ -173,7 +179,7 @@ Best for users who manually name their terminal tabs. TAVS adds a status prefix 
 **Example:** `My Project` becomes `Ǝ[• •]E 🟠 My Project` during processing.
 With active subagents: `Ǝ[⇆ ⇆]E 🔀 +2 My Project`
 
-1. Run `./configure.sh` and select "Prefix Only" in Step 6, OR
+1. Run `./tavs wizard` and select "Prefix Only" in Step 6, OR
 2. Add to `~/.tavs/user.conf`:
 ```bash
 TAVS_TITLE_MODE="prefix-only"
@@ -213,7 +219,7 @@ Each terminal tab gets a unique animal emoji from a pool of 25, persisting acros
 
 ### Enabling Full Title Mode
 
-1. Run `./configure.sh` and select "Full" in Step 6, OR
+1. Run `./tavs wizard` and select "Full" in Step 6, OR
 2. Add to `~/.tavs/user.conf`:
 ```bash
 TAVS_TITLE_MODE="full"
@@ -273,11 +279,11 @@ In compact mode, `{STATUS_ICON}` and `{AGENTS}` tokens are auto-suppressed since
 
 ## Development Notes
 
-### Plugin System (v2.0.0)
+### Plugin System (v3.0.0)
 
 Bug #14410 (plugin hooks not executing) was fixed in Claude Code v2.1.9. The plugin now works natively via the marketplace.
 
-**Current plugin version:** 2.0.0
+**Current plugin version:** 3.0.0
 
 ```bash
 # Install plugin
@@ -330,27 +336,21 @@ bash src/core/terminal-detection.sh test
 
 ### Deploy Changes to Plugin Cache
 
-**IMPORTANT:** After making code changes, you must update the plugin cache for Claude Code to use them.
+**IMPORTANT:** After making code changes, you must update the plugin cache for Claude Code to use them. User config changes (`~/.tavs/user.conf`) take effect immediately — no sync needed.
 
 ```bash
-# Quick update: Copy all core files to plugin cache
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+# Quick sync using tavs CLI
+./tavs sync
+
+# Or manual copy:
+CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0"
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
 echo "Plugin cache updated - submit a prompt to test"
 ```
 
-**Full update script:**
-```bash
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
-REPO="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
-cp "$REPO/src/core/"*.sh "$CACHE/src/core/"
-mkdir -p "$CACHE/src/config" && cp "$REPO/src/config/"*.conf "$CACHE/src/config/"
-cp "$REPO/src/agents/claude/trigger.sh" "$CACHE/src/agents/claude/"
-```
-
 **Key locations:**
-- Source repo: `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`
-- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/`
+- Source repo: `~/.claude/hooks/terminal-agent-visual-signals/`
+- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/`
 - User config: `~/.tavs/user.conf` (changes here work immediately)
 
 See [Development Testing](docs/reference/development-testing.md) for the full workflow.
@@ -484,7 +484,7 @@ All theme presets include 16-color ANSI palettes:
 - Solarized (Dark, Light)
 - Tokyo Night
 
-Select in `configure.sh` or set `THEME_PRESET` in user.conf.
+Select with `./tavs theme <name>` or set `THEME_PRESET` in user.conf.
 
 ---
 

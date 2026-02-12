@@ -19,7 +19,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Paths
-REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 CLAUDE_CONFIG_DIR="$HOME/.claude"
 GEMINI_CONFIG_DIR="$HOME/.gemini"
 CODEX_CONFIG_DIR="$HOME/.codex"

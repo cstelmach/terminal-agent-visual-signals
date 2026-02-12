@@ -20,7 +20,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Paths
-REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 GEMINI_CONFIG_DIR="$HOME/.gemini"
 SETTINGS_FILE="$GEMINI_CONFIG_DIR/settings.json"
 HOOKS_SOURCE="$REPO_ROOT/src/agents/gemini/hooks.json"

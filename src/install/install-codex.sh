@@ -20,7 +20,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Paths
-REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 CODEX_CONFIG_DIR="$HOME/.codex"
 CONFIG_FILE="$CODEX_CONFIG_DIR/config.toml"
 TRIGGER_SCRIPT="$REPO_ROOT/src/agents/codex/trigger.sh"

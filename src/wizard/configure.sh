@@ -19,14 +19,15 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TAVS_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 CONFIG_DIR="$HOME/.tavs"
 USER_CONFIG="$CONFIG_DIR/user.conf"
 
-# Source required modules
-source "$SCRIPT_DIR/src/core/themes.sh"
-source "$SCRIPT_DIR/src/core/theme-config-loader.sh"
+# Source required modules (relative to project root)
+source "$TAVS_ROOT/src/core/themes.sh"
+source "$TAVS_ROOT/src/core/theme-config-loader.sh"
 
-# Source configuration wizard modules
+# Source configuration wizard modules (same directory as this script)
 source "$SCRIPT_DIR/configure-utilities.sh"
 source "$SCRIPT_DIR/configure-step-operating-mode.sh"
 source "$SCRIPT_DIR/configure-step-theme-preset.sh"
@@ -80,7 +81,7 @@ show_preview() {
     # Load preview colors
     local preview_proc preview_perm preview_comp preview_idle
     if [[ "$SELECTED_MODE" == "preset" ]] && [[ -n "$SELECTED_PRESET" ]]; then
-        source "$SCRIPT_DIR/src/themes/${SELECTED_PRESET}.conf" 2>/dev/null || true
+        source "$TAVS_ROOT/src/themes/${SELECTED_PRESET}.conf" 2>/dev/null || true
         preview_proc="$DARK_PROCESSING"
         preview_perm="$DARK_PERMISSION"
         preview_comp="$DARK_COMPLETE"
@@ -296,8 +297,8 @@ show_help() {
 list_presets() {
     echo "Available theme presets:"
     echo ""
-    if [[ -d "$SCRIPT_DIR/src/themes" ]]; then
-        for conf in "$SCRIPT_DIR/src/themes"/*.conf; do
+    if [[ -d "$TAVS_ROOT/src/themes" ]]; then
+        for conf in "$TAVS_ROOT/src/themes"/*.conf; do
             local name
             name=$(basename "$conf" .conf)
             local desc
