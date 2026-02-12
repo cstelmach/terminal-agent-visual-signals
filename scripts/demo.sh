@@ -9,6 +9,10 @@
 #   ./scripts/demo.sh              Full showcase (~45 seconds)
 #   ./scripts/demo.sh --quick      Quick cycle (~15 seconds)
 #   ./scripts/demo.sh --states     States only, no intro text
+#
+# See also:
+#   ./scripts/demo-session.sh      Realistic single-session simulator
+#   ./scripts/demo-showcase.sh     Multi-session launcher (5-10 tabs)
 # ==============================================================================
 
 set -euo pipefail
