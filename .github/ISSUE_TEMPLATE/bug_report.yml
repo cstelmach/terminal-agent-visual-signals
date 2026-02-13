@@ -1,0 +1,90 @@
+name: Bug Report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please fill in the details below.
+
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal
+      description: "Which terminal are you using? (e.g., Ghostty, iTerm2, Kitty)"
+      placeholder: "Ghostty 1.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      placeholder: "macOS 15.3 / Ubuntu 24.04"
+    validations:
+      required: true
+
+  - type: input
+    id: agent
+    attributes:
+      label: AI Agent
+      description: "Which agent are you using TAVS with?"
+      placeholder: "Claude Code 2.2.0 / Gemini CLI / Codex CLI"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: TAVS Version
+      description: "Output of `./tavs version`"
+      placeholder: "3.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install Method
+      options:
+        - Plugin (marketplace)
+        - Manual (git clone)
+        - Gemini installer
+        - Codex installer
+        - OpenCode (npm)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: "Describe the bug. What did you expect to happen?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: "How can we reproduce the issue?"
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: terminal-test
+    attributes:
+      label: Terminal test output
+      description: "Output of `./tavs test --terminal` (if applicable)"
+      render: text
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: "Output of `./tavs config show` (if applicable)"
+      render: bash
