@@ -64,6 +64,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Validate numeric input
+if ! [[ "$DURATION" =~ ^[0-9]+$ ]]; then
+    echo "Error: --duration must be a positive integer." >&2
+    exit 1
+fi
+
 # ==============================================================================
 # PERSONA DEFINITIONS
 # ==============================================================================
@@ -88,6 +94,12 @@ weighted_random() {
         weight="${entry##*:}"
         total=$((total + weight))
     done
+
+    # Guard against zero total weight
+    if [[ $total -eq 0 ]]; then
+        echo "${items%% *}"
+        return
+    fi
 
     # Pick random point
     local roll=$(( RANDOM % total ))

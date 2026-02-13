@@ -14,8 +14,8 @@
 #
 # Supports:
 #   - iTerm2: Opens split panes via AppleScript
-#   - Ghostty: Opens new tabs
-#   - Other: Prints commands to run manually
+#   - tmux: Opens tiled panes in a new session
+#   - Other: Prints commands to run manually in separate tabs
 #
 # Recording tips:
 #   1. Arrange terminal windows/tabs before starting
@@ -53,6 +53,16 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
 done
+
+# Validate numeric inputs
+if ! [[ "$NUM_SESSIONS" =~ ^[0-9]+$ ]]; then
+    echo "Error: --sessions must be a positive integer." >&2
+    exit 1
+fi
+if ! [[ "$DURATION" =~ ^[0-9]+$ ]]; then
+    echo "Error: --duration must be a positive integer." >&2
+    exit 1
+fi
 
 # ==============================================================================
 # SESSION DEFINITIONS
@@ -145,7 +155,7 @@ tell application \"iTerm\"
     end tell
 end tell"
 
-    osascript -e "$script" 2>/dev/null
+    osascript -e "$script"
 }
 
 # ==============================================================================
