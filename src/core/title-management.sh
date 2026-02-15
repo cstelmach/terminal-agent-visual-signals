@@ -326,8 +326,11 @@ compose_title() {
     # Levels 1-2 resolved by _resolve_agent_variables() into TITLE_FORMAT_* / TITLE_FORMAT
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
     local _default_format='{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}'
+    # Normalize idle variants (idle_1, idle_2, ...) to base state "idle"
+    local _format_state="$state"
+    [[ "$_format_state" == idle_* ]] && _format_state="idle"
     local state_upper
-    state_upper=$(printf '%s' "$state" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+    state_upper=$(printf '%s' "$_format_state" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
 
     # Level 1: Agent-specific + state-specific (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
     local _agent_state_var="TITLE_FORMAT_${state_upper}"

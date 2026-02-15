@@ -234,7 +234,7 @@ load_context_data() {
     TAVS_CONTEXT_LINES_REM=""
 
     # Try bridge state file first (accurate, real-time)
-    if read_bridge_state; then
+    if read_bridge_state && [[ -n "$TAVS_CONTEXT_PCT" ]]; then
         return 0
     fi
 
@@ -294,19 +294,19 @@ _get_icon_from_array() {
 
     local index=$(( pct / step ))
 
-    # Determine array length via nameref-safe approach
-    local -n _arr="$array_name" 2>/dev/null
-    if [[ ${#_arr[@]} -eq 0 ]]; then
-        # Fallback for shells without nameref
+    # Get array length via eval (Bash 3.2 compatible — no nameref)
+    local arr_len
+    eval "arr_len=\${#${array_name}[@]}" 2>/dev/null
+    if [[ -z "$arr_len" || "$arr_len" -eq 0 ]]; then
         echo ""
         return
     fi
 
-    local max_index=$(( ${#_arr[@]} - 1 ))
+    local max_index=$(( arr_len - 1 ))
     [[ $index -gt $max_index ]] && index=$max_index
     [[ $index -lt 0 ]] && index=0
 
-    echo "${_arr[$index]}"
+    eval "echo \"\${${array_name}[$index]}\""
 }
 
 # Generate horizontal progress bar.
