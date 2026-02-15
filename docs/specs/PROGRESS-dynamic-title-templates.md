@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 0 Complete
+**Status:** Phase 1 Complete
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Status | Started | Completed | Notes |
 |-------|--------|---------|-----------|-------|
 | Phase 0: Git Worktree Setup | Complete | 2026-02-15 | 2026-02-15 | Pulled main (16 commits, v3.0.0), worktree at `../tavs-dynamic-titles` |
-| Phase 1: Context Data System | Not Started | | | |
+| Phase 1: Context Data System | Complete | 2026-02-15 | 2026-02-15 | TDD: 107/107 tests pass. All 10 token types verified. |
 | Phase 2: Per-State Title Format System | Not Started | | | |
 | Phase 3: StatusLine Bridge | Not Started | | | |
 | Phase 4: Transcript Fallback | Not Started | | | |
@@ -31,3 +31,20 @@
   is `tavs/3.0.0/`. Plan Phase 6 deploy commands need adjustment.
 - **Deviation:** `user.conf.template` is now 343 lines (was 463). Phase 5 will adapt.
 - Committed spec, plan, and progress files as initial feature branch commit
+
+### 2026-02-15 — Phase 1: Context Data System
+
+- **TDD approach:** Wrote 107-assertion test script first (RED), then implemented (GREEN)
+- Created `src/core/context-data.sh` (~280 lines) with:
+  - `load_context_data()`: bridge state → transcript fallback chain
+  - `read_bridge_state()`: safe key=value parsing (never source, per TAVS patterns)
+  - `resolve_context_token()`: 10 display token types (FOOD, FOOD_10, ICON, NUMBER,
+    PCT, BAR_H, BAR_HL, BAR_V, BAR_VM, BRAILLE)
+  - `_estimate_from_transcript()`: file-size estimation (stub, completed in Phase 4)
+  - Format helpers: `_format_cost`, `_format_duration`, `_format_lines`
+- Added ~110 lines to `defaults.conf`: per-state title formats, 6 icon arrays,
+  bridge config (max age, window size, bar chars)
+- Sourced in `trigger.sh` after `session-icon.sh`
+- Tests verify: all 21 food entries, all boundary values, edge cases (empty/stale/missing),
+  clamping (>100), format helpers, bridge state parsing with mock files
+- **No deviations** from plan
