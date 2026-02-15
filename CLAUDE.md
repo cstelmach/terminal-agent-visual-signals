@@ -298,6 +298,7 @@ TAVS_COMPACT_CONTEXT_STYLE="food"  # food, food_10, circle, block, block_max, br
 
 **Context eye** (right eye = context fill, enabled by default):
 - `Ǝ[🟧 🧀]E` (processing at 50%), `Ǝ[🟥 🍔]E` (permission at 85%)
+- Matching title token auto-suppressed (e.g., `{CONTEXT_FOOD}` hidden when food in eye)
 - Subagent count (`+N`) moves to `{AGENTS}` token outside face
 - No context data → graceful fallback to theme emoji (both eyes match)
 - Disabled (`TAVS_COMPACT_CONTEXT_EYE="false"`) → original behavior restored

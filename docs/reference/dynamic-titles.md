@@ -311,14 +311,38 @@ GEMINI_COMPACT_CONTEXT_STYLE="block"
 CODEX_COMPACT_CONTEXT_EYE="false"
 ```
 
-### Combining with Title Tokens
+### Automatic Token Suppression
 
-The context eye and title tokens are independent — combine them for maximum information:
+When context eye is active, the matching `{CONTEXT_*}` token is **automatically suppressed**
+from the title format to avoid showing the same info twice. For example, with `food` style
+the `{CONTEXT_FOOD}` token resolves to empty in the title — but `{CONTEXT_PCT}` still shows:
+
+```
+Default permission format: {FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}
+Context eye ON (food):     Ǝ[🟥 🧀]E 50% ~/proj     ← food only in eye, pct in title
+Context eye OFF:           Ǝ[🟥 🟥]E 🧀50% ~/proj   ← food in title (no eye)
+```
+
+Which token is suppressed depends on the style:
+
+| Style | Suppressed Token | Still Available |
+|-------|-----------------|-----------------|
+| `food` | `{CONTEXT_FOOD}` | `{CONTEXT_PCT}`, all others |
+| `percent` | `{CONTEXT_PCT}` | `{CONTEXT_FOOD}`, all others |
+| `block` | `{CONTEXT_BAR_V}` | `{CONTEXT_PCT}`, `{CONTEXT_FOOD}`, etc. |
+
+### Combining Eye + Title Tokens
+
+Use a different token in the title from what's in the eye for maximum info density:
 
 ```bash
-# Food in eye + percentage in title during permission
-TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
+# Food in eye + percentage in title (default behavior — no config needed)
 # Result: Ǝ[🟥 🍔]E 85% ~/proj  (food in eye + number in title)
+
+# Block in eye + food in title (custom)
+TAVS_COMPACT_CONTEXT_STYLE="block"
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}"
+# Result: Ǝ[🟥 ▇]E 🍔85% ~/proj  (block in eye + food in title)
 ```
 
 ---
@@ -329,7 +353,8 @@ TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
 |------|---------|
 | `src/core/context-data.sh` | Context data resolution, token resolvers, fallback chain |
 | `src/agents/claude/statusline-bridge.sh` | Silent StatusLine bridge (reads JSON, writes state) |
-| `src/core/title-management.sh` | `compose_title()` — per-state format selection + token substitution |
+| `src/core/title-management.sh` | `compose_title()` — per-state format selection, token substitution, context eye suppression |
+| `src/core/idle-worker-background.sh` | Background idle timer — uses `compose_title()` for idle/complete titles |
 | `src/core/theme-config-loader.sh` | `_resolve_agent_variables()` — agent-prefixed TITLE_FORMAT_* resolution |
 | `src/config/defaults.conf` | Icon arrays, per-state format defaults, bridge config |
 
