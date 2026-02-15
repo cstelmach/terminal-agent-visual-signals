@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 2 Complete
+**Status:** Phase 3 Complete
 
 ---
 
@@ -13,7 +13,7 @@
 | Phase 0: Git Worktree Setup | Complete | 2026-02-15 | 2026-02-15 | Pulled main (16 commits, v3.0.0), worktree at `../tavs-dynamic-titles` |
 | Phase 1: Context Data System | Complete | 2026-02-15 | 2026-02-15 | TDD: 107/107 tests pass. All 10 token types verified. |
 | Phase 2: Per-State Title Format System | Complete | 2026-02-15 | 2026-02-15 | TDD: 50/50 tests pass. 4-level fallback + 16 new tokens. |
-| Phase 3: StatusLine Bridge | Not Started | | | |
+| Phase 3: StatusLine Bridge | Complete | 2026-02-15 | 2026-02-15 | TDD: 47/47 tests pass. Bridge + transcript_path. |
 | Phase 4: Transcript Fallback | Not Started | | | |
 | Phase 5: Configuration & Documentation | Not Started | | | |
 | Phase 6: Deploy & Integration Test | Not Started | | | |
@@ -64,3 +64,24 @@
   empty token collapse, backward compatibility, all 8 state names, performance guard,
   full integration with mock bridge data
 - **No deviations** from plan
+
+### 2026-02-15 — Phase 3: StatusLine Bridge
+
+- **TDD approach:** Wrote 47-assertion test script first (RED: 25 fail, 10 pass), then implemented (GREEN: 47/47)
+- Created `src/agents/claude/statusline-bridge.sh` (109 lines):
+  - Silent data siphon — reads StatusLine JSON from stdin, writes state file, zero stdout
+  - Inlined `resolve_tty()` from `terminal-osc-sequences.sh:41-58` (avoids sourcing heavy deps)
+  - Inlined state dir logic from `spinner.sh:16-24`
+  - sed-based JSON extraction (no jq), filters literal "null" values
+  - Atomic mktemp+mv write to `~/.cache/tavs/context.{TTY_SAFE}`
+  - Test overrides: `_TAVS_BRIDGE_STATE_DIR`, `_TAVS_BRIDGE_TTY_SAFE`
+- Modified `src/agents/claude/trigger.sh` (+4 lines):
+  - Extracts `transcript_path` from hook JSON payload (same sed pattern as permission_mode)
+  - Exports as `TAVS_TRANSCRIPT_PATH` for context fallback estimation
+- Initial GREEN had 7 failures: sed `_extract` regex captured trailing `}`
+  from JSON values like `45}`. Fixed by adding `}` to exclusion set: `[^\",}]*`
+- Tests cover: bridge silence, field extraction, partial/null/empty JSON,
+  integration with `read_bridge_state()`, atomic write, state dir creation,
+  overwrite behavior, realistic Claude Code JSON, trigger.sh transcript_path
+- **No deviations** from plan
+- Cumulative: 204/204 tests pass (Phase 1: 107 + Phase 2: 50 + Phase 3: 47)
