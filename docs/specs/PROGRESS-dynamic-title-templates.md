@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 5 Complete
+**Status:** Phase 6 Complete — All Phases Done
 
 ---
 
@@ -16,7 +16,7 @@
 | Phase 3: StatusLine Bridge | Complete | 2026-02-15 | 2026-02-15 | TDD: 47/47 tests pass. Bridge + transcript_path. |
 | Phase 4: Transcript Fallback | Complete | 2026-02-15 | 2026-02-15 | TDD: 31/31 tests pass. Verified existing implementation. |
 | Phase 5: Configuration & Documentation | Complete | 2026-02-15 | 2026-02-15 | 164 lines added across 2 files. All 235 tests still pass. |
-| Phase 6: Deploy & Integration Test | Not Started | | | |
+| Phase 6: Deploy & Integration Test | Complete | 2026-02-15 | 2026-02-15 | 94/94 integration tests. 329 total. Deployed to plugin cache. |
 
 ---
 
@@ -123,3 +123,22 @@
 - All 235/235 tests pass (no regressions)
 - **No deviations** from plan
 - Commit: `e136cfd`
+
+### 2026-02-15 — Phase 6: Deploy & Integration Test
+
+- Deployed all 7 critical files to plugin cache (`~/.claude/plugins/cache/.../tavs/2.0.0/`)
+- Created `tests/test-integration-phase6.sh` (94 assertions across 8 test groups):
+  - Group 1: All modules load together (6 functions, 6 icon arrays)
+  - Group 2: All 8 trigger states produce valid titles (no unresolved tokens)
+  - Group 3: Full pipeline — bridge → state file → load_context_data → compose_title
+  - Group 4: Per-state format override for compacting state
+  - Group 5: Graceful degradation with no data (tokens collapse cleanly)
+  - Group 6: Stale bridge → transcript fallback (staleness check works)
+  - Group 7: Syntax validation of all 6 new/modified source files
+  - Group 8: Plugin cache deployment verification (files match worktree)
+- **One test bug found and fixed:** ICON token at 45% is `🟢` (index 4 in circles array),
+  not `🟡` (index 5 = 50%). Integer division `45/10=4` correctly maps to index 4.
+- All 329 tests pass: Phase 1 (107) + Phase 2 (50) + Phase 3 (47) + Phase 4 (31) + Phase 6 (94)
+- **No code changes** — only the test assertion was wrong, implementation was correct
+- **Deviation:** Cache path is `tavs/2.0.0/` (existing installation), not 3.0.0 as Phase 0 noted
+- Commits: `f8fd06e`
