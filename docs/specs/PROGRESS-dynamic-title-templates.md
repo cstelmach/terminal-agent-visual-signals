@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 1 Complete
+**Status:** Phase 2 Complete
 
 ---
 
@@ -12,7 +12,7 @@
 |-------|--------|---------|-----------|-------|
 | Phase 0: Git Worktree Setup | Complete | 2026-02-15 | 2026-02-15 | Pulled main (16 commits, v3.0.0), worktree at `../tavs-dynamic-titles` |
 | Phase 1: Context Data System | Complete | 2026-02-15 | 2026-02-15 | TDD: 107/107 tests pass. All 10 token types verified. |
-| Phase 2: Per-State Title Format System | Not Started | | | |
+| Phase 2: Per-State Title Format System | Complete | 2026-02-15 | 2026-02-15 | TDD: 50/50 tests pass. 4-level fallback + 16 new tokens. |
 | Phase 3: StatusLine Bridge | Not Started | | | |
 | Phase 4: Transcript Fallback | Not Started | | | |
 | Phase 5: Configuration & Documentation | Not Started | | | |
@@ -47,4 +47,20 @@
 - Sourced in `trigger.sh` after `session-icon.sh`
 - Tests verify: all 21 food entries, all boundary values, edge cases (empty/stale/missing),
   clamping (>100), format helpers, bridge state parsing with mock files
+- **No deviations** from plan
+
+### 2026-02-15 — Phase 2: Per-State Title Format System
+
+- **TDD approach:** Wrote 50-assertion test script first (RED: 37 fail, 13 pass), then implemented (GREEN: 50/50)
+- Modified `compose_title()` in `title-management.sh` (lines 321-384):
+  - 4-level format fallback: agent+state → agent → global+state → global
+  - State name normalization: lowercase → uppercase, hyphens → underscores
+  - Context token substitution (16 new tokens) guarded by string check
+  - `load_context_data()` called only when context/metadata tokens present in format
+- Modified `_resolve_agent_variables()` in `theme-config-loader.sh`:
+  - Added 9 new vars: TITLE_FORMAT + TITLE_FORMAT_{8 states}
+  - Enables {AGENT}_TITLE_FORMAT_{STATE} resolution (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
+- Tests cover: fallback chain priority, all 10 context token types + 5 metadata tokens,
+  empty token collapse, backward compatibility, all 8 state names, performance guard,
+  full integration with mock bridge data
 - **No deviations** from plan
