@@ -303,10 +303,14 @@ compose_title() {
         esac
     fi
 
-    # Get subagent count token (suppressed in compact mode — embedded as right eye)
-    # Same logic: only suppress when compact mode AND faces are actually rendering
+    # Get subagent count token
+    # In compact mode without context eye: suppressed (embedded as right eye)
+    # In compact mode WITH context eye: shown (right eye = context, not +N)
     local agents=""
-    if [[ "$_compact_with_face" != "true" ]]; then
+    local _context_eye_active=false
+    [[ "$_compact_with_face" == "true" && "${TAVS_COMPACT_CONTEXT_EYE:-true}" == "true" ]] && _context_eye_active=true
+
+    if [[ "$_compact_with_face" != "true" ]] || [[ "$_context_eye_active" == "true" ]]; then
         if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
             agents=$(get_subagent_title_suffix 2>/dev/null)
         fi

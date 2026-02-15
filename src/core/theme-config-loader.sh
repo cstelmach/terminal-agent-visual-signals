@@ -119,6 +119,9 @@ _resolve_agent_variables() {
         TITLE_FORMAT_PROCESSING TITLE_FORMAT_PERMISSION TITLE_FORMAT_COMPLETE
         TITLE_FORMAT_IDLE TITLE_FORMAT_COMPACTING TITLE_FORMAT_SUBAGENT
         TITLE_FORMAT_TOOL_ERROR TITLE_FORMAT_RESET
+        # Per-agent compact context eye overrides
+        COMPACT_CONTEXT_STYLE
+        COMPACT_CONTEXT_EYE
     )
 
     local var value

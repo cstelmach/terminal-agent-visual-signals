@@ -225,6 +225,13 @@ _estimate_from_file_size() {
 # Load context data from best available source.
 # Fallback chain: bridge state → transcript estimate → empty (tokens collapse)
 load_context_data() {
+    # Prevent re-reading state file in same trigger invocation.
+    # _TAVS_CONTEXT_LOADED is process-scoped (fresh per trigger.sh run).
+    # Needed because compact context eye calls this from get_compact_face(),
+    # and compose_title() may call it again for {CONTEXT_*} title tokens.
+    [[ -n "${_TAVS_CONTEXT_LOADED:-}" ]] && return 0
+    _TAVS_CONTEXT_LOADED=1
+
     # Reset globals
     TAVS_CONTEXT_PCT=""
     TAVS_CONTEXT_MODEL=""
