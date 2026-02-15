@@ -27,6 +27,11 @@ if [[ -n "$_tavs_stdin" ]]; then
     _mode=$(printf '%s' "$_tavs_stdin" | \
         sed -n 's/.*"permission_mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
     [[ -n "$_mode" ]] && export TAVS_PERMISSION_MODE="$_mode"
+
+    # Extract transcript_path for context fallback estimation
+    _transcript=$(printf '%s' "$_tavs_stdin" | \
+        sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    [[ -n "$_transcript" ]] && export TAVS_TRANSCRIPT_PATH="$_transcript"
 fi
 export TAVS_PERMISSION_MODE="${TAVS_PERMISSION_MODE:-default}"
 

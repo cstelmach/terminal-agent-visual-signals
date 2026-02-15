@@ -41,8 +41,8 @@ TAVS - Terminal Agent Visual Signals provides terminal state indicators for mult
 │  │  │ management.sh│ │ background  │ │ counter.sh       │ │    │
 │  │  │title-        │ │ .sh         │ │palette-mode-     │ │    │
 │  │  │ iterm2.sh    │ │             │ │ helpers.sh       │ │    │
-│  │  │session-      │ │             │ │                   │ │    │
-│  │  │ icon.sh      │ │             │ │                   │ │    │
+│  │  │session-      │ │             │ │context-          │ │    │
+│  │  │ icon.sh      │ │             │ │ data.sh          │ │    │
 │  │  └──────────────┘ └─────────────┘ └──────────────────┘ │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
@@ -117,12 +117,22 @@ Assigns a unique animal emoji per terminal tab for visual identification:
 
 ### title-management.sh (Title Composition)
 
-Title management with user override detection:
-- `compose_title()` - Build title from `{FACE}`, `{STATUS_ICON}`, `{AGENTS}`, `{SESSION_ICON}`, `{BASE}` tokens
+Title management with user override detection and per-state format selection:
+- `compose_title()` - Build title with 4-level format fallback (agent+state → agent → state → global), resolve 20 tokens including context/metadata
 - `set_tavs_title()` - Set title with full state tracking and user override respect
 - `reset_tavs_title()` - Reset title to base (remove TAVS prefix)
 - User title detection on iTerm2 via OSC 1337
 - Title lock/unlock for explicit user control
+
+### context-data.sh (Context Window Data)
+
+Context window data resolution for title tokens:
+- `load_context_data()` - Read bridge state file or estimate from transcript (3-tier fallback)
+- `read_bridge_state()` - Safe key=value parsing from `~/.cache/tavs/context.{TTY_SAFE}`
+- `resolve_context_token()` - Map token name to formatted value (10 display styles + 5 metadata)
+- Transcript estimation: parse JSONL for actual token usage counts
+- Per-agent context window sizing (200k Claude, 1M Gemini)
+- Icon array lookup for food emoji, color circles, bars, braille, number emoji
 
 ### subagent-counter.sh (Subagent Tracking)
 
@@ -159,6 +169,7 @@ Background process for graduated idle states:
 - **Features:** Full event coverage (14 hook routes across 11 event types)
 - **Events:** UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, Stop, Notification (permission_prompt, idle_prompt), SessionStart, SessionEnd, PreCompact (auto, manual), SubagentStart, SubagentStop
 - **Plugin:** Marketplace installation supported
+- **StatusLine Bridge:** Optional `statusline-bridge.sh` reads StatusLine JSON for context window data (silent data siphon — no stdout). See [Dynamic Titles](dynamic-titles.md).
 
 ### Gemini CLI (Shell Hooks)
 
@@ -213,9 +224,11 @@ Core trigger.sh:
   4. Apply palette if enabled (OSC 4)
   5. Send OSC 11 (background color)
   6. Check TAVS_TITLE_MODE (full/prefix-only/skip-processing/off)
-  7. Compose title with {FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE} tokens
-  8. Send OSC 0 (title)
-  9. Record state
+  7. Select per-state format (4-level fallback: agent+state → agent → state → global)
+  8. Load context data (bridge → transcript → empty)
+  9. Compose title with 20 tokens ({FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} ...)
+  10. Send OSC 0 (title)
+  11. Record state
        │
        ▼
 [Agent works, tools execute...]
@@ -276,6 +289,7 @@ Session Start (reset):
 
 ## Related
 
+- [Dynamic Titles](dynamic-titles.md) - Per-state title templates and context window tokens
 - [Agent Themes](agent-themes.md) - Per-agent face, color, and background customization
 - [Testing](testing.md) - How to test the visual signals
 - [Troubleshooting](../troubleshooting/overview.md) - Common issues

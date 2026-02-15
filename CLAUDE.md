@@ -114,9 +114,11 @@ Set in `~/.tavs/user.conf`.
 | `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
 | `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
 | `src/core/session-icon.sh` | Unique animal emoji per terminal tab (registry-based dedup) |
+| `src/core/context-data.sh` | Context window data resolution for title tokens |
 | `src/core/session-state.sh` | Session state tracking (current state, timer PID) |
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
 | `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
+| `src/agents/claude/statusline-bridge.sh` | Silent StatusLine bridge (context data siphon) |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
 | `src/config/user.conf.template` | Template for user overrides (v3 format, organized sections) |
 | `tavs` | CLI entry point: `./tavs set`, `./tavs status`, `./tavs wizard`, etc. |
@@ -141,6 +143,7 @@ All user settings are stored in `~/.tavs/user.conf`:
 - Per-agent overrides: `CLAUDE_DARK_BASE`, `GEMINI_FACES_PROCESSING`, etc.
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
 - Mode-aware colors: `CLAUDE_DARK_PROCESSING_PLAN`, `DEFAULT_LIGHT_PROCESSING_BYPASS`, etc.
+- Per-state title formats: `TAVS_TITLE_FORMAT_PERMISSION`, `CLAUDE_TITLE_FORMAT_PERMISSION`, etc.
 
 **Quick config:** `./tavs set theme nord`, `./tavs set faces off`
 **Full wizard:** `./tavs wizard` (interactive 7-step setup)
@@ -157,6 +160,7 @@ All user settings are stored in `~/.tavs/user.conf`:
 | [Palette Theming](docs/reference/palette-theming.md) | Optional 16-color ANSI palette modification for cohesive terminal theming. Explains OSC 4 sequences, TrueColor limitations, theme presets, and how to enable for Claude Code. | OSC-4, ANSI-palette, TrueColor, 256-color-mode | Enabling palette theming, understanding why colors don't change in TrueColor mode |
 | [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
 | [Development Testing](docs/reference/development-testing.md) | Workflow for testing code changes live. How to update the plugin cache, test locally, and see changes reflected in Claude Code immediately. | plugin-cache, live-testing, development-workflow | Making code changes, testing modifications, deploying to plugin cache |
+| [Dynamic Titles](docs/reference/dynamic-titles.md) | Per-state title templates with context window awareness. Covers the 4-level fallback chain, all 15 context/metadata tokens, StatusLine bridge setup, icon scale customization, and the data fallback chain (bridge → transcript → empty). | per-state-formats, context-tokens, StatusLine-bridge, icon-scales | Setting up context data in titles, customizing per-state formats, understanding the fallback chain, configuring the StatusLine bridge |
 | [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
 
 ---
@@ -201,7 +205,7 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 
 ### Title Format Tokens
 
-The `TAVS_TITLE_FORMAT` template supports these placeholders:
+The `TAVS_TITLE_FORMAT` template supports these core placeholders:
 
 | Token | Description | Example |
 |-------|-------------|---------|
@@ -211,11 +215,26 @@ The `TAVS_TITLE_FORMAT` template supports these placeholders:
 | `{SESSION_ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
 
-The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
-It only appears when subagents are active (count > 0).
+**15 additional context & metadata tokens** are available for per-state formats:
+`{CONTEXT_PCT}`, `{CONTEXT_FOOD}`, `{CONTEXT_ICON}`, `{CONTEXT_BAR_H}`, `{MODEL}`,
+`{COST}`, `{DURATION}`, `{LINES}`, `{MODE}`, and more. These require the StatusLine
+bridge for real-time data (falls back to transcript estimation, then empty).
+See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full token list.
 
+The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
 The `{SESSION_ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
-Each terminal tab gets a unique animal emoji from a pool of 25, persisting across `/clear`.
+
+### Per-State Title Formats
+
+Each trigger state can have its own format string via a 4-level fallback chain
+(agent+state → agent → state → global). By default, permission and idle states show
+food emoji + context percentage, compacting shows percentage only. Other states fall
+back to `TAVS_TITLE_FORMAT`.
+
+**Example:** During permission requests, the title shows `Ǝ[° °]E 🔴 🧀50% ~/proj`.
+
+See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full fallback
+chain, all default formats, configuration examples, and the StatusLine bridge setup guide.
 
 ### Enabling Full Title Mode
 
@@ -325,6 +344,15 @@ TAVS_PERMISSION_MODE=acceptEdits ./src/core/trigger.sh processing   # Barely war
 TAVS_PERMISSION_MODE=bypassPermissions ./src/core/trigger.sh processing  # Reddish
 ./src/core/trigger.sh reset
 
+# Test per-state title formats (context tokens)
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}" \
+  ./src/core/trigger.sh permission
+./src/core/trigger.sh reset
+
+# Test StatusLine bridge (silent — no output expected)
+echo '{"context_window":{"used_percentage":72},"model":{"display_name":"Opus"}}' \
+  | ./src/agents/claude/statusline-bridge.sh
+
 # Test palette theming (requires 256-color mode)
 ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
 ls --color=auto  # Check if ls colors match theme
@@ -343,54 +371,22 @@ bash src/core/terminal-detection.sh test
 ./tavs sync
 
 # Or manual copy:
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0"
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
 echo "Plugin cache updated - submit a prompt to test"
 ```
 
 **Key locations:**
 - Source repo: `~/.claude/hooks/terminal-agent-visual-signals/`
-- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/`
+- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/`
 - User config: `~/.tavs/user.conf` (changes here work immediately)
 
 See [Development Testing](docs/reference/development-testing.md) for the full workflow.
 
 ### Terminal Compatibility
 
-| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) | Title Detection |
-|----------|-----------------|-------------|-------------------|-----------------|
-| Ghostty | ✅ | ✅ | ❌ | State file* |
-| iTerm2 | ✅ | ✅ | ✅ | OSC 1337 query |
-| Kitty | ✅ | ✅ | ❌** | State file |
-| WezTerm | ✅ | ✅ | ❌*** | State file |
-| Terminal.app | ❌ | ❌ | ❌ | State file |
-
-\* Ghostty requires `shell-integration-features = no-title` in config (see below).
-\** Kitty uses its own image protocol, not OSC 1337.
-\*** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
-
-**Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
-Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
-
-### Ghostty Shell Integration (Required for Titles)
-
-Ghostty's shell integration automatically manages tab titles, which conflicts with TAVS.
-**For TAVS title features to work**, you must disable Ghostty's title management.
-
-**Add to your Ghostty config:**
-```ini
-# macOS: ~/Library/Application Support/com.mitchellh.ghostty/config
-# Linux: ~/.config/ghostty/config
-
-shell-integration-features = no-title
-```
-
-This disables ONLY title management while keeping:
-- Cursor shape integration
-- Sudo wrapping
-- Other modern shell features
-
-**Without this setting:** Ghostty will overwrite TAVS titles after every command.
+See [Testing Reference](docs/reference/testing.md) for the full compatibility matrix and
+terminal-specific setup (including Ghostty `shell-integration-features = no-title`).
 
 ### Agent-Specific Face Themes
 

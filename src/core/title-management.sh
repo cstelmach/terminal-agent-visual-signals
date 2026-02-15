@@ -318,18 +318,70 @@ compose_title() {
         session_icon=$(get_session_icon 2>/dev/null)
     fi
 
-    # Compose using format template or default
+    # Compose using format template with 4-level fallback:
+    #   Level 1: {AGENT}_TITLE_FORMAT_{STATE} (agent+state specific)
+    #   Level 2: {AGENT}_TITLE_FORMAT          (agent-wide)
+    #   Level 3: TAVS_TITLE_FORMAT_{STATE}     (global per-state)
+    #   Level 4: TAVS_TITLE_FORMAT             (global default)
+    # Levels 1-2 resolved by _resolve_agent_variables() into TITLE_FORMAT_* / TITLE_FORMAT
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
-    local _default_format='{FACE} {STATUS_ICON} {AGENTS} {BASE}'
-    local format="${TAVS_TITLE_FORMAT:-$_default_format}"
+    local _default_format='{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}'
+    # Normalize idle variants (idle_1, idle_2, ...) to base state "idle"
+    local _format_state="$state"
+    [[ "$_format_state" == idle_* ]] && _format_state="idle"
+    local state_upper
+    state_upper=$(printf '%s' "$_format_state" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+
+    # Level 1: Agent-specific + state-specific (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
+    local _agent_state_var="TITLE_FORMAT_${state_upper}"
+    local format=""
+    eval "format=\${${_agent_state_var}:-}"
+
+    # Level 2: Agent-specific all-states (e.g., CLAUDE_TITLE_FORMAT)
+    [[ -z "$format" ]] && format="${TITLE_FORMAT:-}"
+
+    # Level 3: Global state-specific (e.g., TAVS_TITLE_FORMAT_PERMISSION)
+    if [[ -z "$format" ]]; then
+        eval "format=\${TAVS_TITLE_FORMAT_${state_upper}:-}"
+    fi
+
+    # Level 4: Global default (backward compatible)
+    [[ -z "$format" ]] && format="${TAVS_TITLE_FORMAT:-$_default_format}"
+
     local title="$format"
 
-    # Substitute placeholders
+    # Substitute existing placeholders
     title="${title//\{FACE\}/$face}"
     title="${title//\{STATUS_ICON\}/$status_icon}"
     title="${title//\{AGENTS\}/$agents}"
     title="${title//\{SESSION_ICON\}/$session_icon}"
     title="${title//\{BASE\}/$base_title}"
+
+    # Context & metadata tokens — only resolve when format contains them
+    # This guard avoids unnecessary work (load_context_data, subshells) for
+    # format strings that don't use these tokens.
+    if [[ "$title" == *"{CONTEXT_"* || "$title" == *"{MODEL}"* || \
+          "$title" == *"{COST}"* || "$title" == *"{DURATION}"* || \
+          "$title" == *"{LINES}"* || "$title" == *"{MODE}"* ]]; then
+        load_context_data  # From context-data.sh: bridge → transcript → empty
+        # Context display tokens (10 types)
+        title="${title//\{CONTEXT_PCT\}/$(resolve_context_token CONTEXT_PCT "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_FOOD\}/$(resolve_context_token CONTEXT_FOOD "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_FOOD_10\}/$(resolve_context_token CONTEXT_FOOD_10 "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_BAR_H\}/$(resolve_context_token CONTEXT_BAR_H "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_BAR_HL\}/$(resolve_context_token CONTEXT_BAR_HL "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_BAR_V\}/$(resolve_context_token CONTEXT_BAR_V "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_BAR_VM\}/$(resolve_context_token CONTEXT_BAR_VM "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_BRAILLE\}/$(resolve_context_token CONTEXT_BRAILLE "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_NUMBER\}/$(resolve_context_token CONTEXT_NUMBER "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_ICON\}/$(resolve_context_token CONTEXT_ICON "$TAVS_CONTEXT_PCT")}"
+        # Session metadata tokens
+        title="${title//\{MODEL\}/${TAVS_CONTEXT_MODEL:-}}"
+        title="${title//\{COST\}/$(_format_cost "${TAVS_CONTEXT_COST:-}")}"
+        title="${title//\{DURATION\}/$(_format_duration "${TAVS_CONTEXT_DURATION:-}")}"
+        title="${title//\{LINES\}/$(_format_lines "${TAVS_CONTEXT_LINES_ADD:-}")}"
+        title="${title//\{MODE\}/${TAVS_PERMISSION_MODE:-}}"
+    fi
 
     # Clean up multiple spaces and trim (use printf for safe string handling)
     title=$(printf '%s\n' "$title" | sed 's/  */ /g; s/^ *//; s/ *$//')

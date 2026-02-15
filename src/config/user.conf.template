@@ -113,6 +113,74 @@
 # Custom icon pool (override the default ~25 animals):
 # TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
 
+# ── Per-State Title Formats ────────────────────────────────────────────────
+# Different title templates for each trigger state. Empty = use TAVS_TITLE_FORMAT.
+#
+# Additional tokens available (require StatusLine bridge for real-time data):
+#   {CONTEXT_PCT}      Percentage number (e.g., 45%)
+#   {CONTEXT_FOOD}     Food emoji 21-stage (💧→🍫, 5% steps)
+#   {CONTEXT_FOOD_10}  Food emoji 11-stage (💧→🍫, 10% steps)
+#   {CONTEXT_ICON}     Color circle (⚪→🔵→🟢→🟡→🟠→🔴→⚫)
+#   {CONTEXT_BAR_H}    Horizontal bar 5-char (▓▓░░░)
+#   {CONTEXT_BAR_HL}   Horizontal bar 10-char (▓▓▓▓▓░░░░░)
+#   {CONTEXT_BAR_V}    Vertical block (▁▂▃▄▅▆▇█)
+#   {CONTEXT_BAR_VM}   Vertical + max outline (▄▒)
+#   {CONTEXT_BRAILLE}  Braille fill (⠀⠄⠤⠴⠶⠷⠿)
+#   {CONTEXT_NUMBER}   Number emoji (0️⃣ through 🔟)
+#   {MODEL}            Model display name (e.g., Opus)
+#   {COST}             Session cost (e.g., $0.42)
+#   {DURATION}         Session duration (e.g., 5m32s)
+#   {LINES}            Lines added (e.g., +156)
+#   {MODE}             Permission mode (e.g., plan) — always available
+#
+# TAVS_TITLE_FORMAT_PROCESSING="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {AGENTS} {SESSION_ICON} {BASE}"
+# TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}"
+# TAVS_TITLE_FORMAT_COMPLETE="{FACE} {STATUS_ICON} {COST} {SESSION_ICON} {BASE}"
+# TAVS_TITLE_FORMAT_COMPACTING="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
+# TAVS_TITLE_FORMAT_IDLE=""
+# TAVS_TITLE_FORMAT_SUBAGENT=""
+# TAVS_TITLE_FORMAT_TOOL_ERROR=""
+# TAVS_TITLE_FORMAT_RESET=""
+
+# ── Per-Agent Title Format Overrides ───────────────────────────────────────
+# Agent-specific title formats (highest priority in fallback chain):
+#   Level 1: {AGENT}_TITLE_FORMAT_{STATE}  (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
+#   Level 2: {AGENT}_TITLE_FORMAT          (e.g., CLAUDE_TITLE_FORMAT)
+#   Level 3: TAVS_TITLE_FORMAT_{STATE}     (global per-state, above)
+#   Level 4: TAVS_TITLE_FORMAT             (global default)
+#
+# CLAUDE_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {MODEL} {BASE}"
+# GEMINI_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+
+# ── Context Icon Customization ─────────────────────────────────────────────
+# Replace default food scale (21-stage, 5% steps):
+# TAVS_CONTEXT_FOOD_21=("💧" "🥬" "🥦" "🥒" "🥗" "🥝" "🥑" "🍋" "🍌" "🌽" "🧀" "🥨" "🍞" "🥪" "🌮" "🍕" "🌭" "🍔" "🍟" "🍩" "🍫")
+#
+# Replace color circles (11-stage, 10% steps):
+# TAVS_CONTEXT_CIRCLES_11=("⚪" "🔵" "🔵" "🟢" "🟢" "🟡" "🟠" "🟠" "🔴" "🔴" "⚫")
+#
+# Replace bar characters:
+# TAVS_CONTEXT_BAR_FILL="▓"
+# TAVS_CONTEXT_BAR_EMPTY="░"
+
+# ── StatusLine Bridge ──────────────────────────────────────────────────────
+# The bridge enables real-time context data in titles by reading Claude Code's
+# StatusLine JSON. Without it, TAVS estimates context % from transcript file size.
+#
+# Setup:
+#   1. Create ~/.claude/statusline.sh (or add to existing):
+#        #!/bin/bash
+#        input=$(cat)
+#        echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src/agents/claude/statusline-bridge.sh
+#        # Your statusline output below (optional):
+#        echo "$input" | jq -r '"[\(.model.display_name)] \(.context_window.used_percentage // 0)%"'
+#
+#   2. Add to ~/.claude/settings.json:
+#        "statusLine": { "command": "bash ~/.claude/statusline.sh" }
+#
+# Bridge staleness (seconds before data considered stale):
+# TAVS_CONTEXT_BRIDGE_MAX_AGE=30
+
 
 # ╔════════════════════════════════════════════════════════════════════════════╗
 # ║  SECTION 4: SPINNER (when TAVS_TITLE_MODE="full")                       ║

@@ -149,6 +149,71 @@ TAVS_TITLE_MODE=skip-processing ./src/core/trigger.sh processing
 ./src/core/trigger.sh reset
 ```
 
+### Test Per-State Title Formats
+
+```bash
+# Test custom permission format with context tokens
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}" \
+  ./src/core/trigger.sh permission
+# Title should show food emoji + percentage (if bridge data available)
+./src/core/trigger.sh reset
+
+# Test fallback chain (no per-state format → falls back to TAVS_TITLE_FORMAT)
+unset TAVS_TITLE_FORMAT_PERMISSION
+./src/core/trigger.sh permission
+# Should use the global TAVS_TITLE_FORMAT
+./src/core/trigger.sh reset
+
+# Test agent-specific override
+CLAUDE_TITLE_FORMAT_PERMISSION="{FACE} {CONTEXT_FOOD}{CONTEXT_PCT} {MODEL}" \
+  ./src/core/trigger.sh permission
+./src/core/trigger.sh reset
+```
+
+### Test Context Tokens
+
+```bash
+# Test with mock bridge data (create state file manually)
+STATE_DIR="${XDG_RUNTIME_DIR:-$HOME/.cache}/tavs"
+mkdir -p "$STATE_DIR"
+TTY_SAFE=$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ' | sed 's|^|/dev/|; s|/|_|g')
+cat > "$STATE_DIR/context.$TTY_SAFE" << EOF
+pct=50
+model=Opus
+cost=1.23
+duration=300000
+lines_add=42
+lines_rem=7
+ts=$(date +%s)
+EOF
+
+# Now trigger with per-state format that uses context tokens
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {CONTEXT_FOOD}{CONTEXT_PCT} {MODEL}" \
+  ./src/core/trigger.sh permission
+# Should show: Ǝ[° °]E 🧀50% Opus
+./src/core/trigger.sh reset
+
+# Clean up mock data
+rm "$STATE_DIR/context.$TTY_SAFE"
+```
+
+### Test StatusLine Bridge
+
+```bash
+# Bridge should produce zero stdout
+output=$(echo '{"context_window":{"used_percentage":72},"model":{"display_name":"Opus"},"cost":{"total_cost_usd":1.23,"total_duration_ms":300000,"total_lines_added":42,"total_lines_removed":7}}' \
+  | ./src/agents/claude/statusline-bridge.sh)
+[[ -z "$output" ]] && echo "PASS: bridge is silent" || echo "FAIL: produced output"
+
+# Verify state file was written
+cat ~/.cache/tavs/context.* 2>/dev/null
+# Should show: pct=72, model=Opus, cost=1.23, ts=...
+
+# Test with missing fields (graceful handling)
+echo '{"context_window":{}}' | ./src/agents/claude/statusline-bridge.sh
+# Should write state file with empty values, not crash
+```
+
 ### Test Agent Triggers
 
 ```bash
@@ -243,6 +308,13 @@ export DEBUG_ALL=1
 - [ ] Session icon assigned on reset (animal emoji in `~/.cache/tavs/`)
 - [ ] Session icon appears in tab title via `{SESSION_ICON}` token
 - [ ] Concurrent sessions get unique icons (registry dedup)
+- [ ] Per-state format applies for permission (food emoji + percentage)
+- [ ] Per-state format applies for compacting (percentage only)
+- [ ] Per-state format falls back to TAVS_TITLE_FORMAT when not set
+- [ ] StatusLine bridge produces zero stdout
+- [ ] Bridge writes state file to `~/.cache/tavs/context.{TTY_SAFE}`
+- [ ] Context tokens collapse silently when no data available
+- [ ] Transcript fallback estimates percentage from JSONL tokens
 
 ## Common Test Scenarios
 
@@ -300,36 +372,77 @@ End and start new session:
 - Subagent counter should be reset to 0
 - Session icon should be assigned (if `ENABLE_SESSION_ICONS=true`)
 
-## Terminal-Specific Tests
+## Terminal Compatibility
 
-### Ghostty (Recommended)
+| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) | Title Detection |
+|----------|-----------------|-------------|-------------------|-----------------|
+| Ghostty | ✅ | ✅ | ❌ | State file* |
+| iTerm2 | ✅ | ✅ | ✅ | OSC 1337 query |
+| Kitty | ✅ | ✅ | ❌** | State file |
+| WezTerm | ✅ | ✅ | ❌*** | State file |
+| Terminal.app | ❌ | ❌ | ❌ | State file |
+| VS Code | ❌ | ❌ | ❌ | State file |
 
-- OSC 4 (palette): ✅
-- OSC 11 (background): ✅
-- OSC 0 (title): ✅
-- Bell notifications: ✅
+\* Ghostty requires `shell-integration-features = no-title` (see below).
+\** Kitty uses its own image protocol, not OSC 1337.
+\*** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
+
+**Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
+Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
+
+### Ghostty Shell Integration (Required for Titles)
+
+Ghostty's shell integration automatically manages tab titles, which conflicts with TAVS.
+**For TAVS title features to work**, disable Ghostty's title management:
+
+```ini
+# macOS: ~/Library/Application Support/com.mitchellh.ghostty/config
+# Linux: ~/.config/ghostty/config
+
+shell-integration-features = no-title
+```
+
+This disables ONLY title management while keeping cursor shape integration, sudo
+wrapping, and other modern shell features.
+
+**Without this setting:** Ghostty will overwrite TAVS titles after every command.
 
 ### iTerm2
 
-- OSC 4: ✅
-- OSC 11: ✅
-- OSC 0: ✅
-- OSC 1337 (images): ✅
-- May need "Apps can change title" enabled
+- May need "Apps can change title" enabled in preferences
+- Background images require enabling "Background Image" in profile → Window
 
 ### VS Code Terminal
 
-- OSC 11: ❌ (no background support)
-- OSC 0: ✅ (title works)
+- No background color support (OSC 11)
+- Title works (OSC 0)
 - Test with title-only mode
 
-### Windows Terminal
+## Automated Test Suites
 
-- OSC 11: ✅
-- OSC 0: ✅
-- Works well on Windows
+The `tests/` directory contains automated test suites (bash scripts, no framework):
+
+| Suite | Tests | What It Covers |
+|-------|-------|----------------|
+| `tests/test-context-data.sh` | 107 | Context token resolvers, icon lookups, bar generation, edge cases |
+| `tests/test-title-formats.sh` | 50 | Per-state format selection, 4-level fallback chain, token substitution |
+| `tests/test-bridge.sh` | 47 | StatusLine bridge silence, atomic writes, JSON extraction |
+| `tests/test-transcript-fallback.sh` | 45 | Transcript estimation, JSONL parsing, per-agent window sizes |
+| `tests/test-integration.sh` | 94 | End-to-end: trigger → title output with context data |
+
+```bash
+# Run all test suites
+for t in tests/test-*.sh; do bash "$t"; done
+
+# Run a specific suite
+bash tests/test-context-data.sh
+
+# Run with verbose output
+DEBUG=1 bash tests/test-context-data.sh
+```
 
 ## Related
 
+- [Dynamic Titles](dynamic-titles.md) - Per-state title formats and context tokens
 - [Architecture](architecture.md) - How the system works
 - [Troubleshooting](../troubleshooting/overview.md) - When tests fail
