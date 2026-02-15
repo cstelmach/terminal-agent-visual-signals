@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 4 Complete
+**Status:** Phase 5 Complete
 
 ---
 
@@ -15,7 +15,7 @@
 | Phase 2: Per-State Title Format System | Complete | 2026-02-15 | 2026-02-15 | TDD: 50/50 tests pass. 4-level fallback + 16 new tokens. |
 | Phase 3: StatusLine Bridge | Complete | 2026-02-15 | 2026-02-15 | TDD: 47/47 tests pass. Bridge + transcript_path. |
 | Phase 4: Transcript Fallback | Complete | 2026-02-15 | 2026-02-15 | TDD: 31/31 tests pass. Verified existing implementation. |
-| Phase 5: Configuration & Documentation | Not Started | | | |
+| Phase 5: Configuration & Documentation | Complete | 2026-02-15 | 2026-02-15 | 164 lines added across 2 files. All 235 tests still pass. |
 | Phase 6: Deploy & Integration Test | Not Started | | | |
 
 ---
@@ -104,3 +104,22 @@
 - **No code changes needed** — Phase 1 implementation passed all 31 tests immediately
 - **No deviations** from plan
 - Cumulative: 235/235 tests pass (Phase 1: 107 + Phase 2: 50 + Phase 3: 47 + Phase 4: 31)
+
+### 2026-02-15 — Phase 5: Configuration & Documentation
+
+- Updated `src/config/user.conf.template` (+68 lines):
+  - Per-state title formats section with all 15 new token descriptions
+  - Per-agent title format overrides section with 4-level fallback chain
+  - Context icon customization section (copy-paste arrays for food and circles)
+  - StatusLine bridge setup section with step-by-step instructions
+  - Bridge staleness configuration
+- Updated `CLAUDE.md` (+96 lines):
+  - Key Files table: added `context-data.sh` and `statusline-bridge.sh`
+  - Variable naming convention: added per-state title format entry
+  - Title Format Tokens table: expanded from 5 to 20 tokens (all context + metadata)
+  - New "Per-State Title Formats" section: 4-level fallback chain with examples
+  - New "StatusLine Bridge" section: setup guide with shell script examples
+  - Testing commands: added per-state format and bridge test examples
+- All 235/235 tests pass (no regressions)
+- **No deviations** from plan
+- Commit: `e136cfd`
