@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 3 Complete
+**Status:** Phase 4 Complete
 
 ---
 
@@ -14,7 +14,7 @@
 | Phase 1: Context Data System | Complete | 2026-02-15 | 2026-02-15 | TDD: 107/107 tests pass. All 10 token types verified. |
 | Phase 2: Per-State Title Format System | Complete | 2026-02-15 | 2026-02-15 | TDD: 50/50 tests pass. 4-level fallback + 16 new tokens. |
 | Phase 3: StatusLine Bridge | Complete | 2026-02-15 | 2026-02-15 | TDD: 47/47 tests pass. Bridge + transcript_path. |
-| Phase 4: Transcript Fallback | Not Started | | | |
+| Phase 4: Transcript Fallback | Complete | 2026-02-15 | 2026-02-15 | TDD: 31/31 tests pass. Verified existing implementation. |
 | Phase 5: Configuration & Documentation | Not Started | | | |
 | Phase 6: Deploy & Integration Test | Not Started | | | |
 
@@ -85,3 +85,22 @@
   overwrite behavior, realistic Claude Code JSON, trigger.sh transcript_path
 - **No deviations** from plan
 - Cumulative: 204/204 tests pass (Phase 1: 107 + Phase 2: 50 + Phase 3: 47)
+
+### 2026-02-15 — Phase 4: Transcript Fallback
+
+- **Verification phase:** `_estimate_from_transcript()` was fully implemented in Phase 1 (not
+  a stub as plan anticipated). Phase 4 adds thorough TDD test coverage.
+- Created `tests/test-transcript-fallback.sh` (31 assertions):
+  - Correct percentage calculation: 350K→50%, 700K→100%, 35K→5%, 35B→0%
+  - Clamping: 1.4M file → clamps to 100% (not 200%)
+  - Custom context window: 350K with 1M window → 10%
+  - Graceful handling: missing file, empty file, empty path all return 1 without error
+  - Env var: uses `TAVS_TRANSCRIPT_PATH` when no argument given
+  - Isolation: only sets `TAVS_CONTEXT_PCT`, does NOT touch model/cost/duration/lines
+  - Fallback chain: load_context_data with no bridge → transcript → correct PCT
+  - Priority: bridge preferred over transcript when both available
+  - Stale bridge: stale bridge data skipped → transcript fallback used
+  - No data: both missing → all context vars empty, returns 1
+- **No code changes needed** — Phase 1 implementation passed all 31 tests immediately
+- **No deviations** from plan
+- Cumulative: 235/235 tests pass (Phase 1: 107 + Phase 2: 50 + Phase 3: 47 + Phase 4: 31)
