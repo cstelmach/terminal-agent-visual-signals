@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-compact-context-eye.md`
 **Plan:** `docs/specs/PLAN-compact-context-eye.md`
-**Status:** In Progress — Phase 3
+**Status:** Complete — All Phases Done
 
 ---
 
@@ -13,7 +13,7 @@
 | Phase 0: Git Worktree Setup | Complete | 2026-02-15 | 2026-02-15 | Commit cd7723c |
 | Phase 1: Core Implementation | Complete | 2026-02-15 | 2026-02-15 | Commit a7a3868 — 5 files, 82 lines |
 | Phase 2: Documentation | Complete | 2026-02-15 | 2026-02-15 | Commit ce561d6 — 3 files, 159 lines |
-| Phase 3: Deploy & Test | Not Started | | | |
+| Phase 3: Deploy & Test | Complete | 2026-02-15 | 2026-02-15 | Plugin cache synced, 25 tests pass |
 
 ---
 
@@ -49,3 +49,19 @@
   per-agent faces, subagent displacement, token suppression matrix, customization guide (96 lines)
 - All 3 files under 500 lines (444, 495, 340)
 - Committed (ce561d6)
+
+### 2026-02-15 — Phase 3: Deploy & Integration Test
+- Deployed to plugin cache via `./tavs sync`
+- Verified all 8 context styles at 50% produce correct right eye
+- Verified em dash reset across all 4 themes (semantic, circles, squares, mixed)
+- Verified no-data fallback → graceful degradation to theme emoji
+- Verified context eye disabled → exact old behavior (theme pair in both eyes)
+- Verified squares is new default theme in defaults.conf
+- Verified edge cases: 0% = 💧, 100% = 🍫
+- Verified all 8 trigger states produce valid two-signal faces
+- Verified token suppression logic (3 paths: ON/OFF/standard)
+- Verified `_TAVS_CONTEXT_LOADED` guard prevents double-loading
+- Verified `compose_title()` produces correct titles with context data
+- Verified OSC sequences fire correctly for live trigger tests
+- Note: user.conf override of TAVS_COMPACT_THEME="semantic" confirmed — user prefs take priority
+- 25 verification checks passed, 0 real failures
