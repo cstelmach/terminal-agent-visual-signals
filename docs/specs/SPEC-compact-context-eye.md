@@ -52,13 +52,12 @@ fallback) from the Dynamic Title Templates feature.
 | Goal | Success Criterion | Priority |
 |------|-------------------|----------|
 | Context in right eye | Right eye shows context fill indicator (food, circle, block, etc.) during all non-reset states | Must Have |
-| 9 style options | food, food_10, circle, square, block, block_max, braille, number, percent all work | Must Have |
+| 8 style options | food, food_10, circle, block, block_max, braille, number, percent all work | Must Have |
 | Auto-enable in compact mode | Context eye on by default when `TAVS_FACE_MODE="compact"` | Must Have |
 | Graceful fallback | When no context data available, right eye shows theme status emoji | Must Have |
 | Subagent count un-suppressed | `{AGENTS}` token appears outside face when context eye active | Must Have |
 | Em dash reset face | Reset state shows `Ǝ[— —]E` across all themes | Must Have |
 | Default theme change | `TAVS_COMPACT_THEME` defaults to `"squares"` (was `"semantic"`) | Must Have |
-| New squares context array | `TAVS_CONTEXT_SQUARES_11` — square emoji gradient for context | Must Have |
 | Per-agent overrides | `CLAUDE_COMPACT_CONTEXT_STYLE`, `GEMINI_COMPACT_CONTEXT_EYE`, etc. | Should Have |
 | User can disable | `TAVS_COMPACT_CONTEXT_EYE="false"` restores original behavior exactly | Must Have |
 | Full customizability | All icon arrays, bar characters, and style choices exposed to user.conf | Must Have |
@@ -176,7 +175,7 @@ The face becomes a **two-channel dashboard**:
    → YES: Resolve via TAVS_COMPACT_CONTEXT_STYLE mapping
           food → resolve_context_token("CONTEXT_FOOD", pct)
           circle → resolve_context_token("CONTEXT_ICON", pct)
-          square → resolve_context_token("CONTEXT_SQUARE", pct)
+          (square was removed — blends with squares theme left eye)
           block → resolve_context_token("CONTEXT_BAR_V", pct)
           block_max → resolve_context_token("CONTEXT_BAR_VM", pct)
           braille → resolve_context_token("CONTEXT_BRAILLE", pct)
@@ -438,13 +437,13 @@ Un-suppress `{AGENTS}` token when context eye is active:
 
 Add double-load guard:
 - `_TAVS_CONTEXT_LOADED` flag prevents re-reading state file in same invocation
-- Add `CONTEXT_SQUARE` to `resolve_context_token()` case statement (line 268)
+- ~~Add `CONTEXT_SQUARE` to `resolve_context_token()` case statement~~ (removed — square style dropped)
 
 **1d. `src/config/defaults.conf`**
 
 - Change `TAVS_COMPACT_THEME` default from `"semantic"` to `"squares"` (line 284)
 - Add new settings: `TAVS_COMPACT_CONTEXT_EYE="true"`, `TAVS_COMPACT_CONTEXT_STYLE="food"`
-- Add new array: `TAVS_CONTEXT_SQUARES_11` (11-stage square gradient)
+- ~~Add new array: `TAVS_CONTEXT_SQUARES_11`~~ (removed — square style dropped)
 - Update all 4 `COMPACT_*_RESET` arrays to `("— —")` (lines 300, 315, 330, 345)
 
 **1e. `src/core/theme-config-loader.sh` — `_resolve_agent_variables()` (line 122)**
@@ -457,7 +456,7 @@ Add to vars array: `COMPACT_CONTEXT_STYLE`, `COMPACT_CONTEXT_EYE`
 - [ ] `TAVS_FACE_MODE=compact ./trigger.sh reset` → em dashes in both eyes
 - [ ] `TAVS_FACE_MODE=compact TAVS_COMPACT_CONTEXT_EYE=false ./trigger.sh processing` → old behavior
 - [ ] `TAVS_FACE_MODE=compact ./trigger.sh subagent-start && ./trigger.sh subagent-start` → `+2` outside face
-- [ ] All 9 context styles produce correct output at 0%, 50%, 100%
+- [ ] All 8 context styles produce correct output at 0%, 50%, 100%
 - [ ] Per-agent override: `CLAUDE_COMPACT_CONTEXT_STYLE=block ./trigger.sh processing` → block for Claude
 - [ ] No context data → right eye falls back to theme status emoji
 - [ ] Squares is new default theme (left eye = 🟧 for processing)
@@ -471,7 +470,7 @@ Add to vars array: `COMPACT_CONTEXT_STYLE`, `COMPACT_CONTEXT_EYE`
 
 **Changes:**
 
-- `src/config/user.conf.template` — add compact context eye section with all 9 styles,
+- `src/config/user.conf.template` — add compact context eye section with all 8 styles,
   visual examples, per-agent override examples, disable instructions
 - `CLAUDE.md` — update compact face mode section with context eye, new default theme,
   em dash reset, visual examples
@@ -481,7 +480,7 @@ Add to vars array: `COMPACT_CONTEXT_STYLE`, `COMPACT_CONTEXT_EYE`
 **Acceptance Criteria:**
 - [ ] user.conf.template documents all new settings with examples
 - [ ] CLAUDE.md updated with context eye overview and examples
-- [ ] dynamic-titles.md has full style catalog (all 9 styles × multiple percentages)
+- [ ] dynamic-titles.md has full style catalog (all 8 styles × multiple percentages)
 
 ---
 
@@ -508,7 +507,7 @@ cp src/agents/claude/*.sh "$CACHE/src/agents/claude/"
 7. Tool error → brief flash with context
 8. Reset → em dash resting eyes
 9. Test without bridge → verify fallback to theme emoji
-10. Test each of 9 styles live
+10. Test each of 8 styles live
 11. Test context eye disabled → exact old behavior
 
 **Acceptance Criteria:**
@@ -528,7 +527,7 @@ cp src/agents/claude/*.sh "$CACHE/src/agents/claude/"
 |------|----------|--------|------------|
 | `src/core/face-selection.sh` | `get_compact_face()` line 145 | Context eye resolution, em dash reset, style mapping | ~30 |
 | `src/core/title-management.sh` | `compose_title()` line 306 | Un-suppress `{AGENTS}` when context eye active | ~10 |
-| `src/core/context-data.sh` | `load_context_data()` line 227, `resolve_context_token()` line 268 | Double-load guard, CONTEXT_SQUARE token | ~10 |
+| `src/core/context-data.sh` | `load_context_data()` line 227 | Double-load guard, shared style→token helper | ~25 |
 | `src/config/defaults.conf` | Lines 284, 300, 315, 330, 345 | Theme default, new settings, squares array, em dash resets | ~25 |
 | `src/core/theme-config-loader.sh` | `_resolve_agent_variables()` line 122 | Add COMPACT_CONTEXT_STYLE, COMPACT_CONTEXT_EYE to vars | ~3 |
 | `src/config/user.conf.template` | After compact face section | New context eye settings, visual examples | ~40 |
@@ -612,7 +611,6 @@ done
 # Test edge cases
 resolve_context_token CONTEXT_FOOD 0    # → 💧
 resolve_context_token CONTEXT_FOOD 100  # → 🍫
-resolve_context_token CONTEXT_SQUARE 50 # → 🟨
 resolve_context_token CONTEXT_BAR_VM 85 # → ▇▒
 ```
 
@@ -623,7 +621,7 @@ resolve_context_token CONTEXT_BAR_VM 85 # → ▇▒
 TAVS_FACE_MODE=compact ./src/core/trigger.sh processing
 # → Verify food emoji in right eye if bridge data exists
 
-# Test all 9 styles
+# Test all 8 styles
 for style in food food_10 circle square block block_max braille number percent; do
     TAVS_FACE_MODE=compact TAVS_COMPACT_CONTEXT_STYLE=$style \
         ./src/core/trigger.sh processing
@@ -679,25 +677,11 @@ TAVS_COMPACT_CONTEXT_STYLE="food"
 TAVS_COMPACT_THEME="squares"
 ```
 
-### New Icon Array
+### ~~New Icon Array~~ (Removed)
 
-```bash
-# Square Scale — 11-stage (10% steps) — for "square" context style
-# Matches CIRCLES_11 gradient but with square emoji
-TAVS_CONTEXT_SQUARES_11=(
-    "⬜"    # 0%
-    "🟦"    # 10%
-    "🟦"    # 20%
-    "🟩"    # 30%
-    "🟩"    # 40%
-    "🟨"    # 50%
-    "🟧"    # 60%
-    "🟧"    # 70%
-    "🟥"    # 80%
-    "🟥"    # 90%
-    "⬛"    # 100%
-)
-```
+The `square` context style and `TAVS_CONTEXT_SQUARES_11` array were removed during
+implementation because square context icons blend with the squares theme left eye,
+defeating the two-signal dashboard purpose. Food (default) provides visual distinction.
 
 ### Per-Agent Overrides
 
@@ -718,7 +702,7 @@ CODEX_COMPACT_CONTEXT_EYE="false"
 | `food` | `CONTEXT_FOOD` | `TAVS_CONTEXT_FOOD_21` | 21 (5%) |
 | `food_10` | `CONTEXT_FOOD_10` | `TAVS_CONTEXT_FOOD_11` | 11 (10%) |
 | `circle` | `CONTEXT_ICON` | `TAVS_CONTEXT_CIRCLES_11` | 11 (10%) |
-| `square` | `CONTEXT_SQUARE` | `TAVS_CONTEXT_SQUARES_11` | 11 (10%) |
+| ~~`square`~~ | ~~`CONTEXT_SQUARE`~~ | ~~removed~~ | — |
 | `block` | `CONTEXT_BAR_V` | `TAVS_CONTEXT_BLOCKS` | 8 |
 | `block_max` | `CONTEXT_BAR_VM` | `TAVS_CONTEXT_BLOCKS` + `BAR_MAX` | 8 |
 | `braille` | `CONTEXT_BRAILLE` | `TAVS_CONTEXT_BRAILLE` | 7 |
@@ -756,20 +740,10 @@ resolve_context_token() {
 }
 ```
 
-### Pattern: Style-to-Token Mapping (new, for get_compact_face)
+### Pattern: Style-to-Token Mapping (shared helper in context-data.sh)
 ```bash
-local _ctx_token=""
-case "$style" in
-    food)      _ctx_token="CONTEXT_FOOD" ;;
-    food_10)   _ctx_token="CONTEXT_FOOD_10" ;;
-    circle)    _ctx_token="CONTEXT_ICON" ;;
-    square)    _ctx_token="CONTEXT_SQUARE" ;;
-    block)     _ctx_token="CONTEXT_BAR_V" ;;
-    block_max) _ctx_token="CONTEXT_BAR_VM" ;;
-    braille)   _ctx_token="CONTEXT_BRAILLE" ;;
-    number)    _ctx_token="CONTEXT_NUMBER" ;;
-    percent)   _ctx_token="CONTEXT_PCT" ;;
-esac
+# Single source of truth — used by face-selection.sh and title-management.sh
+_ctx_token=$(_context_style_to_token "$_ctx_style")
 right=$(resolve_context_token "$_ctx_token" "$TAVS_CONTEXT_PCT")
 ```
 

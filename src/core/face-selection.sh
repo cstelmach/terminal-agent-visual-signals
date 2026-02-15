@@ -190,7 +190,8 @@ get_compact_face() {
     # --- Context eye resolution ---
     # Two-signal dashboard: left eye = state color, right eye = context fill level.
     # When context eye disabled: preserve original subagent count in right eye.
-    local _ctx_eye="${TAVS_COMPACT_CONTEXT_EYE:-true}"
+    # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_EYE)
+    local _ctx_eye="${COMPACT_CONTEXT_EYE:-${TAVS_COMPACT_CONTEXT_EYE:-true}}"
 
     # Reset state: em dash resting eyes (override both, regardless of context eye)
     if [[ "$state" == "reset" ]]; then
@@ -203,19 +204,10 @@ get_compact_face() {
         fi
 
         if [[ -n "${TAVS_CONTEXT_PCT:-}" ]]; then
-            # Map style name to context token for resolve_context_token()
-            local _ctx_style="${TAVS_COMPACT_CONTEXT_STYLE:-food}"
+            # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_STYLE)
+            local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
             local _ctx_token=""
-            case "$_ctx_style" in
-                food)      _ctx_token="CONTEXT_FOOD" ;;
-                food_10)   _ctx_token="CONTEXT_FOOD_10" ;;
-                circle)    _ctx_token="CONTEXT_ICON" ;;
-                block)     _ctx_token="CONTEXT_BAR_V" ;;
-                block_max) _ctx_token="CONTEXT_BAR_VM" ;;
-                braille)   _ctx_token="CONTEXT_BRAILLE" ;;
-                number)    _ctx_token="CONTEXT_NUMBER" ;;
-                percent)   _ctx_token="CONTEXT_PCT" ;;
-            esac
+            _ctx_token=$(_context_style_to_token "$_ctx_style")
 
             if [[ -n "$_ctx_token" ]]; then
                 local _ctx_val

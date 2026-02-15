@@ -358,17 +358,11 @@ compose_title() {
     # context visual (food/circle/block/etc.). Suppress the matching
     # {CONTEXT_*} token in the title to avoid showing the same info twice.
     if [[ "$_context_eye_active" == "true" ]]; then
-        local _eye_style="${TAVS_COMPACT_CONTEXT_STYLE:-food}"
-        case "$_eye_style" in
-            food)      title="${title//\{CONTEXT_FOOD\}/}" ;;
-            food_10)   title="${title//\{CONTEXT_FOOD_10\}/}" ;;
-            circle)    title="${title//\{CONTEXT_ICON\}/}" ;;
-            block)     title="${title//\{CONTEXT_BAR_V\}/}" ;;
-            block_max) title="${title//\{CONTEXT_BAR_VM\}/}" ;;
-            braille)   title="${title//\{CONTEXT_BRAILLE\}/}" ;;
-            number)    title="${title//\{CONTEXT_NUMBER\}/}" ;;
-            percent)   title="${title//\{CONTEXT_PCT\}/}" ;;
-        esac
+        # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_STYLE)
+        local _eye_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
+        local _eye_token=""
+        _eye_token=$(_context_style_to_token "$_eye_style")
+        [[ -n "$_eye_token" ]] && title="${title//\{${_eye_token}\}/}"
     fi
 
     # Substitute existing placeholders
