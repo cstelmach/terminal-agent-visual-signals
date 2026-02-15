@@ -173,47 +173,23 @@ unified_timer_worker() {
                 fi
             fi
 
-            # Apply Title (with face if anthropomorphising enabled)
-            # Uses >&3 directly to avoid blocking - consistent with color writes
-            local title_face=""
-            if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
-                # Compact mode: emoji eyes in face frame (status info embedded)
-                if type get_compact_face &>/dev/null; then
-                    title_face=$(get_compact_face "idle_${current_stage}")
-                fi
-            elif [[ "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
-                # Standard mode: text-based eyes
-                if type get_random_face &>/dev/null; then
-                    title_face=$(get_random_face "idle_${current_stage}")
-                elif type get_face &>/dev/null; then
-                    title_face=$(get_face "${FACE_THEME:-minimal}" "idle_${current_stage}")
-                fi
-            fi
+            # Apply Title using compose_title() for proper per-state format
+            # resolution. This ensures {CONTEXT_PCT}, {CONTEXT_FOOD}, and all
+            # other tokens resolve correctly during idle/complete states.
+            if [[ "$ENABLE_TITLE_PREFIX" == "true" ]] && type compose_title &>/dev/null; then
+                # Reset context loaded guard so each iteration gets fresh data
+                _TAVS_CONTEXT_LOADED=""
 
-            # Apply Title (respects ENABLE_TITLE_PREFIX setting)
-            if [[ "$ENABLE_TITLE_PREFIX" == "true" ]]; then
-                local title=""
-                if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
-                    # Compact: face already contains status info, skip separate stage_status_icon
-                    title="$title_face $SESSION_ICON $SHORT_CWD"
-                elif [[ -n "$stage_status_icon" && "$ENABLE_STAGE_INDICATORS" == "true" ]]; then
-                    if [[ -n "$title_face" ]]; then
-                        if [[ "$FACE_POSITION" == "before" ]]; then
-                            title="$title_face $stage_status_icon $SESSION_ICON $SHORT_CWD"
-                        else
-                            title="$stage_status_icon $title_face $SESSION_ICON $SHORT_CWD"
-                        fi
-                    else
-                        title="$stage_status_icon $SESSION_ICON $SHORT_CWD"
-                    fi
-                elif [[ -n "$title_face" ]]; then
-                    title="$title_face $SESSION_ICON $SHORT_CWD"
+                # Map stage to state name for compose_title's format lookup
+                local title_state
+                if [[ $current_stage -eq 0 ]]; then
+                    title_state="complete"
                 else
-                    title="$SESSION_ICON $SHORT_CWD"
+                    title_state="idle_${current_stage}"
                 fi
-                # Collapse double spaces (when SESSION_ICON is empty)
-                title="${title//  / }"
-                title="${title# }"
+
+                local title
+                title=$(compose_title "$title_state" "$SHORT_CWD")
                 printf "\033]0;%s\033\\" "$title" >&3
             fi
         fi

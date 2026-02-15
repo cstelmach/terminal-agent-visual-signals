@@ -354,6 +354,23 @@ compose_title() {
 
     local title="$format"
 
+    # When compact context eye is active, the right eye already shows the
+    # context visual (food/circle/block/etc.). Suppress the matching
+    # {CONTEXT_*} token in the title to avoid showing the same info twice.
+    if [[ "$_context_eye_active" == "true" ]]; then
+        local _eye_style="${TAVS_COMPACT_CONTEXT_STYLE:-food}"
+        case "$_eye_style" in
+            food)      title="${title//\{CONTEXT_FOOD\}/}" ;;
+            food_10)   title="${title//\{CONTEXT_FOOD_10\}/}" ;;
+            circle)    title="${title//\{CONTEXT_ICON\}/}" ;;
+            block)     title="${title//\{CONTEXT_BAR_V\}/}" ;;
+            block_max) title="${title//\{CONTEXT_BAR_VM\}/}" ;;
+            braille)   title="${title//\{CONTEXT_BRAILLE\}/}" ;;
+            number)    title="${title//\{CONTEXT_NUMBER\}/}" ;;
+            percent)   title="${title//\{CONTEXT_PCT\}/}" ;;
+        esac
+    fi
+
     # Substitute existing placeholders
     title="${title//\{FACE\}/$face}"
     title="${title//\{STATUS_ICON\}/$status_icon}"
