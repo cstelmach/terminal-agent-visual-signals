@@ -213,19 +213,18 @@ get_compact_face() {
             load_context_data 2>/dev/null
         fi
 
-        if [[ -n "${TAVS_CONTEXT_PCT:-}" ]]; then
-            # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_STYLE)
-            local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
-            local _ctx_token=""
-            _ctx_token=$(_context_style_to_token "$_ctx_style")
+        # Use actual context percentage, or 0% when no data (fresh session)
+        local _ctx_pct="${TAVS_CONTEXT_PCT:-0}"
+        # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_STYLE)
+        local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
+        local _ctx_token=""
+        _ctx_token=$(_context_style_to_token "$_ctx_style")
 
-            if [[ -n "$_ctx_token" ]]; then
-                local _ctx_val
-                _ctx_val=$(resolve_context_token "$_ctx_token" "$TAVS_CONTEXT_PCT")
-                [[ -n "$_ctx_val" ]] && right="$_ctx_val"
-            fi
+        if [[ -n "$_ctx_token" ]]; then
+            local _ctx_val
+            _ctx_val=$(resolve_context_token "$_ctx_token" "$_ctx_pct")
+            [[ -n "$_ctx_val" ]] && right="$_ctx_val"
         fi
-        # If TAVS_CONTEXT_PCT empty: right keeps theme emoji (graceful fallback)
     else
         # Context eye DISABLED: preserve original subagent count behavior
         if [[ "$state" == "processing" || "$state" == subagent* ]]; then
