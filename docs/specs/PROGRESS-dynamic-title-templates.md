@@ -2,7 +2,7 @@
 
 **Spec:** `docs/specs/SPEC-dynamic-title-templates.md`
 **Plan:** `docs/specs/PLAN-dynamic-title-templates.md`
-**Status:** Phase 6 Complete — All Phases Done
+**Status:** Bugfix Applied — JSONL Token Parsing
 
 ---
 
@@ -142,3 +142,23 @@
 - **No code changes** — only the test assertion was wrong, implementation was correct
 - **Deviation:** Cache path is `tavs/2.0.0/` (existing installation), not 3.0.0 as Phase 0 noted
 - Commits: `f8fd06e`
+
+### 2026-02-15 — Bugfix: Context Percentage Accuracy
+
+- **Root cause:** Transcript fallback used 3.5 chars/token file-size heuristic, which
+  overestimated by 12x for JSONL files (720% clamped to 100% when actual was 65%).
+  JSONL overhead (JSON structure, tool results, compacted history) makes file size
+  meaningless for token estimation.
+- **Fix:** Replaced file-size heuristic with JSONL token parsing:
+  - Primary: `_parse_jsonl_usage()` reads last assistant entry's `message.usage`
+  - Sums `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`
+  - Gives exact percentage matching Claude Code's internal calculation
+  - Also extracts model name for `{MODEL}` token
+- **Per-agent context window sizing:**
+  - Added `CONTEXT_WINDOW_SIZE` to `_resolve_agent_variables()` vars array
+  - Defaults: `CLAUDE_CONTEXT_WINDOW_SIZE=200000`, `GEMINI_CONTEXT_WINDOW_SIZE=1000000`
+  - Auto-detection from model ID (claude-*=200k, gemini-*=1M)
+- **Conservative file-size fallback:** When JSONL parsing fails (non-Claude format),
+  uses 50 chars/token (was 3.5) — deliberately underestimates rather than overestimates
+- Tests: 45/45 transcript fallback tests + 94/94 integration tests (343 total)
+- Commit: `6d6dd6b`
