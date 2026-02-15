@@ -227,6 +227,102 @@ All defaults are defined in `src/config/defaults.conf`:
 
 ---
 
+## Compact Context Eye
+
+When compact face mode is active (`TAVS_FACE_MODE="compact"`), the right eye shows the
+context window fill level — turning the face into a **two-signal dashboard**: left eye =
+state color, right eye = context fill.
+
+```
+Ǝ[🟧 🧀]E +2 🦊 ~/proj     processing at 50%, 2 subagents
+Ǝ[🟥 🍔]E 🦊 ~/proj        permission at 85% — danger zone!
+Ǝ[🟩 🥝]E 🦊 ~/proj        complete at 25%
+Ǝ[— —]E                    reset — em dash resting eyes
+```
+
+### Configuration
+
+```bash
+# In ~/.tavs/user.conf
+TAVS_COMPACT_CONTEXT_EYE="true"     # "true" (default) | "false"
+TAVS_COMPACT_CONTEXT_STYLE="food"   # See style catalog below
+```
+
+### Style Catalog
+
+All styles at different context levels (left eye = 🟧 processing, squares theme):
+
+| Style | 0% | 25% | 50% | 75% | 100% |
+|-------|----|-----|-----|-----|------|
+| `food` (default) | `Ǝ[🟧 💧]E` | `Ǝ[🟧 🥝]E` | `Ǝ[🟧 🧀]E` | `Ǝ[🟧 🍕]E` | `Ǝ[🟧 🍫]E` |
+| `food_10` | `Ǝ[🟧 💧]E` | `Ǝ[🟧 🥦]E` | `Ǝ[🟧 🧀]E` | `Ǝ[🟧 🌮]E` | `Ǝ[🟧 🍫]E` |
+| `circle` | `Ǝ[🟧 ⚪]E` | `Ǝ[🟧 🔵]E` | `Ǝ[🟧 🟡]E` | `Ǝ[🟧 🔴]E` | `Ǝ[🟧 ⚫]E` |
+| `block` | `Ǝ[🟧 ▁]E` | `Ǝ[🟧 ▂]E` | `Ǝ[🟧 ▄]E` | `Ǝ[🟧 ▆]E` | `Ǝ[🟧 █]E` |
+| `block_max` | `Ǝ[🟧 ▁▒]E` | `Ǝ[🟧 ▂▒]E` | `Ǝ[🟧 ▄▒]E` | `Ǝ[🟧 ▆▒]E` | `Ǝ[🟧 █▒]E` |
+| `braille` | `Ǝ[🟧 ⠀]E` | `Ǝ[🟧 ⠄]E` | `Ǝ[🟧 ⠤]E` | `Ǝ[🟧 ⠷]E` | `Ǝ[🟧 ⠿]E` |
+| `number` | `Ǝ[🟧 0️⃣]E` | `Ǝ[🟧 2️⃣]E` | `Ǝ[🟧 5️⃣]E` | `Ǝ[🟧 7️⃣]E` | `Ǝ[🟧 🔟]E` |
+| `percent` | `Ǝ[🟧 0%]E` | `Ǝ[🟧 25%]E` | `Ǝ[🟧 50%]E` | `Ǝ[🟧 75%]E` | `Ǝ[🟧 100%]E` |
+
+### Per-Agent Faces
+
+Each agent's face frame wraps the same two-signal pattern:
+
+| Agent | 50% Context | Reset |
+|-------|-------------|-------|
+| Claude | `Ǝ[🟧 🧀]E` | `Ǝ[— —]E` |
+| Gemini | `ʕ🟧ᴥ🧀ʔ` | `ʕ—ᴥ—ʔ` |
+| Codex | `ฅ^🟧ﻌ🧀^ฅ` | `ฅ^—ﻌ—^ฅ` |
+| OpenCode | `(🟧-🧀)` | `(—-—)` |
+
+### Subagent Count Displacement
+
+When context eye is active, the subagent count (`+N`) moves from the right eye to the
+`{AGENTS}` title token outside the face:
+
+| Mode | Face | Title |
+|------|------|-------|
+| Context eye ON + 2 subagents | `Ǝ[🟧 🧀]E` | `Ǝ[🟧 🧀]E +2 🦊 ~/proj` |
+| Context eye OFF + 2 subagents | `Ǝ[🟧 +2]E` | `Ǝ[🟧 +2]E 🦊 ~/proj` |
+
+Token suppression matrix:
+
+| Mode | `{STATUS_ICON}` | `{AGENTS}` |
+|------|-----------------|------------|
+| Standard mode | Shown | Shown |
+| Compact, context eye OFF | Suppressed | Suppressed (in right eye) |
+| Compact, context eye ON | Suppressed | **Shown** (context in right eye) |
+
+### No-Data Fallback
+
+When no context data is available (no bridge, no transcript), the right eye falls back
+to the theme status emoji — the face looks identical to standard compact mode. No broken
+visual state.
+
+### Per-Agent Customization
+
+Via `_resolve_agent_variables()` in `theme-config-loader.sh`:
+
+```bash
+# Different context style per agent
+CLAUDE_COMPACT_CONTEXT_STYLE="food"
+GEMINI_COMPACT_CONTEXT_STYLE="block"
+
+# Disable context eye for specific agent
+CODEX_COMPACT_CONTEXT_EYE="false"
+```
+
+### Combining with Title Tokens
+
+The context eye and title tokens are independent — combine them for maximum information:
+
+```bash
+# Food in eye + percentage in title during permission
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
+# Result: Ǝ[🟥 🍔]E 85% ~/proj  (food in eye + number in title)
+```
+
+---
+
 ## Key Files
 
 | File | Purpose |
