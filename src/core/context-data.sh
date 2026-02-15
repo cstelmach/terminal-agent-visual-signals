@@ -93,12 +93,113 @@ read_bridge_state() {
 # TRANSCRIPT FALLBACK ESTIMATION
 # ==============================================================================
 
-# Estimate context usage from transcript file size.
-# ~3.5 chars/token heuristic. Sets TAVS_CONTEXT_PCT only.
-# Returns 0 on success, 1 if file missing/empty.
+# Estimate context usage from transcript JSONL file.
+# Strategy 1 (primary): Parse actual token counts from last assistant entry.
+# Strategy 2 (fallback): Conservative file-size estimation.
+# Sets TAVS_CONTEXT_PCT (and optionally TAVS_CONTEXT_MODEL).
+# Returns 0 on success, 1 if file missing/empty/unreadable.
 _estimate_from_transcript() {
     local transcript_path="${1:-${TAVS_TRANSCRIPT_PATH:-}}"
     [[ -z "$transcript_path" || ! -f "$transcript_path" ]] && return 1
+
+    # Strategy 1: Parse actual token counts from Claude Code JSONL.
+    # Each assistant message has message.usage with exact token counts.
+    if _parse_jsonl_usage "$transcript_path"; then
+        return 0
+    fi
+
+    # Strategy 2: Conservative file-size fallback.
+    # Only reached when JSONL parsing fails (non-Claude format, no assistant entries).
+    # JSONL overhead makes this inherently imprecise — use very conservative multiplier
+    # (~50 chars/token) to underestimate rather than overestimate. Showing 30% when
+    # actual is 60% is far less disruptive than showing 100% when actual is 60%.
+    _estimate_from_file_size "$transcript_path"
+}
+
+# Parse actual token counts from Claude Code JSONL transcript.
+# Reads the last assistant entry's message.usage for exact token counts:
+#   input_tokens + cache_creation_input_tokens + cache_read_input_tokens
+# Returns 0 on success, 1 if no usable data found.
+_parse_jsonl_usage() {
+    local transcript_path="$1"
+
+    # Find the last assistant entry with usage data.
+    # tail -500 handles large files efficiently (assistant entry always near end).
+    local _last_assistant
+    _last_assistant=$(tail -500 "$transcript_path" 2>/dev/null \
+        | grep '"type":"assistant"' | tail -1)
+    [[ -z "$_last_assistant" ]] && return 1
+
+    # Extract token counts — field names are unique in Claude Code JSONL.
+    # cache_read_input_tokens and cache_creation_input_tokens are the bulk of context.
+    local _cache_read _cache_create _input_tokens
+    _cache_read=$(printf '%s' "$_last_assistant" | \
+        sed -n 's/.*"cache_read_input_tokens"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' \
+        | head -1)
+    _cache_create=$(printf '%s' "$_last_assistant" | \
+        sed -n 's/.*"cache_creation_input_tokens"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' \
+        | head -1)
+    # input_tokens appears in multiple nested objects; greedy .* after "usage" matches
+    # the last occurrence (which is the one in the usage block).
+    _input_tokens=$(printf '%s' "$_last_assistant" | \
+        sed -n 's/.*"usage"[^}]*"input_tokens"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' \
+        | head -1)
+
+    local total=$(( ${_cache_read:-0} + ${_cache_create:-0} + ${_input_tokens:-0} ))
+    [[ $total -eq 0 ]] && return 1
+
+    # Determine context window size (per-agent resolved or global default)
+    local _default_ctx=200000
+    local ctx_size="${CONTEXT_WINDOW_SIZE:-${TAVS_CONTEXT_WINDOW_SIZE:-$_default_ctx}}"
+
+    # Auto-detect from model ID if no explicit override
+    if [[ "$ctx_size" -eq "$_default_ctx" ]]; then
+        local _model_id
+        _model_id=$(printf '%s' "$_last_assistant" | \
+            sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+        if [[ -n "$_model_id" ]]; then
+            ctx_size=$(_model_context_size "$_model_id" "$ctx_size")
+        fi
+    fi
+
+    local pct=$(( total * 100 / ctx_size ))
+    [[ $pct -gt 100 ]] && pct=100
+
+    TAVS_CONTEXT_PCT="$pct"
+
+    # Bonus: populate model name for {MODEL} token if not already set
+    if [[ -z "${TAVS_CONTEXT_MODEL:-}" ]]; then
+        local _model_name
+        _model_name=$(printf '%s' "$_last_assistant" | \
+            sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+        [[ -n "$_model_name" ]] && TAVS_CONTEXT_MODEL="$_model_name"
+    fi
+
+    return 0
+}
+
+# Map model ID to context window size (tokens).
+# Used for auto-detection when no explicit CONTEXT_WINDOW_SIZE is set.
+_model_context_size() {
+    local model_id="${1:-}"
+    local default_size="${2:-200000}"
+
+    case "$model_id" in
+        # Standard Claude models — 200k context
+        claude-opus-*|claude-sonnet-*|claude-haiku-*) echo "200000" ;;
+        # Gemini models — 1M+ context
+        gemini-*-pro*|gemini-*-flash*) echo "1000000" ;;
+        # Unknown — use default
+        *) echo "$default_size" ;;
+    esac
+}
+
+# Conservative file-size estimation (last-resort fallback).
+# ~50 chars/token for JSONL (accounts for JSON overhead, tool results, metadata,
+# and compacted history still present in the file).
+# Returns 0 on success, 1 if file empty/unreadable.
+_estimate_from_file_size() {
+    local transcript_path="$1"
 
     local file_size
     # macOS stat vs Linux stat
@@ -106,10 +207,10 @@ _estimate_from_transcript() {
         || stat -c%s "$transcript_path" 2>/dev/null)
     [[ -z "$file_size" || "$file_size" -eq 0 ]] 2>/dev/null && return 1
 
-    # ~3.5 chars/token: file_size / 3.5 = file_size * 10 / 35
     local _default_ctx=200000
-    local ctx_size="${TAVS_CONTEXT_WINDOW_SIZE:-$_default_ctx}"
-    local estimated_tokens=$(( file_size * 10 / 35 ))
+    local ctx_size="${CONTEXT_WINDOW_SIZE:-${TAVS_CONTEXT_WINDOW_SIZE:-$_default_ctx}}"
+    # ~50 chars/token for JSONL: file_size / 50 = file_size * 10 / 500
+    local estimated_tokens=$(( file_size * 10 / 500 ))
     local pct=$(( estimated_tokens * 100 / ctx_size ))
     [[ $pct -gt 100 ]] && pct=100
 

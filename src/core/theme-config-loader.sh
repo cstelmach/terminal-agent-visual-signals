@@ -112,6 +112,8 @@ _resolve_agent_variables() {
         MUTED_DARK_PROCESSING_PLAN MUTED_DARK_PROCESSING_ACCEPT MUTED_DARK_PROCESSING_BYPASS
         MUTED_LIGHT_PROCESSING_PLAN MUTED_LIGHT_PROCESSING_ACCEPT MUTED_LIGHT_PROCESSING_BYPASS
         SPINNER_FACE_FRAME
+        # Per-agent context window size (tokens) for context percentage calculation
+        CONTEXT_WINDOW_SIZE
         # Per-state title format overrides (4-level fallback in compose_title)
         TITLE_FORMAT
         TITLE_FORMAT_PROCESSING TITLE_FORMAT_PERMISSION TITLE_FORMAT_COMPLETE

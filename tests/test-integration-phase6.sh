@@ -216,16 +216,23 @@ model=OldModel
 ts=$_old_ts
 EOF
 
-dd if=/dev/zero bs=1 count=350000 of="$TEST_DIR/fake_transcript.jsonl" 2>/dev/null
+# Use JSONL with actual token data (JSONL parsing preferred over file-size estimation)
+cat > "$TEST_DIR/fake_transcript.jsonl" << 'JSONL_EOF'
+{"type":"user","messageId":"msg1","snapshot":{"messageId":"msg1"}}
+{"type":"assistant","messageId":"msg2","message":{"model":"claude-opus-4-6","usage":{"input_tokens":5,"cache_creation_input_tokens":10000,"cache_read_input_tokens":90000,"output_tokens":200}}}
+JSONL_EOF
 export TAVS_TRANSCRIPT_PATH="$TEST_DIR/fake_transcript.jsonl"
 export TAVS_CONTEXT_BRIDGE_MAX_AGE=30
+export TAVS_CONTEXT_WINDOW_SIZE=200000
 TAVS_CONTEXT_PCT=""
 TAVS_CONTEXT_MODEL=""
 
 load_context_data
 
-assert "stale bridge: pct=50 (from transcript)" "50" "${TAVS_CONTEXT_PCT:-}"
-assert "stale bridge: model empty (transcript has no model)" "" "${TAVS_CONTEXT_MODEL:-}"
+# 5 + 10000 + 90000 = 100005 → 100005/200000 = 50%
+assert "stale bridge: pct=50 (from JSONL)" "50" "${TAVS_CONTEXT_PCT:-}"
+# JSONL parsing also extracts model name
+assert "stale bridge: model from JSONL" "claude-opus-4-6" "${TAVS_CONTEXT_MODEL:-}"
 
 unset TAVS_TRANSCRIPT_PATH
 
