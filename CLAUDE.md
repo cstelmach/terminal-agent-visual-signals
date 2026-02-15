@@ -160,6 +160,7 @@ All user settings are stored in `~/.tavs/user.conf`:
 | [Palette Theming](docs/reference/palette-theming.md) | Optional 16-color ANSI palette modification for cohesive terminal theming. Explains OSC 4 sequences, TrueColor limitations, theme presets, and how to enable for Claude Code. | OSC-4, ANSI-palette, TrueColor, 256-color-mode | Enabling palette theming, understanding why colors don't change in TrueColor mode |
 | [Testing](docs/reference/testing.md) | Manual and automated testing procedures for visual signals. Covers terminal compatibility, hook verification, and debug mode for troubleshooting. | manual-testing, hook-verification, debug-mode, terminal-support | Verifying changes work, testing new installations, when signals don't appear |
 | [Development Testing](docs/reference/development-testing.md) | Workflow for testing code changes live. How to update the plugin cache, test locally, and see changes reflected in Claude Code immediately. | plugin-cache, live-testing, development-workflow | Making code changes, testing modifications, deploying to plugin cache |
+| [Dynamic Titles](docs/reference/dynamic-titles.md) | Per-state title templates with context window awareness. Covers the 4-level fallback chain, all 15 context/metadata tokens, StatusLine bridge setup, icon scale customization, and the data fallback chain (bridge → transcript → empty). | per-state-formats, context-tokens, StatusLine-bridge, icon-scales | Setting up context data in titles, customizing per-state formats, understanding the fallback chain, configuring the StatusLine bridge |
 | [Troubleshooting](docs/troubleshooting/overview.md) | Quick fixes for common problems including terminal compatibility, plugin enablement, and hook installation issues. | quick-fixes, debug-mode, terminal-compatibility | When visual signals don't work, plugin shows disabled, colors are wrong |
 
 ---
@@ -204,7 +205,7 @@ TAVS_TITLE_FALLBACK="session-path"  # session-path|path-session|session|path
 
 ### Title Format Tokens
 
-The `TAVS_TITLE_FORMAT` template supports these placeholders:
+The `TAVS_TITLE_FORMAT` template supports these core placeholders:
 
 | Token | Description | Example |
 |-------|-------------|---------|
@@ -213,96 +214,27 @@ The `TAVS_TITLE_FORMAT` template supports these placeholders:
 | `{AGENTS}` | Active subagent count (empty when none) | `+2` |
 | `{SESSION_ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
-| `{CONTEXT_PCT}` | Context window percentage | `45%` |
-| `{CONTEXT_FOOD}` | Food emoji 21-stage (5% steps) | `🌽` (45%) |
-| `{CONTEXT_FOOD_10}` | Food emoji 11-stage (10% steps) | `🍌` (40%) |
-| `{CONTEXT_ICON}` | Color circle (⚪→🔴→⚫) | `🟡` (50%) |
-| `{CONTEXT_BAR_H}` | Horizontal bar 5-char | `▓▓░░░` (50%) |
-| `{CONTEXT_BAR_HL}` | Horizontal bar 10-char | `▓▓▓▓▓░░░░░` (50%) |
-| `{CONTEXT_BAR_V}` | Vertical block | `▄` (50%) |
-| `{CONTEXT_BAR_VM}` | Vertical + max outline | `▄▒` (50%) |
-| `{CONTEXT_BRAILLE}` | Braille fill | `⠤` (50%) |
-| `{CONTEXT_NUMBER}` | Number emoji (0-10) | `5️⃣` (50%) |
-| `{MODEL}` | Model display name | `Opus` |
-| `{COST}` | Session cost | `$0.42` |
-| `{DURATION}` | Session duration | `5m32s` |
-| `{LINES}` | Lines added | `+156` |
-| `{MODE}` | Permission mode | `plan` |
+
+**15 additional context & metadata tokens** are available for per-state formats:
+`{CONTEXT_PCT}`, `{CONTEXT_FOOD}`, `{CONTEXT_ICON}`, `{CONTEXT_BAR_H}`, `{MODEL}`,
+`{COST}`, `{DURATION}`, `{LINES}`, `{MODE}`, and more. These require the StatusLine
+bridge for real-time data (falls back to transcript estimation, then empty).
+See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full token list.
 
 The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
-It only appears when subagents are active (count > 0).
-
 The `{SESSION_ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
-Each terminal tab gets a unique animal emoji from a pool of 25, persisting across `/clear`.
-
-**Context tokens** (`{CONTEXT_*}`, `{MODEL}`, `{COST}`, `{DURATION}`, `{LINES}`) require the
-StatusLine bridge for real-time data. Without it, TAVS estimates context % from transcript file
-size. When no data is available, tokens resolve to empty string and collapse silently.
-
-`{MODE}` comes from the hook payload directly and is always available.
 
 ### Per-State Title Formats
 
-Different title formats for each trigger state. Uses a 4-level fallback chain:
+Each trigger state can have its own format string via a 4-level fallback chain
+(agent+state → agent → state → global). By default, permission and idle states show
+food emoji + context percentage, compacting shows percentage only. Other states fall
+back to `TAVS_TITLE_FORMAT`.
 
-```
-Level 1: {AGENT}_TITLE_FORMAT_{STATE}  (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
-Level 2: {AGENT}_TITLE_FORMAT          (e.g., CLAUDE_TITLE_FORMAT)
-Level 3: TAVS_TITLE_FORMAT_{STATE}     (e.g., TAVS_TITLE_FORMAT_PERMISSION)
-Level 4: TAVS_TITLE_FORMAT             (global default — current behavior)
-```
+**Example:** During permission requests, the title shows `Ǝ[° °]E 🔴 🧀50% ~/proj`.
 
-**Defaults** (only permission and compacting have per-state formats by default):
-```bash
-TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}"
-TAVS_TITLE_FORMAT_COMPACTING="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
-```
-
-This means during permission requests (e.g., plan mode approval), the title shows:
-`Ǝ[° °]E 🔴 🧀 50% ~/proj` — food emoji and percentage help decide whether to compact.
-
-**Configure in `~/.tavs/user.conf`:**
-```bash
-# Show context on processing too
-TAVS_TITLE_FORMAT_PROCESSING="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {AGENTS} {BASE}"
-
-# Show cost on completion
-TAVS_TITLE_FORMAT_COMPLETE="{FACE} {STATUS_ICON} {COST} {SESSION_ICON} {BASE}"
-
-# Claude-specific: show model name during permission
-CLAUDE_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {MODEL} {BASE}"
-```
-
-### StatusLine Bridge (Context Data)
-
-The bridge enables real-time context window data in titles by reading Claude Code's StatusLine
-JSON. It's a silent script — reads JSON from stdin, writes a state file, produces **no output**.
-
-**Setup:**
-
-1. Create `~/.claude/statusline.sh`:
-```bash
-#!/bin/bash
-input=$(cat)
-# TAVS bridge — silent, no output
-echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src/agents/claude/statusline-bridge.sh
-# Your statusline output (optional):
-echo "$input" | jq -r '"[\(.model.display_name)] \(.context_window.used_percentage // 0)%"'
-```
-
-2. Add to `~/.claude/settings.json`:
-```json
-{
-  "statusLine": {
-    "command": "bash ~/.claude/statusline.sh"
-  }
-}
-```
-
-3. Restart Claude Code. Context tokens will now show real-time data in titles.
-
-**Without the bridge:** TAVS estimates context % from transcript file size (~20% accuracy).
-**Without either:** Context tokens resolve to empty and collapse silently — no broken titles.
+See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full fallback
+chain, all default formats, configuration examples, and the StatusLine bridge setup guide.
 
 ### Enabling Full Title Mode
 
@@ -453,40 +385,8 @@ See [Development Testing](docs/reference/development-testing.md) for the full wo
 
 ### Terminal Compatibility
 
-| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) | Title Detection |
-|----------|-----------------|-------------|-------------------|-----------------|
-| Ghostty | ✅ | ✅ | ❌ | State file* |
-| iTerm2 | ✅ | ✅ | ✅ | OSC 1337 query |
-| Kitty | ✅ | ✅ | ❌** | State file |
-| WezTerm | ✅ | ✅ | ❌*** | State file |
-| Terminal.app | ❌ | ❌ | ❌ | State file |
-
-\* Ghostty requires `shell-integration-features = no-title` in config (see below).
-\** Kitty uses its own image protocol, not OSC 1337.
-\*** WezTerm has partial OSC 1337 support, but TAVS only uses OSC 1337 backgrounds on iTerm2.
-
-**Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
-Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
-
-### Ghostty Shell Integration (Required for Titles)
-
-Ghostty's shell integration automatically manages tab titles, which conflicts with TAVS.
-**For TAVS title features to work**, you must disable Ghostty's title management.
-
-**Add to your Ghostty config:**
-```ini
-# macOS: ~/Library/Application Support/com.mitchellh.ghostty/config
-# Linux: ~/.config/ghostty/config
-
-shell-integration-features = no-title
-```
-
-This disables ONLY title management while keeping:
-- Cursor shape integration
-- Sudo wrapping
-- Other modern shell features
-
-**Without this setting:** Ghostty will overwrite TAVS titles after every command.
+See [Testing Reference](docs/reference/testing.md) for the full compatibility matrix and
+terminal-specific setup (including Ghostty `shell-integration-features = no-title`).
 
 ### Agent-Specific Face Themes
 
