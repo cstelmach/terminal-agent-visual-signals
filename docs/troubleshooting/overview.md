@@ -454,6 +454,31 @@ npm run build
 2. Check Node.js version (requires >=18)
 3. Check for TypeScript errors in output
 
+## Context Tokens Not Showing
+
+**Symptom:** `{CONTEXT_FOOD}`, `{CONTEXT_PCT}`, etc. show empty in title.
+
+**Check:** Is the StatusLine bridge configured? Context tokens require real-time data.
+
+```bash
+# Verify bridge writes state file
+ls ~/.cache/tavs/context.* 2>/dev/null
+# If no files: bridge is not configured. See Dynamic Titles reference.
+
+# Verify bridge is silent (no stdout)
+echo '{"context_window":{"used_percentage":50}}' \
+  | ./src/agents/claude/statusline-bridge.sh
+# Should produce zero output
+
+# Check state file freshness (stale after 30s by default)
+cat ~/.cache/tavs/context.* 2>/dev/null | grep ts=
+```
+
+**Solutions:**
+1. Set up the StatusLine bridge — see [Dynamic Titles](../reference/dynamic-titles.md)
+2. Without bridge, TAVS falls back to transcript estimation (less accurate)
+3. Without either, context tokens resolve to empty and collapse silently (by design)
+
 ## Debug Mode
 
 Enable detailed logging:
