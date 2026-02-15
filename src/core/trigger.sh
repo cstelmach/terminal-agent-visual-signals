@@ -42,6 +42,7 @@ source "$CORE_DIR/backgrounds.sh"
 source "$CORE_DIR/title-management.sh"
 source "$CORE_DIR/subagent-counter.sh"  # Subagent tracking
 source "$CORE_DIR/session-icon.sh"     # Session icon per terminal tab
+source "$CORE_DIR/context-data.sh"    # Context window data for title tokens
 
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
