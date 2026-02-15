@@ -54,7 +54,40 @@
 #   "standard" (default) - Text eyes: Ǝ[• •]E 🟠 +2 🦊 ~/proj
 #   "compact"  - Emoji eyes: Ǝ[🟧 +2]E 🦊 ~/proj (more info-dense)
 # TAVS_FACE_MODE="standard"
-# TAVS_COMPACT_THEME="semantic"    # semantic, circles, squares, mixed
+# TAVS_COMPACT_THEME="squares"     # semantic, circles, squares, mixed
+
+# ── Compact Context Eye ──────────────────────────────────────────────────
+# When compact mode is active, the right eye shows context window fill level
+# instead of duplicating the left eye's status color.
+#
+# Two-signal dashboard: left eye = state color, right eye = context fill
+#   Ǝ[🟧 🧀]E   (processing + 50% context)
+#   Ǝ[🟥 🍔]E   (permission + 85% context)
+#   Ǝ[— —]E     (reset — em dash resting eyes)
+#
+# When no context data is available, right eye falls back to theme emoji.
+# When disabled, original compact behavior is restored (both eyes = status).
+#
+# TAVS_COMPACT_CONTEXT_EYE="true"     # "true" (default) | "false"
+# TAVS_COMPACT_CONTEXT_STYLE="food"   # Style for right eye (see table below)
+#
+# Available styles:
+#   food      — 21-stage food emoji (💧→🧀→🍫, 5% steps) — DEFAULT
+#   food_10   — 11-stage food emoji (💧→🧀→🍫, 10% steps)
+#   circle    — Color circles (⚪→🟡→🔴→⚫)
+#   block     — Vertical block char (▁▂▃▄▅▆▇█)
+#   block_max — Vertical block + max reference (▄▒)
+#   braille   — Braille fill (⠀⠄⠤⠴⠶⠷⠿)
+#   number    — Number emoji (0️⃣ through 🔟)
+#   percent   — Text percentage (25%, 50%, etc.)
+#
+# Per-agent overrides (highest priority):
+#   CLAUDE_COMPACT_CONTEXT_STYLE="food"
+#   GEMINI_COMPACT_CONTEXT_STYLE="block"
+#   CODEX_COMPACT_CONTEXT_EYE="false"
+#
+# Subagent count (+N) moves to the {AGENTS} title token when context eye
+# is active, keeping it visible outside the face frame.
 
 # Stylish Backgrounds (Images) — iTerm2 and Kitty only
 # ENABLE_STYLISH_BACKGROUNDS="false"

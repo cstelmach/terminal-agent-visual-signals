@@ -144,7 +144,7 @@ get_random_face() {
 
 get_compact_face() {
     local state="$1"
-    local theme="${TAVS_COMPACT_THEME:-semantic}"
+    local theme="${TAVS_COMPACT_THEME:-squares}"
     local theme_upper
     theme_upper="$(echo "$theme" | tr '[:lower:]' '[:upper:]')"
 
@@ -187,12 +187,43 @@ get_compact_face() {
     local left="${pair%% *}"
     local right="${pair##* }"
 
-    # Override right eye with subagent count when active
-    if [[ "$state" == "processing" || "$state" == subagent* ]]; then
-        if type has_active_subagents &>/dev/null && has_active_subagents 2>/dev/null; then
-            local agent_count
-            agent_count=$(get_subagent_count 2>/dev/null)
-            [[ $agent_count -gt 0 ]] && right="+${agent_count}"
+    # --- Context eye resolution ---
+    # Two-signal dashboard: left eye = state color, right eye = context fill level.
+    # When context eye disabled: preserve original subagent count in right eye.
+    # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_EYE)
+    local _ctx_eye="${COMPACT_CONTEXT_EYE:-${TAVS_COMPACT_CONTEXT_EYE:-true}}"
+
+    # Reset state: em dash resting eyes (override both, regardless of context eye)
+    if [[ "$state" == "reset" ]]; then
+        left="—"
+        right="—"
+    elif [[ "$_ctx_eye" == "true" ]]; then
+        # Context eye enabled: resolve right eye from context data
+        if type load_context_data &>/dev/null; then
+            load_context_data 2>/dev/null
+        fi
+
+        if [[ -n "${TAVS_CONTEXT_PCT:-}" ]]; then
+            # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_STYLE)
+            local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
+            local _ctx_token=""
+            _ctx_token=$(_context_style_to_token "$_ctx_style")
+
+            if [[ -n "$_ctx_token" ]]; then
+                local _ctx_val
+                _ctx_val=$(resolve_context_token "$_ctx_token" "$TAVS_CONTEXT_PCT")
+                [[ -n "$_ctx_val" ]] && right="$_ctx_val"
+            fi
+        fi
+        # If TAVS_CONTEXT_PCT empty: right keeps theme emoji (graceful fallback)
+    else
+        # Context eye DISABLED: preserve original subagent count behavior
+        if [[ "$state" == "processing" || "$state" == subagent* ]]; then
+            if type has_active_subagents &>/dev/null && has_active_subagents 2>/dev/null; then
+                local agent_count
+                agent_count=$(get_subagent_count 2>/dev/null)
+                [[ $agent_count -gt 0 ]] && right="+${agent_count}"
+            fi
         fi
     fi
 

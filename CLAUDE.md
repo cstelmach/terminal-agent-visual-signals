@@ -272,27 +272,39 @@ The `{L}` and `{R}` placeholders are replaced with animated spinner characters.
 
 ### Compact Face Mode (Emoji Eyes)
 
-Replaces text-based eyes with emoji. State info and subagent count are embedded directly in the face, producing a more information-dense title.
+Replaces text-based eyes with emoji for an information-dense title. By default, the face
+is a **two-signal dashboard**: left eye = state color, right eye = context fill level.
 
 ```
 STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + status icon + count + session icon + path)
-COMPACT:   Ǝ[🟧 +2]E 🦊 ~/proj         (emoji eyes + count as right eye)
+COMPACT:   Ǝ[🟧 🧀]E +2 🦊 ~/proj     (state + context eyes, count outside face)
+RESET:     Ǝ[— —]E                     (em dash resting eyes)
 ```
 
 **Enable in `~/.tavs/user.conf`:**
 ```bash
 TAVS_FACE_MODE="compact"           # "standard" (default) | "compact"
-TAVS_COMPACT_THEME="semantic"      # "semantic" | "circles" | "squares" | "mixed"
+TAVS_COMPACT_THEME="squares"       # "semantic" | "circles" | "squares" | "mixed"
+TAVS_COMPACT_CONTEXT_EYE="true"    # "true" (default) | "false" to disable
+TAVS_COMPACT_CONTEXT_STYLE="food"  # food, food_10, circle, block, block_max, braille, number, percent
 ```
 
 | Theme | Style | Example |
 |-------|-------|---------|
+| squares | Bold block emoji (default) | `🟧 🟧`, `🟥 🟥`, `🟩 🟩` |
 | semantic | Meaningful emoji per state | `🟧 🟠`, `✅ 🟢`, `❌ ⭕` |
 | circles | Uniform round emoji | `🟠 🟠`, `🔴 🔴`, `🟢 🟢` |
-| squares | Bold block emoji | `🟧 🟧`, `🟥 🟥`, `🟩 🟩` |
 | mixed | Asymmetric pairs | `🟧 🟠`, `🟥 ⭕`, `✅ 🟢` |
 
-In compact mode, `{STATUS_ICON}` and `{AGENTS}` tokens are auto-suppressed since that info is embedded in the face. The right eye becomes `+N` when subagents are active.
+**Context eye** (right eye = context fill, enabled by default):
+- `Ǝ[🟧 🧀]E` (processing at 50%), `Ǝ[🟥 🍔]E` (permission at 85%)
+- Matching title token auto-suppressed (e.g., `{CONTEXT_FOOD}` hidden when food in eye)
+- Subagent count (`+N`) moves to `{AGENTS}` token outside face
+- No context data → graceful fallback to theme emoji (both eyes match)
+- Disabled (`TAVS_COMPACT_CONTEXT_EYE="false"`) → original behavior restored
+
+`{STATUS_ICON}` auto-suppressed (left eye embeds state). `{AGENTS}` shown when context
+eye active, suppressed when disabled. See [Dynamic Titles](docs/reference/dynamic-titles.md).
 
 ---
 
@@ -322,40 +334,34 @@ All hooks use `async: true` for non-blocking execution:
 ### Testing Changes
 
 ```bash
-# Test each state
-./src/core/trigger.sh processing
-./src/core/trigger.sh permission
-./src/core/trigger.sh complete
-./src/core/trigger.sh idle
-./src/core/trigger.sh compacting
+# Test each state (processing, permission, complete, idle, compacting, subagent, tool_error, reset)
+for s in processing permission complete idle compacting subagent-start tool_error reset; do ./src/core/trigger.sh $s; done
 ./src/core/trigger.sh subagent-start       # Golden-Yellow, increments counter
 ./src/core/trigger.sh subagent-stop        # Decrements counter, returns to processing
 ./src/core/trigger.sh tool_error           # Orange-Red, auto-returns after 1.5s
 ./src/core/trigger.sh processing new-prompt # Simulates UserPromptSubmit (resets counter)
-./src/core/trigger.sh reset
 
-# Test light mode explicitly
-FORCE_MODE=light ./src/core/trigger.sh processing
-FORCE_MODE=light ./src/core/trigger.sh reset
+# Test light mode
+FORCE_MODE=light ./src/core/trigger.sh processing && FORCE_MODE=light ./src/core/trigger.sh reset
 
 # Test mode-aware processing colors
 TAVS_PERMISSION_MODE=plan ./src/core/trigger.sh processing          # Green-yellow
-TAVS_PERMISSION_MODE=acceptEdits ./src/core/trigger.sh processing   # Barely warmer
 TAVS_PERMISSION_MODE=bypassPermissions ./src/core/trigger.sh processing  # Reddish
 ./src/core/trigger.sh reset
 
-# Test per-state title formats (context tokens)
+# Test context tokens in title
 TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}" \
-  ./src/core/trigger.sh permission
-./src/core/trigger.sh reset
+  ./src/core/trigger.sh permission && ./src/core/trigger.sh reset
+
+# Test compact context eye
+TAVS_FACE_MODE=compact ./src/core/trigger.sh processing   # Food emoji in right eye
+TAVS_FACE_MODE=compact ./src/core/trigger.sh reset        # Em dash resting eyes
 
 # Test StatusLine bridge (silent — no output expected)
-echo '{"context_window":{"used_percentage":72},"model":{"display_name":"Opus"}}' \
-  | ./src/agents/claude/statusline-bridge.sh
+echo '{"context_window":{"used_percentage":72}}' | ./src/agents/claude/statusline-bridge.sh
 
 # Test palette theming (requires 256-color mode)
 ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
-ls --color=auto  # Check if ls colors match theme
 ./src/core/trigger.sh reset
 
 # Check terminal capabilities
@@ -471,16 +477,8 @@ alias claude='TERM=xterm-256color COLORTERM= claude'
 | `ENABLE_PALETTE_THEMING=auto` + 256-color | ✅ | ✅ | Background + all text |
 | `ENABLE_PALETTE_THEMING=true` | ✅ | ✅ | Background + shell tools |
 
-**Theme Presets with Palettes:**
-
-All theme presets include 16-color ANSI palettes:
-- Catppuccin (Frappé, Latte, Macchiato, Mocha)
-- Nord
-- Dracula
-- Solarized (Dark, Light)
-- Tokyo Night
-
-Select with `./tavs theme <name>` or set `THEME_PRESET` in user.conf.
+**Theme Presets:** All presets include palettes — Catppuccin (4 variants), Nord, Dracula,
+Solarized, Tokyo Night. Select with `./tavs theme <name>` or set `THEME_PRESET`.
 
 ---
 

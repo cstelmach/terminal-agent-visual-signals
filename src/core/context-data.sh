@@ -225,6 +225,13 @@ _estimate_from_file_size() {
 # Load context data from best available source.
 # Fallback chain: bridge state → transcript estimate → empty (tokens collapse)
 load_context_data() {
+    # Prevent re-reading state file in same trigger invocation.
+    # _TAVS_CONTEXT_LOADED is process-scoped (fresh per trigger.sh run).
+    # Needed because compact context eye calls this from get_compact_face(),
+    # and compose_title() may call it again for {CONTEXT_*} title tokens.
+    [[ -n "${_TAVS_CONTEXT_LOADED:-}" ]] && return 0
+    _TAVS_CONTEXT_LOADED=1
+
     # Reset globals
     TAVS_CONTEXT_PCT=""
     TAVS_CONTEXT_MODEL=""
@@ -245,6 +252,23 @@ load_context_data() {
 
     # Neither available — all tokens will resolve to empty
     return 1
+}
+
+# Map a context style name (food, circle, block, etc.) to a token name.
+# Used by both get_compact_face() and compose_title() token suppression.
+# Usage: _context_style_to_token "food" → "CONTEXT_FOOD"
+_context_style_to_token() {
+    case "$1" in
+        food)      echo "CONTEXT_FOOD" ;;
+        food_10)   echo "CONTEXT_FOOD_10" ;;
+        circle)    echo "CONTEXT_ICON" ;;
+        block)     echo "CONTEXT_BAR_V" ;;
+        block_max) echo "CONTEXT_BAR_VM" ;;
+        braille)   echo "CONTEXT_BRAILLE" ;;
+        number)    echo "CONTEXT_NUMBER" ;;
+        percent)   echo "CONTEXT_PCT" ;;
+        *)         echo "" ;;
+    esac
 }
 
 # ==============================================================================
@@ -340,18 +364,20 @@ _get_bar_horizontal() {
 _get_bar_vertical() {
     local pct="$1"
 
-    local -n _blocks="TAVS_CONTEXT_BLOCKS" 2>/dev/null
-    if [[ ${#_blocks[@]} -eq 0 ]]; then
+    # Get array length via eval (Bash 3.2 compatible — no nameref)
+    local arr_len
+    eval "arr_len=\${#TAVS_CONTEXT_BLOCKS[@]}" 2>/dev/null
+    if [[ -z "$arr_len" || "$arr_len" -eq 0 ]]; then
         echo ""
         return
     fi
 
-    local index=$(( pct * 7 / 100 ))
-    local max_index=$(( ${#_blocks[@]} - 1 ))
+    local max_index=$(( arr_len - 1 ))
+    local index=$(( pct * max_index / 100 ))
     [[ $index -gt $max_index ]] && index=$max_index
     [[ $index -lt 0 ]] && index=0
 
-    echo "${_blocks[$index]}"
+    eval "echo \"\${TAVS_CONTEXT_BLOCKS[$index]}\""
 }
 
 # Vertical block + max outline character.
@@ -370,18 +396,20 @@ _get_bar_vertical_max() {
 _get_braille() {
     local pct="$1"
 
-    local -n _braille="TAVS_CONTEXT_BRAILLE" 2>/dev/null
-    if [[ ${#_braille[@]} -eq 0 ]]; then
+    # Get array length via eval (Bash 3.2 compatible — no nameref)
+    local arr_len
+    eval "arr_len=\${#TAVS_CONTEXT_BRAILLE[@]}" 2>/dev/null
+    if [[ -z "$arr_len" || "$arr_len" -eq 0 ]]; then
         echo ""
         return
     fi
 
-    local index=$(( pct * 6 / 100 ))
-    local max_index=$(( ${#_braille[@]} - 1 ))
+    local max_index=$(( arr_len - 1 ))
+    local index=$(( pct * max_index / 100 ))
     [[ $index -gt $max_index ]] && index=$max_index
     [[ $index -lt 0 ]] && index=0
 
-    echo "${_braille[$index]}"
+    eval "echo \"\${TAVS_CONTEXT_BRAILLE[$index]}\""
 }
 
 # Formatted percentage string: "N%"
