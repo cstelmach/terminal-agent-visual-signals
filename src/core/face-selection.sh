@@ -197,6 +197,16 @@ get_compact_face() {
     if [[ "$state" == "reset" ]]; then
         left="—"
         right="—"
+    elif [[ "$state" == "compacting" && "$_ctx_eye" == "true" ]]; then
+        # After compaction, context window is near-empty — force 0% in right eye
+        local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"
+        local _ctx_token=""
+        _ctx_token=$(_context_style_to_token "$_ctx_style")
+        if [[ -n "$_ctx_token" ]]; then
+            local _ctx_val
+            _ctx_val=$(resolve_context_token "$_ctx_token" "0")
+            [[ -n "$_ctx_val" ]] && right="$_ctx_val"
+        fi
     elif [[ "$_ctx_eye" == "true" ]]; then
         # Context eye enabled: resolve right eye from context data
         if type load_context_data &>/dev/null; then
