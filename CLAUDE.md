@@ -114,9 +114,11 @@ Set in `~/.tavs/user.conf`.
 | `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
 | `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
 | `src/core/session-icon.sh` | Unique animal emoji per terminal tab (registry-based dedup) |
+| `src/core/context-data.sh` | Context window data resolution for title tokens |
 | `src/core/session-state.sh` | Session state tracking (current state, timer PID) |
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
 | `src/core/palette-mode-helpers.sh` | Palette theming mode detection helpers |
+| `src/agents/claude/statusline-bridge.sh` | Silent StatusLine bridge (context data siphon) |
 | `src/config/defaults.conf` | **Single source of truth**: global settings + all agent colors/faces |
 | `src/config/user.conf.template` | Template for user overrides (v3 format, organized sections) |
 | `tavs` | CLI entry point: `./tavs set`, `./tavs status`, `./tavs wizard`, etc. |
@@ -141,6 +143,7 @@ All user settings are stored in `~/.tavs/user.conf`:
 - Per-agent overrides: `CLAUDE_DARK_BASE`, `GEMINI_FACES_PROCESSING`, etc.
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
 - Mode-aware colors: `CLAUDE_DARK_PROCESSING_PLAN`, `DEFAULT_LIGHT_PROCESSING_BYPASS`, etc.
+- Per-state title formats: `TAVS_TITLE_FORMAT_PERMISSION`, `CLAUDE_TITLE_FORMAT_PERMISSION`, etc.
 
 **Quick config:** `./tavs set theme nord`, `./tavs set faces off`
 **Full wizard:** `./tavs wizard` (interactive 7-step setup)
@@ -210,12 +213,96 @@ The `TAVS_TITLE_FORMAT` template supports these placeholders:
 | `{AGENTS}` | Active subagent count (empty when none) | `+2` |
 | `{SESSION_ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
+| `{CONTEXT_PCT}` | Context window percentage | `45%` |
+| `{CONTEXT_FOOD}` | Food emoji 21-stage (5% steps) | `🌽` (45%) |
+| `{CONTEXT_FOOD_10}` | Food emoji 11-stage (10% steps) | `🍌` (40%) |
+| `{CONTEXT_ICON}` | Color circle (⚪→🔴→⚫) | `🟡` (50%) |
+| `{CONTEXT_BAR_H}` | Horizontal bar 5-char | `▓▓░░░` (50%) |
+| `{CONTEXT_BAR_HL}` | Horizontal bar 10-char | `▓▓▓▓▓░░░░░` (50%) |
+| `{CONTEXT_BAR_V}` | Vertical block | `▄` (50%) |
+| `{CONTEXT_BAR_VM}` | Vertical + max outline | `▄▒` (50%) |
+| `{CONTEXT_BRAILLE}` | Braille fill | `⠤` (50%) |
+| `{CONTEXT_NUMBER}` | Number emoji (0-10) | `5️⃣` (50%) |
+| `{MODEL}` | Model display name | `Opus` |
+| `{COST}` | Session cost | `$0.42` |
+| `{DURATION}` | Session duration | `5m32s` |
+| `{LINES}` | Lines added | `+156` |
+| `{MODE}` | Permission mode | `plan` |
 
 The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
 It only appears when subagents are active (count > 0).
 
 The `{SESSION_ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
 Each terminal tab gets a unique animal emoji from a pool of 25, persisting across `/clear`.
+
+**Context tokens** (`{CONTEXT_*}`, `{MODEL}`, `{COST}`, `{DURATION}`, `{LINES}`) require the
+StatusLine bridge for real-time data. Without it, TAVS estimates context % from transcript file
+size. When no data is available, tokens resolve to empty string and collapse silently.
+
+`{MODE}` comes from the hook payload directly and is always available.
+
+### Per-State Title Formats
+
+Different title formats for each trigger state. Uses a 4-level fallback chain:
+
+```
+Level 1: {AGENT}_TITLE_FORMAT_{STATE}  (e.g., CLAUDE_TITLE_FORMAT_PERMISSION)
+Level 2: {AGENT}_TITLE_FORMAT          (e.g., CLAUDE_TITLE_FORMAT)
+Level 3: TAVS_TITLE_FORMAT_{STATE}     (e.g., TAVS_TITLE_FORMAT_PERMISSION)
+Level 4: TAVS_TITLE_FORMAT             (global default — current behavior)
+```
+
+**Defaults** (only permission and compacting have per-state formats by default):
+```bash
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}"
+TAVS_TITLE_FORMAT_COMPACTING="{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}"
+```
+
+This means during permission requests (e.g., plan mode approval), the title shows:
+`Ǝ[° °]E 🔴 🧀 50% ~/proj` — food emoji and percentage help decide whether to compact.
+
+**Configure in `~/.tavs/user.conf`:**
+```bash
+# Show context on processing too
+TAVS_TITLE_FORMAT_PROCESSING="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {AGENTS} {BASE}"
+
+# Show cost on completion
+TAVS_TITLE_FORMAT_COMPLETE="{FACE} {STATUS_ICON} {COST} {SESSION_ICON} {BASE}"
+
+# Claude-specific: show model name during permission
+CLAUDE_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {MODEL} {BASE}"
+```
+
+### StatusLine Bridge (Context Data)
+
+The bridge enables real-time context window data in titles by reading Claude Code's StatusLine
+JSON. It's a silent script — reads JSON from stdin, writes a state file, produces **no output**.
+
+**Setup:**
+
+1. Create `~/.claude/statusline.sh`:
+```bash
+#!/bin/bash
+input=$(cat)
+# TAVS bridge — silent, no output
+echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/src/agents/claude/statusline-bridge.sh
+# Your statusline output (optional):
+echo "$input" | jq -r '"[\(.model.display_name)] \(.context_window.used_percentage // 0)%"'
+```
+
+2. Add to `~/.claude/settings.json`:
+```json
+{
+  "statusLine": {
+    "command": "bash ~/.claude/statusline.sh"
+  }
+}
+```
+
+3. Restart Claude Code. Context tokens will now show real-time data in titles.
+
+**Without the bridge:** TAVS estimates context % from transcript file size (~20% accuracy).
+**Without either:** Context tokens resolve to empty and collapse silently — no broken titles.
 
 ### Enabling Full Title Mode
 
@@ -324,6 +411,15 @@ TAVS_PERMISSION_MODE=plan ./src/core/trigger.sh processing          # Green-yell
 TAVS_PERMISSION_MODE=acceptEdits ./src/core/trigger.sh processing   # Barely warmer
 TAVS_PERMISSION_MODE=bypassPermissions ./src/core/trigger.sh processing  # Reddish
 ./src/core/trigger.sh reset
+
+# Test per-state title formats (context tokens)
+TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}" \
+  ./src/core/trigger.sh permission
+./src/core/trigger.sh reset
+
+# Test StatusLine bridge (silent — no output expected)
+echo '{"context_window":{"used_percentage":72},"model":{"display_name":"Opus"}}' \
+  | ./src/agents/claude/statusline-bridge.sh
 
 # Test palette theming (requires 256-color mode)
 ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing
