@@ -230,7 +230,7 @@ is a fresh process, so no stale state across invocations).
 |-------|------|------------|
 | `food` (default) | `Ǝ[🟧 🥝]E` | `Ǝ[🟧 🥝]E 🦊 ~/proj` |
 | `circle` | `Ǝ[🟧 🔵]E` | `Ǝ[🟧 🔵]E 🦊 ~/proj` |
-| `square` | `Ǝ[🟧 🟦]E` | `Ǝ[🟧 🟦]E 🦊 ~/proj` |
+| ~~`square`~~ | ~~removed~~ | ~~blends with squares theme left eye~~ |
 | `block` | `Ǝ[🟧 ▂]E` | `Ǝ[🟧 ▂]E 🦊 ~/proj` |
 | `block_max` | `Ǝ[🟧 ▂▒]E` | `Ǝ[🟧 ▂▒]E 🦊 ~/proj` |
 | `braille` | `Ǝ[🟧 ⠄]E` | `Ǝ[🟧 ⠄]E 🦊 ~/proj` |
@@ -603,7 +603,7 @@ source src/core/context-data.sh
 source src/core/face-selection.sh
 
 # Test each style resolves correctly
-for style in food food_10 circle square block block_max braille number percent; do
+for style in food food_10 circle block block_max braille number percent; do
     echo "$style at 50%: ..."
     # Verify resolve_context_token produces expected output
 done
@@ -622,7 +622,7 @@ TAVS_FACE_MODE=compact ./src/core/trigger.sh processing
 # → Verify food emoji in right eye if bridge data exists
 
 # Test all 8 styles
-for style in food food_10 circle square block block_max braille number percent; do
+for style in food food_10 circle block block_max braille number percent; do
     TAVS_FACE_MODE=compact TAVS_COMPACT_CONTEXT_STYLE=$style \
         ./src/core/trigger.sh processing
 done
@@ -670,7 +670,7 @@ TAVS_FACE_MODE=compact ./src/core/trigger.sh subagent-start
 TAVS_COMPACT_CONTEXT_EYE="true"       # "true" | "false"
 
 # Context style for the right eye.
-# Available: food, food_10, circle, square, block, block_max, braille, number, percent
+# Available: food, food_10, circle, block, block_max, braille, number, percent
 TAVS_COMPACT_CONTEXT_STYLE="food"
 
 # Default compact theme (changed from "semantic")

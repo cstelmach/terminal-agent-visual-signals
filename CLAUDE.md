@@ -335,7 +335,7 @@ All hooks use `async: true` for non-blocking execution:
 
 ```bash
 # Test each state (processing, permission, complete, idle, compacting, subagent, tool_error, reset)
-for s in processing permission complete idle compacting reset; do ./src/core/trigger.sh $s; done
+for s in processing permission complete idle compacting subagent-start tool_error reset; do ./src/core/trigger.sh $s; done
 ./src/core/trigger.sh subagent-start       # Golden-Yellow, increments counter
 ./src/core/trigger.sh subagent-stop        # Decrements counter, returns to processing
 ./src/core/trigger.sh tool_error           # Orange-Red, auto-returns after 1.5s
