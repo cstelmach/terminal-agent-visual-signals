@@ -171,7 +171,7 @@
 #   1. Create ~/.claude/statusline.sh (or add to existing):
 #        #!/bin/bash
 #        input=$(cat)
-#        echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/src/agents/claude/statusline-bridge.sh
+#        echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src/agents/claude/statusline-bridge.sh
 #        # Your statusline output below (optional):
 #        echo "$input" | jq -r '"[\(.model.display_name)] \(.context_window.used_percentage // 0)%"'
 #

@@ -260,7 +260,7 @@ assert "syntax: statusline-bridge.sh" "" "$syntax_check"
 # ==============================================================================
 echo -e "\033[0;33m=== Test Group 8: Plugin cache deployment verification ===\033[0m"
 # ==============================================================================
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 
 # New file exists in cache
 assert "cache: context-data.sh exists" "true" "$([[ -f "$CACHE/src/core/context-data.sh" ]] && echo true || echo false)"

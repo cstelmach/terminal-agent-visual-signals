@@ -285,7 +285,7 @@ JSON. It's a silent script — reads JSON from stdin, writes a state file, produ
 #!/bin/bash
 input=$(cat)
 # TAVS bridge — silent, no output
-echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/src/agents/claude/statusline-bridge.sh
+echo "$input" | ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src/agents/claude/statusline-bridge.sh
 # Your statusline output (optional):
 echo "$input" | jq -r '"[\(.model.display_name)] \(.context_window.used_percentage // 0)%"'
 ```
@@ -439,14 +439,14 @@ bash src/core/terminal-detection.sh test
 ./tavs sync
 
 # Or manual copy:
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0"
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null
 echo "Plugin cache updated - submit a prompt to test"
 ```
 
 **Key locations:**
 - Source repo: `~/.claude/hooks/terminal-agent-visual-signals/`
-- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0/`
+- Plugin cache: `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/`
 - User config: `~/.tavs/user.conf` (changes here work immediately)
 
 See [Development Testing](docs/reference/development-testing.md) for the full workflow.

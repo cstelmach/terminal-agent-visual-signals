@@ -9,8 +9,8 @@ When developing TAVS, changes need to be deployed to the plugin cache before the
 ### Update Plugin Cache (One-Liner)
 
 ```bash
-# Copy all core files from repo to plugin cache
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+# Copy all core files from repo to plugin cache (auto-detect version)
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null; echo "Cache updated"
 ```
 
@@ -58,7 +58,7 @@ bash -c 'source src/core/theme-config-loader.sh && load_agent_config claude && e
 The plugin cache is where Claude Code actually loads the code from:
 
 ```bash
-CACHE_BASE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+CACHE_BASE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 REPO_BASE="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
 
 # All core files (recommended — ensures consistency)
@@ -87,7 +87,7 @@ User settings are in `~/.tavs/user.conf`. Changes here take effect immediately (
 | Purpose | Location |
 |---------|----------|
 | Source repo | `/Users/cs/.claude/hooks/terminal-agent-visual-signals/` |
-| Plugin cache | `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/` |
+| Plugin cache | `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/` |
 | User config | `~/.tavs/user.conf` |
 | Debug logs | `~/.claude/hooks/terminal-agent-visual-signals/debug/` |
 
@@ -96,13 +96,13 @@ User settings are in `~/.tavs/user.conf`. Changes here take effect immediately (
 ### Change a Color
 
 1. Edit `src/config/defaults.conf` (find `DARK_PROCESSING` or similar)
-2. Copy to cache: `cp src/config/defaults.conf ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/config/`
+2. Sync cache: `./tavs sync` (or use the one-liner above)
 3. Submit a prompt to see the change
 
 ### Change Behavior Logic
 
 1. Edit `src/core/theme-config-loader.sh` or `src/core/trigger.sh`
-2. Copy to cache: `cp src/core/*.sh ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/core/`
+2. Sync cache: `./tavs sync` (or use the one-liner above)
 3. Submit a prompt to see the change
 
 ### Debug Issues
@@ -122,7 +122,7 @@ ls -la ~/.claude/hooks/terminal-agent-visual-signals/debug/
 
 1. **Verify cache was updated:**
    ```bash
-   ls -la ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0/src/core/trigger.sh
+   ls -la ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/*/src/core/trigger.sh
    # Should show recent timestamp
    ```
 

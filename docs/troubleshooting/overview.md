@@ -360,7 +360,7 @@ zsh -c 'source src/core/theme-config-loader.sh && echo "TAVS_TITLE_FORMAT=$TAVS_
 **If issue persists after updating:**
 ```bash
 # Update plugin cache with fixed code
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 cp src/core/*.sh "$CACHE/src/core/"
 ```
 
@@ -381,7 +381,7 @@ grep "ENABLE_SUBAGENT" ~/.tavs/user.conf
 
 **Solution 1: Update plugin cache**
 ```bash
-CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0"
+CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 ```
 
