@@ -46,6 +46,11 @@ resolve_alias() {
         session-icons)      echo "ENABLE_SESSION_ICONS"; return 0 ;;
         agents-format)      echo "TAVS_AGENTS_FORMAT"; return 0 ;;
 
+        # Identity System
+        identity-mode)      echo "TAVS_IDENTITY_MODE"; return 0 ;;
+        identity-persistence) echo "TAVS_IDENTITY_PERSISTENCE"; return 0 ;;
+        dir-icon-type)      echo "TAVS_DIR_ICON_TYPE"; return 0 ;;
+
         # Spinner (when title-mode=full)
         spinner)            echo "TAVS_SPINNER_STYLE"; return 0 ;;
         eye-mode)           echo "TAVS_SPINNER_EYE_MODE"; return 0 ;;
@@ -66,6 +71,7 @@ resolve_alias() {
         TAVS_COMPACT_THEME|ENABLE_STYLISH_BACKGROUNDS|ENABLE_PALETTE_THEMING|\
         TAVS_TITLE_MODE|TAVS_TITLE_FALLBACK|TAVS_TITLE_FORMAT|\
         ENABLE_SESSION_ICONS|TAVS_AGENTS_FORMAT|\
+        TAVS_IDENTITY_MODE|TAVS_IDENTITY_PERSISTENCE|TAVS_DIR_ICON_TYPE|\
         TAVS_SPINNER_STYLE|TAVS_SPINNER_EYE_MODE|TAVS_SESSION_IDENTITY|\
         ENABLE_MODE_AWARE_PROCESSING|TRUECOLOR_MODE_OVERRIDE|\
         ENABLE_BELL_PERMISSION|ENABLE_BELL_COMPLETE|DEBUG_ALL)
@@ -127,6 +133,12 @@ get_valid_values() {
             echo "skip-processing prefix-only full off" ;;
         TAVS_TITLE_FALLBACK)
             echo "path session-path path-session session" ;;
+        TAVS_IDENTITY_MODE)
+            echo "dual single off" ;;
+        TAVS_IDENTITY_PERSISTENCE)
+            echo "ephemeral persistent" ;;
+        TAVS_DIR_ICON_TYPE)
+            echo "flags plants buildings" ;;
         TAVS_SPINNER_STYLE)
             echo "braille circle block eye-animate none random" ;;
         TAVS_SPINNER_EYE_MODE)
@@ -186,6 +198,9 @@ get_description() {
         title-format)       echo "Title composition template ({FACE} {STATUS_ICON} etc.)" ;;
         session-icons)      echo "Unique animal emoji per terminal tab" ;;
         agents-format)      echo "Subagent count format in title ({N} = count)" ;;
+        identity-mode)      echo "Identity system mode (dual, single, off)" ;;
+        identity-persistence) echo "Identity registry storage (ephemeral, persistent)" ;;
+        dir-icon-type)      echo "Directory icon pool (flags, plants, buildings)" ;;
         spinner)            echo "Processing spinner style (braille, circle, random, etc.)" ;;
         eye-mode)           echo "Spinner eye sync mode (sync, opposite, mirror, etc.)" ;;
         session-identity)   echo "Consistent visual identity per session" ;;
@@ -211,11 +226,14 @@ bell-complete
 bell-permission
 compact-theme
 debug
+dir-icon-type
 eye-mode
 face-mode
 face-position
 faces
 force-mode
+identity-mode
+identity-persistence
 light-dark
 mode
 mode-aware

@@ -203,7 +203,7 @@ assign_session_icon() {
     # --- Legacy mode: exact v1 behavior ---
     # Zsh compat: intermediate var for brace default
     local _default_mode="dual"
-    local identity_mode="${TAVS_IDENTITY_MODE:-$_default_mode}"
+    local identity_mode="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode}}"
 
     if [[ "$identity_mode" == "off" ]]; then
         # Detect and remove v2 format files (user switched from v2 back to off)

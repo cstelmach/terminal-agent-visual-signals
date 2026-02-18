@@ -181,7 +181,7 @@ _load_identity_modules() {
 # Per spec Decision D14: re-evaluated at SessionStart + UserPromptSubmit.
 _revalidate_identity() {
     local _default_mode="dual"
-    local _id_mode="${TAVS_IDENTITY_MODE:-$_default_mode}"
+    local _id_mode="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode}}"
     [[ "$_id_mode" == "off" ]] && return 0
 
     # Session: assign_session_icon is idempotent — on cache hit with same key,
@@ -202,7 +202,7 @@ case "$STATE" in
             reset_subagent_count
             # Revalidate identity: re-check collision status + assign/update dir icon
             local _default_mode_p="dual"
-            if [[ "${TAVS_IDENTITY_MODE:-$_default_mode_p}" != "off" ]]; then
+            if [[ "${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_p}}" != "off" ]]; then
                 _load_identity_modules
                 _revalidate_identity
             fi
@@ -325,7 +325,7 @@ case "$STATE" in
 
             # Assign session icon BEFORE title (so compose_title includes it)
             local _default_mode_r="dual"
-            local _id_mode_r="${TAVS_IDENTITY_MODE:-$_default_mode_r}"
+            local _id_mode_r="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_r}}"
             if [[ "$_id_mode_r" != "off" ]]; then
                 _load_identity_modules
                 assign_session_icon

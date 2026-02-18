@@ -149,7 +149,7 @@ _hash_path() {
 _select_dir_pool() {
     # Zsh compat: intermediate var for brace default
     local _default_type="flags"
-    local icon_type="${TAVS_DIR_ICON_TYPE:-$_default_type}"
+    local icon_type="${DIR_ICON_TYPE:-${TAVS_DIR_ICON_TYPE:-$_default_type}}"
 
     case "$icon_type" in
         plants)    printf '%s' "TAVS_DIR_FALLBACK_POOL_A" ;;

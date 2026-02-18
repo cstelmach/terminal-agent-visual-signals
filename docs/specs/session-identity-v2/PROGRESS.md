@@ -17,7 +17,7 @@
 | Phase 4: Hook Data Extraction | Completed | 2026-02-18 | 2026-02-18 | 8 lines, 6 tests pass |
 | Phase 5: Core Trigger Integration | Completed | 2026-02-18 | 2026-02-18 | 27 tests pass, all 10 acceptance criteria met |
 | Phase 6: Title System Integration | Completed | 2026-02-18 | 2026-02-18 | 30 lines changed, all 14 acceptance criteria met |
-| Phase 7: Configuration Polish | Not Started | | | |
+| Phase 7: Configuration Polish | Completed | 2026-02-18 | 2026-02-18 | 37 tests pass, all 5 acceptance criteria met |
 | Phase 8: Documentation Updates | Not Started | | | |
 
 ---
@@ -296,3 +296,50 @@ collision_active=false
   (e.g., `TAVS_IDENTITY_MODE=single ./src/core/trigger.sh`) were silently
   overwritten by `defaults.conf` sourcing. This matches the existing pattern
   used by `ENABLE_MODE_AWARE_PROCESSING` and `TRUECOLOR_MODE_OVERRIDE`.
+
+### 2026-02-18 — Phase 7: Configuration Polish
+
+**What was done:**
+- Updated `src/config/user.conf.template` (~45 lines added):
+  - Added `{DIR_ICON}` and `{SESSION_ID}` to Title Format token documentation
+  - Added Identity System subsection: all 6 config variables with descriptions
+  - Added Title Format Presets subsection: Minimal, Standard, Full Identity, Bubble
+  - Added per-agent override examples (CLAUDE_IDENTITY_MODE, CLAUDE_DIR_ICON_TYPE)
+- Updated `src/core/theme-config-loader.sh` (+2 lines):
+  - Added `IDENTITY_MODE` and `DIR_ICON_TYPE` to `_resolve_agent_variables()` vars array
+  - Enables per-agent overrides: `CLAUDE_IDENTITY_MODE=single` resolves to `IDENTITY_MODE`
+- Updated `src/cli/aliases.sh` (~25 lines added):
+  - Added 3 new CLI aliases: `identity-mode`, `identity-persistence`, `dir-icon-type`
+  - Added valid values, validation rules, and descriptions for each
+  - Added raw variable names to known-variables case block
+  - Updated sorted alias listing
+- Updated per-agent override pattern in 4 core files:
+  - `src/core/trigger.sh`: 3 references updated to `${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-...}}`
+  - `src/core/session-icon.sh`: 1 reference updated
+  - `src/core/title-management.sh`: 1 reference updated
+  - `src/core/dir-icon.sh`: 1 reference updated to `${DIR_ICON_TYPE:-${TAVS_DIR_ICON_TYPE:-...}}`
+  Follows existing pattern from `COMPACT_CONTEXT_STYLE` (agent-resolved with global fallback)
+
+**Verified (37 tests):**
+- user.conf.template: 13 checks (all tokens, settings, presets, examples documented)
+- theme-config-loader.sh: 2 checks (both vars in array)
+- CLI aliases: 12 checks (resolution, validation, descriptions, sorted listing)
+- Per-agent overrides: 6 checks (IDENTITY_MODE, DIR_ICON_TYPE, priority ordering)
+- Functional triggers: 6 checks (off→v1, single→v2-no-dir, dual→deferred-dir)
+- Syntax validation: all 3 modified files pass `bash -n`
+- Full source chain: all 6 modules source without error
+
+**Spec acceptance criteria — all 5/5 met:**
+1. user.conf.template documents all new settings ✅
+2. Format presets documented with examples ✅
+3. Identity mode values (dual/single/off) documented ✅
+4. Per-agent overrides for identity variables work ✅
+5. `./tavs set identity-mode <mode>` added to CLI ✅
+
+**Deviations from spec/plan:**
+- Updated 4 additional core files (trigger.sh, session-icon.sh, title-management.sh,
+  dir-icon.sh) to add per-agent override support. The plan mentioned only user.conf.template
+  and theme-config-loader.sh, but the vars array addition alone doesn't work unless the
+  consuming code checks the agent-resolved generic variable (`IDENTITY_MODE`) with fallback
+  to the global (`TAVS_IDENTITY_MODE`). This follows the established pattern from
+  `COMPACT_CONTEXT_STYLE` / `TAVS_COMPACT_CONTEXT_STYLE`.

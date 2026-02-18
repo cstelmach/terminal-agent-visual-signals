@@ -320,7 +320,7 @@ compose_title() {
     # Identity system: dual/single modes use registry-based icons
     # Legacy: ENABLE_SESSION_ICONS=true with TAVS_IDENTITY_MODE=off uses random icons
     local session_icon=""
-    local _id_mode="${TAVS_IDENTITY_MODE:-dual}"
+    local _id_mode="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-dual}}"
     if [[ "$_id_mode" != "off" || "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && \
        type get_session_icon &>/dev/null; then
         session_icon=$(get_session_icon 2>/dev/null)

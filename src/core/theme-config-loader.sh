@@ -122,6 +122,9 @@ _resolve_agent_variables() {
         # Per-agent compact context eye overrides
         COMPACT_CONTEXT_STYLE
         COMPACT_CONTEXT_EYE
+        # Per-agent identity system overrides
+        IDENTITY_MODE
+        DIR_ICON_TYPE
     )
 
     local var value
