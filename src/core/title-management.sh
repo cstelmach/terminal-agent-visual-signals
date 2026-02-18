@@ -317,8 +317,12 @@ compose_title() {
     fi
 
     # Get session icon (empty when disabled or no icon assigned)
+    # Identity system: dual/single modes use registry-based icons
+    # Legacy: ENABLE_SESSION_ICONS=true with TAVS_IDENTITY_MODE=off uses random icons
     local session_icon=""
-    if [[ "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && type get_session_icon &>/dev/null; then
+    local _id_mode="${TAVS_IDENTITY_MODE:-dual}"
+    if [[ "$_id_mode" != "off" || "${ENABLE_SESSION_ICONS:-false}" == "true" ]] && \
+       type get_session_icon &>/dev/null; then
         session_icon=$(get_session_icon 2>/dev/null)
     fi
 
@@ -365,11 +369,38 @@ compose_title() {
         [[ -n "$_eye_token" ]] && title="${title//\{${_eye_token}\}/}"
     fi
 
+    # Dynamic guillemet injection for dual identity mode
+    # When format has {SESSION_ICON} but user hasn't placed {DIR_ICON} explicitly,
+    # wrap both in «{DIR_ICON}|{SESSION_ICON}» for the default dual display.
+    # Only in dual mode — single/off modes leave the format unchanged.
+    # NOTE: Must use intermediate var — braces in replacement terminate ${//} expansion
+    if [[ "$_id_mode" == "dual" && \
+          "$title" == *"{SESSION_ICON}"* && \
+          "$title" != *"{DIR_ICON}"* ]]; then
+        local _dual_wrap='«{DIR_ICON}|{SESSION_ICON}»'
+        title="${title//\{SESSION_ICON\}/$_dual_wrap}"
+    fi
+
     # Substitute existing placeholders
     title="${title//\{FACE\}/$face}"
     title="${title//\{STATUS_ICON\}/$status_icon}"
     title="${title//\{AGENTS\}/$agents}"
     title="${title//\{SESSION_ICON\}/$session_icon}"
+
+    # Resolve {DIR_ICON} — directory identity flag (dual mode only)
+    local dir_icon=""
+    if [[ "$_id_mode" == "dual" ]] && type get_dir_icon &>/dev/null; then
+        dir_icon=$(get_dir_icon 2>/dev/null)
+    fi
+    title="${title//\{DIR_ICON\}/$dir_icon}"
+
+    # Resolve {SESSION_ID} — first 8 chars of Claude Code session ID
+    local session_id_display=""
+    if [[ -n "${TAVS_SESSION_ID:-}" ]]; then
+        session_id_display="${TAVS_SESSION_ID:0:8}"
+    fi
+    title="${title//\{SESSION_ID\}/$session_id_display}"
+
     title="${title//\{BASE\}/$base_title}"
 
     # Context & metadata tokens — only resolve when format contains them
@@ -398,8 +429,14 @@ compose_title() {
         title="${title//\{MODE\}/${TAVS_PERMISSION_MODE:-}}"
     fi
 
-    # Clean up multiple spaces and trim (use printf for safe string handling)
-    title=$(printf '%s\n' "$title" | sed 's/  */ /g; s/^ *//; s/ *$//')
+    # Clean up guillemet formatting for empty tokens, then collapse spaces and trim
+    # «|🦊» → «🦊» (no dir icon), «🇩🇪|» → «🇩🇪» (no session icon)
+    # «|» → «» → (empty) (neither icon), «» → (empty)
+    title=$(printf '%s\n' "$title" | sed \
+        -e 's/«|/«/g' \
+        -e 's/|»/»/g' \
+        -e 's/«»//g' \
+        -e 's/  */ /g; s/^ *//; s/ *$//')
 
     printf '%s\n' "$title"
 }

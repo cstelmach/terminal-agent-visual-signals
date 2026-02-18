@@ -16,7 +16,7 @@
 | Phase 3: Session Icon Rewrite | Completed | 2026-02-18 | 2026-02-18 | 433 lines, major rewrite, 31 tests pass |
 | Phase 4: Hook Data Extraction | Completed | 2026-02-18 | 2026-02-18 | 8 lines, 6 tests pass |
 | Phase 5: Core Trigger Integration | Completed | 2026-02-18 | 2026-02-18 | 27 tests pass, all 10 acceptance criteria met |
-| Phase 6: Title System Integration | Not Started | | | |
+| Phase 6: Title System Integration | Completed | 2026-02-18 | 2026-02-18 | 30 lines changed, all 14 acceptance criteria met |
 | Phase 7: Configuration Polish | Not Started | | | |
 | Phase 8: Documentation Updates | Not Started | | | |
 
@@ -250,3 +250,49 @@ collision_active=false
   Spec's explicit comparison is an optimization that skips file I/O when key matches,
   but the idempotent path reads one small file (~4 lines) which is negligible for a
   once-per-prompt operation.
+
+### 2026-02-18 — Phase 6: Title System Integration
+
+**What was done:**
+- Modified `src/core/title-management.sh` `compose_title()` (~30 lines added/changed):
+  1. Updated session icon condition to check `TAVS_IDENTITY_MODE` (not just `ENABLE_SESSION_ICONS`)
+  2. Dynamic guillemet injection: when dual mode + `{SESSION_ICON}` present + `{DIR_ICON}`
+     absent → replaces `{SESSION_ICON}` with `«{DIR_ICON}|{SESSION_ICON}»`
+  3. Added `{DIR_ICON}` token resolution (calls `get_dir_icon()`, dual mode only)
+  4. Added `{SESSION_ID}` token resolution (first 8 chars of `TAVS_SESSION_ID`)
+  5. Replaced simple space-collapse sed with guillemet-aware cleanup:
+     `«|` → `«`, `|»` → `»`, `«»` → empty, then space collapse + trim
+- Modified `src/config/defaults.conf`:
+  - Added `{DIR_ICON}` and `{SESSION_ID}` to per-state format comment documentation
+  - **Fixed Phase 0 bug**: Changed all 6 identity config vars from unconditional
+    assignment to conditional `${:-}` pattern (e.g., `TAVS_IDENTITY_MODE="${TAVS_IDENTITY_MODE:-dual}"`)
+    to preserve env var overrides. Discovered during single-mode integration test.
+
+**Key design notes:**
+- Dynamic guillemet injection uses intermediate variable (`_dual_wrap`) to avoid
+  bash brace expansion issues in `${//}` replacement (braces in replacement string
+  would terminate the expansion prematurely)
+- `_id_mode` local var computed once at start of `compose_title()`, reused by
+  session icon condition, guillemet injection, and `{DIR_ICON}` resolution
+- `type get_dir_icon &>/dev/null` guard ensures graceful behavior when dir-icon.sh
+  not sourced (non-identity states, or modules not loaded yet)
+
+**Verified (30+ tests):**
+- Guillemet cleanup (6): `«|🦊»`→`«🦊»`, `«🇩🇪|»`→`«🇩🇪»`, `«|»`→empty,
+  `«»`→empty, both present no change, space collapse with guillemets
+- Token resolution (4): `{SESSION_ID}` first 8 chars, empty when unset,
+  `{DIR_ICON}` empty in single mode, empty in off mode
+- Guillemet injection (6): dual mode injection, single mode no injection,
+  off mode no injection, explicit `{DIR_ICON}` no double-injection,
+  per-state format injection (permission), empty dir graceful degradation
+- Integration through trigger.sh (12): source chain, SessionStart, session icon
+  cache, new-prompt dir assignment, dir icon cache, permission state, SessionEnd
+  release, off mode compat, single mode no dir, defaults.conf sourcing,
+  env var override preservation, ENABLE_SESSION_ICONS backward compat
+
+**Deviations:**
+- Fixed Phase 0 bug: identity config vars in `defaults.conf` changed from
+  unconditional to conditional assignment. Without this fix, env var overrides
+  (e.g., `TAVS_IDENTITY_MODE=single ./src/core/trigger.sh`) were silently
+  overwritten by `defaults.conf` sourcing. This matches the existing pattern
+  used by `ENABLE_MODE_AWARE_PROCESSING` and `TRUECOLOR_MODE_OVERRIDE`.
