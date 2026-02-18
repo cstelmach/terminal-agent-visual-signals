@@ -2,7 +2,7 @@
 
 **Spec:** docs/specs/session-identity-v2/SPEC.md
 **Plan:** docs/specs/session-identity-v2/PLAN.md
-**Status:** In Progress
+**Status:** Complete
 
 ---
 
@@ -18,7 +18,7 @@
 | Phase 5: Core Trigger Integration | Completed | 2026-02-18 | 2026-02-18 | 27 tests pass, all 10 acceptance criteria met |
 | Phase 6: Title System Integration | Completed | 2026-02-18 | 2026-02-18 | 30 lines changed, all 14 acceptance criteria met |
 | Phase 7: Configuration Polish | Completed | 2026-02-18 | 2026-02-18 | 37 tests pass, all 5 acceptance criteria met |
-| Phase 8: Documentation Updates | Not Started | | | |
+| Phase 8: Documentation Updates | Completed | 2026-02-18 | 2026-02-18 | All 5 docs updated, 3/3 acceptance criteria met |
 
 ---
 
@@ -343,3 +343,50 @@ collision_active=false
   consuming code checks the agent-resolved generic variable (`IDENTITY_MODE`) with fallback
   to the global (`TAVS_IDENTITY_MODE`). This follows the established pattern from
   `COMPACT_CONTEXT_STYLE` / `TAVS_COMPACT_CONTEXT_STYLE`.
+
+### 2026-02-18 — Phase 8: Documentation Updates
+
+**What was done:**
+- Updated `CLAUDE.md` (~50 lines added/changed):
+  - Key Files table: added `identity-registry.sh`, `dir-icon.sh`, updated `session-icon.sh`
+  - Title Format Tokens table: added `{DIR_ICON}`, `{SESSION_ID}`, updated `{SESSION_ICON}`
+  - Updated token notes: `TAVS_IDENTITY_MODE` prerequisite, guillemet injection explanation
+  - Added Session Identity System section (modes, config, comparison table)
+  - Added 7 identity testing commands to Testing Changes section
+  - Updated Quick Start with `./tavs set identity-mode dual`
+  - Updated all title examples to show `«🇩🇪|🦊»` guillemet format
+  - Updated User Configuration variable naming convention
+- Updated `docs/reference/dynamic-titles.md` (~30 lines added/changed):
+  - Added Identity Tokens section with all 3 new tokens
+  - Updated Default Per-State Formats table (permission now includes `{SESSION_ICON}`)
+  - Updated guillemet-aware cleanup documentation
+  - Updated Key Files table with identity modules
+  - Updated compact context eye examples with guillemets
+  - Updated subagent count displacement examples with guillemets
+- Updated `docs/reference/architecture.md` (~50 lines added/changed):
+  - Rewrote session-icon.sh module description (v2 deterministic behavior)
+  - Added identity-registry.sh and dir-icon.sh module descriptions
+  - Added modules to ASCII architecture diagram
+  - Expanded Data Flow section with identity lifecycle (SessionStart, new-prompt, SessionEnd)
+  - Updated compose_title() description to mention guillemet injection
+- Updated `docs/reference/testing.md` (~20 lines changed):
+  - Replaced "Test Session Icons" with "Test Session Identity" (3-mode testing)
+  - Updated verification checklist (6 items replacing 3)
+  - Updated "Session Icons" scenario to "Session Identity" (8 items replacing 5)
+  - Updated "Session Reset" scenario
+- Updated `docs/reference/development-testing.md` (1 line):
+  - Renamed "Session icons" to "Session identity" with 3 source files
+
+**Spec acceptance criteria — all 3/3 met:**
+1. CLAUDE.md reflects new identity system ✅
+2. Testing commands include identity verification ✅
+3. Token documentation includes `{DIR_ICON}`, `{SESSION_ICON}`, `{SESSION_ID}` ✅
+
+**Deviations from spec/plan:**
+- Spec change #1 said "Add identity system to CLAUDE.md visual states table" but the
+  identity system is a title feature, not a visual state (no new colors/emoji). Instead,
+  added a dedicated "Session Identity System" section with mode comparison table.
+- Updated more docs than plan specified: architecture.md and development-testing.md also
+  had session-icon references that needed updating for consistency.
+- Updated compact face mode and title examples throughout docs to show guillemet format,
+  ensuring visual consistency across all documentation.

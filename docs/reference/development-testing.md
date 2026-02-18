@@ -35,7 +35,7 @@ Edit files in `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`:
 | Faces | `src/config/defaults.conf` (search `FACES_`), `src/core/face-selection.sh` |
 | Behavior | `src/core/trigger.sh`, `src/core/theme-config-loader.sh` |
 | Titles | `src/core/title-management.sh`, `src/core/spinner.sh` |
-| Session icons | `src/core/session-icon.sh` |
+| Session identity | `src/core/session-icon.sh`, `src/core/identity-registry.sh`, `src/core/dir-icon.sh` |
 | Idle timer | `src/core/idle-worker-background.sh` |
 | Backgrounds | `src/core/backgrounds.sh` |
 | Terminal OSC | `src/core/terminal-osc-sequences.sh` |

@@ -26,8 +26,8 @@ Only three states have per-state formats by default (others fall back to
 
 | State | Default Format | Example Output |
 |-------|---------------|----------------|
-| Permission | `{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}` | `Ǝ[° °]E 🔴 🧀50% ~/proj` |
-| Idle | `{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}` | `Ǝ[· ·]E 🟣 🌽45% 🦊 ~/proj` |
+| Permission | `{FACE} {STATUS_ICON} {SESSION_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}` | `Ǝ[° °]E 🔴 «🇩🇪\|🦊» 🧀50% ~/proj` |
+| Idle | `{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}` | `Ǝ[· ·]E 🟣 🌽45% «🇩🇪\|🦊» ~/proj` |
 | Compacting | `{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}` | `Ǝ[~ ~]E 🔄 83% ~/proj` |
 
 ### Configuration Examples
@@ -65,7 +65,7 @@ selection. Agent-prefixed variables (Levels 1-2) are resolved by
 
 ## Context Tokens
 
-Fifteen new tokens display context window data and session metadata in titles.
+Eighteen tokens display context window data, session metadata, and identity in titles.
 
 ### Context Display Tokens
 
@@ -94,6 +94,19 @@ These visualize the context window fill percentage in different styles:
 | `{LINES}` | StatusLine `.cost.total_lines_added` | `+156` | `+` prefix |
 | `{MODE}` | Hook `permission_mode` payload | `plan` | Raw string |
 
+### Identity Tokens
+
+| Token | Source | Example | Available When |
+|-------|--------|---------|----------------|
+| `{SESSION_ICON}` | `get_session_icon()` | `🦊` or `🦊🐙` | `TAVS_IDENTITY_MODE` != `off` |
+| `{DIR_ICON}` | `get_dir_icon()` | `🇩🇪` or `🇩🇪→🇯🇵` | `TAVS_IDENTITY_MODE=dual` |
+| `{SESSION_ID}` | `TAVS_SESSION_ID[:8]` | `abc123de` | Claude Code (session_id in hook JSON) |
+
+In dual mode, `compose_title()` dynamically injects guillemets around `{SESSION_ICON}`:
+`{SESSION_ICON}` → `«{DIR_ICON}|{SESSION_ICON}»`. This only happens when the format
+contains `{SESSION_ICON}` but not `{DIR_ICON}` (to avoid double-injection). Guillemet
+cleanup handles empty tokens: `«|🦊»` → `«🦊»`, `«🇩🇪|»` → `«🇩🇪»`, `«|»` → empty.
+
 ### Data Availability
 
 | Token | With Bridge | Without Bridge | Without Either |
@@ -104,8 +117,9 @@ These visualize the context window fill percentage in different styles:
 
 `{MODE}` comes from the hook payload directly, not the bridge — it's always available.
 
-When tokens resolve to empty, the existing space cleanup (`sed 's/  */ /g'`) collapses
-double spaces, so titles look clean regardless of data availability.
+When tokens resolve to empty, guillemet-aware cleanup (`«|` → `«`, `|»` → `»`,
+`«»` → empty) and space collapse (`sed 's/  */ /g'`) keep titles clean regardless of
+data availability.
 
 ---
 
@@ -234,9 +248,9 @@ context window fill level — turning the face into a **two-signal dashboard**: 
 state color, right eye = context fill.
 
 ```
-Ǝ[🟧 🧀]E +2 🦊 ~/proj     processing at 50%, 2 subagents
-Ǝ[🟥 🍔]E 🦊 ~/proj        permission at 85% — danger zone!
-Ǝ[🟩 🥝]E 🦊 ~/proj        complete at 25%
+Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj  processing at 50%, 2 subagents
+Ǝ[🟥 🍔]E «🇩🇪|🦊» ~/proj     permission at 85% — danger zone!
+Ǝ[🟩 🥝]E «🇩🇪|🦊» ~/proj     complete at 25%
 Ǝ[— —]E                    reset — em dash resting eyes
 ```
 
@@ -281,8 +295,8 @@ When context eye is active, the subagent count (`+N`) moves from the right eye t
 
 | Mode | Face | Title |
 |------|------|-------|
-| Context eye ON + 2 subagents | `Ǝ[🟧 🧀]E` | `Ǝ[🟧 🧀]E +2 🦊 ~/proj` |
-| Context eye OFF + 2 subagents | `Ǝ[🟧 +2]E` | `Ǝ[🟧 +2]E 🦊 ~/proj` |
+| Context eye ON + 2 subagents | `Ǝ[🟧 🧀]E` | `Ǝ[🟧 🧀]E +2 «🇩🇪\|🦊» ~/proj` |
+| Context eye OFF + 2 subagents | `Ǝ[🟧 +2]E` | `Ǝ[🟧 +2]E «🇩🇪\|🦊» ~/proj` |
 
 Token suppression matrix:
 
@@ -353,10 +367,13 @@ TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {
 |------|---------|
 | `src/core/context-data.sh` | Context data resolution, token resolvers, fallback chain |
 | `src/agents/claude/statusline-bridge.sh` | Silent StatusLine bridge (reads JSON, writes state) |
-| `src/core/title-management.sh` | `compose_title()` — per-state format selection, token substitution, context eye suppression |
+| `src/core/title-management.sh` | `compose_title()` — per-state format selection, token substitution, guillemet injection, context eye suppression |
 | `src/core/idle-worker-background.sh` | Background idle timer — uses `compose_title()` for idle/complete titles |
-| `src/core/theme-config-loader.sh` | `_resolve_agent_variables()` — agent-prefixed TITLE_FORMAT_* resolution |
-| `src/config/defaults.conf` | Icon arrays, per-state format defaults, bridge config |
+| `src/core/theme-config-loader.sh` | `_resolve_agent_variables()` — agent-prefixed TITLE_FORMAT_*, IDENTITY_MODE, DIR_ICON_TYPE resolution |
+| `src/core/session-icon.sh` | Deterministic session identity (animal per session_id, 2-icon collision overflow) |
+| `src/core/dir-icon.sh` | Directory identity (flag per cwd, worktree detection, fallback pools) |
+| `src/core/identity-registry.sh` | Shared registry: round-robin assignment, mkdir locking, active-sessions index |
+| `src/config/defaults.conf` | Icon arrays, per-state format defaults, identity config, bridge config |
 
 ## Related
 
