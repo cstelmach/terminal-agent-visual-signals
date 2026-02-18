@@ -13,7 +13,7 @@
 | Phase 0: Configuration Foundation | Completed | 2026-02-18 | 2026-02-18 | All pools, config vars, backward compat mapping |
 | Phase 1: Identity Registry Core | Completed | 2026-02-18 | 2026-02-18 | 429 lines, 12 functions, all tests pass |
 | Phase 2: Directory Icon Module | Completed | 2026-02-18 | 2026-02-18 | 275 lines, 9 functions, 20 tests pass |
-| Phase 3: Session Icon Rewrite | Not Started | | | |
+| Phase 3: Session Icon Rewrite | Completed | 2026-02-18 | 2026-02-18 | 433 lines, major rewrite, 31 tests pass |
 | Phase 4: Hook Data Extraction | Not Started | | | |
 | Phase 5: Core Trigger Integration | Not Started | | | |
 | Phase 6: Title System Integration | Not Started | | | |
@@ -105,3 +105,81 @@
 - Added `cwd` field to per-TTY cache format (not in spec's cache format example).
   This stores the raw cwd for idempotency comparison. Without it, the worktree case
   breaks because `dir_path` stores the main repo path, not the cwd the user is in.
+
+### 2026-02-18 — Phase 3: Session Icon Rewrite
+
+**What was done:**
+- Major rewrite of `src/core/session-icon.sh` (433 lines, up from 167)
+- Preserved all 3 public function signatures: `assign_session_icon()`,
+  `get_session_icon()`, `release_session_icon()` (backward compatible API)
+- Added internal functions: `_get_session_key()`, `_detect_legacy_icon_file()`,
+  `_legacy_random_assign()`, `_legacy_cleanup_stale()`, `_legacy_register()`
+
+**Architecture:**
+- **Dual code paths**: `TAVS_IDENTITY_MODE=off` → legacy v1 path (exact original behavior);
+  `dual`/`single` → v2 deterministic path using identity-registry.sh
+- **Session key resolution** (`_get_session_key`): `TAVS_SESSION_ID[:8]` for Claude Code,
+  `TTY_SAFE` fallback for non-Claude agents (Decision D11)
+- **Idempotency with collision re-check** (lines 233-289): On cache hit (key matches),
+  collision status is re-evaluated. This handles the case where another session ends
+  between prompts, clearing a 2-icon pair back to single. Per spec D14: re-evaluated
+  at SessionStart + UserPromptSubmit.
+- **Hash-based fallback** (lines 323-327): When round-robin lock timeout occurs,
+  cksum hash selects from pool as backstop (spec: "collision overflow backstop")
+- **Graceful degradation**: Uses `type func &>/dev/null` guards before calling
+  identity-registry functions. Module works even if identity-registry.sh isn't sourced.
+
+**Collision overflow (Decision D01, D13):**
+- At assignment time, grep active-sessions for same primary from different session_key
+- If collision: assign secondary via round-robin, both stored in registry
+- Per-TTY cache records `collision_active=true`
+- `get_session_icon()` returns `"primary secondary"` (space-separated pair)
+- When other session ends → next `assign_session_icon()` detects no collision →
+  updates cache to `collision_active=false` → single icon display
+
+**Legacy format migration (spec Key Technical Detail 7):**
+- v1→v2: `_detect_legacy_icon_file()` checks first line for `=` delimiter.
+  If v1 format detected, file is removed and fresh v2 assignment occurs.
+- v2→v1: When mode switches to `off`, existing v2 files are detected (first line
+  contains `=`) and removed before legacy random assignment.
+- `get_session_icon()`: Auto-detects format on read — supports both v1 (single emoji)
+  and v2 (structured KV) transparently.
+
+**Per-TTY cache format (v2):**
+```
+session_key=abc123de
+primary=🦊
+secondary=🐙
+collision_active=false
+```
+
+**Release behavior (Decision D13):**
+- `release_session_icon()` removes per-TTY cache and active-sessions entry
+- Does NOT remove registry mapping (session keeps its assigned icon for reuse)
+- Also handles legacy format: detects v1 files and cleans legacy registry too
+
+**Verified (31 tests):**
+- `_get_session_key()`: first 8 chars of session_id, TTY_SAFE fallback (Tests 1-2)
+- `_detect_legacy_icon_file()`: v1=true, v2=false, missing=false (Tests 3-5)
+- Legacy mode: random assign, v1 format, idempotent, release (Tests 6-8)
+- v2 assignment: deterministic icon, KV format, 4 fields present (Tests 9-11)
+- v2 determinism: same session_id → same icon, cross-TTY (Tests 12-13)
+- v2 idempotency: re-call preserves icon (Test 14)
+- v2 uniqueness: different session_id → different icon (Test 15)
+- v2 release: registry preserved, active-sessions cleared (Tests 16-17)
+- Sequential round-robin: 5 unique IDs → first 5 pool entries in order (Test 18)
+- Legacy v1→v2 migration: v1 file replaced with v2 KV format (Test 19)
+- v2→v1 migration: mode switch to off replaces v2 with v1 format (Test 20)
+- Collision 2-icon overflow: pair shown during active collision (Test 21)
+- Collision clear: single icon restored, primary preserved (Test 22)
+- Non-Claude agent: TTY_SAFE as session key, single mode (Test 23)
+- `get_session_icon()` auto-format: reads v1, v2-collision, v2-single (Test 24)
+- Full source chain: all modules load without error or collisions (Test 25)
+
+**Deviations from spec/plan:**
+- `dir-icon.sh` is NOT sourced by `session-icon.sh` — they are peer modules sourced
+  separately by trigger.sh. The plan mentioned `_assign_icon_for_path()` in dir-icon.sh
+  but session-icon.sh has no dependency on it.
+- File is 433 lines (plan estimated 250-300). The additional lines come from thorough
+  documentation headers, the legacy code path preservation (89 lines), and robust
+  collision re-check on the idempotent path.
