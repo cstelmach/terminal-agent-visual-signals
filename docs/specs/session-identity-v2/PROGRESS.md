@@ -12,7 +12,7 @@
 |-------|--------|---------|-----------|-------|
 | Phase 0: Configuration Foundation | Completed | 2026-02-18 | 2026-02-18 | All pools, config vars, backward compat mapping |
 | Phase 1: Identity Registry Core | Completed | 2026-02-18 | 2026-02-18 | 429 lines, 12 functions, all tests pass |
-| Phase 2: Directory Icon Module | Not Started | | | |
+| Phase 2: Directory Icon Module | Completed | 2026-02-18 | 2026-02-18 | 275 lines, 9 functions, 20 tests pass |
 | Phase 3: Session Icon Rewrite | Not Started | | | |
 | Phase 4: Hook Data Extraction | Not Started | | | |
 | Phase 5: Core Trigger Integration | Not Started | | | |
@@ -66,3 +66,42 @@
   Spec says "same lock as counter operations" but separate lock avoids contention and
   simplifies the API (active-sessions functions don't need a `type` parameter).
   Functionally equivalent — both serialize writes.
+
+### 2026-02-18 — Phase 2: Directory Icon Module
+
+**What was done:**
+- Created `src/core/dir-icon.sh` (275 lines, 9 functions)
+- `_git_with_timeout()`: platform-aware git with 1s timeout (timeout → gtimeout → bare)
+- `_detect_worktree()`: subshell-protected worktree detection via git-common-dir comparison
+- `_resolve_dir_identity()`: configurable cwd/git-root resolution mode
+- `_hash_path()`: stable numeric path hash via cksum
+- `_select_dir_pool()` / `_get_worktree_pool()`: pool routing with fallback alternation
+- `_assign_icon_for_path()`: registry lookup → round-robin → hash-based fallback
+- `assign_dir_icon()`: idempotent assignment with cwd-based cache hit detection
+- `get_dir_icon()`: returns single flag or `main→worktree` format (Decision D06)
+- `release_dir_icon()`: removes per-TTY cache, preserves registry mapping
+
+**Per-TTY cache format:**
+- Added `cwd` field (not in spec) for reliable idempotency checking. Without it,
+  comparing against `dir_path` fails in worktree scenarios where dir_path stores the
+  main repo path but the cwd is the worktree directory.
+
+**Verified (20 tests):**
+- Pool selection (flags/plants/buildings), worktree pool alternation
+- Path hashing stability (same path → same hash, different paths → different hashes)
+- Deterministic assignment (same cwd → same icon across calls)
+- Idempotency (cache hit detection, cwd change detection)
+- Non-git directory handling (single flag, no errors)
+- Worktree detection with real git worktree (main→worktree format)
+- Worktree detection disabled via config (single flag only)
+- Git timeout protection (non-git dir returns empty)
+- Git-root resolution mode (subdirectories normalized to same icon)
+- Full source chain compatibility (no function name collisions)
+- Registry persistence across release+reassign
+- Sequential round-robin (5 dirs get first 5 flags in pool order)
+- Cache file format (KV format, atomic writes)
+
+**Deviations:**
+- Added `cwd` field to per-TTY cache format (not in spec's cache format example).
+  This stores the raw cwd for idempotency comparison. Without it, the worktree case
+  breaks because `dir_path` stores the main repo path, not the cwd the user is in.
