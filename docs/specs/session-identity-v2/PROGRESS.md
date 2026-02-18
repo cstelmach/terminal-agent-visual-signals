@@ -15,7 +15,7 @@
 | Phase 2: Directory Icon Module | Completed | 2026-02-18 | 2026-02-18 | 275 lines, 9 functions, 20 tests pass |
 | Phase 3: Session Icon Rewrite | Completed | 2026-02-18 | 2026-02-18 | 433 lines, major rewrite, 31 tests pass |
 | Phase 4: Hook Data Extraction | Completed | 2026-02-18 | 2026-02-18 | 8 lines, 6 tests pass |
-| Phase 5: Core Trigger Integration | Not Started | | | |
+| Phase 5: Core Trigger Integration | Completed | 2026-02-18 | 2026-02-18 | 27 tests pass, all 10 acceptance criteria met |
 | Phase 6: Title System Integration | Not Started | | | |
 | Phase 7: Configuration Polish | Not Started | | | |
 | Phase 8: Documentation Updates | Not Started | | | |
@@ -203,3 +203,50 @@ collision_active=false
 - Only session_id present (no cwd): session_id extracted, cwd empty
 
 **Deviations:** None. Implementation matches spec exactly.
+
+### 2026-02-18 — Phase 5: Core Trigger Integration
+
+**What was done:**
+- Modified `hooks/hooks.json`: SessionEnd now sends `trigger.sh reset session-end`
+- Added `_load_identity_modules()` helper to `src/core/trigger.sh` (lazy-loads
+  identity-registry.sh + dir-icon.sh; guarded by `_TAVS_IDENTITY_LOADED` flag)
+- Added `_revalidate_identity()` helper: calls `assign_session_icon` (idempotent,
+  handles key changes + collision re-check) then `assign_dir_icon` (dual mode only)
+- Modified `processing)` case: on `new-prompt`, calls `_load_identity_modules` +
+  `_revalidate_identity` (unless `TAVS_IDENTITY_MODE=off`)
+- Rewrote `reset)` case with SessionStart/SessionEnd differentiation:
+  - SessionEnd (`$2 == "session-end"`): releases both icons before normal cleanup
+  - SessionStart: assigns session icon (v2 or legacy depending on mode)
+  - Non-Claude agents: also assigns dir icon at reset (no UserPromptSubmit hook)
+  - Legacy fallback: `ENABLE_SESSION_ICONS=true` → `assign_session_icon` in off mode
+
+**Key design decisions:**
+- `_revalidate_identity()` always calls `assign_session_icon()` instead of explicitly
+  comparing session keys. This is simpler than the spec's code example while providing
+  identical behavior — `assign_session_icon()` already handles key mismatch (re-assign)
+  and cache hit (collision re-check only). This satisfies spec D14 requirement of
+  collision re-evaluation at both SessionStart and UserPromptSubmit.
+- Non-Claude agent dir icon assignment at reset guarded by `TAVS_AGENT != "claude"`.
+  Claude defers dir icon to `new-prompt` where `TAVS_CWD` is available from hook JSON.
+- Zsh compat: intermediate vars for brace defaults throughout (`_default_mode_p`,
+  `_default_mode_r`, `_id_mode_r`)
+
+**Files modified:**
+- `hooks/hooks.json` — 1 line changed (SessionEnd command)
+- `src/core/trigger.sh` — ~60 lines added/changed (2 helpers + modified processing + reset)
+
+**Verified (27 tests):**
+- Static (14): hooks.json correctness, function existence, processing/reset case structure,
+  lazy loading, session-icon.sh unconditional sourcing, legacy fallback, off mode guard,
+  dual mode guard for dir icon
+- Functional (13): full source chain, session icon assignment, dir icon deferral for Claude,
+  dir icon on new-prompt, idempotency, cwd change detection, session_id change re-assignment,
+  SessionEnd release, registry persistence, legacy v1 format, single mode, ENABLE_SESSION_ICONS=false,
+  non-Claude agent dir icon at reset
+
+**Deviations from spec:**
+- Simplified `_revalidate_identity()` to always call `assign_session_icon()` instead
+  of explicit key comparison. Same behavior (idempotent path handles it), simpler code.
+  Spec's explicit comparison is an optimization that skips file I/O when key matches,
+  but the idempotent path reads one small file (~4 lines) which is negligible for a
+  once-per-prompt operation.
