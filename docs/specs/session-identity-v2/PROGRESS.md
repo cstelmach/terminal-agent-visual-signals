@@ -14,7 +14,7 @@
 | Phase 1: Identity Registry Core | Completed | 2026-02-18 | 2026-02-18 | 429 lines, 12 functions, all tests pass |
 | Phase 2: Directory Icon Module | Completed | 2026-02-18 | 2026-02-18 | 275 lines, 9 functions, 20 tests pass |
 | Phase 3: Session Icon Rewrite | Completed | 2026-02-18 | 2026-02-18 | 433 lines, major rewrite, 31 tests pass |
-| Phase 4: Hook Data Extraction | Not Started | | | |
+| Phase 4: Hook Data Extraction | Completed | 2026-02-18 | 2026-02-18 | 8 lines, 6 tests pass |
 | Phase 5: Core Trigger Integration | Not Started | | | |
 | Phase 6: Title System Integration | Not Started | | | |
 | Phase 7: Configuration Polish | Not Started | | | |
@@ -183,3 +183,23 @@ collision_active=false
 - File is 433 lines (plan estimated 250-300). The additional lines come from thorough
   documentation headers, the legacy code path preservation (89 lines), and robust
   collision re-check on the idempotent path.
+
+### 2026-02-18 — Phase 4: Hook Data Extraction
+
+**What was done:**
+- Added 8 lines to `src/agents/claude/trigger.sh` (lines 36-44) extracting
+  `session_id` and `cwd` from Claude Code hook JSON stdin
+- Follows exact same `sed` pattern as existing `permission_mode` (line 27-29)
+  and `transcript_path` (line 32-34) extractions
+- Both fields exported as `TAVS_SESSION_ID` and `TAVS_CWD` environment variables
+- Conditional export: only set when field is non-empty (graceful for missing fields)
+
+**Verified (6 tests):**
+- All fields present: session_id, cwd, permission_mode, transcript_path all extracted
+- Whitespace around colons: `"session_id" : "value"` handled correctly
+- Missing session_id and cwd: empty vars, no errors
+- Empty stdin: no vars set, no errors
+- CWD with spaces in path: `/Users/cs/My Projects/cool app` preserved
+- Only session_id present (no cwd): session_id extracted, cwd empty
+
+**Deviations:** None. Implementation matches spec exactly.

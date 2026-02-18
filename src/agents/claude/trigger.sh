@@ -32,6 +32,16 @@ if [[ -n "$_tavs_stdin" ]]; then
     _transcript=$(printf '%s' "$_tavs_stdin" | \
         sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
     [[ -n "$_transcript" ]] && export TAVS_TRANSCRIPT_PATH="$_transcript"
+
+    # Extract session_id for identity system (deterministic session icons)
+    _session_id=$(printf '%s' "$_tavs_stdin" | \
+        sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    [[ -n "$_session_id" ]] && export TAVS_SESSION_ID="$_session_id"
+
+    # Extract cwd for directory identity (deterministic dir icons)
+    _cwd=$(printf '%s' "$_tavs_stdin" | \
+        sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+    [[ -n "$_cwd" ]] && export TAVS_CWD="$_cwd"
 fi
 export TAVS_PERMISSION_MODE="${TAVS_PERMISSION_MODE:-default}"
 
