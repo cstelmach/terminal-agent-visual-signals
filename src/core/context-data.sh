@@ -250,8 +250,9 @@ load_context_data() {
         return 0
     fi
 
-    # Neither available — all tokens will resolve to empty
-    return 1
+    # Neither available — default to 0% (session start / no activity yet)
+    TAVS_CONTEXT_PCT="0"
+    return 0
 }
 
 # Map a context style name (food, circle, block, etc.) to a token name.
