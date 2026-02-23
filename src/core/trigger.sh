@@ -42,6 +42,7 @@ source "$CORE_DIR/backgrounds.sh"
 source "$CORE_DIR/title-management.sh"
 source "$CORE_DIR/subagent-counter.sh"  # Subagent tracking
 source "$CORE_DIR/session-icon.sh"     # Session icon per terminal tab
+source "$CORE_DIR/dir-icon.sh"        # Dir icon read (get_dir_icon) — assign needs registry via _load_identity_modules
 source "$CORE_DIR/context-data.sh"    # Context window data for title tokens
 
 # Source iTerm2-specific title detection if applicable
@@ -329,8 +330,8 @@ case "$STATE" in
             if [[ "$_id_mode_r" != "off" ]]; then
                 _load_identity_modules
                 assign_session_icon
-                # Non-Claude agents: also assign dir icon now (no UserPromptSubmit)
-                if [[ "$_id_mode_r" == "dual" && "${TAVS_AGENT:-}" != "claude" ]]; then
+                # Assign dir icon now (dual mode only)
+                if [[ "$_id_mode_r" == "dual" ]]; then
                     assign_dir_icon
                 fi
             elif [[ "${ENABLE_SESSION_ICONS:-true}" == "true" ]]; then
