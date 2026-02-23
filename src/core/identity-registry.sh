@@ -64,6 +64,9 @@ _get_registry_dir() {
             ;;
     esac
 
+    # Guard: never operate on empty/root paths
+    [[ -z "$dir" ]] && dir="/tmp/tavs-identity"
+
     if [[ ! -d "$dir" ]]; then
         mkdir -p "$dir" 2>/dev/null
         chmod 700 "$dir" 2>/dev/null
@@ -79,6 +82,7 @@ _get_registry_dir() {
 # No external dependencies (no flock, no lockfile).
 
 # Acquire a mkdir-based lock. Spin-waits up to 2 seconds.
+# Writes PID to lock_dir/pid for stale lock detection.
 # Returns: 0 on success, 1 on timeout
 _acquire_lock() {
     local lock_dir="$1"
@@ -86,6 +90,16 @@ _acquire_lock() {
     local attempts=0
 
     while ! mkdir "$lock_dir" 2>/dev/null; do
+        # Check for stale lock: if lock holder PID is dead, recover
+        local lock_pid=""
+        [[ -f "$lock_dir/pid" ]] && read -r lock_pid < "$lock_dir/pid" 2>/dev/null
+        if [[ -n "$lock_pid" ]] && ! kill -0 "$lock_pid" 2>/dev/null; then
+            # Lock holder is dead — force remove and retry immediately
+            rm -rf "$lock_dir" 2>/dev/null
+            [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Recovered stale lock: $lock_dir (pid=$lock_pid)" >&2
+            continue
+        fi
+
         sleep 0.05
         attempts=$((attempts + 1))
         if [[ $attempts -ge $max_attempts ]]; then
@@ -93,11 +107,14 @@ _acquire_lock() {
             return 1
         fi
     done
+    # Record our PID for stale detection by others
+    echo $$ > "$lock_dir/pid" 2>/dev/null
     return 0
 }
 
-# Release a mkdir-based lock.
+# Release a mkdir-based lock (removes PID file and lock dir).
 _release_lock() {
+    rm -f "$1/pid" 2>/dev/null
     rmdir "$1" 2>/dev/null
 }
 
@@ -364,17 +381,19 @@ _active_sessions_cleanup_stale() {
     local has_entries=false
 
     local k v tty_dev
-    while IFS='=' read -r k v; do
-        [[ -z "$k" || "$k" =~ ^[#] ]] && continue
-        # Convert TTY_SAFE back to device path: _dev_ttys001 -> /dev/ttys001
-        tty_dev="${k//_//}"
-        if [[ -e "$tty_dev" ]]; then
-            printf '%s=%s\n' "$k" "$v" >> "$tmp_file"
-            has_entries=true
-        else
-            [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Cleaned stale active session: $k" >&2
-        fi
-    done < "$index_file"
+    {
+        while IFS='=' read -r k v; do
+            [[ -z "$k" || "$k" =~ ^[#] ]] && continue
+            # Convert TTY_SAFE back to device path: _dev_ttys001 -> /dev/ttys001
+            tty_dev="${k//_//}"
+            if [[ -e "$tty_dev" ]]; then
+                printf '%s=%s\n' "$k" "$v"
+                has_entries=true
+            else
+                [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Cleaned stale active session: $k" >&2
+            fi
+        done < "$index_file"
+    } > "$tmp_file"
 
     if [[ "$has_entries" == "true" ]]; then
         mv "$tmp_file" "$index_file" 2>/dev/null

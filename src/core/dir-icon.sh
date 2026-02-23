@@ -13,7 +13,7 @@
 #
 # Internal functions:
 #   _git_with_timeout()           - Platform-aware git command with 1s timeout
-#   _detect_worktree(cwd)         - Detect git worktree → "main_path wt_path"
+#   _detect_worktree(cwd)         - Detect git worktree → "main_path\twt_path"
 #   _resolve_dir_identity(cwd)    - Resolve path via cwd or git-root mode
 #   _select_dir_pool()            - Select icon pool by TAVS_DIR_ICON_TYPE
 #   _get_worktree_pool(main_pool) - Get alternate pool for worktree dirs
@@ -58,7 +58,7 @@ _git_with_timeout() {
 # Uses subshell to protect caller's cwd.
 #
 # Args: cwd - directory to check
-# Output: "main_repo_path worktree_path" on stdout if worktree detected
+# Output: "main_repo_path\tworktree_path" on stdout if worktree detected (tab-delimited)
 # Returns: 0 if worktree, 1 if not (or git unavailable)
 _detect_worktree() {
     local cwd="$1"
@@ -89,7 +89,8 @@ _detect_worktree() {
 
         if [[ "$main_repo" != "$toplevel" ]]; then
             # We're in a worktree: toplevel is the worktree dir
-            printf '%s %s' "$main_repo" "$toplevel"
+            # Tab delimiter: can't appear in filesystem paths (unlike spaces)
+            printf '%s\t%s' "$main_repo" "$toplevel"
             return 0
         fi
 
@@ -260,6 +261,13 @@ assign_dir_icon() {
         fi
     fi
 
+    # TTL cleanup: remove expired dir registry entries (prevents unbounded growth)
+    local _default_ttl=2592000
+    local ttl="${TAVS_IDENTITY_REGISTRY_TTL:-$_default_ttl}"
+    if type _registry_cleanup_expired &>/dev/null; then
+        _registry_cleanup_expired "dir" "$ttl"
+    fi
+
     # Resolve directory identity (cwd or git-root mode)
     local resolved_path
     resolved_path=$(_resolve_dir_identity "$cwd")
@@ -277,9 +285,9 @@ assign_dir_icon() {
     worktree_info=$(_detect_worktree "$cwd" 2>/dev/null)
 
     if [[ -n "$worktree_info" ]]; then
-        # We're in a worktree
-        main_repo_path="${worktree_info%% *}"
-        wt_toplevel="${worktree_info#* }"
+        # We're in a worktree — split on tab delimiter (safe for paths with spaces)
+        main_repo_path="${worktree_info%%	*}"
+        wt_toplevel="${worktree_info#*	}"
 
         # Main repo gets its icon from the main pool
         dir_path="$main_repo_path"

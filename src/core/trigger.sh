@@ -201,7 +201,7 @@ case "$STATE" in
         if [[ "${2:-}" == "new-prompt" ]]; then
             reset_subagent_count
             # Revalidate identity: re-check collision status + assign/update dir icon
-            local _default_mode_p="dual"
+            _default_mode_p="dual"
             if [[ "${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_p}}" != "off" ]]; then
                 _load_identity_modules
                 _revalidate_identity
@@ -324,8 +324,8 @@ case "$STATE" in
             [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
 
             # Assign session icon BEFORE title (so compose_title includes it)
-            local _default_mode_r="dual"
-            local _id_mode_r="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_r}}"
+            _default_mode_r="dual"
+            _id_mode_r="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_r}}"
             if [[ "$_id_mode_r" != "off" ]]; then
                 _load_identity_modules
                 assign_session_icon
@@ -368,7 +368,6 @@ case "$STATE" in
     # Fires when a subagent completes. Decrements counter.
     # If no more subagents, returns to processing state.
     subagent-stop)
-        local remaining_count
         remaining_count=$(decrement_subagent_count)
 
         if [[ $remaining_count -eq 0 ]]; then
