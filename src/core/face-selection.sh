@@ -48,7 +48,7 @@ _resolve_agent_faces() {
 
     # Face states to resolve
     local states=(
-        PROCESSING PERMISSION COMPLETE COMPACTING RESET
+        PROCESSING PERMISSION COMPLETE COMPACTING RESET RESET_FINAL
         IDLE_0 IDLE_1 IDLE_2 IDLE_3 IDLE_4 IDLE_5
         SUBAGENT TOOL_ERROR
     )
@@ -107,6 +107,7 @@ get_random_face() {
         complete)   array_name="FACES_COMPLETE" ;;
         compacting) array_name="FACES_COMPACTING" ;;
         reset)      array_name="FACES_RESET" ;;
+        reset_final) array_name="FACES_RESET_FINAL" ;;
         idle_0)     array_name="FACES_IDLE_0" ;;
         idle_1)     array_name="FACES_IDLE_1" ;;
         idle_2)     array_name="FACES_IDLE_2" ;;
@@ -193,8 +194,9 @@ get_compact_face() {
     # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_EYE)
     local _ctx_eye="${COMPACT_CONTEXT_EYE:-${TAVS_COMPACT_CONTEXT_EYE:-true}}"
 
-    # Reset state: em dash resting eyes (override both, regardless of context eye)
-    if [[ "$state" == "reset" ]]; then
+    # Session-end reset: em dash resting eyes (muted — session winding down)
+    # Session-start reset: use theme array (⚪) + context eye (💧) — wants attention
+    if [[ "$state" == "reset" && "${_TAVS_RESET_FINAL:-}" == "true" ]]; then
         left="—"
         right="—"
     elif [[ "$state" == "compacting" && "$_ctx_eye" == "true" ]]; then

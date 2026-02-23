@@ -339,6 +339,9 @@ case "$STATE" in
             fi
         fi
 
+        # Flag session-end for compact face (em dash vs ⚪ distinction)
+        [[ "${2:-}" == "session-end" ]] && _TAVS_RESET_FINAL="true"
+
         # Clear stale title state, then set composed title (includes session icon)
         clear_title_state 2>/dev/null || true
         should_send_title "reset" && set_tavs_title "reset"

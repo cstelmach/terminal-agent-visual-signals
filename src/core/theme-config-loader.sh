@@ -88,7 +88,7 @@ _apply_title_preset() {
             TAVS_TITLE_FORMAT_COMPACTING='{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}'
             TAVS_TITLE_FORMAT_SUBAGENT=""
             TAVS_TITLE_FORMAT_TOOL_ERROR=""
-            TAVS_TITLE_FORMAT_RESET=""
+            TAVS_TITLE_FORMAT_RESET='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}'
             ;;
         # Empty or unknown: no preset, use explicit format vars
     esac

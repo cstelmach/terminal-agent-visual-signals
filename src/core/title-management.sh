@@ -279,7 +279,10 @@ compose_title() {
             fi
             # Fallback to static random face if spinner not used/available
             if [[ -z "$face" ]] && type get_random_face &>/dev/null; then
-                face=$(get_random_face "$state")
+                local _face_state="$state"
+                # Session-end reset: use muted em dash face
+                [[ "$state" == "reset" && "${_TAVS_RESET_FINAL:-}" == "true" ]] && _face_state="reset_final"
+                face=$(get_random_face "$_face_state")
             fi
         fi
     fi
