@@ -26,6 +26,7 @@ obsidian-view project PC17 --files
 # Configure with CLI (quick one-liners)
 ./tavs set theme nord              # Apply Nord theme
 ./tavs set title-mode full         # Full title control
+./tavs set identity-mode dual      # Dual identity (flags + animals)
 ./tavs set faces off               # Disable ASCII faces
 ./tavs status                      # Show current config with preview
 
@@ -113,7 +114,9 @@ Set in `~/.tavs/user.conf`.
 | `src/core/backgrounds.sh` | Stylish background images (iTerm2/Kitty) |
 | `src/core/terminal-detection.sh` | Terminal type, capabilities, color mode detection |
 | `src/core/subagent-counter.sh` | Subagent count tracking for title display and state transitions |
-| `src/core/session-icon.sh` | Unique animal emoji per terminal tab (registry-based dedup) |
+| `src/core/session-icon.sh` | Deterministic session identity (animal emoji per session_id, 2-icon collision overflow) |
+| `src/core/identity-registry.sh` | Shared registry: round-robin assignment, mkdir-based locking, active-sessions index |
+| `src/core/dir-icon.sh` | Directory identity: flag emoji per working directory, worktree detection |
 | `src/core/context-data.sh` | Context window data resolution for title tokens |
 | `src/core/session-state.sh` | Session state tracking (current state, timer PID) |
 | `src/core/idle-worker-background.sh` | Background process for graduated idle states |
@@ -144,8 +147,9 @@ All user settings are stored in `~/.tavs/user.conf`:
 - Default fallbacks: `DEFAULT_DARK_BASE`, `DEFAULT_LIGHT_BASE`, etc.
 - Mode-aware colors: `CLAUDE_DARK_PROCESSING_PLAN`, `DEFAULT_LIGHT_PROCESSING_BYPASS`, etc.
 - Per-state title formats: `TAVS_TITLE_FORMAT_PERMISSION`, `CLAUDE_TITLE_FORMAT_PERMISSION`, etc.
+- Identity overrides: `CLAUDE_IDENTITY_MODE`, `CLAUDE_DIR_ICON_TYPE`, etc.
 
-**Quick config:** `./tavs set theme nord`, `./tavs set faces off`
+**Quick config:** `./tavs set theme nord`, `./tavs set faces off`, `./tavs set identity-mode dual`
 **Full wizard:** `./tavs wizard` (interactive 7-step setup)
 **Manual edit:** Copy `src/config/user.conf.template` to `~/.tavs/user.conf` and edit directly.
 
@@ -180,8 +184,8 @@ TAVS can control terminal tab titles with animated spinners during processing. F
 
 Best for users who manually name their terminal tabs. TAVS adds a status prefix without losing your custom name.
 
-**Example:** `My Project` becomes `Ǝ[• •]E 🟠 My Project` during processing.
-With active subagents: `Ǝ[⇆ ⇆]E 🔀 +2 My Project`
+**Example:** `My Project` becomes `Ǝ[• •]E 🟠 «🇩🇪|🦊» My Project` during processing.
+With active subagents: `Ǝ[⇆ ⇆]E 🔀 +2 «🇩🇪|🦊» My Project`
 
 1. Run `./tavs wizard` and select "Prefix Only" in Step 6, OR
 2. Add to `~/.tavs/user.conf`:
@@ -212,7 +216,9 @@ The `TAVS_TITLE_FORMAT` template supports these core placeholders:
 | `{FACE}` | Agent face expression | `Ǝ[• •]E` |
 | `{STATUS_ICON}` | State emoji | `🟠` |
 | `{AGENTS}` | Active subagent count (empty when none) | `+2` |
-| `{SESSION_ICON}` | Session icon (unique animal emoji per tab) | `🦊` |
+| `{SESSION_ICON}` | Session animal (deterministic per session_id) | `🦊` |
+| `{DIR_ICON}` | Directory flag (deterministic per working directory, dual mode only) | `🇩🇪` |
+| `{SESSION_ID}` | First 8 chars of Claude Code session ID | `abc123de` |
 | `{BASE}` | Base title (user-set or fallback) | `~/projects` |
 
 **15 additional context & metadata tokens** are available for per-state formats:
@@ -222,7 +228,9 @@ bridge for real-time data (falls back to transcript estimation, then empty).
 See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full token list.
 
 The `{AGENTS}` token is formatted by `TAVS_AGENTS_FORMAT` (default: `+{N}`).
-The `{SESSION_ICON}` token requires `ENABLE_SESSION_ICONS="true"` (default).
+The `{SESSION_ICON}` token requires `TAVS_IDENTITY_MODE` != `"off"` (default: `"dual"`).
+In dual mode, `{SESSION_ICON}` is automatically wrapped with guillemets and paired with
+`{DIR_ICON}`: `«🇩🇪|🦊»`. In single mode, only the animal shows: `🦊`.
 
 ### Per-State Title Formats
 
@@ -231,7 +239,7 @@ Each trigger state can have its own format string via a 4-level fallback chain
 food emoji + context percentage, compacting shows percentage only. Other states fall
 back to `TAVS_TITLE_FORMAT`.
 
-**Example:** During permission requests, the title shows `Ǝ[° °]E 🔴 🧀50% ~/proj`.
+**Example:** During permission requests, the title shows `Ǝ[° °]E 🔴 «🇩🇪|🦊» 🧀50% ~/proj`.
 
 See [Dynamic Titles Reference](docs/reference/dynamic-titles.md) for the full fallback
 chain, all default formats, configuration examples, and the StatusLine bridge setup guide.
@@ -276,8 +284,8 @@ Replaces text-based eyes with emoji for an information-dense title. By default, 
 is a **two-signal dashboard**: left eye = state color, right eye = context fill level.
 
 ```
-STANDARD:  Ǝ[• •]E 🟠 +2 🦊 ~/proj    (face + status icon + count + session icon + path)
-COMPACT:   Ǝ[🟧 🧀]E +2 🦊 ~/proj     (state + context eyes, count outside face)
+STANDARD:  Ǝ[• •]E 🟠 +2 «🇩🇪|🦊» ~/proj  (face + status + count + identity + path)
+COMPACT:   Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj  (state + context eyes, count outside face)
 RESET:     Ǝ[— —]E                     (em dash resting eyes)
 ```
 
@@ -305,6 +313,37 @@ TAVS_COMPACT_CONTEXT_STYLE="food"  # food, food_10, circle, block, block_max, br
 
 `{STATUS_ICON}` auto-suppressed (left eye embeds state). `{AGENTS}` shown when context
 eye active, suppressed when disabled. See [Dynamic Titles](docs/reference/dynamic-titles.md).
+
+### Session Identity System
+
+Deterministic dual-identity system that ties icons to Claude Code session IDs (animals)
+and working directories (flags). Terminal tabs become consistently identifiable: same
+session always shows the same animal, same directory always shows the same flag.
+
+```
+DUAL MODE:    Ǝ[• •]E 🟠 «🇩🇪|🦊» ~/proj     (dir flag + session animal in guillemets)
+SINGLE MODE:  Ǝ[• •]E 🟠 🦊 ~/proj            (session animal only, no guillemets)
+OFF MODE:     Ǝ[• •]E 🟠 🐸 ~/proj            (legacy random per-TTY)
+WORKTREE:     Ǝ[• •]E 🟠 «🇩🇪→🇯🇵|🦊» ~/proj  (main→worktree flags + animal)
+COLLISION:    Ǝ[• •]E 🟠 «🇩🇪|🦊🐙» ~/proj     (2-icon pair when sessions share animal)
+```
+
+**Configure in `~/.tavs/user.conf`:**
+```bash
+TAVS_IDENTITY_MODE="dual"           # "dual" (default) | "single" | "off"
+TAVS_IDENTITY_PERSISTENCE="ephemeral"  # "ephemeral" (default) | "persistent"
+TAVS_DIR_IDENTITY_SOURCE="cwd"      # "cwd" (default) | "git-root"
+TAVS_DIR_WORKTREE_DETECTION="true"   # "true" (default) | "false"
+TAVS_DIR_ICON_TYPE="flags"          # "flags" (default) | "plants" | "buildings" | "auto"
+```
+
+**Quick config:** `./tavs set identity-mode dual`, `./tavs set dir-icon-type plants`
+
+| Mode | Session Icon | Dir Icon | Guillemets | Pool |
+|------|-------------|----------|------------|------|
+| `dual` | Deterministic per session_id | Deterministic per cwd | `«flag\|animal»` | 77 animals, 190 flags |
+| `single` | Deterministic per session_id | None | None | 77 animals |
+| `off` | Random per TTY (legacy) | None | None | 25 animals |
 
 ---
 
@@ -359,6 +398,19 @@ TAVS_FACE_MODE=compact ./src/core/trigger.sh reset        # Em dash resting eyes
 
 # Test StatusLine bridge (silent — no output expected)
 echo '{"context_window":{"used_percentage":72}}' | ./src/agents/claude/statusline-bridge.sh
+
+# Test identity system (dual mode — guillemets with dir flag + session animal)
+TAVS_SESSION_ID=test1234 ./src/core/trigger.sh reset              # Assign session icon
+TAVS_SESSION_ID=test1234 TAVS_CWD=/tmp/proj ./src/core/trigger.sh processing new-prompt  # Assign dir icon
+./src/core/trigger.sh reset session-end                             # Release both icons
+
+# Test identity modes
+TAVS_IDENTITY_MODE=single TAVS_SESSION_ID=test ./src/core/trigger.sh reset   # Animal only
+TAVS_IDENTITY_MODE=off ./src/core/trigger.sh reset                           # Legacy random
+./src/core/trigger.sh reset session-end
+
+# Test worktree detection (from a git worktree directory)
+TAVS_SESSION_ID=test TAVS_CWD=/path/to/worktree ./src/core/trigger.sh processing new-prompt
 
 # Test palette theming (requires 256-color mode)
 ENABLE_PALETTE_THEMING=true COLORTERM= ./src/core/trigger.sh processing

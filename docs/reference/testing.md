@@ -84,23 +84,28 @@ ls --color=auto
 ./src/core/trigger.sh reset
 ```
 
-### Test Session Icons
+### Test Session Identity
 
 ```bash
-# Trigger reset to assign an icon (simulates SessionStart)
-./src/core/trigger.sh reset
+# Test dual mode (default): session animal + directory flag
+TAVS_SESSION_ID=test1234 ./src/core/trigger.sh reset              # Assign session icon
+TAVS_SESSION_ID=test1234 TAVS_CWD=/tmp/proj ./src/core/trigger.sh processing new-prompt
+# Title should show «flag|animal» format
 
-# Check icon was assigned
-cat ~/.cache/tavs/session-icon.*  # Should show an animal emoji
+# Check per-TTY cache (structured KV format)
+cat ~/.cache/tavs/session-icon.*   # session_key=..., primary=animal, collision_active=...
+cat /tmp/tavs-identity/dir-icon.*  # dir_path=..., main_icon=flag
 
-# Check registry
-cat ~/.cache/tavs/session-icon-registry  # tty_key=emoji pairs
+# Test single mode (session animal only, no dir flag)
+TAVS_IDENTITY_MODE=single TAVS_SESSION_ID=test ./src/core/trigger.sh reset
+# Title should show animal only, no guillemets
 
-# Verify icon appears in title
-./src/core/trigger.sh processing  # Icon should show in tab title
+# Test off mode (legacy random)
+TAVS_IDENTITY_MODE=off ./src/core/trigger.sh reset
+# Title should show random animal, v1 single-emoji format
 
 # Clean up
-./src/core/trigger.sh reset
+./src/core/trigger.sh reset session-end
 ```
 
 ### Test Compact Face Mode
@@ -305,9 +310,12 @@ export DEBUG_ALL=1
 - [ ] Compact mode subagent count appears as right eye (+N)
 - [ ] Tool error shows orange-red flash
 - [ ] Tool error auto-returns to processing after 1.5s
-- [ ] Session icon assigned on reset (animal emoji in `~/.cache/tavs/`)
+- [ ] Session icon assigned deterministically on reset (same session_id → same animal)
+- [ ] Dir icon assigned on first new-prompt (same cwd → same flag, dual mode only)
 - [ ] Session icon appears in tab title via `{SESSION_ICON}` token
-- [ ] Concurrent sessions get unique icons (registry dedup)
+- [ ] Dual mode shows `«flag|animal»` guillemet format
+- [ ] Concurrent sessions get unique icons (round-robin, 2-icon collision overflow)
+- [ ] `TAVS_IDENTITY_MODE=off` preserves exact legacy random behavior
 - [ ] Per-state format applies for permission (food emoji + percentage)
 - [ ] Per-state format applies for compacting (percentage only)
 - [ ] Per-state format falls back to TAVS_TITLE_FORMAT when not set
@@ -355,14 +363,17 @@ Trigger a tool that fails:
 - Title should show error face (e.g., `Ǝ[✕ ✕]E`) and ❌ emoji
 - After 1.5s, should auto-return to processing or subagent state
 
-### Session Icons
+### Session Identity
 
-Verify icon persistence and uniqueness:
-- Reset assigns a unique animal emoji per terminal tab
-- Icon persists across `/clear` (tied to TTY device)
-- Opening a second terminal tab gets a different icon
-- Closing a tab frees the icon for reuse (stale cleanup)
-- Icon shows in tab title between `{AGENTS}` and `{BASE}` tokens
+Verify deterministic identity and uniqueness:
+- Reset assigns a deterministic animal emoji per session_id (same session → same animal)
+- First new-prompt assigns a deterministic flag per working directory (dual mode)
+- Icon persists across `/clear` (tied to session_id, not TTY device)
+- Opening a second terminal tab gets a different animal (round-robin)
+- Closing a tab frees the icon for reuse (active-sessions cleanup)
+- Dual mode shows `«flag|animal»` in tab title; single mode shows animal only
+- Two sessions with same animal show 2-icon pair (collision overflow)
+- Git worktrees show `main_flag→worktree_flag` format
 
 ### Session Reset
 
@@ -370,7 +381,8 @@ End and start new session:
 - Background should reset to default
 - No lingering state from previous session
 - Subagent counter should be reset to 0
-- Session icon should be assigned (if `ENABLE_SESSION_ICONS=true`)
+- Session icon should be assigned (if `TAVS_IDENTITY_MODE` != `off`)
+- SessionEnd (`reset session-end`) releases both session and dir icons
 
 ## Terminal Compatibility
 

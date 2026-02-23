@@ -165,13 +165,48 @@ should_send_title() {
     esac
 }
 
+# === IDENTITY SYSTEM HELPERS ===
+# Lazy-load identity modules only when needed (reset and new-prompt).
+# Most hook invocations (~10+ per prompt) don't need identity logic.
+_load_identity_modules() {
+    [[ "${_TAVS_IDENTITY_LOADED:-}" == "true" ]] && return 0
+    source "$CORE_DIR/identity-registry.sh"
+    source "$CORE_DIR/dir-icon.sh"
+    _TAVS_IDENTITY_LOADED="true"
+}
+
+# Re-validate identity on each UserPromptSubmit (new-prompt).
+# - Session: idempotent assign_session_icon handles key changes + collision re-check
+# - Directory: always re-check (cwd may have changed between prompts)
+# Per spec Decision D14: re-evaluated at SessionStart + UserPromptSubmit.
+_revalidate_identity() {
+    local _default_mode="dual"
+    local _id_mode="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode}}"
+    [[ "$_id_mode" == "off" ]] && return 0
+
+    # Session: assign_session_icon is idempotent — on cache hit with same key,
+    # it re-checks collision status only. On key mismatch, it re-assigns.
+    assign_session_icon
+
+    # Directory: assign/update (only in dual mode; single = session only)
+    [[ "$_id_mode" == "dual" ]] && assign_dir_icon
+}
+
 # Main Logic
 STATE="${1:-}"
 
 case "$STATE" in
     processing)
-        # Reset stale subagent counter on new prompt (not on PostToolUse)
-        [[ "${2:-}" == "new-prompt" ]] && reset_subagent_count
+        # On new prompt (UserPromptSubmit): reset subagent counter + revalidate identity
+        if [[ "${2:-}" == "new-prompt" ]]; then
+            reset_subagent_count
+            # Revalidate identity: re-check collision status + assign/update dir icon
+            _default_mode_p="dual"
+            if [[ "${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_p}}" != "off" ]]; then
+                _load_identity_modules
+                _revalidate_identity
+            fi
+        fi
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
@@ -267,6 +302,13 @@ case "$STATE" in
         ;;
 
     reset)
+        # SessionEnd: release identity icons before reset cleanup
+        if [[ "${2:-}" == "session-end" ]]; then
+            _load_identity_modules
+            release_session_icon 2>/dev/null || true
+            release_dir_icon 2>/dev/null || true
+        fi
+
         kill_idle_timer
         reset_subagent_count  # Reset subagent tracking on session reset
         # Reset palette FIRST, then background
@@ -275,11 +317,27 @@ case "$STATE" in
         clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
-        # Initialize session spinner if session identity is enabled
         reset_spinner
-        [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
-        # Assign session icon BEFORE title (so compose_title includes it)
-        [[ "$ENABLE_SESSION_ICONS" == "true" ]] && assign_session_icon
+
+        if [[ "${2:-}" != "session-end" ]]; then
+            # SessionStart: initialize spinner + assign identity icons
+            [[ "$TAVS_SESSION_IDENTITY" == "true" ]] && init_session_spinner
+
+            # Assign session icon BEFORE title (so compose_title includes it)
+            _default_mode_r="dual"
+            _id_mode_r="${IDENTITY_MODE:-${TAVS_IDENTITY_MODE:-$_default_mode_r}}"
+            if [[ "$_id_mode_r" != "off" ]]; then
+                _load_identity_modules
+                assign_session_icon
+                # Non-Claude agents: also assign dir icon now (no UserPromptSubmit)
+                if [[ "$_id_mode_r" == "dual" && "${TAVS_AGENT:-}" != "claude" ]]; then
+                    assign_dir_icon
+                fi
+            elif [[ "${ENABLE_SESSION_ICONS:-true}" == "true" ]]; then
+                assign_session_icon  # Legacy random (IDENTITY_MODE=off)
+            fi
+        fi
+
         # Clear stale title state, then set composed title (includes session icon)
         clear_title_state 2>/dev/null || true
         should_send_title "reset" && set_tavs_title "reset"
@@ -310,7 +368,6 @@ case "$STATE" in
     # Fires when a subagent completes. Decrements counter.
     # If no more subagents, returns to processing state.
     subagent-stop)
-        local remaining_count
         remaining_count=$(decrement_subagent_count)
 
         if [[ $remaining_count -eq 0 ]]; then

@@ -134,7 +134,9 @@
 #   {FACE}         Agent face expression (Ǝ[• •]E)
 #   {STATUS_ICON}  State emoji (🟠)
 #   {AGENTS}       Subagent count (+2) — empty when none
-#   {SESSION_ICON} Unique animal emoji per tab (🦊)
+#   {SESSION_ICON} Session animal emoji per tab (🦊) — deterministic per session_id
+#   {DIR_ICON}     Directory flag emoji (🇩🇪) — deterministic per cwd (dual mode only)
+#   {SESSION_ID}   First 8 chars of Claude session ID (abc123de)
 #   {BASE}         Base title (your tab name or fallback)
 # TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
 
@@ -145,6 +147,61 @@
 # ENABLE_SESSION_ICONS="true"
 # Custom icon pool (override the default ~25 animals):
 # TAVS_SESSION_ICONS=("🦄" "🐲" "🦈" "🐋" "🐠")
+
+# ── Identity System ───────────────────────────────────────────────────────
+# Deterministic icon assignment: same session always gets the same animal,
+# same directory always gets the same flag. Replaces random-per-TTY icons.
+#
+# Modes:
+#   "dual"   (default) - Session animal + directory flag, title: «🇩🇪|🦊»
+#   "single" - Deterministic session animal only, no directory flag
+#   "off"    - Legacy random-per-TTY behavior (25 animals, like TAVS v2)
+#
+# TAVS_IDENTITY_MODE="dual"
+#
+# Persistence — where identity registries are stored
+#   "ephemeral"  (default) - /tmp/ — fresh icons after reboot
+#   "persistent" - ~/.cache/tavs/ — same icon forever
+# TAVS_IDENTITY_PERSISTENCE="ephemeral"
+#
+# Directory icon pool type — what emoji represent directories
+#   "flags"     (default) - Country flags (🇩🇪 🇯🇵 🇺🇸) — ~190 icons
+#   "plants"    - Plants/trees (🌳 🌴 🌵) — ~26 icons
+#   "buildings" - Buildings (🏠 🏢 🏰) — ~24 icons
+# TAVS_DIR_ICON_TYPE="flags"
+#
+# Directory identity source — how the directory path is resolved
+#   "cwd"      (default) - Use working directory as-is
+#   "git-root" - Normalize to git repository root (subdirs share one icon)
+# TAVS_DIR_IDENTITY_SOURCE="cwd"
+#
+# Worktree detection — show main→worktree format for git worktrees
+# TAVS_DIR_WORKTREE_DETECTION="true"
+#
+# Registry TTL — how long identity mappings persist (seconds, default 30 days)
+# TAVS_IDENTITY_REGISTRY_TTL=2592000
+#
+# Per-agent overrides:
+#   CLAUDE_IDENTITY_MODE="dual"
+#   GEMINI_IDENTITY_MODE="single"
+#   CLAUDE_DIR_ICON_TYPE="flags"
+#   CODEX_DIR_ICON_TYPE="plants"
+
+# ── Title Format Presets ──────────────────────────────────────────────────
+# Ready-made format strings. Uncomment ONE to use, or write your own.
+#
+# Minimal (no identity icons — backward compatible):
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}"
+#
+# Standard with dual identity (guillemets auto-injected when dual mode):
+#   Leave TAVS_TITLE_FORMAT at default — dual mode auto-wraps {SESSION_ICON}
+#   into «{DIR_ICON}|{SESSION_ICON}» via dynamic guillemet injection.
+#
+# Full Identity (explicit guillemets + session ID):
+# TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {AGENTS} «{DIR_ICON}|{SESSION_ICON}» {SESSION_ID} {BASE}"
+#
+# Bubble (future — all info inside guillemets):
+# TAVS_TITLE_FORMAT="{FACE} «{STATUS_ICON}|{CONTEXT_FOOD}{CONTEXT_PCT}|{AGENTS}|{SESSION_ICON}|{DIR_ICON}»"
 
 # ── Per-State Title Formats ────────────────────────────────────────────────
 # Different title templates for each trigger state. Empty = use TAVS_TITLE_FORMAT.

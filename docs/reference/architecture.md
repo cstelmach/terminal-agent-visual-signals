@@ -43,6 +43,9 @@ TAVS - Terminal Agent Visual Signals provides terminal state indicators for mult
 │  │  │ iterm2.sh    │ │             │ │ helpers.sh       │ │    │
 │  │  │session-      │ │             │ │context-          │ │    │
 │  │  │ icon.sh      │ │             │ │ data.sh          │ │    │
+│  │  │identity-     │ │             │ │                   │ │    │
+│  │  │ registry.sh  │ │             │ │                   │ │    │
+│  │  │dir-icon.sh   │ │             │ │                   │ │    │
 │  │  └──────────────┘ └─────────────┘ └──────────────────┘ │    │
 │  └───────────────────────┬────────────────────────────────┘    │
 │                          │                                      │
@@ -105,20 +108,40 @@ Terminal escape sequence functions:
 - `send_bell_if_enabled` - Notification bell (BEL)
 - `_build_osc_palette_seq` - Build palette sequence (shared by trigger and idle-worker)
 
-### session-icon.sh (Session Icons)
+### session-icon.sh (Session Identity)
 
-Assigns a unique animal emoji per terminal tab for visual identification:
-- `assign_session_icon()` - Pick random icon from pool, persists per-TTY (idempotent)
-- `get_session_icon()` - Return current session's icon (empty if disabled)
-- `release_session_icon()` - Unregister on session end
-- Registry-based uniqueness across concurrent sessions
-- Stale cleanup removes entries for dead TTY devices
-- State files: `session-icon.{TTY_SAFE}` (per-tab) and `session-icon-registry` (cross-session)
+Deterministic session identity via animal emoji per session_id (v2) or random per-TTY (legacy):
+- `assign_session_icon()` - Deterministic round-robin from 77-animal pool per session_id (idempotent)
+- `get_session_icon()` - Return primary icon, or `"primary secondary"` pair during active collision
+- `release_session_icon()` - Remove per-TTY cache and active-sessions entry (registry mapping preserved)
+- 2-icon collision overflow: when two sessions share the same primary, both show a pair
+- Legacy mode (`TAVS_IDENTITY_MODE=off`): exact v1 behavior (random per-TTY, 25 animals)
+- Bidirectional format migration (v1↔v2) with auto-detection
+- State files: `session-icon.{TTY_SAFE}` (per-tab KV cache) via identity registry
+
+### identity-registry.sh (Identity Registry)
+
+Shared registry foundation for session and directory icon modules:
+- `_round_robin_next_locked(type, pool)` - Sequential assignment with mkdir-based locking
+- `_registry_lookup/store/remove()` - Persistent key→icon mappings with atomic writes
+- `_active_sessions_update/remove/check_collision()` - Active-sessions index for O(1) collision detection
+- `_registry_cleanup_expired()` - TTL-based cleanup of old entries
+- Persistence routing: `/tmp/tavs-identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
+
+### dir-icon.sh (Directory Identity)
+
+Deterministic directory→flag mapping with worktree awareness (dual mode only):
+- `assign_dir_icon()` - Assign flag from 190-flag pool per working directory (idempotent)
+- `get_dir_icon()` - Return single flag or `main→worktree` format for git worktrees
+- `release_dir_icon()` - Remove per-TTY cache (registry mapping preserved)
+- Platform-aware git timeout helper (`timeout` → `gtimeout` → bare)
+- Worktree detection via git-common-dir comparison
+- Fallback pools: plants (26) and buildings (24) for alternate styling
 
 ### title-management.sh (Title Composition)
 
 Title management with user override detection and per-state format selection:
-- `compose_title()` - Build title with 4-level format fallback (agent+state → agent → state → global), resolve 20 tokens including context/metadata
+- `compose_title()` - Build title with 4-level format fallback (agent+state → agent → state → global), dynamic guillemet injection for dual identity mode, resolve 20+ tokens including context/metadata/identity
 - `set_tavs_title()` - Set title with full state tracking and user override respect
 - `reset_tavs_title()` - Reset title to base (remove TAVS prefix)
 - User title detection on iTerm2 via OSC 1337
@@ -272,10 +295,22 @@ Core trigger.sh called with "complete"
 idle-worker transitions through 6 idle stages
 
 Session Start (reset):
-  1. Assign session icon (unique animal emoji per TTY)
-  2. Icon persists across /clear (tied to terminal tab)
+  1. Assign session icon (deterministic animal per session_id via round-robin)
+  2. Icon persists across /clear (tied to session_id, not TTY device)
   3. Stale icons from dead TTYs cleaned up automatically
   4. Icon appears as {SESSION_ICON} token in title format
+  5. In dual mode, dir icon deferred to first UserPromptSubmit (cwd available)
+
+UserPromptSubmit (new-prompt):
+  1. Revalidate identity: re-check session icon collision status
+  2. Assign dir icon from working directory (dual mode only)
+  3. Worktree detection: if git worktree, shows main→worktree format
+  4. Title shows «{DIR_ICON}|{SESSION_ICON}» in dual mode
+
+Session End (reset session-end):
+  1. Release session icon (remove per-TTY cache, keep registry mapping)
+  2. Release dir icon (remove per-TTY cache)
+  3. Active-sessions index entry removed
 ```
 
 ## Configuration Files

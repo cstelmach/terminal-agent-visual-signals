@@ -72,6 +72,21 @@ load_agent_config() {
     # 2. Load user overrides (optional)
     _load_config_file "$_USER_CONFIG" || true
 
+    # 2a. Post-user.conf backward compatibility mappings
+    # These must run AFTER user.conf so user.conf values take effect.
+    # ENABLE_SESSION_ICONS=false → TAVS_IDENTITY_MODE=off (BUG-2 fix)
+    [[ "${ENABLE_SESSION_ICONS:-true}" == "false" ]] && TAVS_IDENTITY_MODE="off"
+
+    # 2b. Propagate user-customized TAVS_SESSION_ICONS to TAVS_SESSION_ICON_POOL (GAP-1 fix)
+    # If user overrode the legacy 25-animal pool but not the expanded 80-animal pool,
+    # use their custom pool for dual/single mode too.
+    if [[ -f "$_USER_CONFIG" ]]; then
+        if grep -q '^TAVS_SESSION_ICONS=' "$_USER_CONFIG" 2>/dev/null && \
+           ! grep -q '^TAVS_SESSION_ICON_POOL=' "$_USER_CONFIG" 2>/dev/null; then
+            TAVS_SESSION_ICON_POOL=("${TAVS_SESSION_ICONS[@]}")
+        fi
+    fi
+
     # 3. Apply theme preset if specified
     if [[ "$THEME_MODE" == "preset" ]] && [[ -n "$THEME_PRESET" ]]; then
         _load_config_file "$_THEMES_DIR/${THEME_PRESET}.conf"
@@ -122,6 +137,9 @@ _resolve_agent_variables() {
         # Per-agent compact context eye overrides
         COMPACT_CONTEXT_STYLE
         COMPACT_CONTEXT_EYE
+        # Per-agent identity system overrides
+        IDENTITY_MODE
+        DIR_ICON_TYPE
     )
 
     local var value
