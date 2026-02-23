@@ -8,6 +8,7 @@
 | [Agent Themes](reference/agent-themes.md) | Per-agent faces, colors, backgrounds, override priority | Customizing agent appearance, creating custom themes |
 | [Palette Theming](reference/palette-theming.md) | 16-color ANSI palette modification, TrueColor limitations, theme presets | Enabling palette theming, understanding color behavior |
 | [Testing](reference/testing.md) | Manual and automated testing procedures, terminal compatibility | Verifying changes, testing installations, debugging |
+| [Dynamic Titles](reference/dynamic-titles.md) | Per-state title formats, context tokens, title presets, StatusLine bridge | Customizing title content, setting up context data, switching presets |
 | [Development Testing](reference/development-testing.md) | Plugin cache updates, live-testing workflow | Making code changes, deploying to plugin cache |
 | [Troubleshooting](troubleshooting/overview.md) | Quick fixes for common problems, terminal compatibility, debug mode | When signals don't work, colors are wrong, titles missing |
 

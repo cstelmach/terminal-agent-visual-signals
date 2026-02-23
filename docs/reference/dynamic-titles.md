@@ -4,6 +4,65 @@ Per-state title formats with context window data, enabling the terminal title to
 different information for each trigger state — most notably, context window fill level
 during permission and idle states.
 
+## Title Presets
+
+Quick-switch presets that configure face mode + all per-state format strings in one go.
+Set `TAVS_TITLE_PRESET` in `~/.tavs/user.conf` or via `./tavs set title-preset <name>`.
+
+| Preset | Face Mode | Style | Example |
+|--------|-----------|-------|---------|
+| `dashboard` | standard (text) | Info group in parentheses after face | `Ǝ[• •]E˙°(🟠\|🧀\|🇩🇪\|🦊) +2 75% ~/proj  abc123de` |
+| `compact` | compact (emoji) | Emoji eyes in face, guillemet identity | `Ǝ[🟧 🧀]E +2 «🇩🇪\|🦊» ~/proj` |
+
+### Dashboard Preset
+
+Text-based faces with a parenthesized info group connected by `˙°`:
+
+```
+Ǝ[• •]E˙°(🟠|🧀|🇩🇪|🦊) +2 75% ~/proj  abc123de
+│         │               │    │   │        └─ session ID
+│         │               │    │   └─ base title
+│         │               │    └─ context percentage
+│         │               └─ subagent count
+│         └─ info group: status | food | dir flag | session animal
+└─ face (standard text eyes)
+```
+
+Compacting state drops food emoji (just percentage). All other states share the global
+format. Agents placement and context percentage are outside parentheses.
+
+### Compact Preset
+
+Emoji-eye faces where left eye = state color, right eye = context food level:
+
+```
+Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj
+│          │    │         └─ base title
+│          │    └─ guillemet identity (auto-injected)
+│          └─ subagent count
+└─ face with emoji eyes (status + context)
+```
+
+Permission, idle, complete, and reset states include `{CONTEXT_FOOD}{CONTEXT_PCT}` in
+the title for additional context awareness. Compacting shows percentage only.
+
+### Configuration
+
+```bash
+# In ~/.tavs/user.conf
+TAVS_TITLE_PRESET="dashboard"    # "dashboard" | "compact" | "" (no preset)
+
+# Via CLI
+./tavs set title-preset dashboard
+./tavs set title-preset compact
+```
+
+Presets set `TAVS_FACE_MODE` and all `TAVS_TITLE_FORMAT_*` variables. They operate at
+the global level (Levels 3-4 of the fallback chain), so per-agent overrides (Levels 1-2)
+still take priority. Clearing `TAVS_TITLE_PRESET` to empty restores manual configuration.
+
+---
+
 ## Per-State Title Formats
 
 Instead of one global `TAVS_TITLE_FORMAT` for all states, each trigger state can have
@@ -111,7 +170,7 @@ cleanup handles empty tokens: `«|🦊»` → `«🦊»`, `«🇩🇪|»` → `�
 
 | Token | With Bridge | Without Bridge | Without Either |
 |-------|-------------|----------------|----------------|
-| Context tokens | Real-time % from StatusLine | Estimated from transcript | Empty (collapses) |
+| Context tokens | Real-time % from StatusLine | Estimated from transcript | Defaults to 0% |
 | `{MODEL}`, `{COST}`, `{DURATION}`, `{LINES}` | Real-time from StatusLine | Empty | Empty |
 | `{MODE}` | Always available | Always available | Always available |
 
@@ -194,8 +253,9 @@ Three-tier data resolution ensures context tokens work with or without the bridg
    → Approximate but fast, no external dependencies
 
 3. Neither available?
-   → All context/metadata tokens resolve to empty string
-   → Collapsed by existing space cleanup — no visual disruption
+   → Context percentage defaults to 0% (session start / no activity yet)
+   → Metadata tokens (MODEL, COST, etc.) resolve to empty string
+   → Empty metadata collapsed by space cleanup — no visual disruption
 ```
 
 ### Transcript Estimation Details
@@ -311,6 +371,19 @@ Token suppression matrix:
 When no context data is available (no bridge, no transcript), the right eye falls back
 to the theme status emoji — the face looks identical to standard compact mode. No broken
 visual state.
+
+### Reset State Faces
+
+The reset state distinguishes between session-start and session-end:
+
+| Trigger | Face | Status Icon | Purpose |
+|---------|------|-------------|---------|
+| `reset` (SessionStart) | Standard eyes (`Ǝ[• •]E`) | ⚪ | Fresh session — inviting |
+| `reset session-end` (SessionEnd) | Em dash eyes (`Ǝ[— —]E`) | ⚪ | Session closing — muted |
+
+Each agent has both `FACES_RESET` (session-start, multiple variants) and
+`FACES_RESET_FINAL` (session-end, single em dash variant). In compact mode, session-end
+shows `Ǝ[— —]E` while session-start shows theme emoji eyes with context.
 
 ### Per-Agent Customization
 

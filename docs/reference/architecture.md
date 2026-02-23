@@ -78,6 +78,7 @@ Main dispatcher that handles state transitions:
 Loads configuration hierarchy and resolves agent-specific variables:
 - Master defaults from `src/config/defaults.conf`
 - User overrides from `~/.tavs/user.conf`
+- Title preset expansion (`TAVS_TITLE_PRESET` → face mode + all format vars)
 - Theme preset loading (Catppuccin, Nord, Dracula, etc.)
 - AGENT_ prefix resolution (e.g., `CLAUDE_DARK_PROCESSING` -> `DARK_PROCESSING`)
 - Color resolution based on dark/light/muted mode
@@ -87,8 +88,9 @@ Loads configuration hierarchy and resolves agent-specific variables:
 
 Random face selection from per-agent face pools:
 - `get_random_face()` - Select random face for a state from AGENT_FACES_ arrays
-- `get_compact_face()` - Compact mode: emoji eyes in agent frame, subagent count as right eye
-- Supports all states including subagent and tool_error
+- `get_compact_face()` - Compact mode: emoji eyes in agent frame, context food as right eye
+- Supports all states including subagent, tool_error, and reset (start vs end)
+- Reset distinction: `reset` uses standard eyes, `reset_final` uses em dash eyes (session-end)
 - Fallback to UNKNOWN_ faces for unrecognized agents
 - Compact mode: `TAVS_FACE_MODE="compact"` replaces text eyes with emoji from theme pools (semantic, circles, squares, mixed)
 
@@ -123,9 +125,10 @@ Deterministic session identity via animal emoji per session_id (v2) or random pe
 
 Shared registry foundation for session and directory icon modules:
 - `_round_robin_next_locked(type, pool)` - Sequential assignment with mkdir-based locking
-- `_registry_lookup/store/remove()` - Persistent key→icon mappings with atomic writes
+- `_registry_lookup/store/remove()` - Persistent key→icon mappings with atomic writes, filesystem-locked CRUD
 - `_active_sessions_update/remove/check_collision()` - Active-sessions index for O(1) collision detection
-- `_registry_cleanup_expired()` - TTL-based cleanup of old entries
+- `_registry_cleanup_expired()` - TTL-based cleanup of old entries (filesystem-locked)
+- `_acquire_lock/_release_lock()` - mkdir-based filesystem locking (prevents concurrent write races)
 - Persistence routing: `/tmp/tavs-identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
 
 ### dir-icon.sh (Directory Identity)
@@ -134,6 +137,8 @@ Deterministic directory→flag mapping with worktree awareness (dual mode only):
 - `assign_dir_icon()` - Assign flag from 190-flag pool per working directory (idempotent)
 - `get_dir_icon()` - Return single flag or `main→worktree` format for git worktrees
 - `release_dir_icon()` - Remove per-TTY cache (registry mapping preserved)
+- Sourced at top level (like `session-icon.sh`) so `get_dir_icon()` is available to all states
+- `assign_dir_icon()` requires identity-registry.sh (loaded via `_load_identity_modules()`)
 - Platform-aware git timeout helper (`timeout` → `gtimeout` → bare)
 - Worktree detection via git-common-dir comparison
 - Fallback pools: plants (26) and buildings (24) for alternate styling
@@ -226,7 +231,8 @@ Background process for graduated idle states:
 | Compacting | Teal | 🔄 | Context compression |
 | Subagent | Golden-Yellow | 🔀 | Task tool spawned subagent |
 | Tool Error | Orange-Red | ❌ | Tool execution failed (auto-returns after 1.5s) |
-| Reset | Default | - | Clear state |
+| Reset (start) | Default | ⚪ | Session start — face with standard eyes |
+| Reset (end) | Default | ⚪ | Session end — face with em dash eyes (muted) |
 
 ## Data Flow
 
@@ -296,14 +302,14 @@ idle-worker transitions through 6 idle stages
 
 Session Start (reset):
   1. Assign session icon (deterministic animal per session_id via round-robin)
-  2. Icon persists across /clear (tied to session_id, not TTY device)
-  3. Stale icons from dead TTYs cleaned up automatically
-  4. Icon appears as {SESSION_ICON} token in title format
-  5. In dual mode, dir icon deferred to first UserPromptSubmit (cwd available)
+  2. Assign dir icon (dual mode — cwd available from hook JSON)
+  3. Show face + ⚪ status icon (session-start variant: standard eyes)
+  4. Icon persists across /clear (tied to session_id, not TTY device)
+  5. Stale icons from dead TTYs cleaned up automatically
 
 UserPromptSubmit (new-prompt):
   1. Revalidate identity: re-check session icon collision status
-  2. Assign dir icon from working directory (dual mode only)
+  2. Re-assign dir icon (cwd may have changed between prompts, dual mode only)
   3. Worktree detection: if git worktree, shows main→worktree format
   4. Title shows «{DIR_ICON}|{SESSION_ICON}» in dual mode
 
@@ -311,6 +317,7 @@ Session End (reset session-end):
   1. Release session icon (remove per-TTY cache, keep registry mapping)
   2. Release dir icon (remove per-TTY cache)
   3. Active-sessions index entry removed
+  4. Show face with em dash eyes (session-end variant: muted/closing)
 ```
 
 ## Configuration Files

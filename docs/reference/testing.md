@@ -141,6 +141,44 @@ TAVS_FACE_MODE=standard ./src/core/trigger.sh processing     # Ǝ[• •]E 🟠
 ./src/core/trigger.sh reset
 ```
 
+### Test Title Presets
+
+```bash
+# Test dashboard preset (text face + parenthesized info group)
+TAVS_TITLE_PRESET=dashboard ./src/core/trigger.sh processing new-prompt
+# Title should show: Ǝ[• •]E˙°(🟠|🧀|🇩🇪|🦊) 0% ~/proj  abc123de
+./src/core/trigger.sh permission
+# Same format with red status icon
+./src/core/trigger.sh reset
+
+# Test compact preset (emoji eyes + guillemet identity)
+TAVS_TITLE_PRESET=compact ./src/core/trigger.sh processing new-prompt
+# Title should show: Ǝ[🟧 🧀]E «🇩🇪|🦊» ~/proj
+TAVS_TITLE_PRESET=compact ./src/core/trigger.sh permission
+# Permission format: Ǝ[🟥 🧀]E «🇩🇪|🦊» 🧀0% ~/proj
+./src/core/trigger.sh reset
+
+# Switch between presets via CLI
+./tavs set title-preset dashboard
+./tavs set title-preset compact
+```
+
+### Test Reset Face Distinction
+
+```bash
+# Session-start reset: standard eyes (inviting)
+./src/core/trigger.sh reset
+# Should show: Ǝ[• •]E ⚪ (or variant)
+
+# Session-end reset: em dash eyes (muted/closing)
+./src/core/trigger.sh reset session-end
+# Should show: Ǝ[— —]E ⚪
+
+# Compact mode session-end: em dash (not emoji)
+TAVS_FACE_MODE=compact ./src/core/trigger.sh reset session-end
+# Should show: Ǝ[— —]E (em dash, not emoji eyes)
+```
+
 ### Test Terminal Title Mode
 
 ```bash
@@ -321,8 +359,15 @@ export DEBUG_ALL=1
 - [ ] Per-state format falls back to TAVS_TITLE_FORMAT when not set
 - [ ] StatusLine bridge produces zero stdout
 - [ ] Bridge writes state file to `~/.cache/tavs/context.{TTY_SAFE}`
-- [ ] Context tokens collapse silently when no data available
+- [ ] Context tokens default to 0% when no data available (not empty)
 - [ ] Transcript fallback estimates percentage from JSONL tokens
+- [ ] Title preset "dashboard" applies text face + parenthesized info group
+- [ ] Title preset "compact" applies emoji eyes + guillemet identity
+- [ ] Preset switch via `./tavs set title-preset` updates user.conf correctly
+- [ ] Session-start reset shows standard face eyes (e.g., `Ǝ[• •]E`)
+- [ ] Session-end reset shows em dash face eyes (`Ǝ[— —]E`)
+- [ ] Reset state shows ⚪ status icon
+- [ ] Dir icon visible across all states (not just processing new-prompt)
 
 ## Common Test Scenarios
 
