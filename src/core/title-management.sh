@@ -429,13 +429,17 @@ compose_title() {
         title="${title//\{MODE\}/${TAVS_PERMISSION_MODE:-}}"
     fi
 
-    # Clean up guillemet formatting for empty tokens, then collapse spaces and trim
-    # «|🦊» → «🦊» (no dir icon), «🇩🇪|» → «🇩🇪» (no session icon)
-    # «|» → «» → (empty) (neither icon), «» → (empty)
+    # Clean up guillemet formatting and empty pipe-delimited fields, then collapse spaces
+    # Guillemets: «|🦊» → «🦊», «🇩🇪|» → «🇩🇪», «|» → «» → (empty)
+    # Pipes: (🟠||🇩🇪|🦊) → (🟠|🇩🇪|🦊) — collapse empty fields from missing context
+    # Also: (|🇩🇪|🦊) → (🇩🇪|🦊), (🟠|🇩🇪|) → (🟠|🇩🇪)
     title=$(printf '%s\n' "$title" | sed \
         -e 's/«|/«/g' \
         -e 's/|»/»/g' \
         -e 's/«»//g' \
+        -e 's/(|/(/' \
+        -e 's/|)/)/g' \
+        -e 's/||*/|/g' \
         -e 's/  */ /g; s/^ *//; s/ *$//')
 
     printf '%s\n' "$title"

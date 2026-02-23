@@ -40,6 +40,7 @@ resolve_alias() {
         palette)            echo "ENABLE_PALETTE_THEMING"; return 0 ;;
 
         # Title System
+        title-preset)       echo "COMPOUND:TAVS_TITLE_PRESET"; return 0 ;;
         title-mode)         echo "TAVS_TITLE_MODE"; return 0 ;;
         title-fallback)     echo "TAVS_TITLE_FALLBACK"; return 0 ;;
         title-format)       echo "TAVS_TITLE_FORMAT"; return 0 ;;
@@ -69,7 +70,7 @@ resolve_alias() {
         THEME_MODE|THEME_PRESET|ENABLE_LIGHT_DARK_SWITCHING|FORCE_MODE|\
         ENABLE_ANTHROPOMORPHISING|TAVS_FACE_MODE|FACE_POSITION|\
         TAVS_COMPACT_THEME|ENABLE_STYLISH_BACKGROUNDS|ENABLE_PALETTE_THEMING|\
-        TAVS_TITLE_MODE|TAVS_TITLE_FALLBACK|TAVS_TITLE_FORMAT|\
+        TAVS_TITLE_PRESET|TAVS_TITLE_MODE|TAVS_TITLE_FALLBACK|TAVS_TITLE_FORMAT|\
         ENABLE_SESSION_ICONS|TAVS_AGENTS_FORMAT|\
         TAVS_IDENTITY_MODE|TAVS_IDENTITY_PERSISTENCE|TAVS_DIR_ICON_TYPE|\
         TAVS_SPINNER_STYLE|TAVS_SPINNER_EYE_MODE|TAVS_SESSION_IDENTITY|\
@@ -121,6 +122,8 @@ get_valid_values() {
             echo "true false" ;;
         FORCE_MODE)
             echo "auto dark light" ;;
+        TAVS_TITLE_PRESET)
+            echo "compact dashboard" ;;
         TAVS_FACE_MODE)
             echo "standard compact" ;;
         FACE_POSITION)
@@ -193,6 +196,7 @@ get_description() {
         compact-theme)      echo "Compact face theme (semantic, circles, squares, mixed)" ;;
         backgrounds)        echo "Enable stylish background images (iTerm2/Kitty)" ;;
         palette)            echo "Terminal palette theming (false, auto, true)" ;;
+        title-preset)       echo "Quick-switch title format (compact, dashboard)" ;;
         title-mode)         echo "Title control mode (skip-processing, prefix-only, full, off)" ;;
         title-fallback)     echo "Fallback when no user title (path, session-path, etc.)" ;;
         title-format)       echo "Title composition template ({FACE} {STATUS_ICON} etc.)" ;;
@@ -222,6 +226,7 @@ list_aliases() {
     cat <<'EOF'
 agents-format
 backgrounds
+title-preset
 bell-complete
 bell-permission
 compact-theme

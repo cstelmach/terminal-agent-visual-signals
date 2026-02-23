@@ -14,6 +14,37 @@
 source "$CLI_DIR/cli-utils.sh"
 source "$CLI_DIR/aliases.sh"
 
+# Handle compound alias: title-preset
+# Sets TAVS_TITLE_PRESET (preset expansion happens at load time in theme-config-loader.sh)
+_handle_title_preset_set() {
+    local value="$1"
+
+    if [[ -z "$value" ]]; then
+        local presets_str
+        presets_str=$(get_valid_values "TAVS_TITLE_PRESET")
+        local presets
+        IFS=' ' read -ra presets <<< "$presets_str"
+        value=$(interactive_pick "Select title preset" "${presets[@]}") || return 1
+    fi
+
+    if ! validate_value "TAVS_TITLE_PRESET" "$value"; then
+        cli_error "Unknown preset: $value"
+        echo "  Valid options: $(get_valid_values "TAVS_TITLE_PRESET")"
+        return 1
+    fi
+
+    set_config_value "TAVS_TITLE_PRESET" "$value"
+    case "$value" in
+        compact)
+            cli_success "Set title-preset = compact (emoji eyes + guillemet identity)"
+            ;;
+        dashboard)
+            cli_success "Set title-preset = dashboard (text faces + info group)"
+            ;;
+    esac
+    cli_info "Takes effect on next state change."
+}
+
 # Handle compound alias: theme
 # Sets both THEME_PRESET and THEME_MODE
 _handle_theme_set() {
@@ -95,6 +126,10 @@ EOF
         case "$key" in
             theme)
                 _handle_theme_set "$value"
+                return $?
+                ;;
+            title-preset)
+                _handle_title_preset_set "$value"
                 return $?
                 ;;
             *)

@@ -54,6 +54,46 @@ _load_config_file() {
     return 1
 }
 
+# Apply title preset: overrides face mode + all format vars.
+# Runs after user.conf is loaded so TAVS_TITLE_PRESET is available.
+# Presets set TAVS_FACE_MODE and TAVS_TITLE_FORMAT_* unconditionally.
+# Per-agent overrides (CLAUDE_TITLE_FORMAT_*) still take priority
+# via the 4-level fallback chain in compose_title.
+_apply_title_preset() {
+    case "${TAVS_TITLE_PRESET:-}" in
+        dashboard)
+            TAVS_FACE_MODE="standard"
+            # Global: face + info group (food in parens, agents+pct outside)
+            TAVS_TITLE_FORMAT='{FACE}˙°({STATUS_ICON}|{CONTEXT_FOOD}|{DIR_ICON}|{SESSION_ICON}) {AGENTS} {CONTEXT_PCT} {BASE}  {SESSION_ID}'
+            # Per-state: most use global; compacting drops food (just %)
+            TAVS_TITLE_FORMAT_PROCESSING=""
+            TAVS_TITLE_FORMAT_PERMISSION=""
+            TAVS_TITLE_FORMAT_COMPLETE=""
+            TAVS_TITLE_FORMAT_IDLE=""
+            TAVS_TITLE_FORMAT_COMPACTING='{FACE}˙°({STATUS_ICON}|{CONTEXT_PCT}|{DIR_ICON}|{SESSION_ICON}) {BASE}  {SESSION_ID}'
+            TAVS_TITLE_FORMAT_SUBAGENT=""
+            TAVS_TITLE_FORMAT_TOOL_ERROR=""
+            TAVS_TITLE_FORMAT_RESET=""
+            ;;
+        compact)
+            TAVS_FACE_MODE="compact"
+            TAVS_COMPACT_THEME="${TAVS_COMPACT_THEME:-squares}"
+            # Global: face with emoji eyes, guillemet identity auto-injected
+            TAVS_TITLE_FORMAT='{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}'
+            # Per-state: permission/idle/complete show context (suppressed in eye)
+            TAVS_TITLE_FORMAT_PROCESSING=""
+            TAVS_TITLE_FORMAT_PERMISSION='{FACE} {STATUS_ICON} {SESSION_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}'
+            TAVS_TITLE_FORMAT_COMPLETE='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}'
+            TAVS_TITLE_FORMAT_IDLE='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}'
+            TAVS_TITLE_FORMAT_COMPACTING='{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}'
+            TAVS_TITLE_FORMAT_SUBAGENT=""
+            TAVS_TITLE_FORMAT_TOOL_ERROR=""
+            TAVS_TITLE_FORMAT_RESET=""
+            ;;
+        # Empty or unknown: no preset, use explicit format vars
+    esac
+}
+
 # Load configuration hierarchy for specified agent
 # Usage: load_agent_config [agent_id]
 load_agent_config() {
@@ -72,12 +112,15 @@ load_agent_config() {
     # 2. Load user overrides (optional)
     _load_config_file "$_USER_CONFIG" || true
 
-    # 2a. Post-user.conf backward compatibility mappings
+    # 2a. Apply title preset (overrides face mode + all format vars)
+    _apply_title_preset
+
+    # 2b. Post-user.conf backward compatibility mappings
     # These must run AFTER user.conf so user.conf values take effect.
     # ENABLE_SESSION_ICONS=false → TAVS_IDENTITY_MODE=off (BUG-2 fix)
     [[ "${ENABLE_SESSION_ICONS:-true}" == "false" ]] && TAVS_IDENTITY_MODE="off"
 
-    # 2b. Propagate user-customized TAVS_SESSION_ICONS to TAVS_SESSION_ICON_POOL (GAP-1 fix)
+    # 2c. Propagate user-customized TAVS_SESSION_ICONS to TAVS_SESSION_ICON_POOL (GAP-1 fix)
     # If user overrode the legacy 25-animal pool but not the expanded 80-animal pool,
     # use their custom pool for dual/single mode too.
     if [[ -f "$_USER_CONFIG" ]]; then
