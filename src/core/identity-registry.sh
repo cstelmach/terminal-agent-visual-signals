@@ -31,9 +31,8 @@
 #   active-sessions:  tty_safe=session_key|primary_icon
 #
 # Locking strategy:
-#   .lock-{type}    - Protects counter read-modify-write
+#   .lock-{type}    - Protects counter and registry read-modify-write
 #   .lock-active    - Protects active-sessions index modifications
-#   No lock for registry store/remove (accepts concurrent-write risk)
 #
 # Dependencies:
 #   - get_spinner_state_dir() from spinner.sh (for persistent mode)
@@ -182,7 +181,7 @@ _round_robin_next_locked() {
 # Registry format: key=primary|secondary|timestamp
 # Session registry: key is session_key (first 8 chars of session_id or TTY_SAFE)
 # Dir registry: key is path_hash (cksum output)
-# No locking — accepts concurrent-write risk (self-healing on next start)
+# Locked via .lock-{type} to serialize concurrent read-modify-write
 
 # Look up a key in the registry.
 # Output: "primary|secondary|timestamp" or empty
@@ -218,11 +217,15 @@ _registry_store() {
     local reg_dir
     reg_dir=$(_get_registry_dir)
     local registry_file="${reg_dir}/${type}-registry"
+    local lock_dir="${reg_dir}/.lock-${type}"
 
     local timestamp
     timestamp=$(date +%s 2>/dev/null || printf '%s' "0")
 
     local entry="${primary}|${secondary}|${timestamp}"
+
+    # Lock: serialize concurrent read-modify-write on same registry
+    _acquire_lock "$lock_dir" || return 1
 
     # Atomic write: filter out old entry, append new
     local tmp_file
@@ -241,6 +244,8 @@ _registry_store() {
         printf '%s=%s\n' "$key" "$entry"
     } > "$tmp_file"
     mv "$tmp_file" "$registry_file" 2>/dev/null
+
+    _release_lock "$lock_dir"
 }
 
 # Remove a key from the registry (atomic write).
@@ -251,8 +256,12 @@ _registry_remove() {
     local reg_dir
     reg_dir=$(_get_registry_dir)
     local registry_file="${reg_dir}/${type}-registry"
+    local lock_dir="${reg_dir}/.lock-${type}"
 
     [[ ! -f "$registry_file" ]] && return 0
+
+    # Lock: serialize concurrent read-modify-write on same registry
+    _acquire_lock "$lock_dir" || return 0
 
     local tmp_file
     tmp_file=$(mktemp "${registry_file}.XXXXXX" 2>/dev/null) || tmp_file="${registry_file}.tmp.$$"
@@ -265,6 +274,8 @@ _registry_remove() {
         done < "$registry_file"
     } > "$tmp_file"
     mv "$tmp_file" "$registry_file" 2>/dev/null
+
+    _release_lock "$lock_dir"
 }
 
 # ==============================================================================
@@ -417,11 +428,15 @@ _registry_cleanup_expired() {
     local reg_dir
     reg_dir=$(_get_registry_dir)
     local registry_file="${reg_dir}/${type}-registry"
+    local lock_dir="${reg_dir}/.lock-${type}"
 
     [[ ! -f "$registry_file" ]] && return 0
 
     local now
     now=$(date +%s 2>/dev/null) || return 0
+
+    # Lock: serialize with concurrent store/remove on same registry
+    _acquire_lock "$lock_dir" || return 0
 
     local tmp_file
     tmp_file=$(mktemp "${registry_file}.XXXXXX" 2>/dev/null) || tmp_file="${registry_file}.tmp.$$"
@@ -445,4 +460,6 @@ _registry_cleanup_expired() {
     else
         rm -f "$tmp_file" "$registry_file" 2>/dev/null
     fi
+
+    _release_lock "$lock_dir"
 }

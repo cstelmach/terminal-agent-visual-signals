@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset",
+            "command": "${GEMINI_EXTENSION_ROOT}/src/agents/gemini/trigger.sh reset session-end",
             "async": true,
             "timeout": 5
           }

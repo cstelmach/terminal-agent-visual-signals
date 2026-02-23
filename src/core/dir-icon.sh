@@ -286,8 +286,9 @@ assign_dir_icon() {
 
     if [[ -n "$worktree_info" ]]; then
         # We're in a worktree — split on tab delimiter (safe for paths with spaces)
-        main_repo_path="${worktree_info%%	*}"
-        wt_toplevel="${worktree_info#*	}"
+        local tab=$'\t'
+        main_repo_path="${worktree_info%%$tab*}"
+        wt_toplevel="${worktree_info#*$tab}"
 
         # Main repo gets its icon from the main pool
         dir_path="$main_repo_path"
