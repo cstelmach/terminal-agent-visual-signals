@@ -345,6 +345,15 @@ TAVS_DIR_ICON_TYPE="flags"          # "flags" (default) | "plants" | "buildings"
 | `single` | Deterministic per session_id | None | None | 77 animals |
 | `off` | Random per TTY (legacy) | None | None | 25 animals |
 
+**Dir icon types** (dual mode only, set via `TAVS_DIR_ICON_TYPE`):
+
+| Type | Pool Size | Example | Sample Icons |
+|------|-----------|---------|--------------|
+| `flags` (default) | 190 | `«🇩🇪\|🦊»` | 🇺🇸 🇬🇧 🇯🇵 🇫🇷 🇩🇪 🇧🇷 🇰🇷 🇮🇹 |
+| `plants` | 26 | `«🌲\|🦊»` | 🌳 🌴 🌵 🌲 🌸 🌺 🪴 🎋 |
+| `buildings` | 24 | `«🏢\|🦊»` | 🏠 🏡 🏢 🏰 🏭 ⛪ 🕌 🗼 |
+| `auto` | varies | auto-detect | Falls back to flags |
+
 ---
 
 ## Development Notes

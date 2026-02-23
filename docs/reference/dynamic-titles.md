@@ -80,14 +80,28 @@ States use UPPERCASE with hyphens converted to underscores: `subagent-start` bec
 
 ### Default Per-State Formats
 
-Only three states have per-state formats by default (others fall back to
-`TAVS_TITLE_FORMAT`):
+Three states have per-state formats by default. The remaining five fall back to the
+global `TAVS_TITLE_FORMAT` (`{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}`):
+
+**States with custom default formats:**
 
 | State | Default Format | Example Output |
 |-------|---------------|----------------|
 | Permission | `{FACE} {STATUS_ICON} {SESSION_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {BASE}` | `Ǝ[° °]E 🔴 «🇩🇪\|🦊» 🧀50% ~/proj` |
 | Idle | `{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {BASE}` | `Ǝ[· ·]E 🟣 🌽45% «🇩🇪\|🦊» ~/proj` |
 | Compacting | `{FACE} {STATUS_ICON} {CONTEXT_PCT} {BASE}` | `Ǝ[~ ~]E 🔄 83% ~/proj` |
+
+**States using global format (examples at 50% context, dual identity):**
+
+| State | Example Output |
+|-------|----------------|
+| Processing | `Ǝ[• •]E 🟠 «🇩🇪\|🦊» ~/proj` |
+| Processing (+2 subagents) | `Ǝ[• •]E 🟠 +2 «🇩🇪\|🦊» ~/proj` |
+| Complete | `Ǝ[◠ ◠]E 🟢 «🇩🇪\|🦊» ~/proj` |
+| Subagent | `Ǝ[⇆ ⇆]E 🔀 +2 «🇩🇪\|🦊» ~/proj` |
+| Tool Error | `Ǝ[✕ ✕]E ❌ «🇩🇪\|🦊» ~/proj` |
+| Reset (start) | `Ǝ[• •]E ⚪ «🇩🇪\|🦊» ~/proj` |
+| Reset (end) | `Ǝ[— —]E ⚪ ~/proj` |
 
 ### Configuration Examples
 
