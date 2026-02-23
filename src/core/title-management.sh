@@ -250,8 +250,8 @@ compose_title() {
     local face=""
     local status_icon=""
 
-    # Get face if enabled (skip on reset — clean title at session start)
-    if [[ "$state" != "reset" && "${TAVS_TITLE_SHOW_FACE:-true}" == "true" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
+    # Get face if enabled
+    if [[ "${TAVS_TITLE_SHOW_FACE:-true}" == "true" && "$ENABLE_ANTHROPOMORPHISING" == "true" ]]; then
         if [[ "${TAVS_FACE_MODE:-standard}" == "compact" ]]; then
             # Compact mode: emoji eyes in face frame (includes subagent count)
             if type get_compact_face &>/dev/null; then
@@ -299,7 +299,8 @@ compose_title() {
             compacting) status_icon="$STATUS_ICON_COMPACTING" ;;
             subagent*)  status_icon="$STATUS_ICON_SUBAGENT" ;;
             tool_error) status_icon="$STATUS_ICON_TOOL_ERROR" ;;
-            reset|*)    status_icon="" ;;
+            reset)      status_icon="$STATUS_ICON_RESET" ;;
+            *)          status_icon="" ;;
         esac
     fi
 
