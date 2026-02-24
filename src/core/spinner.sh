@@ -140,14 +140,18 @@ init_session_spinner() {
     local session_file
     session_file=$(get_session_spinner_file)
 
-    # Available styles (excluding 'random' which is resolved here)
-    local styles=("braille" "circle" "block" "eye-animate" "none")
-    # Available eye modes
-    local eye_modes=("sync" "opposite" "stagger" "clockwise" "counter" "mirror" "mirror_inv")
+    # Respect user config: only randomize when explicitly set to "random"
+    local style="${TAVS_SPINNER_STYLE:-random}"
+    local eye_mode="${TAVS_SPINNER_EYE_MODE:-random}"
 
-    # Pick random style and mode for this session
-    local style="${styles[$RANDOM % ${#styles[@]}]}"
-    local eye_mode="${eye_modes[$RANDOM % ${#eye_modes[@]}]}"
+    if [[ "$style" == "random" ]]; then
+        local styles=("braille" "circle" "block" "eye-animate" "none")
+        style="${styles[$RANDOM % ${#styles[@]}]}"
+    fi
+    if [[ "$eye_mode" == "random" ]]; then
+        local eye_modes=("sync" "opposite" "stagger" "clockwise" "counter" "mirror" "mirror_inv")
+        eye_mode="${eye_modes[$RANDOM % ${#eye_modes[@]}]}"
+    fi
 
     # Store session choices atomically
     write_state_file "$session_file" "$style" "$eye_mode" "0" "0"
