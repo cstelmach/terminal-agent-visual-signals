@@ -12,7 +12,8 @@ Set `TAVS_TITLE_PRESET` in `~/.tavs/user.conf` or via `./tavs set title-preset <
 | Preset | Face Mode | Style | Example |
 |--------|-----------|-------|---------|
 | `dashboard` | standard (text) | Info group in parentheses after face | `Ǝ[• •]E˙°(🟠\|🧀\|🇩🇪\|🦊) +2 75% ~/proj  abc123de` |
-| `compact` | compact (emoji) | Emoji eyes in face, guillemet identity | `Ǝ[🟧 🧀]E +2 «🇩🇪\|🦊» ~/proj` |
+| `compact` | compact (emoji) | Emoji eyes in face, guillemet identity | `Ǝ[🟧 🧀]E +2 «🇩🇪\|🦊» abc123de ~/proj` |
+| `compact_project_sorted` | compact (emoji) | Dir flag + guillemet info group | `🇩🇪 Ǝ[🟧 🧀]E «🦊\|+2\|75%» abc123de ~/proj` |
 
 ### Dashboard Preset
 
@@ -36,8 +37,9 @@ format. Agents placement and context percentage are outside parentheses.
 Emoji-eye faces where left eye = state color, right eye = context food level:
 
 ```
-Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj
-│          │    │         └─ base title
+Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» abc123de ~/proj
+│          │    │         │        └─ base title
+│          │    │         └─ session ID
 │          │    └─ guillemet identity (auto-injected)
 │          └─ subagent count
 └─ face with emoji eyes (status + context)
@@ -46,15 +48,40 @@ Emoji-eye faces where left eye = state color, right eye = context food level:
 Permission, idle, complete, and reset states include `{CONTEXT_FOOD}{CONTEXT_PCT}` in
 the title for additional context awareness. Compacting shows percentage only.
 
+### Compact Project Sorted Preset
+
+Dir flag as visual anchor, info group in guillemets, session ID before path:
+
+```
+🇩🇪 Ǝ[🟧 🧀]E «🦊|+2|75%» abc123de ~/proj
+│   │          │               │        └─ base title
+│   │          │               └─ session ID (first 8 chars)
+│   │          └─ guillemet info: session animal | subagent count | context %
+│   └─ face with emoji eyes (status + context food)
+└─ directory flag (visual anchor — deterministic per cwd)
+```
+
+Same format used for all states. Empty tokens collapse cleanly via existing
+pipe/guillemet cleanup:
+
+| Condition | Guillemet | Resolved Example |
+|-----------|-----------|-----------------|
+| All present | `«🦊\|+2\|75%»` | Full info group |
+| No subagents | `«🦊\|75%»` | Pipe collapsed |
+| No context data | `«🦊\|+2»` | Trailing pipe removed |
+| No subagents + no context | `«🦊»` | Just animal, pipes removed |
+| Identity off + all empty | *(empty)* | Guillemets removed entirely |
+
 ### Configuration
 
 ```bash
 # In ~/.tavs/user.conf
-TAVS_TITLE_PRESET="dashboard"    # "dashboard" | "compact" | "" (no preset)
+TAVS_TITLE_PRESET="dashboard"    # "dashboard" | "compact" | "compact_project_sorted" | ""
 
 # Via CLI
 ./tavs set title-preset dashboard
 ./tavs set title-preset compact
+./tavs set title-preset compact_project_sorted
 ```
 
 Presets set `TAVS_FACE_MODE` and all `TAVS_TITLE_FORMAT_*` variables. They operate at

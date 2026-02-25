@@ -38,6 +38,9 @@ _handle_title_preset_set() {
         compact)
             cli_success "Set title-preset = compact (emoji eyes + guillemet identity)"
             ;;
+        compact_project_sorted)
+            cli_success "Set title-preset = compact_project_sorted (dir flag + guillemet info group)"
+            ;;
         dashboard)
             cli_success "Set title-preset = dashboard (text faces + info group)"
             ;;

@@ -123,7 +123,7 @@ get_valid_values() {
         FORCE_MODE)
             echo "auto dark light" ;;
         TAVS_TITLE_PRESET)
-            echo "compact dashboard" ;;
+            echo "compact compact_project_sorted dashboard" ;;
         TAVS_FACE_MODE)
             echo "standard compact" ;;
         FACE_POSITION)
@@ -196,7 +196,7 @@ get_description() {
         compact-theme)      echo "Compact face theme (semantic, circles, squares, mixed)" ;;
         backgrounds)        echo "Enable stylish background images (iTerm2/Kitty)" ;;
         palette)            echo "Terminal palette theming (false, auto, true)" ;;
-        title-preset)       echo "Quick-switch title format (compact, dashboard)" ;;
+        title-preset)       echo "Quick-switch title format (compact, compact_project_sorted, dashboard)" ;;
         title-mode)         echo "Title control mode (skip-processing, prefix-only, full, off)" ;;
         title-fallback)     echo "Fallback when no user title (path, session-path, etc.)" ;;
         title-format)       echo "Title composition template ({FACE} {STATUS_ICON} etc.)" ;;
