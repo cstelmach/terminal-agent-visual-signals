@@ -1150,7 +1150,7 @@ tail -f /tmp/gemini-hooks.log
 
 **Solution:** Clear the state file:
 ```bash
-rm /tmp/tavs.state
+rm /tmp/tavs/state
 ```
 
 ### Issue: "compacting" Shows at Start

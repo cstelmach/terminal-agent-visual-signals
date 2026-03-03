@@ -169,7 +169,7 @@ and "Key Technical Detail 8" (Persistence Mode Routing, lines 396-414).
 1. Create `src/core/identity-registry.sh` with module header following existing patterns
 
 2. Implement `_get_registry_dir()`:
-   - Route to `/tmp/tavs-identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
+   - Route to `/tmp/tavs/identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
    - Use `get_spinner_state_dir()` for persistent path
    - `mkdir -p` with `chmod 700`
 
@@ -214,7 +214,7 @@ source src/core/identity-registry.sh
 # Round-robin: 5 sequential unique icons
 for i in $(seq 1 5); do _round_robin_next_locked "test" "TAVS_SESSION_ICON_POOL"; done
 # Persistence routing
-TAVS_IDENTITY_PERSISTENCE=ephemeral _get_registry_dir  # /tmp/tavs-identity
+TAVS_IDENTITY_PERSISTENCE=ephemeral _get_registry_dir  # /tmp/tavs/identity
 TAVS_IDENTITY_PERSISTENCE=persistent _get_registry_dir  # ~/.cache/tavs
 # Store/lookup
 _registry_store "test" "key1" "🦊"

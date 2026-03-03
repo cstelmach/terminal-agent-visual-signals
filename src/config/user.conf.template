@@ -160,7 +160,7 @@
 # TAVS_IDENTITY_MODE="dual"
 #
 # Persistence — where identity registries are stored
-#   "ephemeral"  (default) - /tmp/ — fresh icons after reboot
+#   "ephemeral"  (default) - /tmp/tavs/ — fresh icons after reboot
 #   "persistent" - ~/.cache/tavs/ — same icon forever
 # TAVS_IDENTITY_PERSISTENCE="ephemeral"
 #

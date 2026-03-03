@@ -129,7 +129,7 @@ Shared registry foundation for session and directory icon modules:
 - `_active_sessions_update/remove/check_collision()` - Active-sessions index for O(1) collision detection
 - `_registry_cleanup_expired()` - TTL-based cleanup of old entries (filesystem-locked)
 - `_acquire_lock/_release_lock()` - mkdir-based filesystem locking (prevents concurrent write races)
-- Persistence routing: `/tmp/tavs-identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
+- Persistence routing: `/tmp/tavs/identity/` (ephemeral) or `~/.cache/tavs/` (persistent)
 
 ### dir-icon.sh (Directory Identity)
 

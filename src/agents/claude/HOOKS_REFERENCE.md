@@ -1351,7 +1351,7 @@ $CLAUDE_PROJECT_DIR/.claude/hooks/script.sh
 
 **Solution:** Clear state file:
 ```bash
-rm /tmp/tavs.state
+rm /tmp/tavs/state
 ```
 
 ### Issue: Hook Output Not Visible

@@ -94,7 +94,7 @@ TAVS_SESSION_ID=test1234 TAVS_CWD=/tmp/proj ./src/core/trigger.sh processing new
 
 # Check per-TTY cache (structured KV format)
 cat ~/.cache/tavs/session-icon.*   # session_key=..., primary=animal, collision_active=...
-cat /tmp/tavs-identity/dir-icon.*  # dir_path=..., main_icon=flag
+cat /tmp/tavs/identity/dir-icon.*  # dir_path=..., main_icon=flag
 
 # Test single mode (session animal only, no dir flag)
 TAVS_IDENTITY_MODE=single TAVS_SESSION_ID=test ./src/core/trigger.sh reset

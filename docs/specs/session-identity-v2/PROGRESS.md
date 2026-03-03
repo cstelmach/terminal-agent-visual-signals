@@ -47,7 +47,7 @@
 
 **What was done:**
 - Created `src/core/identity-registry.sh` (429 lines, 12 functions)
-- `_get_registry_dir()`: routes ephemeral → `/tmp/tavs-identity/`, persistent → `~/.cache/tavs/`
+- `_get_registry_dir()`: routes ephemeral → `/tmp/tavs/identity/`, persistent → `~/.cache/tavs/`
 - `_acquire_lock()`/`_release_lock()`: mkdir-based POSIX locks, 2s timeout, spin-wait 50ms
 - `_round_robin_next_locked()`: locked counter read-modify-write with pool selection via eval
 - `_registry_lookup()`/`_registry_store()`/`_registry_remove()`: safe KV parsing, atomic writes

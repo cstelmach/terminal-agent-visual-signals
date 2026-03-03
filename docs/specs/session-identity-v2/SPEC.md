@@ -121,7 +121,7 @@ current random-with-dedup approach.
                    │
          ┌─────────┴─────────┐
          ▼                   ▼
-    /tmp/tavs-identity/  ~/.cache/tavs/
+    /tmp/tavs/identity/  ~/.cache/tavs/
     (ephemeral)          (persistent)
 ```
 
@@ -204,7 +204,7 @@ JSON stdin is the only reliable source.
 #### 2. Registry File Format
 
 ```
-# ~/.cache/tavs/session-registry (or /tmp/tavs-identity/session-registry)
+# ~/.cache/tavs/session-registry (or /tmp/tavs/identity/session-registry)
 # Format: key=primary_icon|secondary_icon|timestamp
 # secondary_icon is empty unless 2-icon overflow was triggered at assignment time
 abc123de=🦊||1708000000
@@ -403,7 +403,7 @@ _get_registry_dir():
             dir=$(get_spinner_state_dir)  # ~/.cache/tavs/ or $XDG_RUNTIME_DIR/tavs
             ;;
         ephemeral|*)
-            dir="/tmp/tavs-identity"
+            dir="/tmp/tavs/identity"
             ;;
     esac
     mkdir -p "$dir" && chmod 700 "$dir"
@@ -751,7 +751,7 @@ icon modules.
 
 ```bash
 _get_registry_dir()
-    # Routes to /tmp/tavs-identity/ or ~/.cache/tavs/ based on TAVS_IDENTITY_PERSISTENCE
+    # Routes to /tmp/tavs/identity/ or ~/.cache/tavs/ based on TAVS_IDENTITY_PERSISTENCE
     # Creates dir with chmod 700 if missing
 
 _acquire_lock(lock_dir)
@@ -809,7 +809,7 @@ _registry_cleanup_expired(type, ttl_seconds)
 - [ ] Active-sessions stale cleanup removes dead TTY entries
 - [ ] Registry store/lookup is idempotent
 - [ ] TTL cleanup removes entries older than threshold
-- [ ] Ephemeral mode creates files in `/tmp/tavs-identity/`
+- [ ] Ephemeral mode creates files in `/tmp/tavs/identity/`
 - [ ] Persistent mode creates files in `~/.cache/tavs/`
 - [ ] All file operations use atomic `mktemp` + `mv`
 - [ ] No `source` of any state file (safe parsing only)
@@ -823,7 +823,7 @@ for i in $(seq 1 5); do _round_robin_next "test" "TAVS_SESSION_ICON_POOL"; done
 # Should return 5 different, sequential icons
 
 # Test persistence routing
-TAVS_IDENTITY_PERSISTENCE=ephemeral _get_registry_dir  # → /tmp/tavs-identity
+TAVS_IDENTITY_PERSISTENCE=ephemeral _get_registry_dir  # → /tmp/tavs/identity
 TAVS_IDENTITY_PERSISTENCE=persistent _get_registry_dir  # → ~/.cache/tavs
 ```
 
@@ -1472,7 +1472,7 @@ TAVS_SESSION_ID=test1234 TAVS_CWD=/tmp/different-project \
 
 # Persistence mode test
 TAVS_IDENTITY_PERSISTENCE=ephemeral ./src/core/trigger.sh reset
-ls /tmp/tavs-identity/  # Files here
+ls /tmp/tavs/identity/  # Files here
 
 TAVS_IDENTITY_PERSISTENCE=persistent ./src/core/trigger.sh reset
 ls ~/.cache/tavs/  # Registry files here
