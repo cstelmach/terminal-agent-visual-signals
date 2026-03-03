@@ -30,14 +30,14 @@
 # ==============================================================================
 
 # Title state database (separate from main state for clean separation)
-TITLE_STATE_DB="/tmp/tavs.title"
+TITLE_STATE_DB="${_TAVS_TMP_DIR:-/tmp/tavs}/title"
 
 # ==============================================================================
 # STATE FILE PATH
 # ==============================================================================
 
 # Get title state file path for current TTY
-# Returns: Path to state file (e.g., /tmp/tavs.title.dev_ttys001)
+# Returns: Path to state file (e.g., /tmp/tavs/title.dev_ttys001)
 get_title_state_file() {
     echo "${TITLE_STATE_DB}.${TTY_SAFE:-unknown}"
 }

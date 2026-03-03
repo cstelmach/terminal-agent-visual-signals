@@ -45,7 +45,7 @@
 # ==============================================================================
 
 # Get the registry storage directory based on persistence mode.
-# Ephemeral: /tmp/tavs-identity/ (cleared on reboot)
+# Ephemeral: /tmp/tavs/identity/ (cleared on reboot)
 # Persistent: ~/.cache/tavs/ (survives reboots)
 _get_registry_dir() {
     local dir
@@ -59,12 +59,12 @@ _get_registry_dir() {
             dir=$(get_spinner_state_dir)
             ;;
         ephemeral|*)
-            dir="/tmp/tavs-identity"
+            dir="$(get_tavs_tmp_dir)/identity"
             ;;
     esac
 
     # Guard: never operate on empty/root paths
-    [[ -z "$dir" ]] && dir="/tmp/tavs-identity"
+    [[ -z "$dir" ]] && dir="$(get_tavs_tmp_dir)/identity"
 
     if [[ ! -d "$dir" ]]; then
         mkdir -p "$dir" 2>/dev/null

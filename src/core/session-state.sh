@@ -5,8 +5,30 @@
 # Handles state persistence, priority locking, and TTY state tracking.
 # ==============================================================================
 
+# ==============================================================================
+# EPHEMERAL STATE DIRECTORY
+# ==============================================================================
+# All ephemeral TAVS state files live under /tmp/tavs/ (or TAVS_TMP_DIR).
+# Mirrors get_spinner_state_dir() pattern from spinner.sh for persistent state.
+# Directory is created with 700 permissions on first call.
+# ==============================================================================
+
+get_tavs_tmp_dir() {
+    local tmp_dir="${TAVS_TMP_DIR:-/tmp/tavs}"
+
+    if [[ ! -d "$tmp_dir" ]]; then
+        mkdir -p "$tmp_dir" 2>/dev/null
+        chmod 700 "$tmp_dir" 2>/dev/null
+    fi
+
+    printf '%s' "$tmp_dir"
+}
+
+# Initialize ephemeral state directory (called once at source time)
+_TAVS_TMP_DIR=$(get_tavs_tmp_dir)
+
 # Consolidated state file: TTY_SAFE state priority timestamp timer_pid
-STATE_DB="/tmp/tavs.state"
+STATE_DB="${_TAVS_TMP_DIR}/state"
 STATE_GRACE_PERIOD_MS=400  # Milliseconds to protect high-priority states
 
 # Get current time in milliseconds (for sub-second grace period)
@@ -24,12 +46,12 @@ get_time_ms() {
 
 # Debug logging
 IDLE_DEBUG="${IDLE_DEBUG:-0}"
-IDLE_DEBUG_LOG="/tmp/terminal-agent-idle-timer.log"
+IDLE_DEBUG_LOG="${_TAVS_TMP_DIR}/idle-timer.log"
 
 # === FULL DEBUG LOGGING ===
 # Set to 1 to capture complete invocation context for all triggers
 DEBUG_ALL="${DEBUG_ALL:-0}"  # Set to 1 to enable debug logging
-DEBUG_LOG_DIR="/tmp/tavs-debug"
+DEBUG_LOG_DIR="${_TAVS_TMP_DIR}/debug"
 
 # Get numeric priority for a state name
 # Higher priority = harder to override (requires grace period to pass)
@@ -132,7 +154,7 @@ check_and_clear_skip_signal() {
 # Format: TTY_SAFE agent base_color is_dark system_mode proc perm comp idle compact
 # ==============================================================================
 
-SESSION_COLORS_DB="/tmp/tavs.colors"
+SESSION_COLORS_DB="${_TAVS_TMP_DIR}/colors"
 
 # Write session colors for the current TTY
 # Usage: write_session_colors agent base_color is_dark system_mode proc perm comp idle compact
