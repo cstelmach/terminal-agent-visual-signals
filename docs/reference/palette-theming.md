@@ -42,7 +42,7 @@ TERM=xterm-256color COLORTERM= claude
 alias claude='TERM=xterm-256color COLORTERM= claude'
 ```
 
-The `configure.sh` wizard (Step 7) can create this alias for you.
+The `./tavs wizard` (Step 7) can create this alias for you.
 
 ## Theme Presets
 
@@ -60,7 +60,7 @@ All built-in theme presets include matching 16-color palettes:
 | Solarized Light | Solarized base03 fallback | Solarized base3 |
 | Tokyo Night | Storm colors | Day colors |
 
-Select via `configure.sh` or set `THEME_PRESET` in user.conf.
+Select via `./tavs wizard` or `./tavs set theme <name>`, or set `THEME_PRESET` in user.conf.
 
 ## ANSI Color Indices
 

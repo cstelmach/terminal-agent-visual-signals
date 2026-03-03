@@ -276,13 +276,15 @@ echo '{"context_window":{}}' | ./src/agents/claude/statusline-bridge.sh
 ### Test Terminal Compatibility
 
 ```bash
-./test-terminal.sh
+./tavs test --terminal
 ```
 
-This script tests:
+This tests:
 - OSC 11 (background color change)
 - OSC 0 (title change)
 - Bell notification
+
+> **Note:** The legacy `./test-terminal.sh` script also works but the CLI command is preferred.
 
 ## Testing Hooks
 

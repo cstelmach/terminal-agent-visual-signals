@@ -33,7 +33,7 @@ Your terminal may not support OSC escape sequences.
 
 **Test:**
 ```bash
-./test-terminal.sh
+./tavs test --terminal
 ```
 
 **Solution:** Use a supported terminal:

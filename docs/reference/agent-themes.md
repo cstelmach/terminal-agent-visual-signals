@@ -17,97 +17,102 @@ Each CLI agent (Claude Code, Gemini, OpenCode, Codex) has its own visual identit
 
 ### Source Defaults
 
+Face definitions and colors are **centralized** in `src/config/defaults.conf` (search for
+`AGENT_FACES_`). Per-agent directories hold trigger adapters and optional background images:
+
 ```
+src/config/
+└── defaults.conf               # All face arrays + colors (single source of truth)
+
 src/agents/
 ├── claude/
 │   ├── data/
-│   │   ├── faces.conf          # Face arrays per state
-│   │   ├── colors.conf         # Optional color overrides
 │   │   └── backgrounds/
 │   │       ├── dark/           # Dark mode images
 │   │       │   ├── processing.png
 │   │       │   ├── permission.png
-│   │       │   ├── complete.png
-│   │       │   ├── idle.png
-│   │       │   ├── compacting.png
-│   │       │   └── reset.png
+│   │       │   └── ...
 │   │       └── light/          # Light mode images
 │   ├── hooks.json
-│   └── trigger.sh
+│   ├── trigger.sh
+│   └── statusline-bridge.sh
 ├── gemini/
-│   └── data/...
+│   └── data/backgrounds/...
 ├── opencode/
-│   └── data/...
+│   └── data/backgrounds/...
 └── codex/
-    └── data/...
+    └── data/backgrounds/...
 ```
 
 ### User Overrides
 
-User customizations go in `~/.tavs/agents/`:
+User customizations go in `~/.tavs/user.conf` using agent-prefixed variables:
+
+```bash
+# In ~/.tavs/user.conf
+
+# Override Claude faces
+CLAUDE_FACES_PROCESSING=('Ǝ[★ ★]E' 'Ǝ[✦ ✦]E')
+CLAUDE_FACES_SUBAGENT=('Ǝ[⟷ ⟷]E')
+
+# Override Claude colors
+CLAUDE_DARK_PROCESSING="#473D2F"
+CLAUDE_LIGHT_PERMISSION="#F5D0D0"
+
+# Override Gemini faces
+GEMINI_FACES_PROCESSING=('ʕ★ᴥ★ʔ')
+```
+
+Optional: background image overrides go in `~/.tavs/agents/`:
 
 ```
 ~/.tavs/
-├── user.conf                   # Global settings
+├── user.conf                   # All settings (faces, colors, etc.)
 └── agents/
-    ├── claude/
-    │   ├── faces.conf          # Override Claude faces
-    │   ├── colors.conf         # Override Claude colors
-    │   └── backgrounds/        # Override Claude images
-    │       ├── dark/
-    │       └── light/
-    ├── gemini/
-    ├── opencode/
-    └── codex/
+    └── claude/
+        └── backgrounds/        # Override Claude images
+            ├── dark/
+            └── light/
 ```
 
-**Override priority:** User agent override → Source agent data → Fallback
+**Override priority:** User `~/.tavs/user.conf` → Source `defaults.conf` → Fallback
 
 ## Face Configuration
 
-### File Format
+### Variable Format
 
-Faces are defined as bash arrays in `faces.conf`:
+Faces are defined as bash arrays in `src/config/defaults.conf`, prefixed with the agent
+name in uppercase:
 
 ```bash
-#!/bin/bash
-# Example: src/agents/claude/data/faces.conf
+# In src/config/defaults.conf
 
-# Processing state - one face randomly selected per trigger
-FACES_PROCESSING=(
-    'Ǝ[• •]E'    # variant 1
-    'Ǝ[• ◕]E'    # variant 2
-    'Ǝ[■ ■]E'    # variant 3
-)
+# Claude processing faces — one randomly selected per trigger
+CLAUDE_FACES_PROCESSING=('Ǝ[• •]E' 'Ǝ[• ◕]E' 'Ǝ[■ ■]E')
 
-# Permission state
-FACES_PERMISSION=(
-    'Ǝ[° °]E'
-    'Ǝ[○ ○]E'
-)
+# Claude permission faces
+CLAUDE_FACES_PERMISSION=('Ǝ[° °]E' 'Ǝ[○ ○]E')
 
-# Complete state
-FACES_COMPLETE=(
-    'Ǝ[✦ ✦]E'
-    'Ǝ[★ ★]E'
-)
+# Claude subagent faces
+CLAUDE_FACES_SUBAGENT=('Ǝ[⇆ ⇆]E' 'Ǝ[↔ ↔]E' 'Ǝ[⟺ ⟺]E')
 
-# Subagent state - parallel/arrow indicators
-FACES_SUBAGENT=(
-    'Ǝ[⇆ ⇆]E'
-    'Ǝ[↔ ↔]E'
-    'Ǝ[⟺ ⟺]E'
-)
+# Claude tool error faces
+CLAUDE_FACES_TOOL_ERROR=('Ǝ[✕ ✕]E' 'Ǝ[× ×]E' 'Ǝ[✗ ✗]E')
 
-# Tool error state - X-mark variants
-FACES_TOOL_ERROR=(
-    'Ǝ[✕ ✕]E'
-    'Ǝ[× ×]E'
-    'Ǝ[✗ ✗]E'
-)
+# Gemini uses bear frame
+GEMINI_FACES_PROCESSING=('ʕ•ᴥ•ʔ')
 
-# ... arrays for: compacting, reset, idle_0 through idle_5
+# Codex uses cat frame
+CODEX_FACES_PROCESSING=('ฅ^•ﻌ•^ฅ')
+
+# Unknown agents fall back to kaomoji
+UNKNOWN_FACES_PROCESSING=('(°-°)')
+
+# ... arrays for: complete, compacting, reset, reset_final, idle_0 through idle_5
 ```
+
+The `_resolve_agent_faces()` function in `theme-config-loader.sh` maps `AGENT_FACES_*`
+arrays to the generic `FACES_*` arrays used by `get_random_face()`.
 
 ### Supported States
 
