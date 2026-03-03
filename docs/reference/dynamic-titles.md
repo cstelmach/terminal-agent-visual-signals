@@ -84,9 +84,35 @@ TAVS_TITLE_PRESET="dashboard"    # "dashboard" | "compact" | "compact_project_so
 ./tavs set title-preset compact_project_sorted
 ```
 
-Presets set `TAVS_FACE_MODE` and all `TAVS_TITLE_FORMAT_*` variables. They operate at
-the global level (Levels 3-4 of the fallback chain), so per-agent overrides (Levels 1-2)
-still take priority. Clearing `TAVS_TITLE_PRESET` to empty restores manual configuration.
+### How Presets Work
+
+When `TAVS_TITLE_PRESET` is set, the function `_apply_title_preset()` in
+`theme-config-loader.sh` **unconditionally overwrites** these variables:
+
+- `TAVS_FACE_MODE` — sets to `"standard"` or `"compact"` depending on preset
+- `TAVS_TITLE_FORMAT` — the global default format (Level 4)
+- `TAVS_TITLE_FORMAT_PERMISSION` — permission-specific format (Level 3)
+- `TAVS_TITLE_FORMAT_IDLE` — idle-specific format (Level 3)
+- `TAVS_TITLE_FORMAT_COMPACTING` — compacting-specific format (Level 3)
+- (Other per-state formats as needed by the preset)
+
+This runs **after** `user.conf` is loaded, so the preset's values take priority over
+any `TAVS_TITLE_FORMAT_*` variables you set manually. However, per-agent overrides
+(Levels 1-2, e.g., `CLAUDE_TITLE_FORMAT_PERMISSION`) still take priority via the
+4-level fallback chain in `compose_title()`.
+
+**To override a single state while using a preset:** use per-agent variables:
+```bash
+TAVS_TITLE_PRESET="compact"
+# Override permission format just for Claude:
+CLAUDE_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {MODEL} {CONTEXT_PCT} {BASE}"
+```
+
+**To stop using a preset:** clear the variable:
+```bash
+TAVS_TITLE_PRESET=""
+```
+This restores manual configuration — your `TAVS_TITLE_FORMAT_*` variables take effect.
 
 ---
 

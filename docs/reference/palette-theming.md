@@ -154,6 +154,83 @@ printf "\033]4;1;rgb:e7/82/84\033\\"
 printf "\033]104\033\\"
 ```
 
+## TrueColor Mode Override
+
+When TrueColor is active (`COLORTERM=truecolor`), TAVS skips light/dark auto-detection
+by default and always uses dark mode colors. This is because TrueColor terminals have
+their own color schemes that TAVS respects.
+
+You can override this behavior with `TRUECOLOR_MODE_OVERRIDE`:
+
+| Value | Behavior |
+|-------|----------|
+| `"off"` | **(Default)** Skip auto-detection, always use dark mode |
+| `"muted"` | Allow light/dark switching with muted (reduced contrast) colors |
+| `"full"` | Allow light/dark switching with regular colors |
+
+```bash
+# In ~/.tavs/user.conf
+TRUECOLOR_MODE_OVERRIDE="muted"
+
+# Or via CLI
+./tavs set truecolor-override muted
+```
+
+**Decision flow:**
+
+1. `FORCE_MODE="dark"` or `"light"` → always wins (explicit override)
+2. `ENABLE_LIGHT_DARK_SWITCHING="false"` → always dark mode
+3. `ENABLE_LIGHT_DARK_SWITCHING="true"` + TrueColor active:
+   - `TRUECOLOR_MODE_OVERRIDE="off"` → dark mode (respects terminal scheme)
+   - `TRUECOLOR_MODE_OVERRIDE="muted"` → auto-detect system mode, use muted colors
+   - `TRUECOLOR_MODE_OVERRIDE="full"` → auto-detect system mode, use regular colors
+4. `ENABLE_LIGHT_DARK_SWITCHING="true"` + NOT TrueColor → always auto-detect
+
+**When to use each:**
+- `"off"` — You're happy with dark mode and don't want light mode colors
+- `"muted"` — You switch between light/dark mode but want subtler state colors
+- `"full"` — You want the full light/dark mode experience in TrueColor terminals
+
+---
+
+## Mode-Aware Processing Colors
+
+When enabled (default), the processing background color shifts subtly based on Claude
+Code's current permission mode. This helps you notice at a glance which mode you're in.
+
+| Permission Mode | Variable Suffix | Color Shift |
+|----------------|----------------|-------------|
+| `default` | (none) | Standard orange — no override |
+| `plan` | `_PLAN` | Green-yellow tinge (thinking/read-only) |
+| `acceptEdits` | `_ACCEPT` | Barely warmer (auto-approve edits) |
+| `dontAsk` | `_ACCEPT` | Same as acceptEdits (both auto-approve) |
+| `bypassPermissions` | `_BYPASS` | Reddish tinge (dangerous — all bypassed) |
+
+The mode-aware color follows the same dark/light/muted resolution as normal colors:
+`DARK_PROCESSING_PLAN`, `LIGHT_PROCESSING_PLAN`, `MUTED_DARK_PROCESSING_PLAN`, etc.
+
+**Per-agent overrides** work too: `CLAUDE_DARK_PROCESSING_PLAN` overrides the global
+`DARK_PROCESSING_PLAN` for Claude Code.
+
+```bash
+# Disable mode-aware colors
+./tavs set mode-aware false
+
+# Or in ~/.tavs/user.conf
+ENABLE_MODE_AWARE_PROCESSING="false"
+```
+
+**Test mode-aware colors:**
+```bash
+TAVS_PERMISSION_MODE=plan ./src/core/trigger.sh processing
+./src/core/trigger.sh reset
+
+TAVS_PERMISSION_MODE=bypassPermissions ./src/core/trigger.sh processing
+./src/core/trigger.sh reset
+```
+
+---
+
 ## Terminal Support
 
 | Terminal | OSC 4 Support | Notes |
