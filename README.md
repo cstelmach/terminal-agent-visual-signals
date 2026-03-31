@@ -105,7 +105,32 @@ distracting — subtle tints that blend with your terminal background.
 ./tavs status
 ```
 
-### 2. Change a Setting
+### 2. AI-Assisted Configuration (Claude Code Skill)
+
+The `tavs-setup` skill lets your AI agent handle configuration for you — with
+backup, preview, and verification at every step.
+
+**Setup wizard** — guided first-time configuration:
+> "tavs setup" or "set up visual signals"
+
+**Config changes** — modify individual settings safely:
+> "change my tavs theme to nord" or "tavs config"
+
+**Profile management** — save and switch named configurations:
+> "save my tavs config as a profile" or "tavs profile"
+
+The skill automatically backs up `~/.tavs/user.conf` before changes, shows a
+diff preview, applies via `tavs set` (for the 28 CLI aliases) or direct file
+editing (for 50+ advanced raw variables like per-agent colors and faces), and
+verifies with `tavs status`.
+
+Profiles are stored in `~/.tavs/profiles/<name>.conf` and can be applied
+additively — switching between "presentation", "coding", and "minimal" setups
+with a single command.
+
+The skill ships with the TAVS plugin and activates automatically in Claude Code.
+
+### 3. Change a Setting
 
 One command to tweak anything. No files to edit.
 
@@ -149,7 +174,7 @@ One command to tweak anything. No files to edit.
 ./tavs status --colors          # Just the color preview
 ```
 
-### 3. Customize Everything
+### 4. Customize Everything
 
 For full control over all 65+ settings, use the interactive wizard:
 
@@ -222,31 +247,6 @@ Every setting is commented with valid values and what it does.
 ./tavs config show              # Print current config
 ./tavs config reset             # Backup and start fresh
 ```
-
-### 4. AI-Assisted Configuration (Claude Code Skill)
-
-The `tavs-setup` skill lets your AI agent handle configuration for you — with
-backup, preview, and verification at every step.
-
-**Setup wizard** — guided first-time configuration:
-> "tavs setup" or "set up visual signals"
-
-**Config changes** — modify individual settings safely:
-> "change my tavs theme to nord" or "tavs config"
-
-**Profile management** — save and switch named configurations:
-> "save my tavs config as a profile" or "tavs profile"
-
-The skill automatically backs up `~/.tavs/user.conf` before changes, shows a
-diff preview, applies via `tavs set` (for the 28 CLI aliases) or direct file
-editing (for 50+ advanced raw variables like per-agent colors and faces), and
-verifies with `tavs status`.
-
-Profiles are stored in `~/.tavs/profiles/<name>.conf` and can be applied
-additively — switching between "presentation", "coding", and "minimal" setups
-with a single command.
-
-The skill ships with the TAVS plugin and activates automatically in Claude Code.
 
 ---
 
