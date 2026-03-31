@@ -7,6 +7,11 @@
 
 > Visual terminal feedback for AI coding sessions — background colors, tab titles, and faces that show you what's happening at a glance.
 
+<!-- TODO: Replace with actual recording. Short loop (~10s) showing 3-4 tabs cycling through states. -->
+<p align="center">
+  <img src="assets/media/demo.gif" alt="TAVS demo — terminal tabs changing color as Claude Code processes, asks permission, and completes" width="720">
+</p>
+
 ## Why?
 
 When running multiple AI sessions (12+ terminals side by side), you need to instantly see which ones need attention. TAVS provides visual feedback through background colors, emoji indicators, animated faces, and optional audible bells.
@@ -22,6 +27,18 @@ When running multiple AI sessions (12+ terminals side by side), you need to inst
 | Tool Error | Orange-Red | ❌ | Tool execution failed |
 
 Works with **Claude Code**, **Gemini CLI**, **OpenCode**, and **Codex CLI**.
+
+At scale, TAVS turns terminal chaos into a glanceable dashboard. Each tab's background
+color and title icon tells you its state without switching — reducing the cognitive load
+of tracking what every session is doing. Here's 20+ concurrent Claude Code sessions
+during a real multi-project work session:
+
+<!-- TODO: Replace with actual screen recording. Full-screen capture showing 20+ terminal tabs with different TAVS states. -->
+<p align="center">
+  <img src="assets/media/multisession.gif" alt="20+ concurrent Claude Code sessions with TAVS — each tab shows its state at a glance" width="720">
+  <br>
+  <em>20+ sessions, zero tab-switching needed to know what's happening.</em>
+</p>
 
 ---
 
@@ -271,6 +288,11 @@ This only disables title management — cursor shapes and other integrations sta
 ---
 
 ## Terminal Title System
+
+<!-- TODO: Replace with actual screenshot. Wide crop of a terminal tab bar showing multiple TAVS titles with faces, icons, and context data. -->
+<p align="center">
+  <img src="assets/media/titlebar.png" alt="TAVS title bar — multiple tabs with faces, session icons, and context percentages" width="720">
+</p>
 
 TAVS can control your terminal tab titles to show agent state, identity, and context
 information. There are four title modes, three presets, and animated spinners.
