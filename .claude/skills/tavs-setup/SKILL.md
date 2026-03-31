@@ -1,229 +1,235 @@
 ---
 name: tavs-setup
 description: >
-  Interactive TAVS configuration assistant. Detects terminal and agent,
-  asks targeted questions about theme, faces, titles, and visual preferences,
-  then applies settings via tavs set commands. Use when a user wants to
-  customize TAVS visual signals, set up their terminal appearance, or
-  configure agent-specific settings. Triggers: "tavs setup", "customize tavs",
-  "configure terminal visuals", "set up visual signals".
+  TAVS setup, configuration, and profile management assistant. Three workflows:
+  (1) Interactive setup wizard for first-time configuration — detects terminal
+  and agent, asks targeted questions, applies settings.
+  (2) Targeted config changes — modify individual settings with backup, preview,
+  and verification. Supports both CLI aliases and raw variables.
+  (3) Profile management — save, list, apply, and delete named configuration sets.
+  Triggers: "tavs setup", "customize tavs", "configure terminal visuals",
+  "set up visual signals", "tavs config", "change tavs", "tavs profile",
+  "save tavs config".
 ---
 
-# TAVS Setup Assistant
+# TAVS Setup & Configuration Assistant
 
-Conversational configuration for Terminal Agent Visual Signals. Walks users
-through setup with smart defaults based on their terminal environment.
+Conversational configuration for Terminal Agent Visual Signals. Handles initial
+setup, ongoing config changes, and named profile management — all with backup,
+preview, and verification.
 
 ## When to Use
 
-- User wants to set up or customize TAVS visual signals
-- User asks about configuring terminal colors, faces, titles, or themes
-- User says "tavs setup", "configure tavs", "customize terminal visuals"
-- User just installed the TAVS plugin and wants to configure it
+- **Setup:** First-time configuration, re-setup, "tavs wizard", "tavs setup"
+- **Config:** Modify a setting, change theme, adjust colors, "tavs config"
+- **Profiles:** Save/load/apply named config sets, "tavs profile"
+- **Agent settings:** Per-agent color, face, or title format overrides
 
 ## Prerequisites
 
-Before starting, verify the TAVS CLI is available:
+Verify the TAVS CLI is available:
 
 ```bash
-# Check tavs CLI exists and show version
 ./tavs version 2>/dev/null || echo "TAVS CLI not found"
 ```
 
-If unavailable, inform the user they need the `config-ux-overhaul` branch or
-that the `tavs` CLI is part of TAVS v3.0.0+.
+If unavailable, the `tavs` CLI is part of TAVS v3.0.0+.
 
-## Workflow
+## Intent Detection
+
+Determine which workflow to use based on the user's request:
+
+| Keywords | Workflow |
+|----------|----------|
+| "set up", "configure from scratch", "wizard", "first time", "install" | **A: Setup Wizard** |
+| "change", "modify", "set", "switch", "update", "enable", "disable" | **B: Config Change** |
+| "profile", "save config", "load config", "apply profile", "list profiles" | **C: Profile Management** |
+
+When unclear, ask the user:
+- **Run the setup wizard** — Full guided configuration
+- **Change a specific setting** — Quick, targeted modification
+- **Manage profiles** — Save or load a named configuration
+
+---
+
+## Workflow A: Setup Wizard
+
+Guided multi-step configuration. Best for first-time users or full reconfiguration.
 
 ### Phase 1: Environment Detection (Automatic)
 
-Run these commands silently to detect the user's environment:
+Run silently to detect the user's environment:
 
 ```bash
-# Get current config state
 ./tavs status 2>/dev/null
-
-# Terminal detection
 echo "TERM_PROGRAM=${TERM_PROGRAM:-unset}"
 echo "GHOSTTY_RESOURCES_DIR=${GHOSTTY_RESOURCES_DIR:-unset}"
 echo "ITERM_SESSION_ID=${ITERM_SESSION_ID:-unset}"
 echo "KITTY_PID=${KITTY_PID:-unset}"
 echo "COLORTERM=${COLORTERM:-unset}"
 echo "TERM=${TERM:-unset}"
-
-# Agent detection
 echo "TAVS_AGENT=${TAVS_AGENT:-claude}"
-
-# Dark mode detection (macOS)
 defaults read -g AppleInterfaceStyle 2>/dev/null || echo "light"
 ```
 
-Present a brief summary of findings:
-> "I detected **[Terminal]** in **[dark/light]** mode running **[Agent]**.
-> Here's what I recommend for your setup..."
-
-Mention terminal-specific notes if relevant (see `references/terminal-guide.md`).
+Present: "I detected **[Terminal]** in **[dark/light]** mode running **[Agent]**."
+Mention terminal-specific notes from `references/terminal-guide.md`.
 
 ### Phase 2: Essential Questions (2-3 via AskUserQuestion)
 
 **Q1: Theme Preference**
+- **Nord** — Arctic blue, calm (Recommended for dark)
+- **Catppuccin Mocha** — Warm pastel dark
+- **Dracula** — Vibrant, high contrast
+- **Tokyo Night** — Modern city-lights
+- Other (catppuccin-frappe/latte/macchiato, solarized-dark/light)
+- **No theme** — Default static colors
 
-Use AskUserQuestion with these options (tailor recommendations to detected terminal):
+Plan: `tavs set theme <name>`
 
-- **Nord** — Arctic blue palette, clean and calm (Recommended for dark terminals)
-- **Catppuccin Mocha** — Warm pastel dark theme, very popular
-- **Dracula** — Vibrant dark theme with high contrast
-- **Tokyo Night** — Modern city-lights aesthetic
-- Other (show full list: catppuccin-frappe, catppuccin-latte, catppuccin-macchiato,
-  solarized-dark, solarized-light)
-- **No theme** — Use default static colors
+**Q2: Face Mode** (show visual examples in descriptions)
+- **Standard (Recommended)** — `Ǝ[• •]E 🟠 ~/project`
+- **Compact** — `Ǝ[🟧 🟠]E ~/project` (emoji eyes, denser)
+- **Off** — No faces, just colors and icons
 
-If user picks a theme, plan: `tavs set theme <name>`
+Plan: `tavs set faces true/false` + `tavs set face-mode standard/compact`
 
-**Q2: Face Mode**
+**Q3: Title Mode** (adapt to detected terminal)
+- **Skip Processing (Recommended)** — TAVS handles non-processing titles
+- **Prefix Only** — TAVS adds prefix, preserves tab names
+- **Full** — TAVS owns all titles with animated spinners
+- **Off** — No title changes, only background colors
 
-Show visual examples in the question description:
-
-- **Standard (Recommended)** — Text-based faces: `Ǝ[• •]E 🟠 ~/project`
-- **Compact** — Emoji eyes, denser info: `Ǝ[🟧 🟠]E ~/project`
-- **Off** — No faces, just colors and status icons
-
-If standard: `tavs set faces true` + `tavs set face-mode standard`
-If compact: `tavs set faces true` + `tavs set face-mode compact`
-If off: `tavs set faces false`
-
-**Q3: Title Mode**
-
-Adapt recommendations to the detected terminal:
-
-- **Skip Processing (Recommended)** — TAVS handles non-processing titles,
-  Claude Code keeps its spinner. Safe default, no config needed.
-- **Prefix Only** — TAVS adds `Ǝ[• •]E 🟠` prefix to your tab name.
-  Great if you name your tabs.
-- **Full** — TAVS owns all titles with animated spinner eyes.
-  Requires `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` in Claude settings.
-- **Off** — No title changes, only background colors.
-
-If title-mode is full or prefix-only, plan: `tavs set title-mode <mode>`
+Plan: `tavs set title-mode <mode>`
 
 ### Phase 3: "Want More?" Gate
 
-After essentials, ask:
+> "Those are the essentials! Want to dive into advanced options?"
 
-> "Those are the essentials! Want to dive into advanced options like spinners,
-> session icons, background images, or palette theming?"
-
-Use AskUserQuestion:
 - **Yes, show me more** — Continue to Phase 4
 - **No, apply these settings** — Skip to Phase 5
 
 ### Phase 4: Advanced Options (Conditional)
 
-Only ask questions relevant to the user's earlier choices. Use AskUserQuestion
-for each group, presenting 2-4 options per question.
+Ask only questions relevant to earlier choices. Use AskUserQuestion for each group.
 
 **If title-mode = full:**
 - Spinner style: braille, circle, block, eye-animate, random (Recommended)
 - Eye sync mode: sync, opposite, mirror, random (Recommended)
-- Plan: `tavs set spinner <style>`, `tavs set eye-mode <mode>`
 
 **If face-mode = compact:**
 - Compact theme: semantic (Recommended), circles, squares, mixed
-- Show examples from `references/agent-visual-identity.md`
-- Plan: `tavs set compact-theme <theme>`
+- See `references/agent-visual-identity.md` for examples
 
-**Session icons** (always applicable):
-- Currently enabled by default. Ask if they want to keep or disable.
-- Plan: `tavs set session-icons <true|false>`
+**Session icons** (always): Keep or disable? Plan: `tavs set session-icons <bool>`
 
-**Background images** (only if iTerm2 or Kitty detected):
-- Explain: "Your terminal supports background images per state."
-- Plan: `tavs set backgrounds true`
-- Note iTerm2 prerequisite (enable in Preferences > Profiles > Window)
+**Background images** (only iTerm2/Kitty): Plan: `tavs set backgrounds true`
+Note iTerm2 prerequisite: Preferences > Profiles > Window > Background Image.
 
-**Palette theming** (explain TrueColor limitation):
-- Explain: "Palette theming modifies your terminal's 16-color ANSI palette
-  for a cohesive look. Note: Claude Code uses TrueColor by default, which
-  bypasses the palette. You'd need to launch with
-  `TERM=xterm-256color COLORTERM= claude` for full effect."
-- Options: false (default), auto, true
-- Plan: `tavs set palette <value>`
+**Palette theming**: Explain TrueColor limitation. Options: false, auto, true.
+Plan: `tavs set palette <value>`
 
-**Mode-aware processing colors:**
-- Explain: "Processing color shifts subtly based on Claude's permission mode.
-  Plan mode gets a green-yellow tinge, bypass mode gets a reddish warning."
-- Currently enabled by default. Ask if they want to keep or disable.
-- Plan: `tavs set mode-aware <true|false>`
+**Mode-aware colors**: Currently enabled by default. Keep or disable?
+Plan: `tavs set mode-aware <bool>`
 
-**Bell notifications:**
-- Options: permission only (default), permission + complete, all off
-- Plan: `tavs set bell-permission <true|false>`,
-  `tavs set bell-complete <true|false>`
+**Bell notifications**: Options: permission only (default), permission + complete, off.
+Plan: `tavs set bell-permission/bell-complete <bool>`
 
 ### Phase 5: Apply Settings
 
-1. **Show summary** of all planned `tavs set` commands:
+1. **Summary** — Show all planned `tavs set` commands
+2. **Confirm** via AskUserQuestion: Apply all / Edit first / Cancel
+3. **Execute** each command sequentially
+4. **Verify** with `./tavs status --colors`
+5. **Demo** (optional): `./tavs test --quick`
+6. **Post-setup notes** (terminal-specific):
+   - Ghostty: `shell-integration-features = no-title`
+   - iTerm2: Enable background images in preferences
+   - Full title: Add `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` to settings
+   - Palette: TrueColor limitation and `COLORTERM=` workaround
 
-```
-Here's what I'll configure:
+---
 
-  tavs set theme nord
-  tavs set face-mode standard
-  tavs set title-mode prefix-only
+## Workflow B: Configuration Changes
 
-Apply these settings?
-```
+Quick, targeted setting modifications. For detailed procedure, read
+`references/config-workflow.md`.
 
-2. **Ask for confirmation** via AskUserQuestion:
-   - **Apply all** — Execute commands
-   - **Edit first** — Let user modify choices
-   - **Cancel** — Abort without changes
+### Steps
 
-3. **Execute** each `tavs set` command sequentially:
+1. **Understand** what the user wants to change
+2. **Back up** current config: `~/.tavs/backups/user.conf.TIMESTAMP`
+3. **Resolve** setting type:
+   - CLI alias (28 known)? -> `./tavs set <alias> <value>` — see `references/config-options.md`
+   - Raw variable? -> Edit `~/.tavs/user.conf` — see `references/raw-variables.md`
+   - Unknown? -> Suggest closest match
+4. **Preview** planned changes: `Setting: current -> new`
+5. **Confirm** via AskUserQuestion: Apply / Edit / Cancel
+6. **Apply** — CLI for aliases, Edit for raw variables
+7. **Verify** with `./tavs status` and optionally `./tavs test --quick`
 
+### Rollback
+
+If something went wrong, restore from backup:
 ```bash
-./tavs set theme nord
-./tavs set face-mode standard
-./tavs set title-mode prefix-only
+ls -1t ~/.tavs/backups/   # List backups
+cp ~/.tavs/backups/user.conf.TIMESTAMP ~/.tavs/user.conf
 ```
 
-4. **Verify** the result:
+### Setting Types
 
-```bash
-./tavs status --colors
-```
+**CLI aliases** (validated, use `./tavs set`): theme, mode, faces, face-mode,
+title-mode, spinner, identity-mode, and 21 more. Full list in `config-options.md`.
 
-5. **Quick demo** (optional, ask first):
+**Raw variables** (direct edit): per-agent colors (`CLAUDE_DARK_PROCESSING`),
+per-agent faces (`CLAUDE_FACES_PROCESSING`), per-state title formats
+(`TAVS_TITLE_FORMAT_PERMISSION`), feature toggles, timers, and more.
+Full catalog in `raw-variables.md`.
 
-```bash
-./tavs test --quick
-```
+---
 
-6. **Terminal-specific post-setup notes:**
+## Workflow C: Profile Management
 
-   - **Ghostty**: Remind about `shell-integration-features = no-title` if title
-     mode is not "off"
-   - **iTerm2**: Remind about enabling background images in preferences if
-     backgrounds were enabled
-   - **Full title mode**: Remind to add `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`
-     to `~/.claude/settings.json` env section
-   - **Palette theming**: Remind about TrueColor limitation and the
-     `COLORTERM=` workaround
+Save, list, apply, and delete named configuration sets. For detailed procedure,
+read `references/profiles.md`.
+
+### Operations
+
+**Save:** Extract settings from current `user.conf` into `~/.tavs/profiles/<name>.conf`.
+Ask which settings to include (specific or all active).
+
+**List:** Show all profiles in `~/.tavs/profiles/` with setting count and summary.
+
+**Apply:** Back up first, preview each setting's current vs. profile value, confirm,
+apply (CLI for aliases, Edit for raw), verify with `./tavs status`.
+
+**Delete:** Confirm, then remove the profile file.
+
+Profiles are **additive** — they only overwrite settings they contain, not a full
+config replacement.
+
+---
 
 ## Reference Files
 
-For detailed information on specific topics, read:
-
-- `references/config-options.md` — All 23 setting aliases with valid values
-- `references/terminal-guide.md` — Terminal detection and recommendations
-- `references/agent-visual-identity.md` — Per-agent faces, colors, spinners
-- `references/preset-themes.md` — All 9 themes with descriptions
-- `troubleshooting/lessons-learned.md` — Known issues and fixes
+| File | Purpose |
+|------|---------|
+| `references/config-options.md` | All 28 CLI setting aliases with valid values |
+| `references/config-workflow.md` | Config change procedure (backup, resolve, apply, verify) |
+| `references/raw-variables.md` | All 50+ raw variables beyond CLI aliases |
+| `references/profiles.md` | Profile save/list/apply/delete procedure |
+| `references/terminal-guide.md` | Terminal detection and recommendations |
+| `references/agent-visual-identity.md` | Per-agent faces, colors, spinners |
+| `references/preset-themes.md` | All 9 theme presets with descriptions |
+| `troubleshooting/lessons-learned.md` | Known issues and fixes (setup + config) |
 
 ## Important Notes
 
-- All settings are written to `~/.tavs/user.conf` (takes effect immediately)
-- Use `tavs set` commands (not direct file edits) to ensure validation
-- The `theme` alias is compound: it sets both `THEME_PRESET` and `THEME_MODE`
-- Run `tavs status` anytime to see current configuration
-- Run `tavs test` to demo all visual states
+- All settings stored in `~/.tavs/user.conf` (takes effect on next hook trigger)
+- Use `tavs set` for validated changes; Edit tool for raw variables
+- The `theme` alias is compound — sets both `THEME_PRESET` and `THEME_MODE`
+- Run `./tavs status` to see current configuration
+- Run `./tavs test` to demo all visual states
+- Backups: `~/.tavs/backups/user.conf.TIMESTAMP`
+- Profiles: `~/.tavs/profiles/<name>.conf`
+- Plugin cache sync: `./tavs sync` (only needed after source code changes, not config)

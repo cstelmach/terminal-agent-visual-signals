@@ -66,3 +66,37 @@ the plugin cache is synced: `./tavs sync`
 **Solution:** Use the friendly alias names (e.g., `faces` not
 `ENABLE_ANTHROPOMORPHISING`). Run `tavs set` with no arguments to see
 all available aliases.
+
+## Configuration Change Issues
+
+### Raw variable not taking effect
+**Problem:** Set a custom color variable (e.g., `CLAUDE_DARK_PROCESSING`) in
+`user.conf`, but the color doesn't change.
+**Solution:** When `THEME_MODE="preset"`, the preset's colors override custom
+colors in `user.conf`. Either switch to `THEME_MODE="static"` to use your custom
+colors directly, or use per-agent overrides which have higher priority than theme
+defaults (e.g., `CLAUDE_DARK_PROCESSING` overrides `DEFAULT_DARK_PROCESSING`).
+
+### Backup directory doesn't exist
+**Problem:** First backup attempt fails with a directory error.
+**Solution:** The backup workflow should auto-create `~/.tavs/backups/` with
+`mkdir -p`. If it fails, check directory permissions on `~/.tavs/` — the user
+must have write access.
+
+### Profile apply has unexpected results
+**Problem:** After applying a profile, settings not in the profile seem different.
+**Solution:** Profiles are additive — they only change the settings they contain.
+They don't remove other settings. If a clean slate is needed, reset to defaults
+first (`./tavs config reset`), then apply the profile.
+
+### Array syntax errors in user.conf
+**Problem:** Edited face arrays in `user.conf` but get shell errors.
+**Solution:** Bash arrays require specific syntax: `('item1' 'item2')`. Common
+mistakes: using JSON syntax `["item1", "item2"]`, adding spaces around `=`, or
+forgetting quotes around face strings containing special characters.
+
+### Commented vs uncommented variables confused
+**Problem:** Uncommented a variable but it still uses the default value.
+**Solution:** Ensure both the `#` AND any leading space are removed. Watch for
+double-commented lines like `## Section Header` — those are section dividers,
+not settings. A setting line looks like `# VARIABLE="value"` (single `#`).
