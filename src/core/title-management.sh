@@ -339,7 +339,7 @@ compose_title() {
     #   Level 4: TAVS_TITLE_FORMAT             (global default)
     # Levels 1-2 resolved by _resolve_agent_variables() into TITLE_FORMAT_* / TITLE_FORMAT
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
-    local _default_format='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
+    local _default_format='{DIR_ICON} {FACE} {AGENTS} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
     # Normalize idle variants (idle_1, idle_2, ...) to base state "idle"
     local _format_state="$state"
     [[ "$_format_state" == idle_* ]] && _format_state="idle"

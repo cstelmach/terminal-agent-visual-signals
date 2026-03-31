@@ -80,7 +80,7 @@ _apply_title_preset() {
             TAVS_COMPACT_THEME="${TAVS_COMPACT_THEME:-squares}"
             TAVS_COMPACT_CONTEXT_EYE="mirror"
             # Mirror eyes (both = state color), context in guillemets
-            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
+            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} {AGENTS} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
             # All states use global format
             TAVS_TITLE_FORMAT_PROCESSING=""
             TAVS_TITLE_FORMAT_PERMISSION=""
@@ -98,7 +98,7 @@ _apply_title_preset() {
             # Dir flag leads, mirror eyes (both = state color), context in guillemets
             # {DIR_ICON} explicit → auto guillemet injection skipped (title-management.sh:381-386)
             # {STATUS_ICON} omitted → embedded in compact face eyes (mirror mode)
-            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
+            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} {AGENTS} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
             # All states use global format — empty tokens collapse cleanly
             TAVS_TITLE_FORMAT_PROCESSING=""
             TAVS_TITLE_FORMAT_PERMISSION=""
