@@ -78,25 +78,27 @@ _apply_title_preset() {
         compact)
             TAVS_FACE_MODE="compact"
             TAVS_COMPACT_THEME="${TAVS_COMPACT_THEME:-squares}"
-            # Global: face with emoji eyes, guillemet identity auto-injected
-            TAVS_TITLE_FORMAT='{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {SESSION_ID} {BASE}'
-            # Per-state: permission/idle/complete show context (suppressed in eye)
+            TAVS_COMPACT_CONTEXT_EYE="mirror"
+            # Mirror eyes (both = state color), context in guillemets
+            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
+            # All states use global format
             TAVS_TITLE_FORMAT_PROCESSING=""
-            TAVS_TITLE_FORMAT_PERMISSION='{FACE} {STATUS_ICON} {SESSION_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ID} {BASE}'
-            TAVS_TITLE_FORMAT_COMPLETE='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {SESSION_ID} {BASE}'
-            TAVS_TITLE_FORMAT_IDLE='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {SESSION_ID} {BASE}'
-            TAVS_TITLE_FORMAT_COMPACTING='{FACE} {STATUS_ICON} {CONTEXT_PCT} {SESSION_ID} {BASE}'
+            TAVS_TITLE_FORMAT_PERMISSION=""
+            TAVS_TITLE_FORMAT_COMPLETE=""
+            TAVS_TITLE_FORMAT_IDLE=""
+            TAVS_TITLE_FORMAT_COMPACTING=""
             TAVS_TITLE_FORMAT_SUBAGENT=""
             TAVS_TITLE_FORMAT_TOOL_ERROR=""
-            TAVS_TITLE_FORMAT_RESET='{FACE} {STATUS_ICON} {CONTEXT_FOOD}{CONTEXT_PCT} {SESSION_ICON} {SESSION_ID} {BASE}'
+            TAVS_TITLE_FORMAT_RESET=""
             ;;
         compact_project_sorted)
             TAVS_FACE_MODE="compact"
             TAVS_COMPACT_THEME="${TAVS_COMPACT_THEME:-squares}"
-            # Dir flag leads as visual anchor, info group in guillemets
+            TAVS_COMPACT_CONTEXT_EYE="mirror"
+            # Dir flag leads, mirror eyes (both = state color), context in guillemets
             # {DIR_ICON} explicit → auto guillemet injection skipped (title-management.sh:381-386)
-            # {STATUS_ICON} omitted → embedded in compact face left eye
-            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} «{SESSION_ICON}|{AGENTS}|{CONTEXT_PCT}» {SESSION_ID} {BASE}'
+            # {STATUS_ICON} omitted → embedded in compact face eyes (mirror mode)
+            TAVS_TITLE_FORMAT='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
             # All states use global format — empty tokens collapse cleanly
             TAVS_TITLE_FORMAT_PROCESSING=""
             TAVS_TITLE_FORMAT_PERMISSION=""

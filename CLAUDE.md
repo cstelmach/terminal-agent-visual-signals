@@ -280,20 +280,20 @@ The `{L}` and `{R}` placeholders are replaced with animated spinner characters.
 
 ### Compact Face Mode (Emoji Eyes)
 
-Replaces text-based eyes with emoji for an information-dense title. By default, the face
-is a **two-signal dashboard**: left eye = state color, right eye = context fill level.
+Replaces text-based eyes with emoji for an information-dense title. Three context eye modes:
 
 ```
-STANDARD:  Ǝ[• •]E 🟠 +2 «🇩🇪|🦊» ~/proj  (face + status + count + identity + path)
-COMPACT:   Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj  (state + context eyes, count outside face)
-RESET:     Ǝ[— —]E                     (em dash resting eyes)
+DEFAULT:   🇩🇪 Ǝ[🟧 🟧]E «🧀50%» abc123de ~/proj  (mirror eyes + context in guillemets)
+CONTEXT:   Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» ~/proj           (state + context eyes, count outside)
+STANDARD:  Ǝ[• •]E 🟠 +2 «🇩🇪|🦊» ~/proj           (text eyes + separate status icon)
+RESET:     Ǝ[— —]E                                  (em dash resting eyes)
 ```
 
-**Enable in `~/.tavs/user.conf`:**
+**Configure in `~/.tavs/user.conf`:**
 ```bash
-TAVS_FACE_MODE="compact"           # "standard" (default) | "compact"
+TAVS_FACE_MODE="compact"           # "standard" | "compact" (default)
 TAVS_COMPACT_THEME="squares"       # "semantic" | "circles" | "squares" | "mixed"
-TAVS_COMPACT_CONTEXT_EYE="true"    # "true" (default) | "false" to disable
+TAVS_COMPACT_CONTEXT_EYE="mirror"  # "mirror" (default) | "true" | "false"
 TAVS_COMPACT_CONTEXT_STYLE="food"  # food, food_10, circle, block, block_max, braille, number, percent
 ```
 
@@ -304,15 +304,13 @@ TAVS_COMPACT_CONTEXT_STYLE="food"  # food, food_10, circle, block, block_max, br
 | circles | Uniform round emoji | `🟠 🟠`, `🔴 🔴`, `🟢 🟢` |
 | mixed | Asymmetric pairs | `🟧 🟠`, `🟥 ⭕`, `✅ 🟢` |
 
-**Context eye** (right eye = context fill, enabled by default):
-- `Ǝ[🟧 🧀]E` (processing at 50%), `Ǝ[🟥 🍔]E` (permission at 85%)
-- Matching title token auto-suppressed (e.g., `{CONTEXT_FOOD}` hidden when food in eye)
-- Subagent count (`+N`) moves to `{AGENTS}` token outside face
-- No context data → graceful fallback to theme emoji (both eyes match)
-- Disabled (`TAVS_COMPACT_CONTEXT_EYE="false"`) → original behavior restored
+**Context eye modes:**
+- `"mirror"` **(default)** — Both eyes same state square: `Ǝ[🟧 🟧]E`. Context data in title guillemets.
+- `"true"` — Right eye = context fill: `Ǝ[🟧 🧀]E` (50%), `Ǝ[🟥 🍔]E` (85%). Matching title token auto-suppressed.
+- `"false"` — Right eye = subagent count or theme fallback: `Ǝ[🟧 +2]E`.
 
-`{STATUS_ICON}` auto-suppressed (left eye embeds state). `{AGENTS}` shown when context
-eye active, suppressed when disabled. See [Dynamic Titles](docs/reference/dynamic-titles.md).
+`{STATUS_ICON}` auto-suppressed in compact mode (left eye embeds state).
+See [Dynamic Titles](docs/reference/dynamic-titles.md).
 
 ### Session Identity System
 

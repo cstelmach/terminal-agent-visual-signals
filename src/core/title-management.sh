@@ -309,12 +309,14 @@ compose_title() {
 
     # Get subagent count token
     # In compact mode without context eye: suppressed (embedded as right eye)
-    # In compact mode WITH context eye: shown (right eye = context, not +N)
+    # In compact mode WITH context eye or mirror: shown (right eye = context or mirror, not +N)
     local agents=""
     local _context_eye_active=false
-    [[ "$_compact_with_face" == "true" && "${TAVS_COMPACT_CONTEXT_EYE:-true}" == "true" ]] && _context_eye_active=true
+    [[ "$_compact_with_face" == "true" && "${TAVS_COMPACT_CONTEXT_EYE:-mirror}" == "true" ]] && _context_eye_active=true
+    local _mirror_mode=false
+    [[ "$_compact_with_face" == "true" && "${TAVS_COMPACT_CONTEXT_EYE:-mirror}" == "mirror" ]] && _mirror_mode=true
 
-    if [[ "$_compact_with_face" != "true" ]] || [[ "$_context_eye_active" == "true" ]]; then
+    if [[ "$_compact_with_face" != "true" ]] || [[ "$_context_eye_active" == "true" ]] || [[ "$_mirror_mode" == "true" ]]; then
         if [[ "$state" == "processing" || "$state" == subagent* ]] && type get_subagent_title_suffix &>/dev/null; then
             agents=$(get_subagent_title_suffix 2>/dev/null)
         fi
@@ -337,7 +339,7 @@ compose_title() {
     #   Level 4: TAVS_TITLE_FORMAT             (global default)
     # Levels 1-2 resolved by _resolve_agent_variables() into TITLE_FORMAT_* / TITLE_FORMAT
     # Note: zsh has issues with brace expansion in ${:-} defaults, use intermediate var
-    local _default_format='{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}'
+    local _default_format='{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}'
     # Normalize idle variants (idle_1, idle_2, ...) to base state "idle"
     local _format_state="$state"
     [[ "$_format_state" == idle_* ]] && _format_state="idle"
@@ -440,7 +442,7 @@ compose_title() {
     title=$(printf '%s\n' "$title" | sed \
         -e 's/«|/«/g' \
         -e 's/|»/»/g' \
-        -e 's/«»//g' \
+        -e 's/« *»//g' \
         -e 's/(|/(/' \
         -e 's/|)/)/g' \
         -e 's/||*/|/g' \

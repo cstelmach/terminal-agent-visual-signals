@@ -192,13 +192,16 @@ get_compact_face() {
     # Two-signal dashboard: left eye = state color, right eye = context fill level.
     # When context eye disabled: preserve original subagent count in right eye.
     # Use agent-resolved var with global fallback (per-agent: CLAUDE_COMPACT_CONTEXT_EYE)
-    local _ctx_eye="${COMPACT_CONTEXT_EYE:-${TAVS_COMPACT_CONTEXT_EYE:-true}}"
+    local _ctx_eye="${COMPACT_CONTEXT_EYE:-${TAVS_COMPACT_CONTEXT_EYE:-mirror}}"
 
     # Session-end reset: em dash resting eyes (muted — session winding down)
     # Session-start reset: use theme array (⚪) + context eye (💧) — wants attention
     if [[ "$state" == "reset" && "${_TAVS_RESET_FINAL:-}" == "true" ]]; then
         left="—"
         right="—"
+    elif [[ "$_ctx_eye" == "mirror" ]]; then
+        # Mirror mode: both eyes show the same state color square
+        right="$left"
     elif [[ "$state" == "compacting" && "$_ctx_eye" == "true" ]]; then
         # After compaction, context window is near-empty — force 0% in right eye
         local _ctx_style="${COMPACT_CONTEXT_STYLE:-${TAVS_COMPACT_CONTEXT_STYLE:-food}}"

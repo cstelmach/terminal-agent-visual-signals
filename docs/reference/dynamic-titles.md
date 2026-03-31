@@ -11,9 +11,9 @@ Set `TAVS_TITLE_PRESET` in `~/.tavs/user.conf` or via `./tavs set title-preset <
 
 | Preset | Face Mode | Style | Example |
 |--------|-----------|-------|---------|
+| `compact_project_sorted` **(default)** | compact (mirror) | Dir flag + mirror eyes + context guillemets | `🇩🇪 Ǝ[🟧 🟧]E «🧀50%» abc123de ~/proj` |
+| `compact` | compact (mirror) | Same as above (alias) | `🇩🇪 Ǝ[🟧 🟧]E «🧀50%» abc123de ~/proj` |
 | `dashboard` | standard (text) | Info group in parentheses after face | `Ǝ[• •]E˙°(🟠\|🧀\|🇩🇪\|🦊) +2 75% ~/proj  abc123de` |
-| `compact` | compact (emoji) | Emoji eyes in face, guillemet identity | `Ǝ[🟧 🧀]E +2 «🇩🇪\|🦊» abc123de ~/proj` |
-| `compact_project_sorted` | compact (emoji) | Dir flag + guillemet info group | `🇩🇪 Ǝ[🟧 🧀]E «🦊\|+2\|75%» abc123de ~/proj` |
 
 ### Dashboard Preset
 
@@ -32,45 +32,35 @@ Text-based faces with a parenthesized info group connected by `˙°`:
 Compacting state drops food emoji (just percentage). All other states share the global
 format. Agents placement and context percentage are outside parentheses.
 
-### Compact Preset
+### Compact / Compact Project Sorted Preset (Default)
 
-Emoji-eye faces where left eye = state color, right eye = context food level:
-
-```
-Ǝ[🟧 🧀]E +2 «🇩🇪|🦊» abc123de ~/proj
-│          │    │         │        └─ base title
-│          │    │         └─ session ID
-│          │    └─ guillemet identity (auto-injected)
-│          └─ subagent count
-└─ face with emoji eyes (status + context)
-```
-
-Permission, idle, complete, and reset states include `{CONTEXT_FOOD}{CONTEXT_PCT}` in
-the title for additional context awareness. Compacting shows percentage only.
-
-### Compact Project Sorted Preset
-
-Dir flag as visual anchor, info group in guillemets, session ID before path:
+Mirror-eye faces where both eyes show the same state color square. Context data
+(food emoji + percentage) shown in guillemets. Dir flag as visual anchor:
 
 ```
-🇩🇪 Ǝ[🟧 🧀]E «🦊|+2|75%» abc123de ~/proj
-│   │          │               │        └─ base title
-│   │          │               └─ session ID (first 8 chars)
-│   │          └─ guillemet info: session animal | subagent count | context %
-│   └─ face with emoji eyes (status + context food)
-└─ directory flag (visual anchor — deterministic per cwd)
+🇩🇪 Ǝ[🟧 🟧]E «🧀50%» abc123de ~/proj
+│   │            │        │        └─ base title
+│   │            │        └─ session ID (first 8 chars)
+│   │            └─ context guillemets: food emoji + percentage
+│   └─ face with mirror eyes (both = state color square)
+└─ directory flag (deterministic per cwd)
 ```
 
-Same format used for all states. Empty tokens collapse cleanly via existing
-pipe/guillemet cleanup:
+Same format used for all states. Both eyes always match — processing = `🟧 🟧`,
+permission = `🟥 🟥`, complete = `🟩 🟩`, idle = `🟪 🟪`, etc. Context data
+(food + percentage) appears in guillemets outside the face.
+
+Format: `{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}`
 
 | Condition | Guillemet | Resolved Example |
 |-----------|-----------|-----------------|
-| All present | `«🦊\|+2\|75%»` | Full info group |
-| No subagents | `«🦊\|75%»` | Pipe collapsed |
-| No context data | `«🦊\|+2»` | Trailing pipe removed |
-| No subagents + no context | `«🦊»` | Just animal, pipes removed |
-| Identity off + all empty | *(empty)* | Guillemets removed entirely |
+| Context available | `«🧀50%»` | Food + percentage |
+| No context data | `«💧0%»` | Fresh session default |
+| Bridge with high usage | `«🍔85%»` | Danger zone visible |
+
+> **Note:** The previous `compact_project_sorted` format used pipe-delimited info groups
+> with session animals (`«🦊|+2|75%»`). That format is still achievable via custom
+> `TAVS_TITLE_FORMAT` — see [Configuration Examples](#configuration-examples) below.
 
 ### Configuration
 
@@ -133,8 +123,13 @@ States use UPPERCASE with hyphens converted to underscores: `subagent-start` bec
 
 ### Default Per-State Formats
 
-Three states have per-state formats by default. The remaining five fall back to the
-global `TAVS_TITLE_FORMAT` (`{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}`):
+When the default preset (`compact_project_sorted`) is active, **all states use the same
+global format**: `{DIR_ICON} {FACE} «{CONTEXT_FOOD}{CONTEXT_PCT}» {SESSION_ID} {BASE}`.
+No per-state overrides are set.
+
+When no preset is active (`TAVS_TITLE_PRESET=""`), the following per-state formats apply.
+Three states have per-state formats. The remaining five fall back to the
+global `TAVS_TITLE_FORMAT`:
 
 **States with custom default formats:**
 
@@ -385,9 +380,23 @@ state color, right eye = context fill.
 
 ```bash
 # In ~/.tavs/user.conf
-TAVS_COMPACT_CONTEXT_EYE="true"     # "true" (default) | "false"
-TAVS_COMPACT_CONTEXT_STYLE="food"   # See style catalog below
+TAVS_COMPACT_CONTEXT_EYE="mirror"   # "mirror" (default) | "true" | "false"
+TAVS_COMPACT_CONTEXT_STYLE="food"   # See style catalog below (used when context eye = "true")
 ```
+
+### Mirror Mode (Default)
+
+Both eyes show the same state color square. Context data moves to title guillemets:
+
+```
+Ǝ[🟧 🟧]E «🧀50%»   processing at 50%
+Ǝ[🟥 🟥]E «🍔85%»   permission at 85%
+Ǝ[🟩 🟩]E «🥝25%»   complete at 25%
+Ǝ[— —]E              reset — em dash resting eyes
+```
+
+Mirror mode keeps the face simple and symmetrical while context data is shown separately
+in the title format via `{CONTEXT_FOOD}` and `{CONTEXT_PCT}` tokens.
 
 ### Style Catalog
 
@@ -427,11 +436,12 @@ When context eye is active, the subagent count (`+N`) moves from the right eye t
 
 Token suppression matrix:
 
-| Mode | `{STATUS_ICON}` | `{AGENTS}` |
-|------|-----------------|------------|
-| Standard mode | Shown | Shown |
-| Compact, context eye OFF | Suppressed | Suppressed (in right eye) |
-| Compact, context eye ON | Suppressed | **Shown** (context in right eye) |
+| Mode | `{STATUS_ICON}` | `{AGENTS}` | `{CONTEXT_*}` |
+|------|-----------------|------------|---------------|
+| Standard mode | Shown | Shown | Shown |
+| Compact, mirror (default) | Suppressed | **Shown** | Shown (not in eye) |
+| Compact, context eye ON | Suppressed | **Shown** | Matching token suppressed |
+| Compact, context eye OFF | Suppressed | Suppressed (in right eye) | Shown |
 
 ### No-Data Fallback
 
