@@ -339,6 +339,7 @@ _TAVS_CONTEXT_STATE_DIR="$MOCK_STATE_DIR"
 TAVS_TRANSCRIPT_PATH="$TEST_TMP/real_transcript.jsonl"
 TAVS_CONTEXT_WINDOW_SIZE=200000
 unset CONTEXT_WINDOW_SIZE 2>/dev/null || true
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 assert_eq "fallback: pct from JSONL parsing" "65" "$TAVS_CONTEXT_PCT"
@@ -357,10 +358,11 @@ MOCK_STATE_DIR=$(mktemp -d)
 TTY_SAFE="_dev_ttys999"
 _TAVS_CONTEXT_STATE_DIR="$MOCK_STATE_DIR"
 unset TAVS_TRANSCRIPT_PATH 2>/dev/null || true
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data && exit_code=0 || exit_code=$?
-assert_eq "no data returns 1" "1" "$exit_code"
-assert_empty "no data: pct empty" "$TAVS_CONTEXT_PCT"
+assert_eq "no data returns 0 (defaults to 0%)" "0" "$exit_code"
+assert_eq "no data: pct defaults to 0" "0" "$TAVS_CONTEXT_PCT"
 assert_empty "no data: model empty" "$TAVS_CONTEXT_MODEL"
 
 rm -rf "$MOCK_STATE_DIR"
@@ -386,6 +388,7 @@ _TAVS_CONTEXT_STATE_DIR="$MOCK_STATE_DIR"
 TAVS_TRANSCRIPT_PATH="$TEST_TMP/real_transcript.jsonl"
 TAVS_CONTEXT_BRIDGE_MAX_AGE=30
 TAVS_CONTEXT_WINDOW_SIZE=200000
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 assert_eq "bridge wins: pct=72 not 65" "72" "$TAVS_CONTEXT_PCT"
@@ -412,6 +415,7 @@ TAVS_TRANSCRIPT_PATH="$TEST_TMP/real_transcript.jsonl"
 TAVS_CONTEXT_BRIDGE_MAX_AGE=30
 TAVS_CONTEXT_WINDOW_SIZE=200000
 unset CONTEXT_WINDOW_SIZE 2>/dev/null || true
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 assert_eq "stale bridge → JSONL: pct=65" "65" "$TAVS_CONTEXT_PCT"

@@ -132,6 +132,7 @@ TAVS_CONTEXT_MODEL=""
 TAVS_CONTEXT_COST=""
 TAVS_CONTEXT_DURATION=""
 TAVS_CONTEXT_LINES_ADD=""
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 
@@ -194,9 +195,10 @@ export TTY_SAFE="_test_no_data"
 unset TAVS_TRANSCRIPT_PATH 2>/dev/null || true
 TAVS_CONTEXT_PCT=""
 TAVS_CONTEXT_MODEL=""
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
-assert "no data: PCT empty" "" "${TAVS_CONTEXT_PCT:-}"
+assert "no data: PCT defaults to 0" "0" "${TAVS_CONTEXT_PCT:-}"
 assert "no data: MODEL empty" "" "${TAVS_CONTEXT_MODEL:-}"
 
 export TAVS_TITLE_FORMAT_PERMISSION="{FACE} {STATUS_ICON} {CONTEXT_FOOD} {CONTEXT_PCT} {BASE}"
@@ -226,6 +228,7 @@ export TAVS_CONTEXT_BRIDGE_MAX_AGE=30
 export TAVS_CONTEXT_WINDOW_SIZE=200000
 TAVS_CONTEXT_PCT=""
 TAVS_CONTEXT_MODEL=""
+unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 
