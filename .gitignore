@@ -37,3 +37,10 @@ not a tty
 
 # Git worktrees
 .worktrees/
+
+# Project-specific config
+CLAUDE.md
+
+# Internal development docs
+docs/specs/
+docs/archive/

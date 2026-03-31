@@ -23,9 +23,3 @@ or `./tavs status` for a visual preview of your current configuration.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for code style, testing, and PR guidelines.
 
-## Archive
-
-Historical planning documents from feature development:
-
-- [PLAN: Anthropomorphising](archive/PLAN-anthropomorphising.md) — Implementation plan for ASCII faces feature
-- [SPEC: Anthropomorphising](archive/SPEC-anthropomorphising.md) — Design specification for face expressions
