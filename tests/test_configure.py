@@ -15,18 +15,20 @@ The main configure.sh orchestrates by sourcing these modules.
 import pytest
 from conftest import run_bash, PROJECT_ROOT
 
+WIZARD_DIR = PROJECT_ROOT / "src" / "wizard"
+
 
 class TestConfigureSyntax:
     """Test configure.sh syntax and structure."""
 
     def test_syntax_valid(self):
         """configure.sh should have valid bash syntax."""
-        result = run_bash('bash -n configure.sh', cwd=PROJECT_ROOT)
+        result = run_bash('bash -n configure.sh', cwd=WIZARD_DIR)
         assert result.returncode == 0, f"Syntax error: {result.stderr}"
 
     def test_is_executable(self):
         """configure.sh should be executable."""
-        result = run_bash('test -x configure.sh && echo "executable"', cwd=PROJECT_ROOT)
+        result = run_bash('test -x configure.sh && echo "executable"', cwd=WIZARD_DIR)
         assert result.returncode == 0
         assert "executable" in result.stdout
 
@@ -37,7 +39,7 @@ class TestConfigureSyntax:
                 bash -n "$f" || exit 1
             done
             echo "all valid"
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
         assert result.returncode == 0
         assert "all valid" in result.stdout
 
@@ -50,7 +52,7 @@ class TestConfigureFunctions:
         result = run_bash('''
             # Check that configure.sh references theme or core files
             grep -q "theme" configure.sh && echo "found"
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
 
         assert result.returncode == 0
         assert "found" in result.stdout
@@ -59,7 +61,7 @@ class TestConfigureFunctions:
         """configure.sh should source all step modules."""
         result = run_bash('''
             grep -q "configure-step-" configure.sh && echo "found"
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
         assert result.returncode == 0
         assert "found" in result.stdout
 
@@ -71,7 +73,7 @@ class TestConfigureInteraction:
         """Declining to enable should exit without error."""
         result = run_bash('''
             echo "n" | ./configure.sh 2>&1 | tail -3
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
 
         # Should complete without crashing
         assert result.returncode == 0 or "No changes" in result.stdout
@@ -80,7 +82,7 @@ class TestConfigureInteraction:
         """Script should show current configuration on startup."""
         result = run_bash('''
             echo "n" | ./configure.sh 2>&1 | head -30
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
 
         # Should mention configuration or visual signals
         assert ("Configuration" in result.stdout or
@@ -97,7 +99,7 @@ class TestConfigureOutput:
 
         Note: .bak logic is in configure-step-terminal-title.sh for settings.json backup.
         """
-        result = run_bash('grep -q ".bak" configure-step-terminal-title.sh && echo "found"', cwd=PROJECT_ROOT)
+        result = run_bash('grep -q ".bak" configure-step-terminal-title.sh && echo "found"', cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
 
@@ -107,31 +109,31 @@ class TestConfigureHelpers:
     def test_has_select_operating_mode_function(self):
         """Should have select_operating_mode function in step module."""
         result = run_bash('grep -q "select_operating_mode()" configure-step-operating-mode.sh && echo "found"',
-                         cwd=PROJECT_ROOT)
+                         cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
     def test_has_select_faces_function(self):
         """Should have select_faces function for anthropomorphising in step module."""
         result = run_bash('grep -q "select_faces()" configure-step-ascii-faces.sh && echo "found"',
-                         cwd=PROJECT_ROOT)
+                         cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
     def test_has_select_title_mode_function(self):
         """Should have select_title_mode function in step module."""
         result = run_bash('grep -q "select_title_mode()" configure-step-terminal-title.sh && echo "found"',
-                         cwd=PROJECT_ROOT)
+                         cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
     def test_has_save_configuration_function(self):
         """Should have save_configuration function."""
         result = run_bash('grep -q "save_configuration()" configure.sh && echo "found"',
-                         cwd=PROJECT_ROOT)
+                         cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
     def test_has_show_preview_function(self):
         """Should have show_preview function."""
         result = run_bash('grep -q "show_preview()" configure.sh && echo "found"',
-                         cwd=PROJECT_ROOT)
+                         cwd=WIZARD_DIR)
         assert "found" in result.stdout
 
     def test_main_calls_step_functions(self):
@@ -144,5 +146,5 @@ class TestConfigureHelpers:
             grep -q "select_title_mode" configure.sh && \
             grep -q "select_palette_theming" configure.sh && \
             echo "found"
-        ''', cwd=PROJECT_ROOT)
+        ''', cwd=WIZARD_DIR)
         assert "found" in result.stdout

@@ -1058,10 +1058,10 @@ The `tests/` directory contains bash-based automated test suites:
 | Suite | Tests | Covers |
 |-------|-------|--------|
 | `tests/test-context-data.sh` | 107 | Context token resolvers, icon lookups, edge cases |
-| `tests/test-title-formats.sh` | 50 | Per-state format selection, 4-level fallback chain |
-| `tests/test-bridge.sh` | 47 | StatusLine bridge silence, atomic writes, JSON extraction |
+| `tests/test-per-state-titles.sh` | 50 | Per-state format selection, 4-level fallback chain |
+| `tests/test-statusline-bridge.sh` | 47 | StatusLine bridge silence, atomic writes, JSON extraction |
 | `tests/test-transcript-fallback.sh` | 45 | Transcript estimation, JSONL parsing |
-| `tests/test-integration.sh` | 94 | End-to-end: trigger → title output with context data |
+| `tests/test-integration-phase6.sh` | 94 | End-to-end: trigger → title output with context data |
 
 ```bash
 # Run all test suites

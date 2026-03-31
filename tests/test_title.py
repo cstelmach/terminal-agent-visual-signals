@@ -27,6 +27,8 @@ class TestTitleComposition:
         result = run_bash(f'''
             source src/core/theme-config-loader.sh
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{{FACE}} {{STATUS_ICON}} {{BASE}}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
@@ -45,6 +47,8 @@ class TestTitleComposition:
         result = run_zsh(f'''
             source src/core/theme-config-loader.sh
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{{FACE}} {{STATUS_ICON}} {{BASE}}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "{state}" "Base"
         ''')
@@ -56,6 +60,8 @@ class TestTitleComposition:
         """Reset state should have no emoji."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "reset" "Base"
         ''')
@@ -72,6 +78,7 @@ class TestTitleComposition:
         """compose_title should include the base title."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" "MyProject"
         ''')
@@ -86,6 +93,8 @@ class TestTitleComposition:
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" ""
         ''')
@@ -110,6 +119,7 @@ class TestFallbackTitle:
             export TAVS_TITLE_SHOW_PATH="true"
             export TAVS_TITLE_SHOW_SESSION="true"
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             get_fallback_title
         ''')
@@ -124,6 +134,7 @@ class TestFallbackTitle:
             export TAVS_TITLE_SHOW_PATH="true"
             export TAVS_TITLE_SHOW_SESSION="true"
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             get_fallback_title
         ''')
@@ -136,6 +147,7 @@ class TestFallbackTitle:
             export TAVS_TITLE_FALLBACK="path"
             export TAVS_TITLE_SHOW_PATH="true"
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             get_fallback_title
         ''')
@@ -186,6 +198,7 @@ class TestSessionId:
         """init_session_id should produce output."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
@@ -201,6 +214,7 @@ class TestSessionId:
         """Session ID should be exactly 8 characters."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
@@ -216,6 +230,7 @@ class TestSessionId:
         """Session ID should be lowercase hexadecimal."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
+            source src/core/context-data.sh
             source src/core/title-management.sh
             init_session_id
             echo "$SESSION_ID"
@@ -236,7 +251,7 @@ class TestFormatSubstitution:
     """Test format template substitution in compose_title."""
 
     def test_default_format_has_all_placeholders(self):
-        """Default format should include FACE, STATUS_ICON, and BASE."""
+        """Default format should include FACE and BASE (STATUS_ICON optional in compact presets)."""
         results = run_in_both_shells('''
             source src/core/theme-config-loader.sh
             echo "$TAVS_TITLE_FORMAT"
@@ -249,10 +264,10 @@ class TestFormatSubstitution:
         assert bash_format == zsh_format, \
             f"Format differs: bash='{bash_format}', zsh='{zsh_format}'"
 
-        # Format should have all placeholders
+        # Format should have essential placeholders
         assert '{FACE}' in bash_format, f"Missing {{FACE}}: {bash_format}"
-        assert '{STATUS_ICON}' in bash_format, f"Missing {{STATUS_ICON}}: {bash_format}"
         assert '{BASE}' in bash_format, f"Missing {{BASE}}: {bash_format}"
+        # Note: {STATUS_ICON} may not be in compact presets where status is embedded in face eyes
 
     def test_custom_format_respected(self):
         """Custom TAVS_TITLE_FORMAT should be respected when set after config load."""
@@ -262,6 +277,7 @@ class TestFormatSubstitution:
             TAVS_TITLE_FORMAT="{STATUS_ICON} [{BASE}]"
             ENABLE_ANTHROPOMORPHISING="false"
             TAVS_FACE_MODE="standard"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -283,6 +299,7 @@ class TestFormatSubstitution:
             TAVS_TITLE_FORMAT="{STATUS_ICON} {BASE}"
             ENABLE_ANTHROPOMORPHISING="false"
             TAVS_FACE_MODE="standard"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "complete" "MyApp"
         ''')

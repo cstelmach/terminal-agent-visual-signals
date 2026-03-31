@@ -115,24 +115,24 @@ class TestBraceExpansionSafety:
     """
 
     def test_title_format_default_bash(self):
-        """TAVS_TITLE_FORMAT default should be correct in bash."""
+        """TAVS_TITLE_FORMAT default should contain essential tokens in bash."""
         result = run_bash(
             'source src/core/theme-config-loader.sh && echo "$TAVS_TITLE_FORMAT"'
         )
         assert result.returncode == 0
         output = result.stdout.strip()
-        assert output == '{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}', \
-            f"Expected '{{FACE}} {{STATUS_ICON}} {{AGENTS}} {{SESSION_ICON}} {{BASE}}', got '{output}'"
+        assert '{FACE}' in output, f"Missing {{FACE}}: {output}"
+        assert '{BASE}' in output, f"Missing {{BASE}}: {output}"
 
     def test_title_format_default_zsh(self):
-        """TAVS_TITLE_FORMAT default should be correct in zsh."""
+        """TAVS_TITLE_FORMAT default should contain essential tokens in zsh."""
         result = run_zsh(
             'source src/core/theme-config-loader.sh && echo "$TAVS_TITLE_FORMAT"'
         )
         assert result.returncode == 0
         output = result.stdout.strip()
-        assert output == '{FACE} {STATUS_ICON} {AGENTS} {SESSION_ICON} {BASE}', \
-            f"Expected '{{FACE}} {{STATUS_ICON}} {{AGENTS}} {{SESSION_ICON}} {{BASE}}', got '{output}'"
+        assert '{FACE}' in output, f"Missing {{FACE}}: {output}"
+        assert '{BASE}' in output, f"Missing {{BASE}}: {output}"
 
     def test_title_format_parity(self):
         """TAVS_TITLE_FORMAT must be identical in both shells."""
@@ -147,8 +147,6 @@ class TestBraceExpansionSafety:
             f"TAVS_TITLE_FORMAT differs: bash='{bash_val}', zsh='{zsh_val}'"
         assert '{FACE}' in bash_val, \
             f"Format should contain '{{FACE}}': {bash_val}"
-        assert '{STATUS_ICON}' in bash_val, \
-            f"Format should contain '{{STATUS_ICON}}': {bash_val}"
         assert '{BASE}' in bash_val, \
             f"Format should contain '{{BASE}}': {bash_val}"
 
@@ -158,6 +156,8 @@ class TestBraceExpansionSafety:
             source src/core/theme-config-loader.sh
             ENABLE_ANTHROPOMORPHISING="true"
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -177,6 +177,8 @@ class TestBraceExpansionSafety:
             source src/core/theme-config-loader.sh
             ENABLE_ANTHROPOMORPHISING="true"
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" "Test"
         ''')
@@ -200,6 +202,8 @@ class TestBraceExpansionSafety:
             source src/core/theme-config-loader.sh
             ENABLE_ANTHROPOMORPHISING="true"
             TAVS_FACE_MODE="standard"
+            TAVS_TITLE_FORMAT="{FACE} {STATUS_ICON} {BASE}"
+            source src/core/context-data.sh
             source src/core/title-management.sh
             compose_title "processing" "TestProject"
         ''')

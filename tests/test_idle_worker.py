@@ -100,30 +100,29 @@ class TestIdleWorkerFdPattern:
 class TestIdleWorkerFaceComposition:
     """Test that idle worker composes titles with faces correctly."""
 
-    def test_face_composition_in_worker(self):
-        """Worker should have inline face composition logic."""
-        # Check for face lookup
+    def test_compose_title_in_worker(self):
+        """Worker should use compose_title for title generation."""
         result = run_bash(
-            'grep -E "get_face.*idle_" src/core/idle-worker-background.sh'
+            'grep -E "compose_title" src/core/idle-worker-background.sh'
         )
 
-        assert result.returncode == 0, "Should find get_face call for idle states"
+        assert result.returncode == 0, "Should find compose_title call for idle states"
 
-    def test_face_position_check_in_worker(self):
-        """Worker should check FACE_POSITION."""
+    def test_idle_state_mapping_in_worker(self):
+        """Worker should map stages to idle_N state names."""
         result = run_bash(
-            'grep "FACE_POSITION" src/core/idle-worker-background.sh'
+            'grep "idle_" src/core/idle-worker-background.sh | grep -v "^#"'
         )
 
-        assert result.returncode == 0, "Should check FACE_POSITION"
+        assert result.returncode == 0, "Should map idle stages to state names"
 
-    def test_anthropomorphising_check_in_worker(self):
-        """Worker should check ENABLE_ANTHROPOMORPHISING."""
+    def test_title_prefix_check_in_worker(self):
+        """Worker should check ENABLE_TITLE_PREFIX."""
         result = run_bash(
-            'grep "ENABLE_ANTHROPOMORPHISING" src/core/idle-worker-background.sh'
+            'grep "ENABLE_TITLE_PREFIX" src/core/idle-worker-background.sh'
         )
 
-        assert result.returncode == 0, "Should check ENABLE_ANTHROPOMORPHISING"
+        assert result.returncode == 0, "Should check ENABLE_TITLE_PREFIX"
 
 
 class TestGetUnifiedStage:
