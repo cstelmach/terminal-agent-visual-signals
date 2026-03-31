@@ -35,7 +35,7 @@ during a real multi-project work session:
 <p align="center">
   <img src="assets/media/demo-tavs-multitasking-notebook.gif" alt="20+ concurrent Claude Code sessions with TAVS — each tab shows its state at a glance" width="720">
   <br>
-  <em>20+ sessions, zero tab-switching needed to know what's happening.</em>
+  <em>Single notebook screen. 18+ sessions, working in parallel. Zero tab-switching needed to know what's happening.<br>(Recorded in a distant past)</em>
 </p>
 
 ---
