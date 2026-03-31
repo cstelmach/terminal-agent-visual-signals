@@ -3,7 +3,7 @@
 # TDD Test Script for StatusLine Bridge & trigger.sh transcript_path
 # ==============================================================================
 # Run: bash tests/test-statusline-bridge.sh
-# Must be run from worktree root: /Users/cs/.claude/hooks/tavs-dynamic-titles
+# Must be run from repo root
 # ==============================================================================
 set -euo pipefail
 
@@ -428,12 +428,12 @@ echo -e "${YELLOW}=== Test: trigger.sh transcript_path extraction ===${NC}"
 # We can't easily run the full trigger.sh (it delegates to core trigger),
 # so we test the extraction pattern directly.
 
-HOOK_JSON='{"session_id":"abc123","transcript_path":"/Users/cs/.claude/sessions/abc123/transcript.jsonl","cwd":"/working/dir","permission_mode":"plan","hook_event_name":"PermissionRequest"}'
+HOOK_JSON='{"session_id":"abc123","transcript_path":"/home/user/.claude/sessions/abc123/transcript.jsonl","cwd":"/working/dir","permission_mode":"plan","hook_event_name":"PermissionRequest"}'
 
 # Extract transcript_path using the same sed pattern the trigger should use
 _transcript=$(printf '%s' "$HOOK_JSON" | \
     sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-assert_eq "transcript_path extracted" "/Users/cs/.claude/sessions/abc123/transcript.jsonl" "$_transcript"
+assert_eq "transcript_path extracted" "/home/user/.claude/sessions/abc123/transcript.jsonl" "$_transcript"
 
 # Without transcript_path
 HOOK_JSON_NO_TRANSCRIPT='{"session_id":"abc123","cwd":"/working/dir","permission_mode":"plan"}'
@@ -442,10 +442,10 @@ _transcript=$(printf '%s' "$HOOK_JSON_NO_TRANSCRIPT" | \
 assert_empty "No transcript_path in JSON" "$_transcript"
 
 # With transcript_path containing special chars (spaces in path)
-HOOK_JSON_SPECIAL='{"transcript_path":"/Users/cs/My Projects/transcript.jsonl"}'
+HOOK_JSON_SPECIAL='{"transcript_path":"/home/user/My Projects/transcript.jsonl"}'
 _transcript=$(printf '%s' "$HOOK_JSON_SPECIAL" | \
     sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-assert_eq "transcript_path with spaces" "/Users/cs/My Projects/transcript.jsonl" "$_transcript"
+assert_eq "transcript_path with spaces" "/home/user/My Projects/transcript.jsonl" "$_transcript"
 
 # ==============================================================================
 echo -e "${YELLOW}=== Test: trigger.sh actually exports TAVS_TRANSCRIPT_PATH ===${NC}"

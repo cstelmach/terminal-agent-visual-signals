@@ -5,7 +5,7 @@
 # Tests _estimate_from_transcript(), _parse_jsonl_usage(), _model_context_size(),
 # _estimate_from_file_size(), and the load_context_data fallback chain.
 # Run: bash tests/test-transcript-fallback.sh
-# Must be run from worktree root: /Users/cs/.claude/hooks/tavs-dynamic-titles
+# Must be run from repo root
 # ==============================================================================
 set -euo pipefail
 

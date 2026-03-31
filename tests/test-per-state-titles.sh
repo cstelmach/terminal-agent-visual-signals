@@ -3,7 +3,7 @@
 # TDD Test Script for Phase 2: Per-State Title Format System
 # ==============================================================================
 # Run: bash tests/test-per-state-titles.sh
-# Must be run from worktree root: /Users/cs/.claude/hooks/tavs-dynamic-titles
+# Must be run from repo root
 # ==============================================================================
 set -euo pipefail
 

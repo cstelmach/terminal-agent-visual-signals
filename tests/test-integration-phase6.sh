@@ -115,7 +115,7 @@ BRIDGE="$REPO_DIR/src/agents/claude/statusline-bridge.sh"
 export _TAVS_BRIDGE_STATE_DIR="$TEST_DIR"
 export _TAVS_BRIDGE_TTY_SAFE="_test_pipeline"
 
-MOCK_JSON='{"session_id":"abc123","transcript_path":"/tmp/transcript.jsonl","cwd":"/Users/cs/project","model":{"id":"claude-opus-4-6","display_name":"Opus"},"workspace":{"current_dir":"/Users/cs/project","project_dir":"/Users/cs/project"},"cost":{"total_cost_usd":1.85,"total_duration_ms":420000,"total_lines_added":256,"total_lines_removed":34},"context_window":{"total_input_tokens":90000,"total_output_tokens":12000,"context_window_size":200000,"used_percentage":45,"remaining_percentage":55},"exceeds_200k_tokens":false,"version":"2.1.39"}'
+MOCK_JSON='{"session_id":"abc123","transcript_path":"/tmp/transcript.jsonl","cwd":"/home/user/project","model":{"id":"claude-opus-4-6","display_name":"Opus"},"workspace":{"current_dir":"/home/user/project","project_dir":"/home/user/project"},"cost":{"total_cost_usd":1.85,"total_duration_ms":420000,"total_lines_added":256,"total_lines_removed":34},"context_window":{"total_input_tokens":90000,"total_output_tokens":12000,"context_window_size":200000,"used_percentage":45,"remaining_percentage":55},"exceeds_200k_tokens":false,"version":"2.1.39"}'
 
 bridge_output=$(echo "$MOCK_JSON" | "$BRIDGE" 2>/dev/null)
 

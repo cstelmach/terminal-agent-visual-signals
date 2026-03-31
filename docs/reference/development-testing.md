@@ -27,7 +27,7 @@ cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/"
 
 ### 1. Make Changes in Repository
 
-Edit files in `/Users/cs/.claude/hooks/terminal-agent-visual-signals/`:
+Edit files in `~/.claude/hooks/terminal-agent-visual-signals/`:
 
 | Change Type | Files to Edit |
 |-------------|---------------|
@@ -59,7 +59,7 @@ The plugin cache is where Claude Code actually loads the code from:
 
 ```bash
 CACHE_BASE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"* 2>/dev/null | tail -1)
-REPO_BASE="/Users/cs/.claude/hooks/terminal-agent-visual-signals"
+REPO_BASE="~/.claude/hooks/terminal-agent-visual-signals"
 
 # All core files (recommended — ensures consistency)
 cp "$REPO_BASE/src/core/"*.sh "$CACHE_BASE/src/core/"
@@ -86,7 +86,7 @@ User settings are in `~/.tavs/user.conf`. Changes here take effect immediately (
 
 | Purpose | Location |
 |---------|----------|
-| Source repo | `/Users/cs/.claude/hooks/terminal-agent-visual-signals/` |
+| Source repo | `~/.claude/hooks/terminal-agent-visual-signals/` |
 | Plugin cache | `~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/` |
 | User config | `~/.tavs/user.conf` |
 | Debug logs | `~/.claude/hooks/terminal-agent-visual-signals/debug/` |

@@ -3,7 +3,7 @@
 # TDD Test Script for context-data.sh
 # ==============================================================================
 # Run: bash tests/test-context-data.sh
-# Must be run from worktree root: /Users/cs/.claude/hooks/tavs-dynamic-titles
+# Must be run from repo root
 # ==============================================================================
 set -euo pipefail
 
