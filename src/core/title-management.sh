@@ -526,6 +526,13 @@ set_tavs_title() {
         # Save state only after successful write
         TITLE_LAST_SET="$full_title"
         save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+        # Debug: trace successful title write
+        type debug_log_title_trace &>/dev/null && \
+            debug_log_title_trace "$state" "$full_title" "write=ok"
+    else
+        # Debug: trace failed title write
+        type debug_log_title_trace &>/dev/null && \
+            debug_log_title_trace "$state" "$full_title" "write=FAILED tty=$TTY_DEVICE writable=$(test -w "$TTY_DEVICE" && echo y || echo n)"
     fi
 }
 

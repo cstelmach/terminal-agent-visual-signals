@@ -106,11 +106,51 @@ debug_log_invocation() {
         echo "=== PERMISSION MODE ==="
         echo "TAVS_PERMISSION_MODE: ${TAVS_PERMISSION_MODE:-<unset>}"
         echo ""
+        echo "=== CONFIG (post-load) ==="
+        echo "TAVS_FACE_MODE: ${TAVS_FACE_MODE:-<unset>}"
+        echo "TAVS_TITLE_PRESET: ${TAVS_TITLE_PRESET:-<unset>}"
+        echo "TAVS_TITLE_MODE: ${TAVS_TITLE_MODE:-<unset>}"
+        echo "TAVS_TITLE_FORMAT: ${TAVS_TITLE_FORMAT:-<unset>}"
+        echo "TAVS_COMPACT_THEME: ${TAVS_COMPACT_THEME:-<unset>}"
+        echo "TAVS_COMPACT_CONTEXT_EYE: ${TAVS_COMPACT_CONTEXT_EYE:-<unset>}"
+        echo "ENABLE_TITLE_PREFIX: ${ENABLE_TITLE_PREFIX:-<unset>}"
+        echo "ENABLE_ANTHROPOMORPHISING: ${ENABLE_ANTHROPOMORPHISING:-<unset>}"
+        echo "TAVS_IDENTITY_MODE: ${TAVS_IDENTITY_MODE:-<unset>}"
+        echo "IDENTITY_MODE: ${IDENTITY_MODE:-<unset>}"
+        echo "_USER_CONFIG: ${_USER_CONFIG:-<unset>}"
+        echo "_USER_CONFIG exists: $(test -f "${_USER_CONFIG:-/nonexistent}" && echo yes || echo no)"
+        echo "TAVS_SESSION_ID: ${TAVS_SESSION_ID:-<unset>}"
+        echo ""
         echo "=== END DEBUG LOG ==="
     } > "$log_file" 2>&1
 
     # Also append summary to consolidated log
     echo "${ts} pid=$$ state=${1:-?} pwd=$PWD tty=${TTY_DEVICE:-?}" >> "${DEBUG_LOG_DIR}/summary.log"
+}
+
+# === TITLE TRACE LOGGING ===
+# Dedicated title trace log — records compose_title input/output for each state
+debug_log_title_trace() {
+    [[ "$DEBUG_ALL" != "1" ]] && return 0
+    local state="$1"
+    local title_output="$2"
+    local extra_info="${3:-}"
+
+    mkdir -p "$DEBUG_LOG_DIR"
+    local ts=$(date +%Y%m%d-%H%M%S.%N 2>/dev/null || date +%Y%m%d-%H%M%S)
+    {
+        echo "--- TITLE TRACE $ts ---"
+        echo "state=$state"
+        echo "TAVS_FACE_MODE=${TAVS_FACE_MODE:-<unset>}"
+        echo "TAVS_TITLE_FORMAT=${TAVS_TITLE_FORMAT:-<unset>}"
+        echo "session_icon=$(get_session_icon 2>/dev/null || echo '<error>')"
+        echo "dir_icon=$(get_dir_icon 2>/dev/null || echo '<error>')"
+        echo "tty_device=${TTY_DEVICE:-<empty>}"
+        echo "tty_writable=$(test -w "${TTY_DEVICE:-/nonexistent}" && echo yes || echo no)"
+        echo "title_output=$title_output"
+        [[ -n "$extra_info" ]] && echo "extra=$extra_info"
+        echo ""
+    } >> "${DEBUG_LOG_DIR}/title-trace.log" 2>&1
 }
 
 # Log this invocation
