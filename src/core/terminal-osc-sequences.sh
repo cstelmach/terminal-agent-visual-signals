@@ -41,7 +41,10 @@ send_bell_if_enabled() {
 resolve_tty() {
     # Walk up the process ancestry to find a TTY.
     # Hook processes often have an intermediate shell (no TTY) between
-    # them and the CLI agent that owns the terminal.
+    # them and the CLI agent that owns the terminal. Claude Code uses 1
+    # intermediate level; other agents (Gemini, Codex, OpenCode) may nest
+    # deeper. 5 is the empirically sufficient cap: enough headroom for
+    # realistic wrappers, low enough to bound ps(1) invocations.
     local p=$PPID tty_dev i=0
     while (( i < 5 )); do
         tty_dev=$(ps -o tty= -p $p 2>/dev/null)
