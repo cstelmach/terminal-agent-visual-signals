@@ -2,10 +2,10 @@
 
 **Spec:** /Users/cs/.claude/plans/can-we-actually-make-functional-gray.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/PLAN.md
-**Status:** Not Started
+**Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-04-21 18:50
-**Last Updated:** 2026-04-21 18:50
+**Last Updated:** 2026-04-21 19:02
 
 ---
 
@@ -25,7 +25,7 @@
 
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
-| Phase 1: Broadcaster | Not Started | | | | | | Protocol + impl + mock + 5 byte tests |
+| Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | PENDING | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
 | Phase 2: Scheduler Wiring | Not Started | | | | | | Transition logic + 6 tests |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
@@ -37,6 +37,27 @@
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 1: Broadcaster — 2026-04-21 19:02 COMPLETE
+
+**Completed:**
+- Extended `BroadcasterProtocol` in `Scheduler.swift:146-150` with `broadcastPaused()` and `broadcastPausedClear()`
+- Implemented `broadcastPaused()` in `Broadcaster.swift:12-19` — OSC 104 + OSC 11 grey bg + OSC 0 paused title + iTerm2 bg image clear
+- Implemented `broadcastPausedClear()` in `Broadcaster.swift:21-27` — OSC 104 + OSC 111 bg reset + OSC 0 empty title
+- Added private `writeToAllActiveTTYs(_:)` helper in `Broadcaster.swift:74-110` — same TTY enumeration as `broadcast()` but writes uniform data blob
+- Updated `MockBroadcaster.swift` with `broadcastPausedCallCount` and `broadcastPausedClearCallCount`
+- Added 5 byte-content tests in `BroadcasterTests.swift`
+
+**Decisions:**
+- Used `\u{1B}` / `\u{07}` for Swift ESC/BEL (not `\x1b`/`\x07` which are invalid in Swift strings)
+- Built one concatenated Data blob per method, then single write per TTY (atomic-ish delivery)
+- Accepted TTY enumeration duplication between `broadcast()` and `writeToAllActiveTTYs()` as planned
+
+**Deviations:** None. Implementation matches plan exactly.
+
+**Tests:** 89/89 pass in 1.2s. Committed: `PENDING`.
+
+**Next:** Phase 2: Scheduler Wiring
 
 ### Planning — 2026-04-21 18:50
 
@@ -61,7 +82,13 @@ _(None yet)_
 
 ## Divergence Checks
 
-_(Entries added after each phase completion)_
+### Divergence Check — Phase 1
+- [x] Files modified vs plan: 4/4 (Broadcaster.swift, Scheduler.swift, MockBroadcaster.swift, BroadcasterTests.swift)
+- [x] Max cyclomatic complexity: reasonable (new methods are linear, no branching beyond existing patterns)
+- [x] All changes link to specific PLAN.md steps
+- [x] No repeated identical tool calls
+
+**Status:** No divergence detected
 
 ---
 
@@ -70,7 +97,8 @@ _(Entries added after each phase completion)_
 | Phase | Iterations | Tokens (in/out) | Cost | Model |
 |-------|-----------|-----------------|------|-------|
 | Planning | 1 | — | — | claude-opus-4-6 |
-| **Total** | 1 | — | $0.00 | |
+| Phase 1: Broadcaster | 1 | — | — | claude-opus-4-6 |
+| **Total** | 2 | — | — | |
 
 ---
 

@@ -145,6 +145,8 @@ enum ScheduleEvaluator {
 
 protocol BroadcasterProtocol: AnyObject {
     func broadcast()
+    func broadcastPaused()
+    func broadcastPausedClear()
 }
 
 final class Scheduler: ObservableObject {

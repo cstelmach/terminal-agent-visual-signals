@@ -134,4 +134,82 @@ final class BroadcasterTests: XCTestCase {
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 0, "Empty pending file skipped")
     }
+
+    // MARK: - broadcastPaused / broadcastPausedClear tests
+
+    func testBroadcastPausedWritesGreyBytes() {
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+
+        broadcaster.broadcastPaused()
+
+        XCTAssertEqual(mockRunner.writtenDevices.count, 1)
+        let written = String(data: mockRunner.writtenDevices[0].1, encoding: .utf8)!
+        XCTAssertTrue(written.contains("#3A3A3A"), "Grey background OSC present")
+        XCTAssertTrue(written.contains("⏸ Paused"), "Paused title present")
+        XCTAssertTrue(written.contains("SetBackgroundImageFile="), "iTerm2 bg image clear present")
+    }
+
+    func testBroadcastPausedClearWritesResetBytes() {
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+
+        broadcaster.broadcastPausedClear()
+
+        XCTAssertEqual(mockRunner.writtenDevices.count, 1)
+        let written = String(data: mockRunner.writtenDevices[0].1, encoding: .utf8)!
+        XCTAssertTrue(written.contains("]111"), "Background reset OSC present")
+        XCTAssertTrue(written.contains("]104"), "Palette reset OSC present")
+    }
+
+    func testBroadcastPausedBroadcastsToMultipleTTYs() {
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys002").path,
+            contents: nil
+        )
+
+        broadcaster.broadcastPaused()
+
+        XCTAssertEqual(mockRunner.writtenDevices.count, 2, "Both TTYs written")
+        XCTAssertEqual(mockRunner.writtenDevices[0].1, mockRunner.writtenDevices[1].1,
+                       "Both TTYs received identical bytes")
+    }
+
+    func testBroadcastPausedSkipsStaleEntries() throws {
+        let entryPath = activeTTYsDir.appendingPathComponent("dev_ttys001").path
+        FileManager.default.createFile(atPath: entryPath, contents: nil)
+        let oldDate = Date().addingTimeInterval(-25 * 3600)
+        try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: entryPath)
+
+        broadcaster.broadcastPaused()
+
+        XCTAssertEqual(mockRunner.writtenDevices.count, 0, "Stale entry skipped")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: entryPath), "Stale entry pruned")
+    }
+
+    func testBroadcastPausedPrunesDeadTTY() {
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+
+        mockRunner.writeError = ProcessRunnerError.deviceNotWritable("/dev/ttys001")
+
+        broadcaster.broadcastPaused()
+
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path
+            ),
+            "Dead TTY pruned from registry"
+        )
+    }
 }
