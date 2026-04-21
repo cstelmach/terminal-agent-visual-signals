@@ -228,6 +228,60 @@ When transitioning from muted to unmuted, the app writes cached OSC bytes
 directly to every live terminal. This means all terminals snap back to their
 correct visual state simultaneously — no need to wait for the next hook event.
 
+### Paused Visual State
+
+While muted, the app paints a distinctive visual on every registered TTY so a
+paused terminal is unmistakable from an idle one:
+
+| Element | Value |
+|---|---|
+| Background | `#3A3A3A` (mid-grey) |
+| Title | `[⬛ ⬛] ⏸ Paused` |
+| Background image (iTerm2) | Cleared |
+| Palette | Reset to terminal defaults |
+
+The face uses agent-neutral glyphs so Gemini, Codex, and OpenCode users see the
+same pause visual as Claude Code users. The "Paused" label is used for every
+mute reason (manual pause, schedule window, quiet period); the menu-bar status
+line surfaces the precise reason.
+
+### Transition Ordering
+
+Ordering on the two transitions is load-bearing:
+
+**Active → muted:**
+1. `writeMuteState(muted:true)` — shell's stage-0 gate now suppresses hook OSC
+   output to `pending/<tty>.osc` instead of the TTY
+2. `broadcastPaused()` — paint grey on every active TTY
+
+**Muted → active:**
+1. `broadcastPausedClear()` — reset background + palette on every TTY (title is
+   intentionally **not** reset; empty OSC 0 would blank user-configured tab
+   names in `TAVS_TITLE_MODE=prefix-only`)
+2. `broadcast()` — drain `pending/*.osc` so each TTY sees the latest bookkept
+   state
+3. `writeMuteState(muted:false)` — shell resumes normal painting
+4. `clearPending()` — discard any bytes hooks appended to `pending/` during the
+   tiny window between steps 2 and 3; those bytes reflect mid-transition state
+   that is stale by definition and would otherwise replay as "current" on a
+   later unmute cycle
+
+### Restart Semantics
+
+On every app start, `Scheduler.start()` seeds `previousMuted` from the
+on-disk `mute.state` if it exists. This lets a restart-after-crash correctly
+fire the unmute transition if the schedule now says active — without the seed,
+a crash while muted followed by a relaunch into an unmuted schedule would
+leave terminals painted grey indefinitely.
+
+### Known Trade-offs
+
+| Behaviour | Why |
+|---|---|
+| Idle sessions (no hook during mute) return to palette defaults on unmute, not their pre-pause idle gradient | The app has no way to repaint the per-session idle stage; the owning session's idle worker repaints on its next tick. |
+| Paused title persists briefly after resume, until the next hook repaints | `broadcastPausedClear` intentionally does not wipe the title to preserve user-set tab names. |
+| Single "Paused" label for schedule / quiet / manual mute | Per-reason labels (`⏸ Scheduled`, `⏸ Quiet`) are intentionally deferred; the menu bar already shows the reason. |
+
 ### DST Behavior
 
 Schedule boundaries use wall-clock time (system local timezone):

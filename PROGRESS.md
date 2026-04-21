@@ -28,6 +28,7 @@
 | Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | 56b40b4 | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
 | Phase 2: Scheduler Wiring | DONE | 2026-04-21 19:10 | 2026-04-21 19:24 | 08d0f62 | 95/95 tests | 14m | Transition logic + 6 tests |
 | Post: TTY Resolution Fix | DONE | 2026-04-21 19:30 | 2026-04-21 20:06 | 1c00e64 | 54/54 bats | 36m | Shell fix for hook TTY registration |
+| Post: Review Remediation | DONE | 2026-04-21 20:30 | 2026-04-21 21:05 | pending | 105/105 swift + 59/59 bats | 35m | B1/B3/H1/H2/H3/M2 + helper extraction + bats smoke test |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -38,6 +39,67 @@
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Post-Review Remediation — 2026-04-21 21:05 COMPLETE
+
+**Trigger:** Independent review from Codex + Gemini + in-session staff-engineer
+adjudication (report: `/tmp/tavs-paused-review-synthesis-20260421.md`). Overall
+verdict: 4.4/10 — fix-first. Findings were adjudicated against the actual code;
+one critical Gemini claim (F1, `/dev/$tty_dev` path bug) was disproved by live
+verification and rejected.
+
+**Implemented:**
+
+| # | Finding | Fix | File(s) |
+|---|---|---|---|
+| B1 | `FileHandle.write(Data)` silently swallows I/O errors → dead-TTY pruning never fires on EIO | Switched to `try fh.write(contentsOf: data)` which propagates errors | `ProcessRunner.swift` |
+| B3 | `previousMuted=false` hardcoded at init → crash-while-muted + restart-into-unmuted leaves terminals stuck grey | Added `MuteStateReader.readMutedFlag()`; `Scheduler.start()` seeds `previousMuted` from disk | `MuteState.swift`, `Scheduler.swift` |
+| H1 | Hardcoded Claude face `Ǝ[⬛ ⬛]E` in paused title → Gemini/Codex/OpenCode users see Claude styling during mute | Replaced with generic `[⬛ ⬛] ⏸ Paused` | `Broadcaster.swift` |
+| H2 | Unmute gap orphans pending bytes — hooks firing between `broadcast()` drain and `writeMuteState(muted:false)` write to pending, get replayed as stale "current" state next unmute | Added `BroadcasterProtocol.clearPending()`; `Scheduler` calls it AFTER `writeMuteState` on unmute transition | `Scheduler.swift`, `Broadcaster.swift`, `MockBroadcaster.swift` |
+| H3 | `\u{1B}]0;\u{07}` (empty title) in `broadcastPausedClear` blanks user-set tab names in prefix-only mode | Removed empty OSC 0 emission; next hook/idle-worker repaints title naturally | `Broadcaster.swift` |
+| M2 | `broadcast()` and `writeToAllActiveTTYs()` duplicated ~85% of TTY enumeration | Extracted `enumerateActiveTTYs()` private helper; no behaviour change | `Broadcaster.swift` |
+| Minor | Empty pending files accumulated (never removed when `Data(contentsOf:)` read nil or empty) | `broadcast()` removes the file on any read-skip | `Broadcaster.swift` |
+| Minor | `i<5` ancestry-walk magic number had no comment | Added rationale comment | `terminal-osc-sequences.sh` |
+| M1 | `resolve_tty` had zero test coverage — the change that made broadcast actually work | New bats smoke suite (5 tests): writable /dev/tty return, char-device type, detached-PPID termination, bounded-walk timing | `tests/unit/resolve-tty.bats` |
+
+**Rejected (after verification):**
+
+- **Gemini F1** — claimed `ps -o tty=` returns short form `s070` so `/dev/$tty_dev` produces broken `/dev/s070`. Live verification on macOS 14 host returned `ttys076` (full form); the code's `[[ "$tty_dev" != /dev/* ]] && tty_dev="/dev/$tty_dev"` is correct. Stale learning in the cross-session notes has been corrected below.
+- **H4** — main-thread block via `concurrentPerform`: overstated for realistic workload (pty writes are microseconds). Risk of introducing reentrancy/ordering bugs outweighs theoretical benefit at current scale. Revisit only if evidence emerges.
+- **M3** — enter-mute flicker race: cosmetic, microsecond window, fixes require ugly sleeps.
+- **B2 full rearchitect** — idle-terminal recovery already self-heals via idle worker tick. H3 fix reduces impact (tab names no longer wiped). Full fix would require shell-side pause rendering, out of scope.
+
+**Not implemented (justified):**
+
+- `parseTimeToMinutes` force-unwrap hardening: `ScheduleStore.validate` already gates input at write time.
+- `sendAction(Selector(("showSettingsWindow:")))` Preferences button: pre-existing, unrelated to the paused-visual feature. Deferred.
+
+**Verification:**
+
+- `cd src/macos/TAVSApp && swift test` → **105/105 pass** (up from 95; added 10 tests covering the new contracts).
+- `bats tests/unit/ tests/integration/` → **59/59 pass** (up from 54; added 5 resolve_tty tests).
+- `swift build` zero warnings.
+- `bash -n` on modified shell: clean.
+
+**Design notes / invariants preserved:**
+
+- `broadcast()` method body semantics unchanged — only TTY enumeration was extracted to a helper.
+- Existing transition ordering from spec §2 preserved; `clearPending()` is a post-step that discards orphans, not a reorder.
+- No shell-side behaviour changes (the `resolve_tty` comment is documentation-only).
+- `broadcastPausedClear()` still resets palette + background; only title reset was removed.
+
+**Files changed:**
+
+- `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift` — H1, H3, M2, empty-pending cleanup, `clearPending()` method
+- `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift` — B3 `start()` seed, H2 `clearPending` call, protocol extension
+- `src/macos/TAVSApp/Sources/TAVSApp/MuteState.swift` — new `MuteStateReader.readMutedFlag()`
+- `src/macos/TAVSApp/Sources/TAVSApp/ProcessRunner.swift` — B1 throwing write
+- `src/macos/TAVSApp/Tests/TAVSAppTests/BroadcasterTests.swift` — +6 new tests (H1 face, H3 no-empty-title, clearPending×2, empty-pending, B1 throw contract)
+- `src/macos/TAVSApp/Tests/TAVSAppTests/SchedulerTests.swift` — +4 new tests (B3 seed-from-disk, B3 no-file default, H2 calls-clear-pending, H2 no-clear-on-enter)
+- `src/macos/TAVSApp/Tests/TAVSAppTests/Mocks/MockBroadcaster.swift` — `clearPendingCallCount`
+- `src/core/terminal-osc-sequences.sh` — ancestry-walk magic-number comment
+- `tests/unit/resolve-tty.bats` — new smoke suite
+- `docs/reference/macos-menubar-app.md` — paused visual section (behaviour, ordering, restart semantics, trade-offs)
 
 ### Post-Integration: TTY Resolution Fix + E2E Testing — 2026-04-21 20:10
 
@@ -263,8 +325,14 @@ pending data to replay (`pending/` was empty during the test). Force-cleared wit
 - Direct CLI invocations (e.g., `./trigger.sh processing`) still resolve on first iteration
 
 ### TTY Device Paths
-- `ps -o tty=` returns short form: `s070` (no `/dev/tty` prefix)
-- Full path is `/dev/tty${short}`: `/dev/ttys070`
+- `ps -o tty=` output format varies — on macOS 14 it returns the FULL form
+  `ttys070` (not the short `s070` that this note previously claimed).
+  The note's prior claim was disproved in the 2026-04-21 review remediation
+  by running `ps -o tty= -p $PPID` directly on the host.
+- Defensive handling lives in `resolve_tty()` at `terminal-osc-sequences.sh`:
+  `[[ "$tty_dev" != /dev/* ]] && tty_dev="/dev/$tty_dev"` — this tolerates
+  either form because the subsequent `[[ -w "$tty_dev" ]]` check rejects a
+  bogus `/dev/s070` path and the loop continues up the ancestry.
 - `TTY_SAFE` format: `_dev_ttys070` (slashes replaced with underscores)
 - The Broadcaster's path reconstruction: `"/" + entry.replacingOccurrences(of: "_", with: "/")`
 
