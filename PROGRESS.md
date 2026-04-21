@@ -26,7 +26,7 @@
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | 56b40b4 | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
-| Phase 2: Scheduler Wiring | DONE | 2026-04-21 19:10 | 2026-04-21 19:24 | — | 95/95 tests | 14m | Transition logic + 6 tests |
+| Phase 2: Scheduler Wiring | DONE | 2026-04-21 19:10 | 2026-04-21 19:24 | 08d0f62 | 95/95 tests | 14m | Transition logic + 6 tests |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
