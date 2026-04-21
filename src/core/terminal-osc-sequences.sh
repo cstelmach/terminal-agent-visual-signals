@@ -34,7 +34,7 @@ send_bell_if_enabled() {
         subagent)    [[ "$BELL_ON_SUBAGENT" == "true" ]] && should_bell=true ;;
         tool_error)  [[ "$BELL_ON_TOOL_ERROR" == "true" ]] && should_bell=true ;;
     esac
-    [[ "$should_bell" == "true" ]] && printf "\007" > "$TTY_DEVICE"
+    [[ "$should_bell" == "true" ]] && emit_osc "\007"
 }
 
 # === TTY RESOLUTION ===
@@ -68,6 +68,21 @@ if [[ -n "${TTY_DEVICE:-}" ]]; then
     TTY_SAFE="${TTY_DEVICE//\//_}"
 fi
 
+# === EMIT_OSC — SINGLE CHOKE POINT FOR ALL TTY WRITES ===
+# When _TAVS_SUPPRESS_OUTPUT=1, bytes go to the pending buffer instead of
+# the TTY. This is the ONLY code site that knows about mute state;
+# everything upstream is unchanged. (SPEC §4.5, D21)
+emit_osc() {
+    local fmt="$1"; shift
+    if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" && \
+          -n "${_TAVS_PENDING_BUFFER:-}" && \
+          "${_TAVS_REPLAY_BYPASS_MUTE:-0}" != "1" ]]; then
+        printf "$fmt" "$@" >> "$_TAVS_PENDING_BUFFER"
+    else
+        printf "$fmt" "$@" > "$TTY_DEVICE"
+    fi
+}
+
 # === OSC COMMANDS ===
 
 # Send OSC 11 (background color)
@@ -75,9 +90,9 @@ send_osc_bg() {
     local color="$1"
     [[ -z "$TTY_DEVICE" ]] && return
     if [[ "$color" == "reset" ]]; then
-        printf "\033]111\033\\" > "$TTY_DEVICE"
+        emit_osc "\033]111\033\\"
     else
-        printf "\033]11;%s\033\\" "$color" > "$TTY_DEVICE"
+        emit_osc "\033]11;%s\033\\" "$color"
     fi
 }
 
@@ -132,13 +147,13 @@ send_osc_palette() {
 
     local seq
     seq=$(_build_osc_palette_seq "$mode")
-    [[ -n "$seq" ]] && printf "%b" "$seq" > "$TTY_DEVICE"
+    [[ -n "$seq" ]] && emit_osc "%b" "$seq"
 }
 
 # Reset palette to terminal defaults (OSC 104)
 send_osc_palette_reset() {
     [[ -z "$TTY_DEVICE" ]] && return
-    printf "\033]104\033\\" > "$TTY_DEVICE"
+    emit_osc "\033]104\033\\"
 }
 
 send_osc_title() {
@@ -219,7 +234,7 @@ send_osc_title() {
         fi
     fi
 
-    printf "\033]0;%s\033\\" "$title" > "$TTY_DEVICE"
+    emit_osc "\033]0;%s\033\\" "$title"
 }
 
 # === UTILS ===

@@ -24,13 +24,47 @@ case "$_tavs_status_lower" in
 esac
 unset _tavs_status_lower
 
+# ==============================================================================
+# MUTE GATE — STAGE 0 (builtins only, before any source)
+# ==============================================================================
+# Reads ~/.tavs/mute.state using bash builtins. Sets _TAVS_SUPPRESS_OUTPUT=1
+# if the TAVS macOS app says we should be muted and its PID is still alive.
+# Time-sensitive checks (UNTIL_EPOCH, WRITTEN_EPOCH) are deferred to stage-1
+# (mute-gate.sh) which runs during the normal source pass.
+# Never exits early — full dispatch always runs for bookkeeping (SPEC D21).
+# ==============================================================================
+_TAVS_SUPPRESS_OUTPUT=0
+if [[ -f "$HOME/.tavs/mute.state" ]]; then
+    _TAVS_S0_MUTED="" _TAVS_S0_PID="" _TAVS_S0_VER=""
+    _TAVS_S0_UNTIL="" _TAVS_S0_WRITTEN="" _TAVS_S0_REASON=""
+    while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
+        _tavs_s0_v="${_tavs_s0_v%\"}" ; _tavs_s0_v="${_tavs_s0_v#\"}"
+        case "$_tavs_s0_k" in
+            MUTED) _TAVS_S0_MUTED="$_tavs_s0_v" ;;
+            APP_PID) _TAVS_S0_PID="$_tavs_s0_v" ;;
+            SCHEMA_VERSION) _TAVS_S0_VER="$_tavs_s0_v" ;;
+            UNTIL_EPOCH) _TAVS_S0_UNTIL="$_tavs_s0_v" ;;
+            WRITTEN_EPOCH) _TAVS_S0_WRITTEN="$_tavs_s0_v" ;;
+            REASON) _TAVS_S0_REASON="$_tavs_s0_v" ;;
+        esac
+    done < "$HOME/.tavs/mute.state"
+    if [[ "$_TAVS_S0_MUTED" == "true" && "${_TAVS_S0_VER:-1}" == "1" ]]; then
+        if [[ -z "$_TAVS_S0_PID" ]] || kill -0 "$_TAVS_S0_PID" 2>/dev/null; then
+            _TAVS_SUPPRESS_OUTPUT=1
+        fi
+    fi
+    unset _tavs_s0_k _tavs_s0_v
+fi
+
 # Resolve Script Directory and Project Root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"
 
 # Source Core Modules
-# Note: palette-mode-helpers.sh must come before idle-worker-background.sh
-# because the background worker uses _get_palette_mode and should_send_bg_color
+# Note: mute-gate.sh is sourced early (defines helpers) but init is deferred
+# until after terminal-osc-sequences.sh resolves TTY_DEVICE/TTY_SAFE.
+# palette-mode-helpers.sh must come before idle-worker-background.sh.
+source "$CORE_DIR/mute-gate.sh"
 source "$CORE_DIR/theme-config-loader.sh"
 source "$CORE_DIR/session-state.sh"
 source "$CORE_DIR/terminal-osc-sequences.sh"
@@ -48,6 +82,12 @@ source "$CORE_DIR/context-data.sh"    # Context window data for title tokens
 # Source iTerm2-specific title detection if applicable
 [[ "$TERM_PROGRAM" == "iTerm.app" && -f "$CORE_DIR/title-iterm2.sh" ]] && \
     source "$CORE_DIR/title-iterm2.sh"
+
+# Mute gate stage-1: now that TTY_SAFE is resolved, validate liveness,
+# register the active TTY, and open the pending buffer if muted.
+_tavs_mute_gate_init
+# EXIT trap: clean up orphaned pending buffer on crash
+trap '[[ -n "${_TAVS_PENDING_BUFFER:-}" ]] && rm -f "$_TAVS_PENDING_BUFFER"' EXIT
 
 # === DEBUG LOGGING ===
 debug_log_invocation() {
@@ -232,6 +272,33 @@ _revalidate_identity() {
     # Directory: assign/update (only in dual mode; single = session only)
     [[ "$_id_mode" == "dual" ]] && assign_dir_icon
 }
+
+# Handle replay subcommand (debug): write cached pending bytes to TTY
+if [[ "${1:-}" == "replay" ]]; then
+    local_tty_safe="${2:-}"
+    if [[ -z "$local_tty_safe" ]]; then
+        echo "Usage: $0 replay <tty_safe>" >&2
+        echo "Example: $0 replay dev_ttys001" >&2
+        exit 1
+    fi
+    _tavs_resolve_runtime_dir
+    local_cache="$TAVS_RUNTIME_DIR/pending/${local_tty_safe}.osc"
+    if [[ ! -f "$local_cache" ]]; then
+        echo "No pending cache for $local_tty_safe" >&2
+        exit 0
+    fi
+    # Reconstruct device path: _dev_ttys001 → /dev/ttys001
+    local_tty_dev="${local_tty_safe//_//}"
+    if [[ ! -w "$local_tty_dev" ]]; then
+        echo "TTY $local_tty_dev not writable" >&2
+        exit 1
+    fi
+    local_bytes=$(wc -c < "$local_cache" | tr -d ' ')
+    cat "$local_cache" > "$local_tty_dev"
+    rm -f "$local_cache"
+    echo "Replayed $local_bytes bytes to $local_tty_dev" >&2
+    exit 0
+fi
 
 # Main Logic
 STATE="${1:-}"
@@ -468,5 +535,8 @@ case "$STATE" in
         exit 1
         ;;
 esac
+
+# Close pending buffer: atomic-rename temp → per-TTY .osc cache (no-op if unsuppressed)
+_tavs_mute_buffer_close
 
 exit 0

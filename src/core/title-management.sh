@@ -521,16 +521,13 @@ set_tavs_title() {
     local full_title
     full_title=$(compose_title "$state" "$base_title")
 
-    # Send to terminal (only save state if write succeeds)
-    if printf "\033]0;%s\033\\" "$full_title" > "$TTY_DEVICE" 2>/dev/null; then
-        # Save state only after successful write
+    # Send to terminal via emit_osc (handles mute suppression)
+    if emit_osc "\033]0;%s\033\\" "$full_title" 2>/dev/null; then
         TITLE_LAST_SET="$full_title"
         save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
-        # Debug: trace successful title write
         type debug_log_title_trace &>/dev/null && \
             debug_log_title_trace "$state" "$full_title" "write=ok"
     else
-        # Debug: trace failed title write
         type debug_log_title_trace &>/dev/null && \
             debug_log_title_trace "$state" "$full_title" "write=FAILED tty=$TTY_DEVICE writable=$(test -w "$TTY_DEVICE" && echo y || echo n)"
     fi
@@ -567,9 +564,8 @@ reset_tavs_title() {
     local base_title
     base_title=$(get_base_title)
 
-    # Send to terminal (only save state if write succeeds)
-    if printf "\033]0;%s\033\\" "$base_title" > "$TTY_DEVICE" 2>/dev/null; then
-        # Save state only after successful write
+    # Send to terminal via emit_osc (handles mute suppression)
+    if emit_osc "\033]0;%s\033\\" "$base_title" 2>/dev/null; then
         TITLE_LAST_SET="$base_title"
         save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
     fi

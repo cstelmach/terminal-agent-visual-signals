@@ -64,7 +64,6 @@ supports_background_images() {
 # Args: $1 = absolute path to image file
 _set_bg_image_iterm2() {
     local image_path="$1"
-    local tty="${TTY_DEVICE:-/dev/tty}"
 
     # Verify image exists
     if [[ ! -f "$image_path" ]]; then
@@ -75,19 +74,16 @@ _set_bg_image_iterm2() {
     local encoded_path
     encoded_path=$(printf "%s" "$image_path" | base64 | tr -d '\n')
 
-    # Send OSC 1337 sequence
-    # Format: ESC ] 1337 ; SetBackgroundImageFile = <base64> BEL
-    printf '\033]1337;SetBackgroundImageFile=%s\007' "$encoded_path" > "$tty"
+    # Send OSC 1337 sequence via emit_osc (handles mute suppression)
+    emit_osc '\033]1337;SetBackgroundImageFile=%s\007' "$encoded_path"
 
     return 0
 }
 
 # Clear background image in iTerm2
 _clear_bg_image_iterm2() {
-    local tty="${TTY_DEVICE:-/dev/tty}"
-
-    # Send empty value to clear
-    printf '\033]1337;SetBackgroundImageFile=\007' > "$tty"
+    # Send empty value to clear via emit_osc (handles mute suppression)
+    emit_osc '\033]1337;SetBackgroundImageFile=\007'
 
     return 0
 }
@@ -107,12 +103,15 @@ _clear_bg_image_iterm2() {
 _set_bg_image_kitty() {
     local image_path="$1"
 
-    # Verify image exists
+    # Kitty remote control can't be captured in the pending cache or replayed
+    # on unmute (it's a subprocess, not OSC bytes). Suppress during mute;
+    # next hook tick after unmute refreshes. (D6, matches D12 one-cycle lag)
+    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" ]] && return 0
+
     if [[ ! -f "$image_path" ]]; then
         return 1
     fi
 
-    # Verify kitten command is available
     if ! command -v kitten &>/dev/null; then
         return 1
     fi
@@ -142,6 +141,8 @@ _set_bg_image_kitty() {
 
 # Clear background image in Kitty
 _clear_bg_image_kitty() {
+    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" ]] && return 0
+
     if ! command -v kitten &>/dev/null; then
         return 1
     fi
