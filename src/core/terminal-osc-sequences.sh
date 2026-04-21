@@ -39,17 +39,23 @@ send_bell_if_enabled() {
 
 # === TTY RESOLUTION ===
 resolve_tty() {
-    # Uses $PPID built-in
-    local tty_dev
-    tty_dev=$(ps -o tty= -p $PPID 2>/dev/null)
-    tty_dev="${tty_dev// /}"
+    # Walk up the process ancestry to find a TTY.
+    # Hook processes often have an intermediate shell (no TTY) between
+    # them and the CLI agent that owns the terminal.
+    local p=$PPID tty_dev i=0
+    while (( i < 5 )); do
+        tty_dev=$(ps -o tty= -p $p 2>/dev/null)
+        tty_dev="${tty_dev// /}"
+        if [[ -n "$tty_dev" && "$tty_dev" != "??" && "$tty_dev" != "-" ]]; then
+            [[ "$tty_dev" != /dev/* ]] && tty_dev="/dev/$tty_dev"
+            [[ -w "$tty_dev" ]] && echo "$tty_dev" && return 0
+        fi
+        p=$(ps -o ppid= -p $p 2>/dev/null)
+        p="${p// /}"
+        [[ -z "$p" || "$p" == "0" || "$p" == "1" ]] && break
+        (( i++ ))
+    done
 
-    if [[ -n "$tty_dev" && "$tty_dev" != "??" && "$tty_dev" != "-" ]]; then
-        [[ "$tty_dev" != /dev/* ]] && tty_dev="/dev/$tty_dev"
-        [[ -w "$tty_dev" ]] && echo "$tty_dev" && return 0
-    fi
-    
-    # Fallback to /dev/tty
     if { echo -n "" > /dev/tty; } 2>/dev/null; then
         echo "/dev/tty"
         return 0
