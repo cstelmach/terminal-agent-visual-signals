@@ -25,7 +25,7 @@
 
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
-| Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | PENDING | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
+| Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | 56b40b4 | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
 | Phase 2: Scheduler Wiring | Not Started | | | | | | Transition logic + 6 tests |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
@@ -55,7 +55,7 @@ _(Most recent first — reverse chronological)_
 
 **Deviations:** None. Implementation matches plan exactly.
 
-**Tests:** 89/89 pass in 1.2s. Committed: `PENDING`.
+**Tests:** 89/89 pass in 1.2s. Committed: `56b40b4`.
 
 **Next:** Phase 2: Scheduler Wiring
 
