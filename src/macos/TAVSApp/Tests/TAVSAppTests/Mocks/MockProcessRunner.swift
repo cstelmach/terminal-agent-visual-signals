@@ -4,7 +4,13 @@ import Foundation
 final class MockProcessRunner: ProcessRunner {
     var runResults: [URL: Data] = [:]
     var runCallLog: [(URL, [String])] = []
-    var writtenDevices: [(String, Data)] = []
+    private let lock = NSLock()
+    private var _writtenDevices: [(String, Data)] = []
+    var writtenDevices: [(String, Data)] {
+        lock.lock()
+        defer { lock.unlock() }
+        return _writtenDevices
+    }
     var writeError: Error?
 
     @discardableResult
@@ -17,6 +23,8 @@ final class MockProcessRunner: ProcessRunner {
         if let error = writeError {
             throw error
         }
-        writtenDevices.append((path, data))
+        lock.lock()
+        _writtenDevices.append((path, data))
+        lock.unlock()
     }
 }
