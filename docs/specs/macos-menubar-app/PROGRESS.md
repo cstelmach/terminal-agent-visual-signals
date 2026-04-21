@@ -31,7 +31,7 @@
 | Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | d1aa277 | 80/80 | 1 session | All tasks complete; 0 warnings |
 | Phase 4: `tavs schedule` CLI | DONE | 2026-04-21 | 2026-04-21 | 0004759 | 17/17 | 1 session | All tasks complete; 8-step demo passes |
 | Phase 5: Preferences UI | DONE | 2026-04-21 | 2026-04-21 | abdb76b | 84/84 | 1 session | All tasks complete; 0 warnings |
-| Phase 6: Bundle/Codesign/Install/Docs/E2E | DONE | 2026-04-21 | 2026-04-21 | pending | 10/10 E2E | 1 session | All tasks complete; operator-gated DoD pending |
+| Phase 6: Bundle/Codesign/Install/Docs/E2E | DONE | 2026-04-21 | 2026-04-21 | d408814 | 10/10 E2E | 1 session | All tasks complete; operator-gated DoD pending |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
