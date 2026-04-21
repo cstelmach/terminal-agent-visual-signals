@@ -6,6 +6,8 @@
 	<string>TAVS</string>
 	<key>CFBundleDisplayName</key>
 	<string>TAVS</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>TAVSApp</string>
 	<key>CFBundleIdentifier</key>
