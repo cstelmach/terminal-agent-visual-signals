@@ -704,6 +704,109 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(broadcaster.broadcastCallCount, 0)
     }
 
+    // MARK: - B3 and H2 transition tests
+
+    func testStartupSeedsPreviousMutedFromDisk() throws {
+        // B3: A pre-existing mute.state on disk (from a prior app run that
+        // crashed while muted) must seed `previousMuted=true`, so a restart
+        // into an UNMUTED schedule correctly fires the unmute transition.
+        // Without this, terminals painted grey would be stuck forever.
+        let staleState = MuteStateData(
+            muted: true,
+            reason: .masterPaused,
+            untilEpoch: 0,
+            writtenEpoch: Int64(Date().timeIntervalSince1970 - 60),
+            appPID: 12345
+        )
+        try MuteStateWriter.write(staleState, to: muteStateURL)
+
+        // Schedule is active (unmuted) — so start() must detect muted→unmuted.
+        try writeStandardConfig()
+
+        scheduler.start()
+
+        XCTAssertFalse(scheduler.isMuted, "Schedule is active, so now unmuted")
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1,
+                       "Restart with stale muted state must fire clear transition")
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1,
+                       "Restart with stale muted state must replay pending")
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 1,
+                       "Post-unmute clearPending must discard orphan bytes")
+    }
+
+    func testUnmuteTransitionCallsClearPending() throws {
+        // H2: On unmute transition, clearPending() must be called AFTER
+        // writeMuteState so bytes that hooks dropped into pending/ during the
+        // tiny gap are discarded rather than replayed as stale state later.
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        scheduler.start()
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 0,
+                       "clearPending must not fire on enter-mute")
+
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 1,
+                       "clearPending must fire once on unmute")
+    }
+
+    func testEnterMuteDoesNotCallClearPending() throws {
+        // H2 negative: clearPending is exclusively a post-unmute cleanup;
+        // it must not fire when going active→muted.
+        try writeStandardConfig()
+        scheduler.start()
+
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 0)
+
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 0,
+                       "clearPending must not fire on enter-mute")
+    }
+
+    func testStartupWithNoMuteStateFileDefaultsToUnmuted() throws {
+        // B3 boundary: fresh install / no mute.state on disk → previousMuted
+        // remains its init default (false). Existing "App startup into muted"
+        // behavior (paints grey on first muted eval) must not regress.
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+        // Ensure mute.state does NOT exist.
+        try? FileManager.default.removeItem(at: muteStateURL)
+
+        scheduler.start()
+
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
+                       "Startup into muted still fires paint")
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0,
+                       "No spurious clear when seed is absent")
+        XCTAssertEqual(broadcaster.clearPendingCallCount, 0)
+    }
+
     // MARK: - Helpers
 
     private func extractWrittenEpoch(from content: String) -> Int64 {
