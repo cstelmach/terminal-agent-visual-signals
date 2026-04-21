@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-04-20
-**Last Updated:** 2026-04-21 (Phase 2 DONE)
+**Last Updated:** 2026-04-21 (Phase 3 DONE)
 
 ---
 
@@ -28,7 +28,7 @@
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 1: Shell-Side Suppression Wrapper | DONE | 2026-04-20 | 2026-04-21 | 437ef22 | 37/37 | 2 sessions | All tasks complete; zero byte drift |
 | Phase 2: Swift Scaffold + Data Stores | DONE | 2026-04-21 | 2026-04-21 | e678e5d | 54/54 | 1 session | All tasks complete; 0 warnings |
-| Phase 3: Scheduler + Broadcaster + Live State | Not Started | | | | | | 8 tasks (T3.1–T3.8); needs P1+P2 |
+| Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | PENDING | 80/80 | 1 session | All tasks complete; 0 warnings |
 | Phase 4: `tavs schedule` CLI | Not Started | | | | | | 4 tasks (T4.1–T4.4); needs P2+P3 |
 | Phase 5: Preferences UI | Not Started | | | | | | 6 tasks (T5.1–T5.6); needs P2+P3 |
 | Phase 6: Bundle/Codesign/Install/Docs/E2E | Not Started | | | | | | 7 tasks (T6.1–T6.7); needs P1–P5 |
@@ -42,6 +42,75 @@
 ## Log
 
 _(Most recent first — reverse chronological. Append-only.)_
+
+### Phase 3 — DONE — 2026-04-21
+
+**Status:** Phase 3 COMPLETE. 80/80 Swift tests pass (26 new). Zero build warnings. 992 LOC (under 1000 budget).
+
+**What Was Done:**
+
+1. **T3.1 — ScheduleEvaluator.evaluate():**
+   - Pure function: `evaluate(at: Date, rules: ScheduleConfig, calendar: Calendar) -> Result`
+   - Handles: master_active toggle, enabled/disabled window filtering, overnight windows (start > end, anchored on listed day extending past midnight), normal time windows [start, end) semantics
+   - Hourly quiet periods with wrapping minute ranges (start > end → m >= start OR m <= end)
+   - Fixed daily quiet periods with overnight semantics
+   - Calendar/timezone injection for deterministic testing
+   - 39 fixture test cases in `scheduler-matrix.json` across 12 configs including DST spring-forward
+
+2. **T3.2 — ScheduleEvaluator.nextTransition():**
+   - Minute-by-minute scan up to 48h: simple, correct, handles DST transparently
+   - Returns nil for indefinite states (master paused)
+   - 7 standalone tests including DST spring-forward and fall-back boundary crossings
+
+3. **T3.3 — Scheduler lifecycle wiring:**
+   - ObservableObject with @Published isMuted, reason, statusText
+   - Load schedule.json → evaluate → write mute.state → schedule timers
+   - 60s heartbeat timer (unconditional mute.state write per D23/G6)
+   - Boundary timer for precise transition timing
+   - cancelAll + re-schedule pattern on every evaluation
+
+4. **T3.4 — Broadcaster:**
+   - Enumerate `$TAVS_RUNTIME_DIR/active-ttys/`, filter mtime ≤ 24h
+   - Read `pending/<tty_safe>.osc`, write bytes to `/dev/<tty_safe>` via ProcessRunner
+   - DispatchQueue.concurrentPerform for parallel writes
+   - Prune on write failure (dead TTY); prune stale entries (>24h)
+   - Remove pending cache after successful write
+   - 8 tests with MockProcessRunner + temp filesystem
+
+5. **T3.5 — Transition detection:**
+   - On muted→unmuted edge: call broadcaster.broadcast() BEFORE writing new mute.state (SPEC §4.5)
+   - Tracked via previousMuted state variable
+
+6. **T3.6 — File watch on ~/.tavs/:**
+   - Parent-dir watch with 100ms debounce (D28)
+   - DispatchQueue.main.async callback to ensure UI thread safety
+   - Tested via MockFileWatcher.simulateChange() + RunLoop drain
+
+7. **T3.7 — NSWorkspace.didWakeNotification:**
+   - Re-evaluates immediately on system wake (boundary may have been crossed)
+   - Observer cleaned up on stop()
+
+8. **T3.8 — MenuContent live state:**
+   - Status text formats: "Paused — click to resume", "Muted until HH:MM", "Active — next mute in N min", "Active"
+   - Pause/Resume toggle button
+   - @ObservedObject binding to Scheduler's @Published state
+
+**Design Decisions Made:**
+
+- **BroadcasterProtocol for testability:** Extracted protocol so Scheduler tests use MockBroadcaster. Broadcaster class is tested separately with real filesystem + MockProcessRunner.
+- **Scheduler start via DispatchQueue.main.async:** Ensures start() runs after SwiftUI setup. MenuBarExtra content view may not materialize until click — scheduler must start independently.
+- **Calendar injection everywhere:** All evaluate/nextTransition calls accept Calendar parameter. Production uses .current; tests use fixed America/Los_Angeles timezone.
+- **LoginItemManager as stub:** Protocol + empty impl. Phase 6 fills in SMAppService.
+
+**Tests:** 80/80 pass in 1.2s. New Phase 3: ScheduleEvaluatorTests (8 methods, 39 fixture cases + 7 standalone), SchedulerLifecycleTests (10), BroadcasterTests (8). Phase 1 bats: 37/37.
+
+**LOC budget:** 992/1000 Swift source LOC (excluding tests). Scheduler.swift is 356 LOC (evaluator + lifecycle). Phase 5 (PreferencesView) may push past 1000 — G10 is "Should" priority.
+
+**Regression check:** Phase 1 bats tests 37/37 still pass. Phase 2 tests all included in 80/80.
+
+**Next:** Phase 4: `tavs schedule` CLI (depends on Phase 2 schema + Phase 3 fs-watch)
+
+---
 
 ### Phase 2 — DONE — 2026-04-21
 
@@ -384,6 +453,16 @@ _(Entries added when the same error occurs 3+ times)_
 
 **Status:** Minor scope deviation (mocks in Tests/ vs Sources/, extra fixtures). All planned functionality delivered. No scope creep into other phases.
 
+### Divergence Check — Phase 3
+- [x] Files modified vs plan: 10/8 — 2 extra (MockBroadcaster.swift not planned, LoginItemManager.swift stub)
+- [x] Max cyclomatic complexity: moderate (Scheduler.swift 356 LOC includes evaluator + lifecycle — two clear sections)
+- [x] All changes link to specific PLAN.md steps
+- [x] No repeated identical tool calls
+- [x] No files outside Phase 3 scope modified
+- [x] Swift LOC: 992/1000 budget (under limit)
+
+**Status:** Minor deviation: MockBroadcaster added for testability (BroadcasterProtocol extraction per advisor). LoginItemManager stub per Phase 3 PLAN. All planned functionality delivered.
+
 ---
 
 ## Cost Tracking
@@ -393,7 +472,8 @@ _(Entries added when the same error occurs 3+ times)_
 | Planning | 1 | —/— | — | claude-opus-4-7 |
 | Phase 1 | 2 | —/— | — | claude-opus-4-7 |
 | Phase 2 | 1 | —/— | — | claude-opus-4-6 |
-| **Total** | 4 | —/— | — | |
+| Phase 3 | 1 | —/— | — | claude-opus-4-6 |
+| **Total** | 5 | —/— | — | |
 
 ---
 

@@ -1,0 +1,427 @@
+{
+  "configs": {
+    "standard": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": [
+        { "id": "hourly-break", "enabled": true, "kind": "hourly", "start_minute": 50, "end_minute": 59 }
+      ]
+    },
+    "master_paused": {
+      "version": 1,
+      "master_active": false,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": []
+    },
+    "with_saturday": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" },
+        { "id": "saturday-morning", "enabled": true, "days": ["sat"], "start": "09:00", "end": "13:00" }
+      ],
+      "quiet_periods": []
+    },
+    "disabled_weekday": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": false, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" },
+        { "id": "saturday-morning", "enabled": true, "days": ["sat"], "start": "09:00", "end": "13:00" }
+      ],
+      "quiet_periods": []
+    },
+    "overnight": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "night-shift", "enabled": true, "days": ["fri"], "start": "22:00", "end": "02:00" }
+      ],
+      "quiet_periods": []
+    },
+    "fixed_daily_quiet": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": [
+        { "id": "lunch-break", "enabled": true, "kind": "fixed_daily", "start": "12:00", "end": "13:00" }
+      ]
+    },
+    "wrapping_quiet": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": [
+        { "id": "wrap-break", "enabled": true, "kind": "hourly", "start_minute": 55, "end_minute": 5 }
+      ]
+    },
+    "disabled_quiet": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": [
+        { "id": "disabled-break", "enabled": false, "kind": "hourly", "start_minute": 50, "end_minute": 59 }
+      ]
+    },
+    "overnight_quiet": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "all-day", "enabled": true, "days": ["mon","tue","wed","thu","fri","sat","sun"], "start": "00:00", "end": "23:59" }
+      ],
+      "quiet_periods": [
+        { "id": "night-quiet", "enabled": true, "kind": "fixed_daily", "start": "23:00", "end": "01:00" }
+      ]
+    },
+    "no_quiet": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "weekday-hours", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "20:00" }
+      ],
+      "quiet_periods": []
+    },
+    "two_windows": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "morning", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "08:00", "end": "12:00" },
+        { "id": "afternoon", "enabled": true, "days": ["mon","tue","wed","thu","fri"], "start": "14:00", "end": "20:00" }
+      ],
+      "quiet_periods": []
+    },
+    "dst_sunday_window": {
+      "version": 1,
+      "master_active": true,
+      "allowed_windows": [
+        { "id": "sunday-hours", "enabled": true, "days": ["sun"], "start": "03:00", "end": "05:00" }
+      ],
+      "quiet_periods": []
+    }
+  },
+  "cases": [
+    {
+      "name": "active_weekday_morning",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_after_window",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 21, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "muted_before_window",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 6, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "active_at_window_start",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 8, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_at_window_end",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 20, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "active_just_before_end",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 19, "minute": 45, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_hourly_quiet_start",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 50, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "active_before_hourly_quiet",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 49, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_hourly_quiet_end",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 59, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "active_after_hourly_quiet",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 10, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_weekend",
+      "config_name": "standard",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 25, "hour": 9, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "master_paused_inside_window",
+      "config_name": "master_paused",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "master_paused"
+    },
+    {
+      "name": "master_paused_outside_window",
+      "config_name": "master_paused",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 21, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "master_paused"
+    },
+    {
+      "name": "active_saturday_window",
+      "config_name": "with_saturday",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 25, "hour": 10, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_after_saturday_window",
+      "config_name": "with_saturday",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 25, "hour": 14, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "disabled_window_ignored",
+      "config_name": "disabled_weekday",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "overnight_same_day",
+      "config_name": "overnight",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 24, "hour": 23, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "overnight_next_day",
+      "config_name": "overnight",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 25, "hour": 1, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "muted_after_overnight",
+      "config_name": "overnight",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 25, "hour": 3, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "muted_before_overnight",
+      "config_name": "overnight",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 24, "hour": 21, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "overnight_wrong_day",
+      "config_name": "overnight",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 23, "hour": 23, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "fixed_daily_inside",
+      "config_name": "fixed_daily_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 12, "minute": 30, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "active_before_fixed_daily",
+      "config_name": "fixed_daily_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 11, "minute": 59, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "active_after_fixed_daily",
+      "config_name": "fixed_daily_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 13, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "wrapping_before_hour",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 58, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "wrapping_after_hour",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 10, "minute": 3, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "wrapping_outside",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 30, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "wrapping_at_start",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 55, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "wrapping_at_end",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 10, "minute": 5, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "wrapping_just_past",
+      "config_name": "wrapping_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 10, "minute": 6, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "disabled_quiet_ignored",
+      "config_name": "disabled_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 55, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "overnight_quiet_same_day",
+      "config_name": "overnight_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 23, "minute": 30, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "overnight_quiet_next_day",
+      "config_name": "overnight_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 21, "hour": 0, "minute": 30, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "quiet_period"
+    },
+    {
+      "name": "overnight_quiet_outside",
+      "config_name": "overnight_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 21, "hour": 1, "minute": 30, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "no_quiet_periods",
+      "config_name": "no_quiet",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 9, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "two_windows_in_first",
+      "config_name": "two_windows",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 10, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "two_windows_in_gap",
+      "config_name": "two_windows",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 13, "minute": 0, "second": 0,
+      "expected_muted": true,
+      "expected_reason": "schedule_window"
+    },
+    {
+      "name": "two_windows_in_second",
+      "config_name": "two_windows",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 4, "day": 20, "hour": 15, "minute": 0, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    },
+    {
+      "name": "dst_spring_forward_post_gap_active",
+      "config_name": "dst_sunday_window",
+      "timezone": "America/Los_Angeles",
+      "year": 2026, "month": 3, "day": 8, "hour": 3, "minute": 30, "second": 0,
+      "expected_muted": false,
+      "expected_reason": ""
+    }
+  ]
+}
