@@ -7,6 +7,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
+enum TAVSAppMain {
+    static func main() {
+        let args = CommandLine.arguments
+        if args.count >= 3, args[1] == "--validate-config" {
+            let path = args[2]
+            let url = URL(fileURLWithPath: path)
+            do {
+                let config = try ScheduleStore.load(from: url)
+                try ScheduleStore.validate(config)
+                exit(0)
+            } catch {
+                fputs("validation error: \(error)\n", stderr)
+                exit(1)
+            }
+        }
+        TAVSApp.main()
+    }
+}
+
 struct TAVSApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var scheduler = Scheduler.createDefault()

@@ -32,6 +32,7 @@ Commands:
   test [--quick]        Test visual signals in current terminal
   migrate               Migrate old config to v3 format
   config <action>       Manage configuration (show, edit, reset, validate)
+  schedule <action>     Manage muting schedule (show, pause, add-window, etc.)
   install <agent>       Install TAVS for an agent (gemini, codex)
   sync                  Sync source to plugin cache (developer tool)
   help [command]        Show help for a command
@@ -100,6 +101,11 @@ case "${1:-}" in
         shift
         source "$CLI_DIR/cmd-install.sh"
         cmd_install "$@"
+        ;;
+    schedule)
+        shift
+        source "$CLI_DIR/cmd-schedule.sh"
+        cmd_schedule "$@"
         ;;
     sync)
         shift

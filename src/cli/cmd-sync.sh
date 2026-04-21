@@ -92,6 +92,12 @@ _sync_to_target() {
         echo "  Synced src/agents/claude/trigger.sh"
     fi
 
+    # CLI subcommands
+    if [[ -d "$target_dir/src/cli" ]]; then
+        cp "$TAVS_ROOT/src/cli/"*.sh "$target_dir/src/cli/"
+        echo "  Synced src/cli/*.sh"
+    fi
+
     # Theme files
     if [[ -d "$target_dir/src/themes" ]]; then
         cp "$TAVS_ROOT/src/themes/"*.conf "$target_dir/src/themes/" 2>/dev/null
