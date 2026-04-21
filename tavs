@@ -34,6 +34,8 @@ Commands:
   config <action>       Manage configuration (show, edit, reset, validate)
   schedule <action>     Manage muting schedule (show, pause, add-window, etc.)
   install <agent>       Install TAVS for an agent (gemini, codex)
+  install macos-app     Build and install the macOS menu bar companion app
+  uninstall macos-app   Remove the macOS menu bar companion app
   sync                  Sync source to plugin cache (developer tool)
   help [command]        Show help for a command
   version               Show version information
@@ -99,8 +101,32 @@ case "${1:-}" in
         ;;
     install)
         shift
-        source "$CLI_DIR/cmd-install.sh"
-        cmd_install "$@"
+        case "${1:-}" in
+            macos-app)
+                shift
+                source "$CLI_DIR/cmd-install-macos-app.sh"
+                cmd_install_macos_app "$@"
+                ;;
+            *)
+                source "$CLI_DIR/cmd-install.sh"
+                cmd_install "$@"
+                ;;
+        esac
+        ;;
+    uninstall)
+        shift
+        case "${1:-}" in
+            macos-app)
+                shift
+                source "$CLI_DIR/cmd-uninstall-macos-app.sh"
+                cmd_uninstall_macos_app "$@"
+                ;;
+            *)
+                echo "Unknown target: ${1:-}" >&2
+                echo "Usage: tavs uninstall macos-app" >&2
+                exit 1
+                ;;
+        esac
         ;;
     schedule)
         shift

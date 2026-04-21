@@ -923,6 +923,30 @@ commands are silently ignored.
 
 ---
 
+## macOS Menu Bar App
+
+A native menu bar companion that adds **scheduling** (mute TAVS during off-hours)
+and a **preferences UI** for the most-used settings.
+
+```bash
+./tavs install macos-app        # Build, sign, install, register login item
+```
+
+After install, a menu bar icon appears. Click it to pause/resume TAVS or open
+preferences. The app writes `~/.tavs/mute.state` which the shell reads on every
+hook — terminals go dark during scheduled quiet periods and snap back automatically.
+
+```bash
+./tavs schedule add-window --days mon,tue,wed,thu,fri --start 08:00 --end 20:00
+./tavs schedule add-quiet --kind hourly --start-minute 50 --end-minute 59
+./tavs uninstall macos-app      # Remove app, preserve settings
+```
+
+Requires macOS 13+ and Swift/Xcode CLI tools. See
+[macOS Menu Bar App Reference](docs/reference/macos-menubar-app.md) for the full guide.
+
+---
+
 ## Quick Disable
 
 Temporarily disable without changing configuration:

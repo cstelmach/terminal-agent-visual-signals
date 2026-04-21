@@ -22,6 +22,26 @@ enum TAVSAppMain {
                 exit(1)
             }
         }
+        if args.contains("--reported-status") {
+            let mgr = LoginItemManager()
+            let status = mgr.isEnabled ? "enabled" : "not_enabled"
+            print("login_item_status=\(status)")
+            exit(mgr.isEnabled ? 0 : 1)
+        }
+        if args.contains("--dump-state") {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            let muteURL = home.appendingPathComponent(".tavs/mute.state")
+            let schedURL = home.appendingPathComponent(".tavs/schedule.json")
+            if let data = try? String(contentsOf: muteURL, encoding: .utf8) {
+                print("--- mute.state ---")
+                print(data)
+            }
+            if let data = try? String(contentsOf: schedURL, encoding: .utf8) {
+                print("--- schedule.json ---")
+                print(data)
+            }
+            exit(0)
+        }
         TAVSApp.main()
     }
 }

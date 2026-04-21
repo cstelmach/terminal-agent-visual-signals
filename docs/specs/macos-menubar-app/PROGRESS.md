@@ -2,10 +2,10 @@
 
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/macos-menubar-app/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/macos-menubar-app/PLAN.md
-**Status:** In Progress
+**Status:** Complete
 **Mode:** Manual
 **Started:** 2026-04-20
-**Last Updated:** 2026-04-21 (Phase 5 DONE)
+**Last Updated:** 2026-04-21 (Phase 6 DONE)
 
 ---
 
@@ -31,7 +31,7 @@
 | Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | d1aa277 | 80/80 | 1 session | All tasks complete; 0 warnings |
 | Phase 4: `tavs schedule` CLI | DONE | 2026-04-21 | 2026-04-21 | 0004759 | 17/17 | 1 session | All tasks complete; 8-step demo passes |
 | Phase 5: Preferences UI | DONE | 2026-04-21 | 2026-04-21 | abdb76b | 84/84 | 1 session | All tasks complete; 0 warnings |
-| Phase 6: Bundle/Codesign/Install/Docs/E2E | Not Started | | | | | | 7 tasks (T6.1–T6.7); needs P1–P5 |
+| Phase 6: Bundle/Codesign/Install/Docs/E2E | DONE | 2026-04-21 | 2026-04-21 | pending | 10/10 E2E | 1 session | All tasks complete; operator-gated DoD pending |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -42,6 +42,100 @@
 ## Log
 
 _(Most recent first — reverse chronological. Append-only.)_
+
+### Phase 6 — DONE — 2026-04-21
+
+**Status:** Phase 6 COMPLETE. 84/84 Swift tests, 54/54 bats tests, 10/10 E2E tests. Zero build warnings.
+
+**What Was Done:**
+
+1. **T6.1 — `cmd-install-macos-app.sh`:**
+   - `swift build -c release` → assemble `.app/Contents/` (MacOS/, Resources/, Info.plist)
+   - Self-signed cert (`TAVS-Local-Signing`) via openssl+security CLI (one-time, Keychain prompt)
+   - `codesign --force --deep --sign` with ad-hoc fallback on cert failure
+   - `plutil -lint` + `codesign -vv` verification gates
+   - `cp -R` to `/Applications/TAVS.app`, launch, verify `SMAppService` via `--reported-status`
+   - `--dry-run` flag for safe testing (prints actions without executing)
+   - Icon generation via Swift script (teal circle with "T") → `iconutil -c icns`
+
+2. **T6.2 — `cmd-uninstall-macos-app.sh`:**
+   - Stops running app, removes `mute.state` (shells resume immediately)
+   - Removes `/Applications/TAVS.app` and pending caches
+   - Preserves `~/.tavs/user.conf` and `~/.tavs/schedule.json`
+
+3. **T6.3 — AppIcon.icns:**
+   - Generated at install-time from a Swift script (NSImage with NSBezierPath circle + "T")
+   - Rasterized to standard sizes via `sips`, assembled via `iconutil`
+   - Pre-built `.icns` in `Resources/` used if present (install skips generation)
+
+4. **T6.4 — `docs/reference/macos-menubar-app.md`:**
+   - 250+ lines covering: install/uninstall/update, menu bar tour, preferences tour
+     (all 3 tabs), CLI equivalents table, how scheduling works (rule evaluation,
+     mute state protocol, liveness, broadcast on unmute, DST), architecture diagram,
+     troubleshooting (8 issues with solutions), debug logging
+
+5. **T6.5 — README + CLAUDE.md updates:**
+   - README: "macOS Menu Bar App" section between Compact Face Mode and Quick Disable
+     with 5-line quick start, schedule CLI examples, link to full reference
+   - CLAUDE.md: "macOS Menu Bar App" subsection in Documentation Reference table +
+     dedicated section with architecture summary, key paths, and testing commands
+
+6. **T6.6 — `tests/e2e/menubar-scheduling.sh`:**
+   - 10 tests: CLI schedule config, resume, quiet period, validation, shell gate
+     (absent mute.state → bytes flow, muted → bytes suppressed), liveness (stale heartbeat
+     → unmuted), install dry-run, uninstall preserves config
+   - Backs up and restores existing `schedule.json` via cleanup trap
+
+7. **Dispatcher routing:**
+   - `tavs install macos-app` → `cmd-install-macos-app.sh`
+   - `tavs uninstall macos-app` → `cmd-uninstall-macos-app.sh`
+   - Listed in usage text
+
+8. **LoginItemManager.swift:**
+   - Replaced stub with real `SMAppService.mainApp` calls (register/unregister/status)
+   - `import ServiceManagement`
+
+9. **TAVSApp.swift hidden flags:**
+   - `--reported-status`: prints `login_item_status=enabled|not_enabled`, exit 0|1
+   - `--dump-state`: prints current mute.state and schedule.json contents
+
+10. **Info.plist:**
+    - All required keys: CFBundleExecutable=TAVSApp, CFBundleIdentifier=com.cstelmach.tavs,
+      LSUIElement=true, LSMinimumSystemVersion=13.0, CFBundlePackageType=APPL,
+      CFBundleVersion=3.0.0, NSHighResolutionCapable=true
+
+**Design Decisions Made:**
+
+- **Icon at install-time, not pre-built:** SF Symbols aren't accessible from bash; a tiny Swift script generates a 1024px PNG at install, then `sips` + `iconutil` produce the `.icns`. If pre-built `.icns` exists in Resources/, that's used instead.
+- **Dry-run flag on install:** Prints what each step would do without modifying the system. Used by E2E tests and for user verification before actual install.
+- **Cert via openssl+security:** More portable than `security create-keypair`. Generates RSA-2048 self-signed cert, exports to PKCS12, imports to login keychain with codesign trust. Falls back to ad-hoc on any failure.
+- **Separate dispatcher routing:** `tavs install macos-app` routes to its own script before the generic `cmd-install.sh` agent dispatch. Avoids polluting the agent allowlist.
+
+**Operator-Gated DoD (not verified this session):**
+
+These require running the actual install, which modifies system state:
+- [ ] `codesign -dvv /Applications/TAVS.app` reports signing identity
+- [ ] `SMAppService` status `.enabled` post-install
+- [ ] Reboot survival (T6.7): icon visible within 5s of login
+- [ ] 15-step canonical SPEC demo on clean macOS 13 VM
+
+**Implementation DoD (verified this session):**
+
+- [x] `swift build -c release`: zero warnings
+- [x] `swift test`: 84/84 pass (LoginItemManager compiles with real SMAppService)
+- [x] `bats tests/unit/ tests/integration/`: 54/54 pass
+- [x] `bash tests/e2e/menubar-scheduling.sh`: 10/10 pass
+- [x] `bash -n` on all new/modified .sh files: syntax clean
+- [x] `plutil -lint` on Info.plist: OK
+- [x] `tavs install macos-app --dry-run`: exits 0
+- [x] README macOS section present with quick start
+- [x] CLAUDE.md macOS section present with architecture + paths + testing
+
+**Swift LOC:** 1503 total (+37 from Phase 5: LoginItemManager real impl + TAVSApp hidden flags). G10 "Should" <1000 LOC budget exceeded since Phase 4.
+
+**Next:** COMPLETION MODE — all 6 phases DONE.
+
+---
 
 ### Phase 5 — DONE — 2026-04-21
 
@@ -624,6 +718,16 @@ _(Entries added when the same error occurs 3+ times)_
 
 **Status:** Minor scope deviation: TAVSApp.swift modified for --validate-config (parity test requirement, not in plan). cmd-sync.sh updated for CLI sync completeness. All planned functionality delivered.
 
+### Divergence Check — Phase 6
+- [x] Files modified vs plan: 11/9 — 2 extra (TAVSApp.swift for --reported-status/--dump-state, LoginItemManager.swift real impl)
+- [x] Max cyclomatic complexity: moderate (install script has sequential steps, not branching)
+- [x] All changes link to specific PLAN.md steps
+- [x] No repeated identical tool calls
+- [x] No files outside Phase 6 scope modified
+- [x] Swift LOC: 1503/1000 budget (G10 "Should" — expected for SwiftUI app + installer flags)
+
+**Status:** Minor scope deviation: TAVSApp.swift modified for --reported-status and --dump-state hidden flags (SPEC §10.2 observability). LoginItemManager.swift upgraded from stub to real SMAppService impl (planned in SPEC T6.1). All planned functionality delivered. Operator-gated DoD items documented.
+
 ---
 
 ## Cost Tracking
@@ -636,7 +740,8 @@ _(Entries added when the same error occurs 3+ times)_
 | Phase 3 | 1 | —/— | — | claude-opus-4-6 |
 | Phase 4 | 1 | —/— | — | claude-opus-4-6 |
 | Phase 5 | 1 | —/— | — | claude-opus-4-6 |
-| **Total** | 7 | —/— | — | |
+| Phase 6 | 1 | —/— | — | claude-opus-4-6 |
+| **Total** | 8 | —/— | — | |
 
 ---
 

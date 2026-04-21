@@ -1,4 +1,5 @@
 import Foundation
+import ServiceManagement
 
 protocol LoginItemManagerProtocol: AnyObject {
     var isEnabled: Bool { get }
@@ -8,15 +9,14 @@ protocol LoginItemManagerProtocol: AnyObject {
 
 final class LoginItemManager: LoginItemManagerProtocol {
     var isEnabled: Bool {
-        // Phase 6: check SMAppService.mainApp.status == .enabled
-        false
+        SMAppService.mainApp.status == .enabled
     }
 
     func register() throws {
-        // Phase 6: SMAppService.mainApp.register()
+        try SMAppService.mainApp.register()
     }
 
     func unregister() throws {
-        // Phase 6: SMAppService.mainApp.unregister()
+        try SMAppService.mainApp.unregister()
     }
 }
