@@ -28,7 +28,7 @@
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 1: Shell-Side Suppression Wrapper | DONE | 2026-04-20 | 2026-04-21 | 437ef22 | 37/37 | 2 sessions | All tasks complete; zero byte drift |
 | Phase 2: Swift Scaffold + Data Stores | DONE | 2026-04-21 | 2026-04-21 | e678e5d | 54/54 | 1 session | All tasks complete; 0 warnings |
-| Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | PENDING | 80/80 | 1 session | All tasks complete; 0 warnings |
+| Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | d1aa277 | 80/80 | 1 session | All tasks complete; 0 warnings |
 | Phase 4: `tavs schedule` CLI | Not Started | | | | | | 4 tasks (T4.1–T4.4); needs P2+P3 |
 | Phase 5: Preferences UI | Not Started | | | | | | 6 tasks (T5.1–T5.6); needs P2+P3 |
 | Phase 6: Bundle/Codesign/Install/Docs/E2E | Not Started | | | | | | 7 tasks (T6.1–T6.7); needs P1–P5 |
