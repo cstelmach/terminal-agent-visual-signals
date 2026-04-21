@@ -27,8 +27,11 @@ final class SystemProcessRunner: ProcessRunner {
         guard let fh = FileHandle(forWritingAtPath: path) else {
             throw ProcessRunnerError.deviceNotWritable(path)
         }
-        defer { fh.closeFile() }
-        fh.write(data)
+        defer { try? fh.close() }
+        // write(contentsOf:) throws on I/O errors (EIO, EPIPE, hung tty, etc.).
+        // The non-throwing FileHandle.write(Data) silently swallows them,
+        // which breaks dead-TTY pruning in Broadcaster.
+        try fh.write(contentsOf: data)
     }
 }
 
