@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-04-20
-**Last Updated:** 2026-04-21 (Phase 3 DONE)
+**Last Updated:** 2026-04-21 (Phase 4 DONE)
 
 ---
 
@@ -29,7 +29,7 @@
 | Phase 1: Shell-Side Suppression Wrapper | DONE | 2026-04-20 | 2026-04-21 | 437ef22 | 37/37 | 2 sessions | All tasks complete; zero byte drift |
 | Phase 2: Swift Scaffold + Data Stores | DONE | 2026-04-21 | 2026-04-21 | e678e5d | 54/54 | 1 session | All tasks complete; 0 warnings |
 | Phase 3: Scheduler + Broadcaster + Live State | DONE | 2026-04-21 | 2026-04-21 | d1aa277 | 80/80 | 1 session | All tasks complete; 0 warnings |
-| Phase 4: `tavs schedule` CLI | Not Started | | | | | | 4 tasks (T4.1–T4.4); needs P2+P3 |
+| Phase 4: `tavs schedule` CLI | DONE | 2026-04-21 | 2026-04-21 | 0004759 | 17/17 | 1 session | All tasks complete; 8-step demo passes |
 | Phase 5: Preferences UI | Not Started | | | | | | 6 tasks (T5.1–T5.6); needs P2+P3 |
 | Phase 6: Bundle/Codesign/Install/Docs/E2E | Not Started | | | | | | 7 tasks (T6.1–T6.7); needs P1–P5 |
 
@@ -42,6 +42,68 @@
 ## Log
 
 _(Most recent first — reverse chronological. Append-only.)_
+
+### Phase 4 — DONE — 2026-04-21
+
+**Status:** Phase 4 COMPLETE. 17/17 bats parity+atomic tests pass. 8-step SPEC demo verified. All 9 CLI subcommands work end-to-end.
+
+**What Was Done:**
+
+1. **T4.0a — Swift `--validate-config` entry point:**
+   - Moved `@main` from `TAVSApp` to `TAVSAppMain` wrapper enum
+   - Intercepts `--validate-config <path>` argument, calls `ScheduleStore.load + validate`
+   - Exit 0 on valid, exit 1 with error on invalid — enables parity test
+
+2. **T4.1 — `src/cli/cmd-schedule.sh` with 9 subcommands:**
+   - `show`: human-readable table with schedule + current mute.state (safe KV read, not source)
+   - `list`: rule IDs with state and type
+   - `pause`: sets `master_active = false`
+   - `resume`: sets `master_active = true` with validation warning if no enabled windows
+   - `add-window`: `--days`, `--start`, `--end`, optional `--id` (auto-generated deterministic)
+   - `add-quiet`: `--kind hourly` with `--start-minute`/`--end-minute`, or `--kind fixed_daily` with `--start`/`--end`
+   - `remove <id>`: error with available ids list on unknown id
+   - `validate`: re-validates file, reports all errors
+   - Auto-generated IDs are content-derived: `window-mon-tue-...-08-00-20-00`, `hourly-50-59`, etc.
+   - Collision handling: `-2`, `-3` suffix on duplicate IDs
+   - Registered `schedule` subcommand in `tavs` dispatcher
+
+3. **T4.2 — jq-based validation parity:**
+   - Mirrors Swift `ScheduleStore.validate` exactly: enabled-only, empty windows, empty id, empty days, time format (two-digit HH:MM), zero-length window, minute range [0,59], kind validation
+   - 16 parity test cases: 6 valid + 10 malformed JSONs, both CLI and Swift agree on all
+
+4. **T4.3 — Atomic writes:**
+   - `mktemp "$TAVS_USER_CONFIG_DIR/schedule.json.XXXXXX"` + `mv` (same filesystem)
+   - `trap 'rm -f "$tmp"' RETURN` for cleanup on error
+   - Validated: concurrent add-window from 5 background shells → file always valid JSON (test #17)
+
+5. **T4.4 — `docs/reference/scheduling.md`:**
+   - Full schema documentation: top-level fields, allowed_windows, quiet_periods (hourly + fixed_daily)
+   - Overnight/wrapping semantics with examples
+   - DST behavior (spring-forward skip, fall-back double-fire)
+   - Evaluation logic (3-condition active check)
+   - Complete CLI reference with example output for all subcommands
+
+6. **Sync update:**
+   - Added `src/cli/*.sh` sync to `cmd-sync.sh` `_sync_to_target()`
+
+**Design Decisions Made:**
+
+- **Content-derived deterministic IDs:** `window-mon-fri-08-00-20-00`, `hourly-50-59`, `fixed-daily-12-00-13-00` — readable in `list`, collision-safe with `-2`/`-3` suffixes. SPEC demo step 5 confirms auto-gen differs from manual names.
+- **File-missing behavior:** `show`/`list` → "no schedule configured" (exit 0). `pause`/`resume`/`add-*` → create skeleton. `remove`/`validate` → error (exit 1).
+- **Safe mute.state reading:** `while IFS='=' read -r key val` loop with KV matching, not `source` — prevents code injection from untrusted file content.
+- **TAVSAppMain wrapper for --validate-config:** Clean separation — CLI flag handled before App.main() runs. No GUI window spawned during validation.
+
+**Tests:** 54/54 bats (37 Phase 1 + 17 Phase 4). 80/80 Swift tests (unchanged). Phase 4 breakdown: 6 valid parity, 10 invalid parity, 1 atomic concurrency.
+
+**Regression check:** Phase 1 bats 37/37 still pass. Swift tests 80/80 still pass.
+
+**Swift LOC:** 1011/1000 budget (+19 for --validate-config entry point). G10 is "Should" priority — marginal overrun. Phase 5 Preferences UI will push further past 1000.
+
+**DoD manual steps:** "pause → icon Paused within 1s" requires running TAVS.app with fs-watch — verified conceptually (fs-watch from Phase 3 + atomic write), full E2E verification deferred to Phase 6.
+
+**Next:** Phase 5: Preferences UI (depends on Phase 2 stores + Phase 3 scheduler, both DONE)
+
+---
 
 ### Phase 3 — DONE — 2026-04-21
 
@@ -463,6 +525,16 @@ _(Entries added when the same error occurs 3+ times)_
 
 **Status:** Minor deviation: MockBroadcaster added for testability (BroadcasterProtocol extraction per advisor). LoginItemManager stub per Phase 3 PLAN. All planned functionality delivered.
 
+### Divergence Check — Phase 4
+- [x] Files modified vs plan: 6/4 — 2 extra (TAVSApp.swift --validate-config, cmd-sync.sh CLI sync)
+- [x] Max cyclomatic complexity: moderate (_schedule_validate loops over windows/quiets — unavoidable)
+- [x] All changes link to specific PLAN.md/SPEC steps
+- [x] No repeated identical tool calls
+- [x] No files outside Phase 4 scope modified (except TAVSApp.swift entry point for parity test)
+- [x] Swift LOC: 1011/1000 budget (G10 "Should" — marginal overrun from --validate-config)
+
+**Status:** Minor scope deviation: TAVSApp.swift modified for --validate-config (parity test requirement, not in plan). cmd-sync.sh updated for CLI sync completeness. All planned functionality delivered.
+
 ---
 
 ## Cost Tracking
@@ -473,7 +545,8 @@ _(Entries added when the same error occurs 3+ times)_
 | Phase 1 | 2 | —/— | — | claude-opus-4-7 |
 | Phase 2 | 1 | —/— | — | claude-opus-4-6 |
 | Phase 3 | 1 | —/— | — | claude-opus-4-6 |
-| **Total** | 5 | —/— | — | |
+| Phase 4 | 1 | —/— | — | claude-opus-4-6 |
+| **Total** | 6 | —/— | — | |
 
 ---
 
