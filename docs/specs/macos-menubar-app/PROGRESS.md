@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-04-20
-**Last Updated:** 2026-04-21 (Phase 1 DONE)
+**Last Updated:** 2026-04-21 (Phase 2 DONE)
 
 ---
 
@@ -27,7 +27,7 @@
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 1: Shell-Side Suppression Wrapper | DONE | 2026-04-20 | 2026-04-21 | 437ef22 | 37/37 | 2 sessions | All tasks complete; zero byte drift |
-| Phase 2: Swift Scaffold + Data Stores | Not Started | | | | | | 6 tasks (T2.1–T2.6) |
+| Phase 2: Swift Scaffold + Data Stores | DONE | 2026-04-21 | 2026-04-21 | PENDING | 54/54 | 1 session | All tasks complete; 0 warnings |
 | Phase 3: Scheduler + Broadcaster + Live State | Not Started | | | | | | 8 tasks (T3.1–T3.8); needs P1+P2 |
 | Phase 4: `tavs schedule` CLI | Not Started | | | | | | 4 tasks (T4.1–T4.4); needs P2+P3 |
 | Phase 5: Preferences UI | Not Started | | | | | | 6 tasks (T5.1–T5.6); needs P2+P3 |
@@ -42,6 +42,65 @@
 ## Log
 
 _(Most recent first — reverse chronological. Append-only.)_
+
+### Phase 2 — DONE — 2026-04-21
+
+**Status:** Phase 2 COMPLETE. 54/54 Swift tests pass. Zero warnings. App launches with menu bar icon.
+
+**What Was Done:**
+
+1. **T2.1 — Package scaffold:**
+   - Created `src/macos/TAVSApp/Package.swift` targeting macOS 13+, `swiftLanguageMode: .v5` (avoids Swift 6.2 strict concurrency overhead in this phase)
+   - `TAVSApp.swift` with `@main`, `@NSApplicationDelegateAdaptor` for `setActivationPolicy(.accessory)`, `MenuBarExtra` with SF Symbol icon
+   - `.gitignore` for `.build/` and `.swiftpm/`
+
+2. **T2.2 — ScheduleStore:**
+   - `ScheduleConfig`, `TimeWindow`, `QuietPeriod`, `Day`, `QuietKind` — all `Codable` + `Equatable`
+   - `validate()` enforces all SPEC §5.2 rules: empty windows with master_active, empty ID, empty days, invalid time format (HH:MM bounds), zero-length window, minute range [0,59], fixed_daily time+zero-length, disabled entries skip validation
+   - Atomic load/save via `Data.write(to:options:.atomic)`
+   - 16 tests: parse canonical fixture, round-trip semantic equality, mutate+round-trip, all validation error cases, disabled entries skip
+
+3. **T2.3 — UserConfStore:**
+   - Line-AST parser: `enum ConfLine { comment, blank, keyValue, unknown }` preserves exact bytes per line
+   - 9 typed accessors for curated keys (§5.5): THEME_PRESET, THEME_MODE, TAVS_TITLE_MODE, TAVS_FACE_MODE, TAVS_COMPACT_THEME, TAVS_IDENTITY_MODE, TAVS_DIR_ICON_TYPE, ENABLE_STYLISH_BACKGROUNDS, ENABLE_LIGHT_DARK_SWITCHING
+   - Bool accessors for the two ENABLE_ keys
+   - Missing key appends at end on save; nonexistent file returns empty store
+   - 19 tests: byte-identical round-trip, all 9 key reads, mutate-one-key-exactly-one-line-diff, comments preserved, unknown keys preserved, blank lines preserved, multiple mutations, missing key append, nonexistent load, bool set true/false
+
+4. **T2.4 — MuteState:**
+   - `MuteStateData` struct with `serialize()` producing the SPEC §5.3 KV format (6 lines, MUTED/REASON/UNTIL_EPOCH/WRITTEN_EPOCH/APP_PID/SCHEMA_VERSION)
+   - `MuteReason` enum: scheduleWindow, quietPeriod, masterPaused, none
+   - `MuteStateWriter.write()` using `Data.write(.atomic)`, `delete()` with existence check
+   - 10 tests: format stability (muted/unmuted/all reasons/trailing newline/line order), atomic write creates/overwrites, concurrent reader sees complete file, delete existing/nonexistent
+
+5. **T2.5 — Protocols + mocks:**
+   - `Clock` protocol + `SystemClock` + `VirtualClock` (advance/set)
+   - `TimerScheduler` protocol + `SystemTimerScheduler` (DispatchSourceTimer)
+   - `ProcessRunner` protocol + `SystemProcessRunner` (Process + FileHandle device write)
+   - `FileWatcherProtocol` + `FileWatcher` implementation
+   - Mocks under `Tests/TAVSAppTests/Mocks/` (not Sources — keeps mocks out of release binary): MockTimerScheduler, MockProcessRunner, MockFileWatcher
+
+6. **T2.6 — FileWatcher:**
+   - `DispatchSource.makeFileSystemObjectSource` on parent dir with `.write`, `.rename`, `.delete`, `.extend` mask
+   - `DispatchWorkItem` cancel+reschedule pattern for 100ms debounce
+   - 4 tests: single change fires callback, 5 rapid renames fire exactly 1 callback, stop prevents callback, mock simulates change
+
+7. **MenuContent.swift** — Stub with status text, "Open Preferences…" placeholder, "Quit TAVS" button
+
+**Design Decisions Made:**
+
+- **Mocks in Tests/ not Sources/**: Advisor recommended; prevents shipping mock code in release binary. Phase 3 tests are in the same test target, so mocks are accessible.
+- **swiftLanguageMode .v5**: Avoids Swift 6.2 strict Sendable enforcement. Phase 3 can upgrade to .v6 with `@MainActor` if needed.
+- **NSApplicationDelegateAdaptor for setActivationPolicy**: `NSApp` is nil at `App.init()` time; must use delegate's `applicationDidFinishLaunching`. This is the standard SwiftUI pattern for accessory apps.
+- **Semantic JSON round-trip (D31)**: `JSONEncoder.outputFormatting = [.prettyPrinted, .sortedKeys]` gives stable-ish output but not byte-identical across Swift versions. Tests compare decoded models, not bytes.
+
+**Tests:** 54/54 pass in 1.1s. Breakdown: MuteStateTests (10), ScheduleStoreTests (16), UserConfStoreTests (19), FileWatcherTests (4), SmokeTests (1), MockFileWatcher (tested in FileWatcherTests).
+
+**Regression check:** Phase 1 bats tests 37/37 still pass.
+
+**Next:** Phase 3: Scheduler + Broadcaster + Live State (depends on Phase 1 + Phase 2, both DONE)
+
+---
 
 ### Phase 1 — DONE — 2026-04-21
 
@@ -316,7 +375,14 @@ _(Entries added when the same error occurs 3+ times)_
 
 ## Divergence Checks
 
-_(Entries added after each phase completion)_
+### Divergence Check — Phase 2
+- [x] Files modified vs plan: 21/12 — 9 extra (Mocks moved to Tests/, added fixtures/user.conf, .gitignore, SmokeTests)
+- [x] Max cyclomatic complexity: low (stores are straightforward CRUD)
+- [x] All changes link to specific PLAN.md steps
+- [x] No repeated identical tool calls
+- [x] No files outside Phase 2 scope modified
+
+**Status:** Minor scope deviation (mocks in Tests/ vs Sources/, extra fixtures). All planned functionality delivered. No scope creep into other phases.
 
 ---
 
@@ -325,7 +391,9 @@ _(Entries added after each phase completion)_
 | Phase | Iterations | Tokens (in/out) | Cost | Model |
 |-------|-----------|-----------------|------|-------|
 | Planning | 1 | —/— | — | claude-opus-4-7 |
-| **Total** | 1 | —/— | — | |
+| Phase 1 | 2 | —/— | — | claude-opus-4-7 |
+| Phase 2 | 1 | —/— | — | claude-opus-4-6 |
+| **Total** | 4 | —/— | — | |
 
 ---
 
@@ -336,8 +404,12 @@ _(Discovered during implementation)_
 
 - **Dual plugin dirs:** Hooks run from `~/.claude/plugins/marketplaces/terminal-agent-visual-signals/`
   NOT the cache. Any `./tavs sync` must update both (learned in prior title-fix task).
-- **Idle worker uses fd 3, not `$TTY_DEVICE` directly:** Phase 1 T1.6 must adapt `emit_osc`
+- **Idle worker uses fd 3, not `$TTY_DEVICE` directly:** Phase 1 T1.6 adapted `emit_osc`
   to handle both the fd-3 path in `idle-worker-background.sh` and the direct TTY writes
+- **Swift 6.2 strict concurrency:** Use `swiftLanguageMode: .v5` to avoid Sendable enforcement.
+  Phase 3+ can upgrade to .v6 with `@MainActor` if needed.
+- **NSApp nil at App.init():** Must use `@NSApplicationDelegateAdaptor` + `applicationDidFinishLaunching`
+  for `setActivationPolicy(.accessory)`. Standard SwiftUI pattern for accessory apps.
   elsewhere. Verify the fd-3 bytes are also divertible during mute.
 
 ### Common Errors & Solutions

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "master_active": true,
+  "allowed_windows": [
+    {
+      "id": "weekday-core-hours",
+      "enabled": true,
+      "days": ["mon", "tue", "wed", "thu", "fri"],
+      "start": "08:00",
+      "end": "20:00"
+    },
+    {
+      "id": "saturday-morning",
+      "enabled": false,
+      "days": ["sat"],
+      "start": "09:00",
+      "end": "13:00"
+    }
+  ],
+  "quiet_periods": [
+    {
+      "id": "top-of-hour-break",
+      "enabled": true,
+      "kind": "hourly",
+      "start_minute": 50,
+      "end_minute": 59
+    },
+    {
+      "id": "lunch-break",
+      "enabled": true,
+      "kind": "fixed_daily",
+      "start": "12:00",
+      "end": "13:00"
+    }
+  ]
+}
