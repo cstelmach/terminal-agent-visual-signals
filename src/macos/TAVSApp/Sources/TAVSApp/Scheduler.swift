@@ -226,8 +226,8 @@ final class Scheduler: ObservableObject {
         let wasMuted = previousMuted
         previousMuted = result.muted
 
-        // SPEC §4.5: broadcast BEFORE writing new mute.state
         if wasMuted && !result.muted {
+            broadcaster.broadcastPausedClear()
             broadcaster.broadcast()
         }
 
@@ -239,6 +239,10 @@ final class Scheduler: ObservableObject {
         }
 
         writeMuteState(muted: result.muted, reason: result.reason, untilEpoch: untilEpoch)
+
+        if !wasMuted && result.muted {
+            broadcaster.broadcastPaused()
+        }
         updatePublishedState(muted: result.muted, reason: result.reason, transitionDate: transition)
 
         scheduleHeartbeat()

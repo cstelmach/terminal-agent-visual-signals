@@ -502,6 +502,208 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(scheduler.statusText, "Paused — click to resume")
     }
 
+    // MARK: - Paused visual transition tests
+
+    func testActiveToMutedPaintsGrey() throws {
+        try writeStandardConfig()
+        scheduler.start()
+
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+    }
+
+    func testMutedToActiveClearsAndReplays() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        scheduler.start()
+
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+    }
+
+    func testHeartbeatDuringMuteIsStable() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        scheduler.start()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        clock.advance(by: 60)
+        let heartbeat = timerScheduler.scheduledTimers.first { $0.repeating }
+        heartbeat?.handler()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
+                       "Heartbeat during mute should not re-trigger broadcastPaused")
+    }
+
+    func testAppStartupIntoMuted() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        scheduler.start()
+
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
+                       "Startup into muted should paint grey")
+    }
+
+    func testScheduleUnmuteClearsAndReplays() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: true,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: [
+                QuietPeriod(id: "hourly", enabled: true, kind: .hourly,
+                            startMinute: 50, endMinute: 59)
+            ]
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let mutedDate = {
+            let comps = DateComponents(
+                calendar: cal, timeZone: cal.timeZone,
+                year: 2026, month: 4, day: 20, hour: 9, minute: 55
+            )
+            return cal.date(from: comps)!
+        }()
+
+        let quietClock = VirtualClock(startingAt: mutedDate)
+        let quietScheduler = Scheduler(
+            clock: quietClock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: cal
+        )
+
+        quietScheduler.start()
+        XCTAssertTrue(quietScheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        quietClock.set(to: {
+            let comps = DateComponents(
+                calendar: cal, timeZone: cal.timeZone,
+                year: 2026, month: 4, day: 20, hour: 10, minute: 0
+            )
+            return cal.date(from: comps)!
+        }())
+        quietScheduler.loadAndEvaluate()
+
+        XCTAssertFalse(quietScheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+    }
+
+    func testMutedToMutedReasonChangeNoRetrigger() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: true,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: [
+                QuietPeriod(id: "hourly", enabled: true, kind: .hourly,
+                            startMinute: 50, endMinute: 59)
+            ]
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let startDate = {
+            let comps = DateComponents(
+                calendar: cal, timeZone: cal.timeZone,
+                year: 2026, month: 4, day: 20, hour: 19, minute: 55
+            )
+            return cal.date(from: comps)!
+        }()
+
+        let reasonClock = VirtualClock(startingAt: startDate)
+        let reasonScheduler = Scheduler(
+            clock: reasonClock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: cal
+        )
+
+        reasonScheduler.start()
+        XCTAssertTrue(reasonScheduler.isMuted)
+        XCTAssertEqual(reasonScheduler.reason, .quietPeriod)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        reasonClock.set(to: {
+            let comps = DateComponents(
+                calendar: cal, timeZone: cal.timeZone,
+                year: 2026, month: 4, day: 20, hour: 20, minute: 0
+            )
+            return cal.date(from: comps)!
+        }())
+        reasonScheduler.loadAndEvaluate()
+
+        XCTAssertTrue(reasonScheduler.isMuted)
+        XCTAssertEqual(reasonScheduler.reason, .scheduleWindow)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
+                       "Reason change without mute change should not retrigger")
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+    }
+
     // MARK: - Helpers
 
     private func extractWrittenEpoch(from content: String) -> Int64 {

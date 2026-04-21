@@ -2,7 +2,7 @@
 
 **Spec:** /Users/cs/.claude/plans/can-we-actually-make-functional-gray.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/PLAN.md
-**Status:** In Progress
+**Status:** All Phases Complete
 **Mode:** Manual
 **Started:** 2026-04-21 18:50
 **Last Updated:** 2026-04-21 19:02
@@ -26,7 +26,7 @@
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 1: Broadcaster | DONE | 2026-04-21 18:58 | 2026-04-21 19:02 | 56b40b4 | 89/89 tests | 4m | Protocol + impl + mock + 5 byte tests |
-| Phase 2: Scheduler Wiring | Not Started | | | | | | Transition logic + 6 tests |
+| Phase 2: Scheduler Wiring | DONE | 2026-04-21 19:10 | 2026-04-21 19:24 | — | 95/95 tests | 14m | Transition logic + 6 tests |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -37,6 +37,31 @@
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 2: Scheduler Wiring — 2026-04-21 19:24 COMPLETE
+
+**Completed:**
+- Modified `loadAndEvaluate()` in `Scheduler.swift:226-248`:
+  - Unmute path: added `broadcaster.broadcastPausedClear()` before `broadcaster.broadcast()`
+  - Mute path: added `broadcaster.broadcastPaused()` after `writeMuteState()`
+- Added 6 transition tests in `SchedulerTests.swift`:
+  - `testActiveToMutedPaintsGrey`: active→muted paints grey, no broadcast replay
+  - `testMutedToActiveClearsAndReplays`: muted→active clears grey + replays pending
+  - `testHeartbeatDuringMuteIsStable`: heartbeat during mute doesn't retrigger paint
+  - `testAppStartupIntoMuted`: startup into muted paints grey (previousMuted=false)
+  - `testScheduleUnmuteClearsAndReplays`: schedule-driven unmute (quiet period ends)
+  - `testMutedToMutedReasonChangeNoRetrigger`: reason change (quiet→schedule) no retrigger
+
+**Decisions:**
+- Removed stale "SPEC §4.5" comment (referenced old spec section, ordering is self-documenting)
+- Placed `broadcastPaused()` after `writeMuteState()` but before `updatePublishedState()` per spec timing table
+- Used direct `loadAndEvaluate()` calls in tests instead of fileWatcher.simulateChange() for determinism
+
+**Deviations:** None. Implementation matches plan exactly.
+
+**Tests:** 95/95 pass in 1.3s (89 existing + 6 new). Existing `testMutedToUnmutedCallsBroadcaster` passes unmodified.
+
+**Next:** All phases complete → COMPLETION mode
 
 ### Phase 1: Broadcaster — 2026-04-21 19:02 COMPLETE
 
@@ -82,6 +107,15 @@ _(None yet)_
 
 ## Divergence Checks
 
+### Divergence Check — Phase 2
+- [x] Files modified vs plan: 2/2 source files (Scheduler.swift, SchedulerTests.swift) + PROGRESS.md
+- [x] Max cyclomatic complexity: minimal (two simple if-guards added to linear flow)
+- [x] All changes link to specific PLAN.md steps
+- [x] No repeated identical tool calls
+- [x] Existing test `testMutedToUnmutedCallsBroadcaster` still passes (regression check)
+
+**Status:** No divergence detected
+
 ### Divergence Check — Phase 1
 - [x] Files modified vs plan: 4/4 (Broadcaster.swift, Scheduler.swift, MockBroadcaster.swift, BroadcasterTests.swift)
 - [x] Max cyclomatic complexity: reasonable (new methods are linear, no branching beyond existing patterns)
@@ -98,7 +132,8 @@ _(None yet)_
 |-------|-----------|-----------------|------|-------|
 | Planning | 1 | — | — | claude-opus-4-6 |
 | Phase 1: Broadcaster | 1 | — | — | claude-opus-4-6 |
-| **Total** | 2 | — | — | |
+| Phase 2: Scheduler Wiring | 1 | — | — | claude-opus-4-6 |
+| **Total** | 3 | — | — | |
 
 ---
 
