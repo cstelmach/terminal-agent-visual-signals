@@ -37,3 +37,22 @@ enum MuteStateWriter {
         try FileManager.default.removeItem(at: url)
     }
 }
+
+enum MuteStateReader {
+    /// Best-effort read of the persisted MUTED flag. Returns nil when the file
+    /// is absent or malformed; callers should treat nil as "no prior state".
+    /// Used by Scheduler.start() to seed `previousMuted` so restart-after-crash
+    /// does not miss a muted→unmuted transition.
+    static func readMutedFlag(at url: URL) -> Bool? {
+        guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        for line in contents.split(separator: "\n") {
+            guard line.hasPrefix("MUTED=") else { continue }
+            let value = line.dropFirst("MUTED=".count)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            if value == "true" { return true }
+            if value == "false" { return false }
+            return nil
+        }
+        return nil
+    }
+}

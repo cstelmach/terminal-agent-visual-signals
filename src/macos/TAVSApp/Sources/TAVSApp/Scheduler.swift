@@ -147,6 +147,11 @@ protocol BroadcasterProtocol: AnyObject {
     func broadcast()
     func broadcastPaused()
     func broadcastPausedClear()
+    // Discards any bytes that landed in pending/ during the tiny window
+    // between broadcast()'s drain and writeMuteState(muted:false). Those bytes
+    // reflect mid-transition state that is stale by the time this is called,
+    // and would otherwise re-play as "current" on the next unmute cycle.
+    func clearPending()
 }
 
 final class Scheduler: ObservableObject {
@@ -186,6 +191,13 @@ final class Scheduler: ObservableObject {
     }
 
     func start() {
+        // Seed previousMuted from the on-disk mute.state so a restart-after-crash
+        // correctly detects a muted→unmuted transition. Without this, a crash
+        // while muted followed by a relaunch while the schedule is active
+        // would leave terminals painted grey forever (no transition fires).
+        if let persisted = MuteStateReader.readMutedFlag(at: muteStateURL) {
+            previousMuted = persisted
+        }
         loadAndEvaluate()
         startFileWatch()
         registerWakeNotification()
@@ -239,6 +251,15 @@ final class Scheduler: ObservableObject {
         }
 
         writeMuteState(muted: result.muted, reason: result.reason, untilEpoch: untilEpoch)
+
+        // Discard any OSC bytes that hooks appended to pending/ during the
+        // narrow gap between broadcast()'s drain above and the writeMuteState
+        // that just flipped MUTED=false. Those bytes reflect stale state
+        // captured mid-transition and would otherwise be replayed as "current"
+        // on the next unmute cycle.
+        if wasMuted && !result.muted {
+            broadcaster.clearPending()
+        }
 
         if !wasMuted && result.muted {
             broadcaster.broadcastPaused()
