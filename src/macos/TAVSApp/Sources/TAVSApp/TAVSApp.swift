@@ -34,6 +34,9 @@ struct TAVSApp: App {
         MenuBarExtra("TAVS", systemImage: scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
             MenuContent(scheduler: scheduler)
         }
+        Settings {
+            PreferencesView(scheduler: scheduler)
+        }
     }
 }
 

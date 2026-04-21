@@ -17,7 +17,8 @@ struct MenuContent: View {
                 scheduler.togglePause()
             }
             Button("Open Preferences…") {
-                // Phase 5: opens PreferencesView
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                NSApp.activate(ignoringOtherApps: true)
             }
             .keyboardShortcut(",")
             Divider()

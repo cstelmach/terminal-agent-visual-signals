@@ -314,6 +314,40 @@ final class ScheduleStoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: path.path))
     }
 
+    // MARK: - Phase 5: Draft workflow (add window → save → reload → validate)
+
+    func testDraftAddWindowSaveReloadValidate() throws {
+        let savePath = tempDir.appendingPathComponent("schedule.json")
+        var config = ScheduleConfig(
+            version: 1, masterActive: true, allowedWindows: [], quietPeriods: []
+        )
+        config.allowedWindows.append(
+            TimeWindow(id: "work-hours", enabled: true,
+                       days: [.mon, .tue, .wed, .thu, .fri],
+                       start: "08:00", end: "20:00")
+        )
+        try ScheduleStore.save(config, to: savePath)
+        let reloaded = try ScheduleStore.load(from: savePath)
+        XCTAssertEqual(config, reloaded)
+        XCTAssertNoThrow(try ScheduleStore.validate(reloaded))
+    }
+
+    func testDraftRemoveLastWindowInvalidatesWithMasterActive() {
+        var config = ScheduleConfig(
+            version: 1, masterActive: true,
+            allowedWindows: [
+                TimeWindow(id: "w1", enabled: true, days: [.mon], start: "08:00", end: "17:00")
+            ],
+            quietPeriods: []
+        )
+        XCTAssertNoThrow(try ScheduleStore.validate(config))
+
+        config.allowedWindows.removeAll()
+        XCTAssertThrowsError(try ScheduleStore.validate(config)) { error in
+            XCTAssertEqual(error as? ScheduleValidationError, .emptyAllowedWindows)
+        }
+    }
+
     // MARK: - Disabled entries pass validation
 
     func testDisabledWindowsSkipValidation() {

@@ -231,4 +231,55 @@ final class UserConfStoreTests: XCTestCase {
         let content = try String(contentsOf: dest, encoding: .utf8)
         XCTAssertTrue(content.contains("ENABLE_LIGHT_DARK_SWITCHING=\"false\""))
     }
+
+    // MARK: - Phase 5: Five-key change = five line diff
+
+    func testFiveKeyChangeFiveLineDiff() throws {
+        let dest = try copyFixture()
+        let originalLines = try String(contentsOf: dest, encoding: .utf8)
+            .components(separatedBy: "\n")
+
+        let store = try UserConfStore(url: dest)
+        store.themePreset = "dracula"
+        store.titleMode = "full"
+        store.faceMode = "standard"
+        store.identityMode = "single"
+        store.stylishBackgrounds = true
+        try store.save()
+
+        let savedContent = try String(contentsOf: dest, encoding: .utf8)
+        let savedLines = savedContent.components(separatedBy: "\n")
+        XCTAssertEqual(originalLines.count, savedLines.count, "Line count must not change")
+
+        var changedCount = 0
+        for (orig, saved) in zip(originalLines, savedLines) {
+            if orig != saved { changedCount += 1 }
+        }
+        XCTAssertEqual(changedCount, 5, "Exactly 5 lines should differ after 5 key changes")
+
+        XCTAssertTrue(savedContent.contains("# TAVS User Configuration"))
+        XCTAssertTrue(savedContent.contains("# Some unknown key from wizard"))
+        XCTAssertTrue(savedContent.contains("TAVS_SPINNER_STYLE=\"random\""))
+        XCTAssertTrue(savedContent.contains("CLAUDE_DARK_BASE=\"#1e1e2e\""))
+    }
+
+    // MARK: - Phase 5: Reload-and-save preserves external changes
+
+    func testReloadBeforeSavePreservesExternalEdits() throws {
+        let dest = try copyFixture()
+
+        let store1 = try UserConfStore(url: dest)
+        store1.themePreset = "dracula"
+        try store1.save()
+
+        let store2 = try UserConfStore(url: dest)
+        XCTAssertEqual(store2.themePreset, "dracula")
+        store2.titleMode = "full"
+        try store2.save()
+
+        let final = try UserConfStore(url: dest)
+        XCTAssertEqual(final.themePreset, "dracula")
+        XCTAssertEqual(final.titleMode, "full")
+        XCTAssertEqual(final.faceMode, "compact")
+    }
 }
