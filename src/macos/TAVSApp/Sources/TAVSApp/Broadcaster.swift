@@ -4,22 +4,19 @@ final class Broadcaster: BroadcasterProtocol {
     private let runtimeDir: URL
     private let processRunner: ProcessRunner
 
-    // Generic agent-neutral face. Hardcoding Claude's `Ǝ[...]E` wrapper here
-    // would paint Gemini/Codex/OpenCode users with Claude's face style during
-    // mute (spec §5 v1 limitation). Black squares read as "eyes closed" and
-    // fit the pause motif across agents.
-    private static let pausedTitle = "[⬛ ⬛] ⏸ Paused"
-
     init(runtimeDir: URL, processRunner: ProcessRunner) {
         self.runtimeDir = runtimeDir
         self.processRunner = processRunner
     }
 
+    // Pause is signalled by grey background alone; no title emission. An empty
+    // OSC 0 wipes user-set tab names, and a paused-title string would linger on
+    // idle terminals that never fire a hook during the mute window. Dropping
+    // the title entirely makes resume instant by construction.
     func broadcastPaused() {
         var data = Data()
         data.append(contentsOf: "\u{1B}]104\u{07}".utf8)
         data.append(contentsOf: "\u{1B}]11;#3A3A3A\u{07}".utf8)
-        data.append(contentsOf: "\u{1B}]0;\(Broadcaster.pausedTitle)\u{07}".utf8)
         data.append(contentsOf: "\u{1B}]1337;SetBackgroundImageFile=\u{07}".utf8)
         writeToAllActiveTTYs(data)
     }

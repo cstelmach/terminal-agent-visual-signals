@@ -236,14 +236,17 @@ paused terminal is unmistakable from an idle one:
 | Element | Value |
 |---|---|
 | Background | `#3A3A3A` (mid-grey) |
-| Title | `[⬛ ⬛] ⏸ Paused` |
+| Title | *(unchanged — TAVS does not touch the tab label on pause)* |
 | Background image (iTerm2) | Cleared |
 | Palette | Reset to terminal defaults |
 
-The face uses agent-neutral glyphs so Gemini, Codex, and OpenCode users see the
-same pause visual as Claude Code users. The "Paused" label is used for every
-mute reason (manual pause, schedule window, quiet period); the menu-bar status
-line surfaces the precise reason.
+The grey background is the single user-facing pause signal. TAVS deliberately
+does not emit an OSC 0 title during pause: an empty OSC 0 blanks user-set tab
+names, and a "Paused" label would stick on idle terminals that never fire a
+hook during the mute window, leaving them mislabelled after resume. Dropping
+the title entirely makes "instantly back" true by construction — there is no
+title state for resume to restore. The menu-bar status line still surfaces the
+precise mute reason (manual pause, schedule window, quiet period).
 
 ### Transition Ordering
 
@@ -279,8 +282,7 @@ leave terminals painted grey indefinitely.
 | Behaviour | Why |
 |---|---|
 | Idle sessions (no hook during mute) return to palette defaults on unmute, not their pre-pause idle gradient | The app has no way to repaint the per-session idle stage; the owning session's idle worker repaints on its next tick. |
-| Paused title persists briefly after resume, until the next hook repaints | `broadcastPausedClear` intentionally does not wipe the title to preserve user-set tab names. |
-| Single "Paused" label for schedule / quiet / manual mute | Per-reason labels (`⏸ Scheduled`, `⏸ Quiet`) are intentionally deferred; the menu bar already shows the reason. |
+| Pause signals background-only, no tab-title label | Emitting a title on pause either blanks user-set tab names (empty OSC 0) or sticks on idle terminals. Resume instant-ness is prioritised over an explicit "Paused" label; the menu-bar status line surfaces the mute reason instead. |
 
 ### DST Behavior
 

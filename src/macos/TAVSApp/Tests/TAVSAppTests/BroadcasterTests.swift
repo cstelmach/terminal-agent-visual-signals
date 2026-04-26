@@ -148,13 +148,14 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertEqual(mockRunner.writtenDevices.count, 1)
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
         XCTAssertTrue(written.contains("#3A3A3A"), "Grey background OSC present")
-        XCTAssertTrue(written.contains("⏸ Paused"), "Paused title present")
         XCTAssertTrue(written.contains("SetBackgroundImageFile="), "iTerm2 bg image clear present")
     }
 
-    func testBroadcastPausedUsesAgentNeutralFace() throws {
-        // H1: Paused title must not hard-code an agent-specific face wrapper.
-        // Claude's `Ǝ[...]E` would be jarring for Gemini/Codex/OpenCode users.
+    func testBroadcastPausedDoesNotEmitTitle() throws {
+        // Pause must not emit any OSC 0 sequence. Any title emission here
+        // either blanks user-set tab names (empty OSC 0) or sticks on idle
+        // terminals that never fire a hook during mute. Resume can only be
+        // "instantly back" if there is no title state to restore.
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
@@ -163,9 +164,8 @@ final class BroadcasterTests: XCTestCase {
         broadcaster.broadcastPaused()
 
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
-        XCTAssertFalse(written.contains("Ǝ["), "Must not use Claude-specific face wrapper")
-        XCTAssertFalse(written.contains("]E "), "Must not use Claude-specific face wrapper")
-        XCTAssertTrue(written.contains("[⬛ ⬛]"), "Uses generic eye-closed face")
+        XCTAssertFalse(written.contains("\u{1B}]0;"), "Must not emit OSC 0 title during pause")
+        XCTAssertFalse(written.contains("⏸ Paused"), "Must not emit paused title text")
     }
 
     func testBroadcastPausedClearWritesResetBytes() throws {
