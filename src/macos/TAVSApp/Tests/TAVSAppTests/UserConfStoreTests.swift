@@ -96,6 +96,26 @@ final class UserConfStoreTests: XCTestCase {
         XCTAssertEqual(store.lightDarkSwitching, true)
     }
 
+    func testPauseBgAccessorsRoundTrip() throws {
+        let dest = try copyFixture()
+        let store = try UserConfStore(url: dest)
+
+        // Keys absent from the baseline fixture → nil, caller falls back to
+        // the documented defaults.
+        XCTAssertNil(store.pauseBgDark)
+        XCTAssertNil(store.pauseBgLight)
+        XCTAssertEqual(UserConfStore.defaultPauseBgDark, "#3A3A3A")
+        XCTAssertEqual(UserConfStore.defaultPauseBgLight, "#D0D0D0")
+
+        store.pauseBgDark = "#112233"
+        store.pauseBgLight = "#EEEEEE"
+        try store.save()
+
+        let reloaded = try UserConfStore(url: dest)
+        XCTAssertEqual(reloaded.pauseBgDark, "#112233")
+        XCTAssertEqual(reloaded.pauseBgLight, "#EEEEEE")
+    }
+
     // MARK: - Mutate one key, diff shows exactly that line
 
     func testMutateOneKeyChangesOnlyThatLine() throws {

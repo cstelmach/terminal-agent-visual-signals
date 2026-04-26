@@ -6,13 +6,15 @@ final class MockBroadcaster: BroadcasterProtocol {
     private(set) var broadcastPausedCallCount = 0
     private(set) var broadcastPausedClearCallCount = 0
     private(set) var clearPendingCallCount = 0
+    private(set) var lastPausedBackgroundColor: String?
 
     func broadcast() {
         broadcastCallCount += 1
     }
 
-    func broadcastPaused() {
+    func broadcastPaused(backgroundColor: String) {
         broadcastPausedCallCount += 1
+        lastPausedBackgroundColor = backgroundColor
     }
 
     func broadcastPausedClear() {

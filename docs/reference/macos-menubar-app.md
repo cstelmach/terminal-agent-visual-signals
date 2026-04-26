@@ -235,17 +235,32 @@ paused terminal is unmistakable from an idle one:
 
 | Element | Value |
 |---|---|
-| Background | `#3A3A3A` (mid-grey) |
+| Background | Caller-picked colour, keyed by macOS system appearance (see below) |
 | Title | *(unchanged — TAVS does not touch the tab label on pause)* |
 | Background image (iTerm2) | Cleared |
 | Palette | Reset to terminal defaults |
 
-The grey background is the single user-facing pause signal. TAVS deliberately
-does not emit an OSC 0 title during pause: an empty OSC 0 blanks user-set tab
-names, and a "Paused" label would stick on idle terminals that never fire a
-hook during the mute window, leaving them mislabelled after resume. Dropping
-the title entirely makes "instantly back" true by construction — there is no
-title state for resume to restore. The menu-bar status line still surfaces the
+**Configurable pause background.** The Scheduler reads
+`NSApp.effectiveAppearance` at pause time and picks one of two user-configurable
+colours from `~/.tavs/user.conf`:
+
+| Key | Default | Active when |
+|---|---|---|
+| `TAVS_PAUSE_BG_DARK` | `#3A3A3A` | macOS in dark mode |
+| `TAVS_PAUSE_BG_LIGHT` | `#D0D0D0` | macOS in light mode |
+
+Edit via **TAVS → Preferences → Appearance → Paused State**, or by hand-editing
+`user.conf`. Values must be `#RRGGBB` hex; malformed entries fall back to the
+default so a bad save cannot wedge the pause paint. The colour is resolved at
+each pause transition, so a Preferences edit takes effect on the next pause
+without needing an app restart.
+
+The background is the single user-facing pause signal. TAVS deliberately does
+not emit an OSC 0 title during pause: an empty OSC 0 blanks user-set tab names,
+and a "Paused" label would stick on idle terminals that never fire a hook
+during the mute window, leaving them mislabelled after resume. Dropping the
+title entirely makes "instantly back" true by construction — there is no title
+state for resume to restore. The menu-bar status line still surfaces the
 precise mute reason (manual pause, schedule window, quiet period).
 
 ### Transition Ordering

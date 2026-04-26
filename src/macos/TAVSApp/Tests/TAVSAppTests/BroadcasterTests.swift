@@ -143,7 +143,7 @@ final class BroadcasterTests: XCTestCase {
             contents: nil
         )
 
-        broadcaster.broadcastPaused()
+        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 1)
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
@@ -161,7 +161,7 @@ final class BroadcasterTests: XCTestCase {
             contents: nil
         )
 
-        broadcaster.broadcastPaused()
+        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
 
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
         XCTAssertFalse(written.contains("\u{1B}]0;"), "Must not emit OSC 0 title during pause")
@@ -258,7 +258,7 @@ final class BroadcasterTests: XCTestCase {
             contents: nil
         )
 
-        broadcaster.broadcastPaused()
+        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 2, "Both TTYs written")
         XCTAssertEqual(mockRunner.writtenDevices[0].1, mockRunner.writtenDevices[1].1,
@@ -271,7 +271,7 @@ final class BroadcasterTests: XCTestCase {
         let oldDate = Date().addingTimeInterval(-25 * 3600)
         try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: entryPath)
 
-        broadcaster.broadcastPaused()
+        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 0, "Stale entry skipped")
         XCTAssertFalse(FileManager.default.fileExists(atPath: entryPath), "Stale entry pruned")
@@ -285,7 +285,7 @@ final class BroadcasterTests: XCTestCase {
 
         mockRunner.writeError = ProcessRunnerError.deviceNotWritable("/dev/ttys001")
 
-        broadcaster.broadcastPaused()
+        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
 
         XCTAssertFalse(
             FileManager.default.fileExists(
@@ -293,5 +293,40 @@ final class BroadcasterTests: XCTestCase {
             ),
             "Dead TTY pruned from registry"
         )
+    }
+
+    // MARK: - Configurable pause background colour
+
+    func testBroadcastPausedUsesCallerSuppliedColor() throws {
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+
+        broadcaster.broadcastPaused(backgroundColor: "#E8E8E8")
+
+        let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
+        XCTAssertTrue(written.contains("\u{1B}]11;#E8E8E8\u{07}"),
+                      "OSC 11 must carry the caller-supplied hex color")
+        XCTAssertFalse(written.contains("#3A3A3A"),
+                       "Legacy hardcoded grey must not appear when caller overrides")
+    }
+
+    func testBroadcastPausedSanitizesMalformedColor() throws {
+        // Defence-in-depth: if user.conf ever yields a non-hex string, the
+        // broadcaster must fall back to the legacy grey rather than emit
+        // garbage bytes that could corrupt the OSC stream.
+        FileManager.default.createFile(
+            atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
+            contents: nil
+        )
+
+        broadcaster.broadcastPaused(backgroundColor: "not-a-hex")
+
+        let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
+        XCTAssertTrue(written.contains("\u{1B}]11;#3A3A3A\u{07}"),
+                      "Malformed colour must fall back to the documented default")
+        XCTAssertFalse(written.contains("not-a-hex"),
+                       "Raw malformed value must not leak into the OSC payload")
     }
 }

@@ -9,16 +9,32 @@ final class Broadcaster: BroadcasterProtocol {
         self.processRunner = processRunner
     }
 
-    // Pause is signalled by grey background alone; no title emission. An empty
-    // OSC 0 wipes user-set tab names, and a paused-title string would linger on
-    // idle terminals that never fire a hook during the mute window. Dropping
-    // the title entirely makes resume instant by construction.
-    func broadcastPaused() {
+    // Pause is signalled by background colour alone; no title emission. An
+    // empty OSC 0 wipes user-set tab names, and a paused-title string would
+    // linger on idle terminals that never fire a hook during the mute window.
+    // Dropping the title entirely makes resume instant by construction.
+    //
+    // The caller (Scheduler) picks the colour based on macOS effective
+    // appearance so light-mode and dark-mode users can configure different
+    // pause shades via Preferences → Appearance.
+    func broadcastPaused(backgroundColor: String) {
+        let safeColor = Broadcaster.sanitizeHexColor(backgroundColor)
         var data = Data()
         data.append(contentsOf: "\u{1B}]104\u{07}".utf8)
-        data.append(contentsOf: "\u{1B}]11;#3A3A3A\u{07}".utf8)
+        data.append(contentsOf: "\u{1B}]11;\(safeColor)\u{07}".utf8)
         data.append(contentsOf: "\u{1B}]1337;SetBackgroundImageFile=\u{07}".utf8)
         writeToAllActiveTTYs(data)
+    }
+
+    // Defends the OSC 11 payload against a malformed user.conf value —
+    // anything other than `#RRGGBB` falls back to the legacy dark grey so
+    // a bad save cannot wedge the pause paint.
+    private static func sanitizeHexColor(_ raw: String) -> String {
+        let fallback = "#3A3A3A"
+        guard raw.count == 7, raw.hasPrefix("#") else { return fallback }
+        let hex = raw.dropFirst()
+        let allowed = CharacterSet(charactersIn: "0123456789abcdefABCDEF")
+        return hex.unicodeScalars.allSatisfy(allowed.contains) ? raw : fallback
     }
 
     func broadcastPausedClear() {

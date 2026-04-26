@@ -145,7 +145,7 @@ enum ScheduleEvaluator {
 
 protocol BroadcasterProtocol: AnyObject {
     func broadcast()
-    func broadcastPaused()
+    func broadcastPaused(backgroundColor: String)
     func broadcastPausedClear()
     // Discards any bytes that landed in pending/ during the tiny window
     // between broadcast()'s drain and writeMuteState(muted:false). Those bytes
@@ -166,6 +166,7 @@ final class Scheduler: ObservableObject {
     private let muteStateURL: URL
     private let scheduleURL: URL
     private let calendar: Calendar
+    private let pauseColorProvider: () -> String
 
     private var config: ScheduleConfig?
     private var previousMuted: Bool = false
@@ -179,7 +180,8 @@ final class Scheduler: ObservableObject {
         broadcaster: BroadcasterProtocol,
         muteStateURL: URL,
         scheduleURL: URL,
-        calendar: Calendar = .current
+        calendar: Calendar = .current,
+        pauseColorProvider: @escaping () -> String = { UserConfStore.defaultPauseBgDark }
     ) {
         self.clock = clock
         self.timerScheduler = timerScheduler
@@ -188,6 +190,7 @@ final class Scheduler: ObservableObject {
         self.muteStateURL = muteStateURL
         self.scheduleURL = scheduleURL
         self.calendar = calendar
+        self.pauseColorProvider = pauseColorProvider
     }
 
     func start() {
@@ -262,7 +265,7 @@ final class Scheduler: ObservableObject {
         }
 
         if !wasMuted && result.muted {
-            broadcaster.broadcastPaused()
+            broadcaster.broadcastPaused(backgroundColor: pauseColorProvider())
         }
         updatePublishedState(muted: result.muted, reason: result.reason, transitionDate: transition)
 

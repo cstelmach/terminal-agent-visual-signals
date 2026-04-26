@@ -9,7 +9,14 @@ final class UserConfStore {
         "TAVS_TITLE_MODE", "TAVS_FACE_MODE", "TAVS_COMPACT_THEME",
         "TAVS_IDENTITY_MODE", "TAVS_DIR_ICON_TYPE",
         "ENABLE_STYLISH_BACKGROUNDS", "ENABLE_LIGHT_DARK_SWITCHING",
+        "TAVS_PAUSE_BG_DARK", "TAVS_PAUSE_BG_LIGHT",
     ]
+
+    // Defaults if keys absent: mid-grey for dark appearance preserves the
+    // pre-configurable behavior; a lighter grey for light appearance keeps
+    // the "paused ≠ active" contrast without reading as an error state.
+    static let defaultPauseBgDark = "#3A3A3A"
+    static let defaultPauseBgLight = "#D0D0D0"
 
     init(url: URL) throws {
         self.url = url
@@ -66,6 +73,19 @@ final class UserConfStore {
     var lightDarkSwitching: Bool? {
         get { value(for: "ENABLE_LIGHT_DARK_SWITCHING").flatMap { $0 == "true" ? true : ($0 == "false" ? false : nil) } }
         set { setValue(newValue.map { $0 ? "true" : "false" }, for: "ENABLE_LIGHT_DARK_SWITCHING") }
+    }
+
+    // Pause background color as `#RRGGBB`. Stored as a hex string so the
+    // Broadcaster can pass it straight into OSC 11. Invalid/malformed values
+    // fall through to the default when consumed.
+    var pauseBgDark: String? {
+        get { value(for: "TAVS_PAUSE_BG_DARK") }
+        set { setValue(newValue, for: "TAVS_PAUSE_BG_DARK") }
+    }
+
+    var pauseBgLight: String? {
+        get { value(for: "TAVS_PAUSE_BG_LIGHT") }
+        set { setValue(newValue, for: "TAVS_PAUSE_BG_LIGHT") }
     }
 
     // MARK: - Save

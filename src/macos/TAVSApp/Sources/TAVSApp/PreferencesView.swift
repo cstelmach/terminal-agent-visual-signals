@@ -321,6 +321,8 @@ private struct AppearanceTab: View {
     @State private var compactTheme = "squares"
     @State private var stylishBackgrounds = false
     @State private var lightDarkSwitching = false
+    @State private var pauseBgDark = Color(hex: UserConfStore.defaultPauseBgDark)
+    @State private var pauseBgLight = Color(hex: UserConfStore.defaultPauseBgLight)
     @State private var initialized = false
 
     private static let themePresets = [
@@ -370,6 +372,14 @@ private struct AppearanceTab: View {
                 Toggle("Stylish Backgrounds", isOn: $stylishBackgrounds)
                 Toggle("Light/Dark Switching", isOn: $lightDarkSwitching)
             }
+
+            Section("Paused State") {
+                ColorPicker("Dark mode background", selection: $pauseBgDark, supportsOpacity: false)
+                ColorPicker("Light mode background", selection: $pauseBgLight, supportsOpacity: false)
+                Text("Used as the terminal background while TAVS is paused. The colour is picked from the macOS system appearance at the moment TAVS enters pause.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .formStyle(.grouped)
         .onAppear { loadFromStore() }
@@ -384,6 +394,8 @@ private struct AppearanceTab: View {
         compactTheme = store.compactTheme ?? "squares"
         stylishBackgrounds = store.stylishBackgrounds ?? false
         lightDarkSwitching = store.lightDarkSwitching ?? false
+        pauseBgDark = Color(hex: store.pauseBgDark ?? UserConfStore.defaultPauseBgDark)
+        pauseBgLight = Color(hex: store.pauseBgLight ?? UserConfStore.defaultPauseBgLight)
         DispatchQueue.main.async { initialized = true }
     }
 
@@ -397,7 +409,52 @@ private struct AppearanceTab: View {
         if compactTheme != (store.compactTheme ?? "squares") { store.compactTheme = compactTheme; changed = true }
         if stylishBackgrounds != (store.stylishBackgrounds ?? false) { store.stylishBackgrounds = stylishBackgrounds; changed = true }
         if lightDarkSwitching != (store.lightDarkSwitching ?? false) { store.lightDarkSwitching = lightDarkSwitching; changed = true }
+
+        let darkHex = pauseBgDark.hexString()
+        let lightHex = pauseBgLight.hexString()
+        if darkHex != (store.pauseBgDark ?? UserConfStore.defaultPauseBgDark) {
+            store.pauseBgDark = darkHex
+            changed = true
+        }
+        if lightHex != (store.pauseBgLight ?? UserConfStore.defaultPauseBgLight) {
+            store.pauseBgLight = lightHex
+            changed = true
+        }
+
         if changed { try? store.save() }
+    }
+}
+
+// MARK: - Color <-> hex helpers (for OSC 11 round-trip)
+
+private extension Color {
+    // Parses `#RRGGBB`. Fails over to mid-grey so a malformed user.conf value
+    // cannot brick the ColorPicker binding.
+    init(hex: String) {
+        let trimmed = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        guard trimmed.count == 6, let value = UInt32(trimmed, radix: 16) else {
+            self = Color(red: 0.23, green: 0.23, blue: 0.23)
+            return
+        }
+        let r = Double((value >> 16) & 0xFF) / 255.0
+        let g = Double((value >> 8) & 0xFF) / 255.0
+        let b = Double(value & 0xFF) / 255.0
+        self = Color(red: r, green: g, blue: b)
+    }
+
+    // Converts via the sRGB colour space so the round-trip matches what OSC 11
+    // renders in a terminal (24-bit sRGB). `NSColor(.displayP3...).usingColorSpace`
+    // clamps out-of-gamut values rather than failing, which keeps the picker
+    // forgiving.
+    func hexString() -> String {
+        let ns = NSColor(self).usingColorSpace(.sRGB) ?? NSColor.gray
+        let r = Int((ns.redComponent * 255.0).rounded())
+        let g = Int((ns.greenComponent * 255.0).rounded())
+        let b = Int((ns.blueComponent * 255.0).rounded())
+        return String(format: "#%02X%02X%02X",
+                      max(0, min(255, r)),
+                      max(0, min(255, g)),
+                      max(0, min(255, b)))
     }
 }
 
