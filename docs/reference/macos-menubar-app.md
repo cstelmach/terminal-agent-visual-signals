@@ -252,8 +252,11 @@ colours from `~/.tavs/user.conf`:
 Edit via **TAVS → Preferences → Appearance → Paused State**, or by hand-editing
 `user.conf`. Values must be `#RRGGBB` hex; malformed entries fall back to the
 default so a bad save cannot wedge the pause paint. The colour is resolved at
-each pause transition, so a Preferences edit takes effect on the next pause
-without needing an app restart.
+each pause transition AND on every fs-watch / heartbeat tick — so editing the
+colour in Preferences while currently paused triggers a live re-paint within
+~2 seconds (no app restart, no resume-then-repause needed). When the colour
+matches the last paint the broadcaster skips the round-trip, so steady-state
+mute does not generate redundant TTY traffic.
 
 The background is the single user-facing pause signal. TAVS deliberately does
 not emit an OSC 0 title during pause: an empty OSC 0 blanks user-set tab names,
@@ -278,6 +281,23 @@ Ordering on the two transitions is load-bearing:
    names in `TAVS_TITLE_MODE=prefix-only`)
 2. `broadcast()` — drain `pending/*.osc` so each TTY sees the latest bookkept
    state
+
+There is a microsecond race window between `broadcast()`'s drain and
+`writeMuteState(false)` where a hook firing on a TTY can capture its OSC
+bytes into `pending/`. Earlier code called a destructive `clearPending()`
+after the flip, which silently deleted those bytes — a missed paint. The
+current implementation deliberately skips that cleanup: race-window
+captures persist in `pending/` and replay on the next mute→unmute cycle, or
+get overwritten by the next hook from the same TTY. The window is narrow
+enough that in normal usage it never fires; the trade-off intentionally
+favours "no missed paint" over "spotless pending dir".
+
+**Auto-discovery on app start.** When the Scheduler starts (app launch or
+relaunch), it scans running processes via `ps -axo tty=,command=` for
+`claude`, `gemini`, `codex`, and `opencode` instances and pre-registers
+their controlling TTYs in `active-ttys/`. Without this, a fresh login
+after reboot would leave `active-ttys/` empty (since `/tmp` is wiped on
+reboot) and the very first mute transition would paint zero terminals.
 3. `writeMuteState(muted:false)` — shell resumes normal painting
 4. `clearPending()` — discard any bytes hooks appended to `pending/` during the
    tiny window between steps 2 and 3; those bytes reflect mid-transition state
