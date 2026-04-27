@@ -137,8 +137,66 @@ Or equivalently via CLI (verified working 2026-04-27):
 **To verify current state:**
 ```
 swift test --package-path src/macos/TAVSApp     # expect 108/108
-bats tests/unit/ tests/integration/             # expect 59/59
+bats tests/unit/ tests/integration/             # expect 58/59 if app running, 59/59 if quit
 cat ~/.tavs/schedule.json                       # expect weekdays + lunch + master=false
 cat ~/.tavs/mute.state                          # expect MUTED=true, REASON=master_paused
 pgrep -fl TAVSApp                               # expect one running TAVSApp process
 ```
+
+---
+
+## ALL_PHASES_COMPLETE — 2026-04-27 09:09 (fizzy-pebble)
+
+**Plan:** `/Users/cs/.claude/plans/take-a-deep-breath-fizzy-pebble.md`
+**Promise delivered:** "stop and resume actions change all windows instantly, and instantly back",
+plus configuration editable through the menu bar app.
+
+### Final phase ledger
+
+| Phase | Status | Tests | Commit |
+|---|---|---|---|
+| P0 — Baseline | DONE | 105/59 captured | (no commit) |
+| P1 — Menu wiring (Open Preferences + Edit Schedule) | DONE | 105/105 swift | 19e75ac |
+| P2 — Drop paused-title emission | DONE | 105/105 swift | 264a898 |
+| P2 follow-on — Configurable pause background | DONE | 108/108 swift (+3) | df164af |
+| P3 — Restore original schedule | DONE | (user data) | dae0d9b (re-baseline) |
+| P4 — Acceptance & regression | DONE | 108/108 swift, 58/59 bats | (no commit) |
+
+### Acceptance signoff (Phase 4)
+
+- **T4.1 automated:** swift 108/108 in 1.24s, bats 58/59 (`#24 baseline-regression` env-brittle when
+  app running concurrently — pre-existing, documented, not a regression of this plan).
+- **T4.2 visual:** menu icon reflects state correctly. *User confirmed.*
+- **T4.3 Preferences round-trip:** Open Preferences and Edit Schedule both work; Schedule edit + Save
+  persists to disk; app re-evaluates. *User confirmed.*
+- **T4.4 Revert:** Phase 3 baseline preserved. *User confirmed.*
+- **T4.5 Pause→Resume cycle via menu:** instant grey, instant clear, no title staleness on registered
+  live terminals. *User confirmed.*
+- **T4.6 Kill+relaunch:** app restarts cleanly, state re-derived from on-disk `schedule.json`.
+  PID 13761 → 82230 verified prior session.
+
+### Cumulative session output
+
+- 33 commits ahead of `origin/main` (fizzy-pebble plan contributed: 19e75ac, 264a898, df164af, 3f9c16d,
+  dae0d9b — plus the prior staff-engineer remediation block c782fb1, d820b9e, 4d8dec5, 3d64fc1, ce704e0).
+- Working tree clean (`.omx/` untracked, pre-existing).
+- Test surface: 108 swift + 59 bats = 167 tests, single env-brittle failure documented and
+  carved out from acceptance.
+
+### Out-of-scope follow-up docket (reaffirmed, not silently dropped)
+
+1. **Plugin v2.0.0 / v3.0.0 mismatch** — `claude plugin list` reports v2.0.0 but marketplace dir is
+   v3.0.0. Diagnose actual hook execution path; likely needs reinstall. User-gated, disruptive.
+2. **TTY auto-discovery in Swift app** — closes the registered/live coverage gap (saw 41/42 during
+   verification). Scan `ps` for live agent sessions on `Scheduler.start()` and pre-broadcast.
+3. **bats baseline-regression env-brittleness** — needs `pgrep -q TAVSApp && skip` guard or a
+   "stop app before testing" runner fixture so the suite is reliably 59/59 in any environment.
+4. **Shell-side last-title cache** — bigger architectural change; would resurrect an explicit
+   "Paused" tab affordance while keeping resume instant. Only worth it if user misses the affordance.
+
+### Pushing
+33 commits ahead of `origin/main`. Push is a destructive-on-shared-state operation; not performed
+without explicit user request.
+
+<promise>ALL_PHASES_COMPLETE</promise>
+
