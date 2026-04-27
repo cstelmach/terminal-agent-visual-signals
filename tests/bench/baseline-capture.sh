@@ -8,6 +8,13 @@
 # Usage:
 #   ./tests/bench/baseline-capture.sh           # Capture (overwrite existing)
 #   ./tests/bench/baseline-capture.sh --diff    # Diff current output vs baseline
+#
+# Safety: every trigger run executes inside an isolated $HOME (mktemp -d).
+# This was previously a `mv ~/.tavs/mute.state ...` dance, which raced the
+# menu-bar app's heartbeat (re-creating the file mid-test) and could leave
+# the user's live mute.state permanently displaced if the test process was
+# interrupted. The isolated HOME removes both failure modes by construction:
+# the user's `~/.tavs/` is never touched.
 # ==============================================================================
 
 set -u
@@ -20,14 +27,26 @@ STATES=(processing permission compacting subagent-start tool_error reset)
 # because fd-3 writes in the worker fork don't land in the TTY_DEVICE file.
 # Those are covered by integration tests (idle-worker-mute.bats).
 
+# Build a minimal isolated HOME containing only the directory layout trigger.sh
+# expects. Returns the path so the caller can cleanup. Caller MUST set a trap
+# to remove the directory on EXIT/INT/TERM.
+_make_isolated_home() {
+    local iso
+    iso=$(mktemp -d "${TMPDIR:-/tmp}/tavs-baseline-home.XXXXXX")
+    mkdir -p "$iso/.tavs"
+    echo "$iso"
+}
+
 _capture_one() {
     local state="$1"
     local outfile="$2"
+    local iso_home="$3"
     local tmp
     tmp=$(mktemp)
-    # Drop any mute state for baseline capture
-    # Run with minimal env to keep determinism
-    env -i HOME="$HOME" PATH="$PATH" TTY_DEVICE="$tmp" \
+    # env -i wipes inherited variables; trigger.sh re-derives everything from
+    # the few we forward. HOME points at the isolated dir so any read or
+    # write to ~/.tavs/* lands there.
+    env -i HOME="$iso_home" PATH="$PATH" TTY_DEVICE="$tmp" \
         bash "$REPO_ROOT/src/core/trigger.sh" "$state" 2>/dev/null || true
     cp "$tmp" "$outfile"
     rm -f "$tmp"
@@ -35,39 +54,33 @@ _capture_one() {
 
 _capture_all() {
     mkdir -p "$BASELINE_DIR"
-    # Ensure no mute.state exists during capture
-    local mute_backup=""
-    if [[ -f "$HOME/.tavs/mute.state" ]]; then
-        mute_backup="$HOME/.tavs/mute.state.baseline-backup"
-        mv "$HOME/.tavs/mute.state" "$mute_backup"
-    fi
+    local iso_home
+    iso_home=$(_make_isolated_home)
+    trap 'rm -rf "$iso_home"' EXIT INT TERM
 
     for s in "${STATES[@]}"; do
-        _capture_one "$s" "$BASELINE_DIR/${s}.bytes"
+        _capture_one "$s" "$BASELINE_DIR/${s}.bytes" "$iso_home"
         echo "captured $s: $(wc -c < "$BASELINE_DIR/${s}.bytes" | tr -d ' ') bytes"
     done
 
-    # Restore mute state if we backed it up
-    [[ -n "$mute_backup" ]] && mv "$mute_backup" "$HOME/.tavs/mute.state"
+    rm -rf "$iso_home"
+    trap - EXIT INT TERM
     return 0
 }
 
 _diff_all() {
     local any_diff=0
+    local iso_home
+    iso_home=$(_make_isolated_home)
+    trap 'rm -rf "$iso_home"' EXIT INT TERM
+
     for s in "${STATES[@]}"; do
         local baseline="$BASELINE_DIR/${s}.bytes"
         local current
         current=$(mktemp)
-        local mute_backup=""
-        if [[ -f "$HOME/.tavs/mute.state" ]]; then
-            mute_backup="$HOME/.tavs/mute.state.baseline-diff-backup"
-            mv "$HOME/.tavs/mute.state" "$mute_backup"
-        fi
 
-        env -i HOME="$HOME" PATH="$PATH" TTY_DEVICE="$current" \
+        env -i HOME="$iso_home" PATH="$PATH" TTY_DEVICE="$current" \
             bash "$REPO_ROOT/src/core/trigger.sh" "$s" 2>/dev/null || true
-
-        [[ -n "$mute_backup" ]] && mv "$mute_backup" "$HOME/.tavs/mute.state"
 
         if [[ ! -f "$baseline" ]]; then
             echo "MISSING baseline for $s — run without --diff first"
@@ -87,6 +100,9 @@ _diff_all() {
         fi
         rm -f "$current"
     done
+
+    rm -rf "$iso_home"
+    trap - EXIT INT TERM
     return "$any_diff"
 }
 
