@@ -174,6 +174,12 @@ final class Scheduler: ObservableObject {
     private var nextTransitionDate: Date?
     private var wakeObserver: NSObjectProtocol?
 
+    // Tracks the OSC 11 background colour we most recently broadcast on enter-
+    // mute. Lets the file-watch / heartbeat path re-emit the paused paint when
+    // the user changes the pause-bg colour (Preferences or `./tavs set`)
+    // while currently muted, instead of waiting for the next mute cycle.
+    private var lastPaintedPauseColor: String?
+
     init(
         clock: Clock,
         timerScheduler: TimerScheduler,
@@ -257,6 +263,7 @@ final class Scheduler: ObservableObject {
         if wasMuted && !result.muted {
             broadcaster.broadcastPausedClear()
             broadcaster.broadcast()
+            lastPaintedPauseColor = nil
         }
 
         let untilEpoch: Int64
@@ -280,7 +287,20 @@ final class Scheduler: ObservableObject {
         // missed-paint for a stale-over-correct flicker, which is worse.
 
         if !wasMuted && result.muted {
-            broadcaster.broadcastPaused(backgroundColor: pauseColorProvider())
+            let color = pauseColorProvider()
+            broadcaster.broadcastPaused(backgroundColor: color)
+            lastPaintedPauseColor = color
+        } else if wasMuted && result.muted {
+            // Still muted, but the user may have changed the pause-bg colour
+            // (Preferences ColorPicker, ./tavs set, external user.conf edit).
+            // FileWatcher fires loadAndEvaluate on any change inside ~/.tavs/,
+            // and the heartbeat re-evaluates every 60s. If the colour changed,
+            // re-paint; otherwise no-op so we don't churn the TTYs.
+            let color = pauseColorProvider()
+            if color != lastPaintedPauseColor {
+                broadcaster.broadcastPaused(backgroundColor: color)
+                lastPaintedPauseColor = color
+            }
         }
         updatePublishedState(muted: result.muted, reason: result.reason, transitionDate: transition)
 

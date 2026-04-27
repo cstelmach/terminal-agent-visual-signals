@@ -592,6 +592,94 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(broadcaster.broadcastCallCount, 1)
     }
 
+    private var testCalendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        return cal
+    }
+
+    func testPauseColorChangeWhileMutedRepaints() throws {
+        // M1: editing pause-bg colour in Preferences (or via `./tavs set`)
+        // while currently muted must re-emit broadcastPaused with the new
+        // colour. Previously the change applied only on the next mute cycle,
+        // which could be hours away.
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        var currentColor = "#3A3A3A"
+        let dynScheduler = Scheduler(
+            clock: clock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: testCalendar,
+            pauseColorProvider: { currentColor }
+        )
+
+        dynScheduler.start()
+        XCTAssertTrue(dynScheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.lastPausedBackgroundColor, "#3A3A3A")
+
+        // User edits user.conf — fileWatcher fires, scheduler re-evaluates.
+        currentColor = "#FF0000"
+        dynScheduler.loadAndEvaluate()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2,
+                       "Colour change while muted must trigger re-paint")
+        XCTAssertEqual(broadcaster.lastPausedBackgroundColor, "#FF0000")
+    }
+
+    func testPauseColorUnchangedAcrossHeartbeatsIsIdempotent() throws {
+        // M1 negative: re-evaluations during a steady muted state must not
+        // emit redundant broadcastPaused calls when the colour is unchanged.
+        // Otherwise we'd churn every active TTY on every heartbeat tick.
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        let stableScheduler = Scheduler(
+            clock: clock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: testCalendar,
+            pauseColorProvider: { "#3A3A3A" }
+        )
+
+        stableScheduler.start()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        // Three back-to-back re-evaluations (heartbeat, fs-watch, wake).
+        stableScheduler.loadAndEvaluate()
+        stableScheduler.loadAndEvaluate()
+        stableScheduler.loadAndEvaluate()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
+                       "Same colour across re-evals must NOT trigger re-paint")
+    }
+
     func testHeartbeatDuringMuteIsStable() throws {
         let config = ScheduleConfig(
             version: 1,
