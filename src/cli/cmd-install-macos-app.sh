@@ -391,13 +391,29 @@ _launch_and_register() {
         cli_info "App may still be launching..."
     fi
 
+    # The app's AppDelegate calls SMAppService.register() on launch. Poll a few
+    # times because registration is asynchronous: a fresh-bundle first launch
+    # can take a moment to settle.
     local status_output
-    status_output=$("$_TAVS_APP_DEST/Contents/MacOS/TAVSApp" --reported-status 2>/dev/null) || true
-    if echo "$status_output" | grep -q "login_item_status=enabled"; then
-        echo "  Login item: enabled (survives reboots)"
-    else
-        cli_info "Login item status: not confirmed (may require System Settings approval)"
-        cli_info "Check: System Settings → General → Login Items → TAVS"
-    fi
+    local attempts=0
+    while (( attempts < 5 )); do
+        status_output=$("$_TAVS_APP_DEST/Contents/MacOS/TAVSApp" --reported-status 2>/dev/null) || true
+        if echo "$status_output" | grep -q "login_item_status=enabled"; then
+            echo "  Login item: enabled (survives reboots)"
+            echo ""
+            return 0
+        fi
+        attempts=$((attempts + 1))
+        sleep 1
+    done
+
+    # Reached only when SMAppService never transitioned to .enabled. The app
+    # is still installed and usable for this session; the user just needs to
+    # finish login-item approval via System Settings. Loud and actionable.
+    echo ""
+    cli_info "Login item NOT registered. TAVS will not start automatically at login."
+    cli_info "To fix: System Settings → General → Login Items → enable 'TAVS'."
+    cli_info "If 'TAVS' is missing from the list, the bundle's code signature may be"
+    cli_info "incompatible with SMAppService — re-run with TAVS_SIGNING_IDENTITY set."
     echo ""
 }

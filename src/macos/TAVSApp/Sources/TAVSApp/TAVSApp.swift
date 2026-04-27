@@ -1,8 +1,30 @@
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private let loginItem: LoginItemManagerProtocol
+
+    override init() {
+        self.loginItem = LoginItemManager()
+        super.init()
+    }
+
+    init(loginItem: LoginItemManagerProtocol) {
+        self.loginItem = loginItem
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+
+        // SPEC G9: register the app as a login item so it survives reboot.
+        // Idempotent — skipped when already enabled. A throw here is not fatal:
+        // the user can still operate TAVS for this session and approve the
+        // login item later via System Settings → General → Login Items.
+        do {
+            try loginItem.registerIfNeeded()
+        } catch {
+            TAVSLog.appDelegate.error("login item registration failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 }
 
