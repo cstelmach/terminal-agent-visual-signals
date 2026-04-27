@@ -140,8 +140,19 @@ private struct ScheduleTab: View {
 
     private func saveDraft() {
         let dir = scheduleURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        try? ScheduleStore.save(draft, to: scheduleURL)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        } catch {
+            let nsErr = error as NSError
+            if nsErr.code != NSFileWriteFileExistsError {
+                TAVSLog.scheduleStore.error("schedule dir create failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        do {
+            try ScheduleStore.save(draft, to: scheduleURL)
+        } catch {
+            TAVSLog.scheduleStore.error("schedule save failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func addWindow() {
@@ -421,7 +432,13 @@ private struct AppearanceTab: View {
             changed = true
         }
 
-        if changed { try? store.save() }
+        if changed {
+            do {
+                try store.save()
+            } catch {
+                TAVSLog.userConfStore.error("user.conf save failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }
 
@@ -503,6 +520,12 @@ private struct IdentityTab: View {
         var changed = false
         if identityMode != (store.identityMode ?? "dual") { store.identityMode = identityMode; changed = true }
         if dirIconType != (store.dirIconType ?? "flags") { store.dirIconType = dirIconType; changed = true }
-        if changed { try? store.save() }
+        if changed {
+            do {
+                try store.save()
+            } catch {
+                TAVSLog.userConfStore.error("user.conf save failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }

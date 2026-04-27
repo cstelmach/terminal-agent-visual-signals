@@ -219,7 +219,11 @@ final class Scheduler: ObservableObject {
     func togglePause() {
         guard var cfg = config else { return }
         cfg.masterActive.toggle()
-        try? ScheduleStore.save(cfg, to: scheduleURL)
+        do {
+            try ScheduleStore.save(cfg, to: scheduleURL)
+        } catch {
+            TAVSLog.scheduler.error("togglePause save failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     // MARK: - Core evaluation loop
@@ -227,7 +231,15 @@ final class Scheduler: ObservableObject {
     func loadAndEvaluate() {
         timerScheduler.cancelAll()
 
-        config = try? ScheduleStore.load(from: scheduleURL)
+        do {
+            config = try ScheduleStore.load(from: scheduleURL)
+        } catch {
+            // Schedule unparseable / missing — fall through to the no-config
+            // unmuted branch below. Logging here surfaces the cause for
+            // SPEC §10 debugging without coupling this loop to error handling.
+            TAVSLog.scheduler.error("schedule.json load failed: \(error.localizedDescription, privacy: .public)")
+            config = nil
+        }
         guard let config = config else {
             writeMuteState(muted: false, reason: .none, untilEpoch: 0)
             updatePublishedState(muted: false, reason: .none, transitionDate: nil)
@@ -324,7 +336,15 @@ final class Scheduler: ObservableObject {
 
     private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64) {
         let dir = muteStateURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        do {
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        } catch {
+            // .alreadyExists is the common path; only log surprising errors.
+            let nsErr = error as NSError
+            if nsErr.code != NSFileWriteFileExistsError {
+                TAVSLog.muteState.error("mute.state dir create failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
 
         let state = MuteStateData(
             muted: muted,
@@ -333,7 +353,13 @@ final class Scheduler: ObservableObject {
             writtenEpoch: Int64(clock.now().timeIntervalSince1970),
             appPID: ProcessInfo.processInfo.processIdentifier
         )
-        try? MuteStateWriter.write(state, to: muteStateURL)
+        do {
+            try MuteStateWriter.write(state, to: muteStateURL)
+        } catch {
+            // The shell side will eventually treat us as dead via the 120s
+            // staleness window if writes keep failing — see mute-gate.sh.
+            TAVSLog.muteState.error("mute.state write failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     // MARK: - UI state
