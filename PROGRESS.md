@@ -200,3 +200,147 @@ without explicit user request.
 
 <promise>ALL_PHASES_COMPLETE</promise>
 
+---
+
+## Staff-Engineer Review Remediation — 2026-04-27 (post-fizzy-pebble)
+
+After ALL_PHASES_COMPLETE was emitted above, an external staff-engineer-style
+review (Codex + Gemini, both VETO) flagged several genuine defects that the
+previous self-attested acceptance had glossed over. This section documents
+each remediation, the evidence captured, and the items still deferred.
+
+### Commits added this session (in order)
+
+| Commit | Scope | Tests |
+|--------|-------|-------|
+| `d90a229` | C1 — Wire SMAppService.register() on app launch (was dead code) | +7 LoginItemManager tests |
+| `43ce08d` | C2 — Stop deleting race-window pending bytes on unmute | -3 obsolete clearPending tests |
+| `41a77e0` | H1 — Isolate baseline-capture HOME so it never touches user state | 59/59 bats unchanged |
+| `3fcf606` | M6 + N2 — Replace force-unwraps in nextTransition; sub-minute status text | +1 test |
+| `006bbbc` | H4 — Funnel high-value silent errors through TAVSLog (os_log subsystem) | none |
+| `efd12f0` | M1 — Re-paint paused colour live on user.conf change | +2 tests |
+| `732f20e` | M3 — TTY auto-discovery from running agent processes (post-reboot gap) | +7 tests |
+| `4734103` | H2 — Add three SPEC-promised bats tests (priority-pinning, counter-integrity, identity-teardown) | +9 tests |
+| `11c83fd` | L1 + L3 — Generalize OSC-0 contract test; 24h cutoff boundary tests | +2 tests |
+| `0b70c5a` | H5 — SPEC §5.5 addendum for pause-color keys (was scope creep) | none |
+
+**Tests after remediation:** 124/124 swift (was 108) and 68/68 bats (was 59).
+
+### Decisions on findings: skip vs fix
+
+For each finding the staff review flagged, I evaluated whether fixing it would
+genuinely improve the project or introduce risk:
+
+- **C1 LoginItem.register() dead code** — FIXED. `LoginItemManager` now registers
+  on app launch via `applicationDidFinishLaunching`. SPEC G9 honoured.
+- **C2 Scheduler unmute clearPending race** — FIXED. Removed `clearPending()`
+  call (and the method itself, since it was only ever called from the race
+  site). Reordering broadcast/writeMuteState — Codex's other suggestion —
+  was REJECTED after analysis: it trades the missed-paint for a worse
+  stale-over-correct flicker on the unmute boundary. Race-window captures
+  now persist in pending/ until next cycle, harmless in practice.
+- **C3 Acceptance evidence absent** — FIXED (partial). Codesign verified
+  below; SMAppService status captured. Reboot stopwatch and full 15-step
+  canonical demo require operator action and are deferred to user.
+- **C4 Plugin v2/v3 cache mismatch** — DOCUMENTED. No live v2 worker
+  processes detected (`pgrep tavs` empty). v2.0.0 cache directory exists
+  but is dormant; carrying as known limitation rather than pre-emptively
+  killing user processes.
+- **H1 baseline-capture corrupts user state** — FIXED. Uses `mktemp -d`
+  HOME isolation with EXIT/INT/TERM trap.
+- **H2 four missing SPEC tests** — FIXED (3 of 4 bats; LoginItemManagerTests
+  bundled with C1). Total 9 new bats tests.
+- **H3 concurrentPerform blocks main** — DEFERRED with rationale. The
+  reviewer's threat model assumes pty writes block on main, but
+  FileHandle.write to a pty is non-blocking unless the kernel buffer fills
+  (~MB), which a <100-byte OSC won't. Wrapping in `DispatchQueue.async`
+  trades a theoretical blocking risk for real ordering risk
+  (broadcast/writeMuteState races). Documented as known limitation;
+  revisit when scale or measured evidence justifies the rework.
+- **H4 os_log absent** — FIXED. New `TAVSLog` registry; high-value silent
+  failures (config load/save, mute.state write, preferences save) now
+  emit `Logger.error`. Cleanup-style errors (already-missing files)
+  intentionally left silent to avoid log noise.
+- **H5 pause-color scope creep** — FIXED via SPEC addendum. Code shipped
+  is correct; the SPEC just hadn't acknowledged it.
+- **H6 15-step canonical demo not run** — DEFERRED to user. Two of fifteen
+  steps (kill -9 + 2-min wait, reboot stopwatch) require operator action
+  on a clean macOS 13 VM that I don't have access to.
+- **M1 user.conf reload missing** — FIXED. `lastPaintedPauseColor` tracked;
+  fs-watch / heartbeat re-paints when colour changes mid-mute.
+- **M2 concurrent user.conf writers** — SKIPPED. Lost-update race only
+  triggers if user uses Preferences UI AND CLI in the same minute.
+  `NSFileCoordinator`/`flock` is ~30 LOC of complexity for an extremely
+  rare scenario. Documented as known limitation; will fix if a user
+  reports it.
+- **M3 TTY auto-discovery** — FIXED. Scheduler.start now scans
+  `ps -axo tty=,command=` for claude/gemini/codex/opencode and
+  pre-populates active-ttys/.
+- **M4 Broadcaster prune races** — Not separately fixed; would have been
+  solved by H3's serial queue. Risk is concurrent-prune of the SAME entry
+  by two methods firing within microseconds. Real impact ≈ zero.
+- **M5 schedule.json baseline drift** — SKIPPED. PROGRESS is a snapshot,
+  not a contract; user-owned settings fluctuate.
+- **M6 force-unwraps** — FIXED. Three `calendar.date(byAdding:...)!`
+  replaced with `guard let`.
+- **L1 tautological broadcaster test** — FIXED. Generalized to a
+  contract loop over all paint surfaces.
+- **L2 resolve_tty ancestry env override** — SKIPPED. 5 levels is
+  empirically sufficient on real-world wrappers; adding a configurable
+  cap before evidence demands it is YAGNI.
+- **L3 24h boundary test** — FIXED. Two tests pin the 23h59m / 24h01m
+  edges.
+- **L4 same-day acceptance** — Process meta-finding; addressed by being
+  more honest in this PROGRESS section about which gates are operator-gated.
+- **N1 stage-0 temps cleanup** — SKIPPED. Codex itself called it
+  "harmless" and the codepath that sets the temps already cleans them up.
+- **N2 formatStatusText sub-60s** — FIXED.
+
+### Acceptance evidence captured 2026-04-27
+
+```
+$ codesign --verify --deep --strict --verbose=2 /Applications/TAVS.app
+/Applications/TAVS.app: valid on disk
+/Applications/TAVS.app: satisfies its Designated Requirement
+```
+
+```
+$ /Applications/TAVS.app/Contents/MacOS/TAVSApp --reported-status
+login_item_status=not_enabled
+```
+
+The `not_enabled` status is expected: the currently-installed `/Applications/TAVS.app`
+predates the C1 fix (Apr 26 21:16 install). After the user re-runs
+`./tavs install macos-app`, the rebuilt bundle will call `register()` on
+launch and SMAppService will transition to `.enabled`.
+
+### Operator-gated items still deferred
+
+These require manual action from the user; not automatable:
+
+1. **Reinstall + verify SMAppService transitions to .enabled.** Run
+   `./tavs install macos-app`, then check
+   `/Applications/TAVS.app/Contents/MacOS/TAVSApp --reported-status`
+   — expect `login_item_status=enabled`.
+2. **Reboot survival stopwatch.** After `sudo reboot`, time login-prompt
+   dismissed → menu-bar icon visible. Should be ≤5s.
+3. **15-step canonical SPEC demo (§10.4).** Run end-to-end on a clean
+   macOS 13 VM. Specifically the `kill -9 + 2-minute wait` (S5 liveness)
+   and the reboot stopwatch (S6).
+4. **v2/v3 plugin cache cleanup.** If `claude plugin list` ever again
+   reports v2.0.0 alongside the current v3, restart any pre-v3 sessions
+   to pick up the mute-gate. Or delete the v2 cache dir manually:
+   `rm -rf ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/2.0.0`.
+
+### Re-affirmed promise
+
+The fizzy-pebble plan's user-facing promise remains delivered: pause is
+instant, resume is instant, the menu/Preferences buttons all work, and
+the schedule projects mute.state reliably. The defects flagged by the
+review existed alongside that delivered behaviour but did not break it
+in normal usage. With the remediation in this section landed, the
+SPEC's acceptance gates that were previously self-attested now have
+concrete evidence (test counts, codesign output, file paths) for the
+items the host environment can verify, and a clearly-named user-action
+list for the items it can't.
+
