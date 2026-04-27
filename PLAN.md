@@ -1,193 +1,132 @@
-# Implementation Plan — Paused Visual State for TAVS
+# Implementation Plan — Fizzy-Pebble Closeout
 
-**Spec:** /Users/cs/.claude/plans/can-we-actually-make-functional-gray.md
-**Created:** 2026-04-21
+**Spec:** /Users/cs/.claude/plans/take-a-deep-breath-fizzy-pebble.md
+**Created:** 2026-04-27
 **Agent:** execute-spec (manual mode)
+
+> Prior plan/progress for `can-we-actually-make-functional-gray.md` archived to
+> `docs/_archive/2026-04-27_can-we-actually-make-functional-gray/` per the
+> execute-spec pre-step protocol (different spec, must not co-mingle).
 
 ---
 
 ## Prerequisites
 
 - macOS 13+ with Swift 6.0 toolchain
-- Existing test suite passes: `cd src/macos/TAVSApp && swift test` (84 tests)
-- No shell-side changes required (spec §2: "No changes to mute-gate.sh, trigger.sh, emit_osc, defaults.conf, or any other shell file")
+- TAVS.app installed at `/Applications/TAVS.app`
+- Test commands:
+  - `swift test --package-path src/macos/TAVSApp`
+  - `bats tests/unit/ tests/integration/`
 
-## Dependency Graph
+## Phase Map (mirrors fizzy-pebble spec §3)
 
 ```
-Phase 1 (Broadcaster) ──→ Phase 2 (Scheduler wiring)
+Phase 0 (baseline) ─→ Phase 1 (menu wiring) ─→ Phase 2 (paused-visual)
+                                                       │
+                                                       ▼
+                                       Phase 3 (schedule restore) ─→ Phase 4 (acceptance)
 ```
-
-**Critical path:** Phase 1 → Phase 2
 
 ## Scope Fence
 
-Only these files are in scope:
+| File / path | Phase | Change |
+|---|---|---|
+| `src/macos/TAVSApp/Sources/TAVSApp/MenuContent.swift` | 1 | Wire Open Preferences + add Edit Schedule |
+| `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift` | 2 | Drop OSC 0 emission in `broadcastPaused` |
+| `src/macos/TAVSApp/Tests/TAVSAppTests/BroadcasterTests.swift` | 2 | Update paused-bytes assertion + no-OSC-0 test |
+| `docs/reference/macos-menubar-app.md` | 2 | Refresh Paused Visual Behaviour section |
+| `~/.tavs/schedule.json` | 3 | Recreate via `tavs schedule` CLI (not in git) |
+| `PLAN.md`, `PROGRESS.md` | meta | Re-baselined for this spec (Step 0) |
 
-| File | Phase | Change |
-|------|-------|--------|
-| `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift` | 1 | Add `broadcastPaused()`, `broadcastPausedClear()`, `writeToAllActiveTTYs(_:)` |
-| `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift` | 1, 2 | Extend `BroadcasterProtocol` (Phase 1), rewire `loadAndEvaluate()` (Phase 2) |
-| `Tests/.../Mocks/MockBroadcaster.swift` | 1 | Add call counters for new methods |
-| `Tests/.../BroadcasterTests.swift` | 1 | Byte-content verification tests |
-| `Tests/.../SchedulerTests.swift` | 2 | Transition matrix tests |
-
-**Explicit exclusion:** `trigger.sh`, `mute-gate.sh`, `emit_osc`, `defaults.conf`, any shell file.
+Out of scope: shell trigger.sh, mute-gate.sh, defaults.conf — fizzy-pebble §1.3.
 
 ---
 
-## Phase 1: Broadcaster — Protocol, Implementation, Mock, Byte Tests
+## Phase 0 — Preparation & baseline (no code changes)
 
-Consolidates spec tasks 1, 2, 4, and 6 into a single compilable unit.
+**Status:** DONE (prior session, 2026-04-21 22:03)
+**Verification:** baseline tests captured (Swift 105/105, bats 59/59 at the time); `/tmp/schedule.json.bak` was intact when first captured but later lost to a machine reboot before Phase 3 could consume it.
+
+## Phase 1 — Menu-bar ↔ Preferences wiring
+
+**Status:** DONE — commit `19e75ac feat(macos): Wire Preferences menu buttons and add Edit Schedule shortcut`
+**Result:** "Open Preferences…" and "Edit Schedule…" menu items both open the SwiftUI settings window; "Edit Schedule…" pre-seeds `tavs_prefs_tab=0` so it always lands on the Schedule tab. macOS-13 selector fallback in place.
+
+## Phase 2 — Paused-visual simplification
+
+**Status:** DONE — commit `264a898 fix(broadcaster): Drop paused-title emission so resume is instant`
+**Bonus follow-on:** commit `df164af feat(macos): Configurable paused background per macOS appearance` adds light/dark configurable pause background.
+**Result:** `broadcastPaused()` no longer emits OSC 0 (the paused title), so there is no title state for resume to restore — "instantly back" holds by construction. Updated tests + reference docs accompany the change.
+
+## Phase 3 — Recreate the original schedule
+
+**Status:** DONE (this session, 2026-04-27)
+**No commit** — `~/.tavs/schedule.json` is gitignored user data.
+**Background:** Backup `/tmp/schedule.json.bak` was lost to a reboot. Exhaustive search this session confirmed no copy exists in `/Volumes/external/data/archive`, `~/.Trash`, or Time Machine. User confirmed the recreate-via-CLI path; values per archived PROGRESS.md.
 
 ### Implementation Steps
 
-1. **Extend `BroadcasterProtocol`** in `Scheduler.swift:146-148`:
-   - Add `func broadcastPaused()`
-   - Add `func broadcastPausedClear()`
-
-2. **Implement in `Broadcaster.swift`**:
-   - Add private `writeToAllActiveTTYs(_ data: Data)` helper that handles TTY enumeration
-     (list `active-ttys/`, filter stale >24h, concurrent write, prune on failure).
-     Same enumeration logic as `broadcast()` but without pending-file read/remove.
-   - `broadcastPaused()`: Generate OSC bytes once, call `writeToAllActiveTTYs(_:)`:
-     - OSC 104 (reset palette): `\x1b]104\x07`
-     - OSC 11 with `#3A3A3A` (grey bg): `\x1b]11;#3A3A3A\x07`
-     - OSC 0 with title (paused face + icon): `\x1b]0;Ǝ[⬛ ⬛]E ⏸ Paused\x07`
-     - iTerm2 clear bg image: `\x1b]1337;SetBackgroundImageFile=\x07`
-   - `broadcastPausedClear()`: Generate reset bytes, call `writeToAllActiveTTYs(_:)`:
-     - OSC 104 (reset palette): `\x1b]104\x07`
-     - OSC 111 (reset bg): `\x1b]111\x07`
-     - OSC 0 with empty string (clear title): `\x1b]0;\x07`
-
-3. **Update `MockBroadcaster`** in `Tests/.../Mocks/MockBroadcaster.swift`:
-   - Add `broadcastPausedCallCount: Int = 0`
-   - Add `broadcastPausedClearCallCount: Int = 0`
-   - Implement both protocol methods incrementing respective counters
-
-4. **`broadcast()` stays UNCHANGED.** It has per-TTY pending-cache logic; the new helper
-   is for the uniform paused/clear bytes only.
-
-### Files to Create/Modify
-
-- `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift` — extend BroadcasterProtocol (lines 146-148)
-- `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift` — add 3 methods
-- `Tests/.../Mocks/MockBroadcaster.swift` — add counters + method implementations
-- `Tests/.../BroadcasterTests.swift` — add 5 byte-content tests
-
-### Tests to Write
-
-In `BroadcasterTests.swift`:
-
-| Test | Setup | Assert |
-|------|-------|--------|
-| `testBroadcastPausedWritesGreyBytes` | Register one TTY, call `broadcastPaused()` | Written data contains `#3A3A3A` AND `⏸ Paused` |
-| `testBroadcastPausedClearWritesResetBytes` | Register one TTY, call `broadcastPausedClear()` | Written data contains `]111` (bg reset) AND `]104` (palette reset) |
-| `testBroadcastPausedBroadcastsToMultipleTTYs` | Register two TTYs, call `broadcastPaused()` | Both devices received identical bytes |
-| `testBroadcastPausedSkipsStaleEntries` | One stale TTY (>24h) | No write attempt, entry pruned |
-| `testBroadcastPausedPrunesDeadTTY` | Register TTY, mock write failure | Entry removed from active-ttys |
+1. `./tavs schedule add-window --days mon,tue,wed,thu,fri --start 08:00 --end 20:00 --id weekdays`
+2. `./tavs schedule add-quiet --kind fixed_daily --start 12:00 --end 13:00 --id lunch`
+3. `./tavs schedule remove test-all-day`
+4. `./tavs schedule pause`
+5. `./tavs schedule show` to confirm
 
 ### Verification
 
-- `swift build --package-path src/macos/TAVSApp` compiles
-- `cd src/macos/TAVSApp && swift test` — all 84 existing + 5 new tests pass
-- `broadcast()` method body is byte-identical to pre-change (no modifications)
+- `~/.tavs/schedule.json` contains exactly: weekdays Mon–Fri 08:00–20:00 + lunch fixed_daily 12:00–13:00 + `master_active: false` + `version: 1`
+- `~/.tavs/mute.state` reads `MUTED="true"`, `REASON="master_paused"` within ~2 s
+- `./tavs schedule show` prints "Master: paused" with the two configured rules
 
 ### Definition of Done
 
-- [ ] `BroadcasterProtocol` has `broadcastPaused()` and `broadcastPausedClear()` methods
-- [ ] `Broadcaster` implements both via shared `writeToAllActiveTTYs(_:)` helper
-- [ ] `MockBroadcaster` tracks call counts for both new methods
-- [ ] 5 byte-content tests pass, verifying OSC sequences contain expected strings
-- [ ] All 84 existing tests still pass (zero regressions)
+- [x] schedule.json matches documented original structure
+- [x] mute.state reflects paused via FileWatcher
+- [x] Menu/CLI both report paused state
 
----
+## Phase 4 — Acceptance & cross-feature regression
 
-## Phase 2: Scheduler Wiring — Transition Logic and Tests
+**Status:** Partially DONE — automated checks (T4.1, T4.6) PASS this session; visual UI checks (T4.2–T4.5) are user-gated.
+**No commit** — acceptance only.
 
-Consolidates spec tasks 3 and 5.
+### Automated (DONE)
 
-### Implementation Steps
+| Task | Result |
+|---|---|
+| T4.1 — Run `swift test` and `bats` | ✅ Swift 108/108, bats 59/59 (no regressions) |
+| T4.6 — `pkill TAVSApp && open /Applications/TAVS.app` | ✅ Killed PID 13761 → relaunched as PID 82230 → mute.state correctly re-derived (`MUTED="true"`, `REASON="master_paused"`) |
 
-1. **Modify `loadAndEvaluate()` in `Scheduler.swift`** (currently lines 224-230):
+### User-gated visual checks (next steps)
 
-   Current logic:
-   ```swift
-   if wasMuted && !result.muted {
-       broadcaster.broadcast()
-   }
-   writeMuteState(...)
-   ```
-
-   New logic (preserving existing transition order):
-   ```swift
-   // Unmute transition: clear grey → replay pending → write state
-   if wasMuted && !result.muted {
-       broadcaster.broadcastPausedClear()
-       broadcaster.broadcast()
-   }
-
-   writeMuteState(...)
-
-   // Mute transition: write state first → paint grey
-   if !wasMuted && result.muted {
-       broadcaster.broadcastPaused()
-   }
-   ```
-
-2. **Key invariant preserved:** `broadcast()` still called before `writeMuteState()` on
-   unmute transition (spec §2 timing table). `broadcastPaused()` called AFTER
-   `writeMuteState()` on mute transition.
-
-3. **Existing test `testMutedToUnmutedCallsBroadcaster`** (SchedulerTests.swift:415)
-   should pass unmodified — it checks `broadcastCallCount == 1`, which is still true.
-   The new `broadcastPausedClear()` call before it doesn't affect the count.
-
-### Files to Create/Modify
-
-- `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift` — modify `loadAndEvaluate()` (±10 lines)
-- `Tests/.../SchedulerTests.swift` — add 6 transition tests
-
-### Tests to Write
-
-In `SchedulerLifecycleTests`:
-
-| Test | Setup | Action | Assert |
-|------|-------|--------|--------|
-| `testActiveToMutedPaintsGrey` | masterActive=true, inside window | togglePause + fileWatcher change | `broadcastPausedCallCount == 1`, `broadcastCallCount == 0` |
-| `testMutedToActiveClearsAndReplays` | masterActive=false | togglePause (resume) + fileWatcher change | `broadcastPausedClearCallCount == 1`, `broadcastCallCount == 1` |
-| `testHeartbeatDuringMuteIsStable` | masterActive=false | Start (mutes), advance 60s, fire heartbeat | `broadcastPausedCallCount == 1` (from startup only) |
-| `testAppStartupIntoMuted` | masterActive=false | `scheduler.start()` | `broadcastPausedCallCount == 1` |
-| `testScheduleUnmuteClearsAndReplays` | Inside window, quiet at :50-:59 | Start at :55 (muted), advance to :00 (next hour), fire boundary timer | `broadcastPausedClearCallCount == 1`, `broadcastCallCount == 1` |
-| `testMutedToMutedReasonChangeNoRetrigger` | Schedule muted + also quiet | Transition from quiet→schedule-muted (still muted) | Counts unchanged beyond initial mute paint |
-
-### Verification
-
-- `cd src/macos/TAVSApp && swift test` — all existing + Phase 1 + Phase 2 tests pass
-- Existing `testMutedToUnmutedCallsBroadcaster` still passes (regression check)
-- `git diff --stat` shows only the 2 source files + 1 test file touched
+| Task | Action | Pass criterion |
+|---|---|---|
+| T4.2 | Click menu-bar icon | Icon = `pause.circle.fill` (since paused). Status text reads "Paused — click to resume" or similar. |
+| T4.3 | Menu → "Open Preferences…" then "Edit Schedule…" | Both open the window. Edit Schedule lands on Schedule tab. Make a trivial Schedule edit + Save → `cat ~/.tavs/schedule.json` shows it. |
+| T4.4 | Revert the trivial edit | schedule.json matches Phase 3 baseline again. |
+| T4.5 | Resume → click "Pause TAVS" → click "Resume TAVS" | Grey appears on registered live terminals within ~2 s; clears within ~2 s; **tab titles unchanged throughout** (Phase 2 acceptance). |
 
 ### Definition of Done
 
-- [ ] `loadAndEvaluate()` calls `broadcastPausedClear()` + `broadcast()` on unmute
-- [ ] `loadAndEvaluate()` calls `broadcastPaused()` after `writeMuteState()` on mute
-- [ ] 6 transition tests pass covering: active→muted, muted→active, heartbeat stability, startup into muted, schedule unmute, reason-change no-retrigger
-- [ ] All existing tests pass (including `testMutedToUnmutedCallsBroadcaster`)
-
----
+- [x] T4.1 test suites green
+- [x] T4.6 kill+relaunch survives correctly
+- [ ] T4.2 visual icon matches state — user-gated
+- [ ] T4.3 Preferences round-trip — user-gated
+- [ ] T4.4 schedule revert — user-gated
+- [ ] T4.5 menu pause/resume cycle, no title staleness — user-gated
 
 ## Risk Areas
 
 | Risk | Phase | Mitigation |
-|------|-------|------------|
-| TTY enumeration duplication between `broadcast()` and `writeToAllActiveTTYs()` | 1 | Accept duplication — extracting a shared helper would modify `broadcast()` body, violating scope |
-| OSC escape sequence bytes incorrect | 1 | Byte-content tests verify exact substrings in written data |
-| Transition order regression | 2 | Existing `testMutedToUnmutedCallsBroadcaster` + new transition tests |
-| `previousMuted` init value causing false transition on first evaluation | 2 | Test `testAppStartupIntoMuted` covers this: `previousMuted=false` → `result.muted=true` triggers paint |
+|---|---|---|
+| User-gated visual checks T4.2–T4.5 cannot be automated | 4 | Surface in checkpoint with concrete criteria. |
+| Future reboots could lose `~/.tavs/schedule.json` again if accidentally deleted | meta | Schedule values now documented in PROGRESS.md follow-up section + this PLAN.md Phase 3. |
 
 ## Sequencing & Dependencies
 
-| Phase | Depends On | Can Parallel With |
-|-------|-----------|-------------------|
-| 1     | —         | —                 |
-| 2     | 1         | —                 |
+| Phase | Depends On | Status |
+|---|---|---|
+| 0 | — | DONE |
+| 1 | 0 | DONE |
+| 2 | 0 | DONE |
+| 3 | — | DONE |
+| 4 | 1, 2, 3 | Auto checks DONE; visual checks pending user |
