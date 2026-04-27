@@ -841,6 +841,20 @@ final class SchedulerLifecycleTests: XCTestCase {
 
     // MARK: - B3 and H2 transition tests
 
+    func testStartCallsTTYDiscoveryOnce() throws {
+        // M3: Scheduler.start must pre-populate active-ttys/ from running
+        // agent processes so first-mute-after-reboot doesn't paint zero
+        // terminals. Discovery runs exactly once per start.
+        try writeStandardConfig()
+
+        XCTAssertEqual(broadcaster.discoverCallCount, 0)
+
+        scheduler.start()
+
+        XCTAssertEqual(broadcaster.discoverCallCount, 1,
+                       "discoverAndRegisterActiveAgentTTYs must run on start")
+    }
+
     func testStartupSeedsPreviousMutedFromDisk() throws {
         // B3: A pre-existing mute.state on disk (from a prior app run that
         // crashed while muted) must seed `previousMuted=true`, so a restart

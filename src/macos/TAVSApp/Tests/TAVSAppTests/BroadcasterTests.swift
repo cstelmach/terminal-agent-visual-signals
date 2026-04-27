@@ -200,6 +200,75 @@ final class BroadcasterTests: XCTestCase {
                        "Must not emit empty-title OSC 0 with ST terminator either")
     }
 
+    // MARK: - TTY auto-discovery parser (M3)
+
+    func testParseAgentTTYEntriesMatchesClaudeProcess() {
+        let lines = [
+            "ttys001 /usr/local/bin/claude --resume",
+            "?? /sbin/launchd",
+            "ttys002 -zsh"
+        ]
+        let entries = Broadcaster.parseAgentTTYEntries(from: lines)
+        XCTAssertEqual(entries, ["_dev_ttys001"])
+    }
+
+    func testParseAgentTTYEntriesMatchesAllAgents() {
+        let lines = [
+            "ttys001 claude",
+            "ttys002 gemini chat",
+            "ttys003 /usr/bin/codex --version",
+            "ttys004 bun /path/to/opencode/index.ts"
+        ]
+        let entries = Broadcaster.parseAgentTTYEntries(from: lines)
+        XCTAssertEqual(entries, ["_dev_ttys001", "_dev_ttys002", "_dev_ttys003", "_dev_ttys004"])
+    }
+
+    func testParseAgentTTYEntriesSkipsNoTTYProcesses() {
+        let lines = [
+            "?? claude",
+            "? gemini",
+            "ttys001 codex"
+        ]
+        let entries = Broadcaster.parseAgentTTYEntries(from: lines)
+        XCTAssertEqual(entries, ["_dev_ttys001"])
+    }
+
+    func testParseAgentTTYEntriesSkipsNonAgents() {
+        let lines = [
+            "ttys001 -zsh",
+            "ttys002 vim README.md",
+            "ttys003 git status"
+        ]
+        let entries = Broadcaster.parseAgentTTYEntries(from: lines)
+        XCTAssertTrue(entries.isEmpty)
+    }
+
+    func testParseAgentTTYEntriesDeduplicatesSameTTY() {
+        // A TTY can host multiple agent processes (claude + a tail in same
+        // tab via job control). Both lines should produce one entry.
+        let lines = [
+            "ttys001 claude",
+            "ttys001 codex --version"
+        ]
+        let entries = Broadcaster.parseAgentTTYEntries(from: lines)
+        XCTAssertEqual(entries, ["_dev_ttys001"])
+    }
+
+    func testDiscoverWritesEntriesIntoActiveTTYsDir() throws {
+        // End-to-end on the real process: invokes ps, parses, writes.
+        // We can't predict what's running on the test host, so the contract
+        // we verify is "the directory exists and contains zero or more
+        // valid-format entries". Stronger assertions live in the parser tests.
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: activeTTYsDir.path))
+        let entries = (try? FileManager.default.contentsOfDirectory(atPath: activeTTYsDir.path)) ?? []
+        for entry in entries {
+            XCTAssertTrue(entry.hasPrefix("_dev_tty"),
+                          "Discovered entry '\(entry)' must follow _dev_tty* convention")
+        }
+    }
+
     // MARK: - SystemProcessRunner throwing contract (B1)
 
     func testSystemProcessRunnerThrowsOnUnwritablePath() {

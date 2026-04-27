@@ -153,6 +153,11 @@ protocol BroadcasterProtocol: AnyObject {
     func broadcast()
     func broadcastPaused(backgroundColor: String)
     func broadcastPausedClear()
+    // Called once at Scheduler.start to pre-register TTYs hosting running
+    // agent processes (claude / gemini / codex / opencode). Closes the
+    // first-login-after-reboot gap where active-ttys/ is otherwise empty
+    // until each terminal fires its first hook.
+    func discoverAndRegisterActiveAgentTTYs()
 }
 
 final class Scheduler: ObservableObject {
@@ -201,6 +206,12 @@ final class Scheduler: ObservableObject {
     }
 
     func start() {
+        // Pre-populate active-ttys/ from running agent processes. After a
+        // reboot, /tmp/tavs-$UID is wiped and the touch-based registry is
+        // empty until each terminal fires a hook. With this, the very first
+        // mute transition after login already covers all live agent sessions.
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
+
         // Seed previousMuted from the on-disk mute.state so a restart-after-crash
         // correctly detects a muted→unmuted transition. Without this, a crash
         // while muted followed by a relaunch while the schedule is active

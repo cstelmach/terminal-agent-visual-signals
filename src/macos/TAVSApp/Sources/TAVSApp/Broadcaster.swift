@@ -78,6 +78,81 @@ final class Broadcaster: BroadcasterProtocol {
         }
     }
 
+    // MARK: - TTY auto-discovery (M3)
+
+    // Pre-populates active-ttys/ from running agent processes. Without this,
+    // /tmp/tavs-$UID/active-ttys/ is empty after a reboot until each terminal
+    // fires its first hook — so the very first mute transition after login
+    // paints zero terminals even though Claude/Gemini/Codex sessions are
+    // already open.
+    //
+    // Invoked from Scheduler.start(). Idempotent: re-creating the same entry
+    // file is harmless and refreshes its mtime, which is what the existing
+    // touch-based shell registration also does.
+    func discoverAndRegisterActiveAgentTTYs() {
+        let lines: [String]
+        do {
+            lines = try Self.runPsForAgentTTYs()
+        } catch {
+            TAVSLog.broadcaster.error("ps invocation failed: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        let entries = Self.parseAgentTTYEntries(from: lines)
+        let dir = runtimeDir.appendingPathComponent("active-ttys")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        for entry in entries {
+            let url = dir.appendingPathComponent(entry)
+            FileManager.default.createFile(atPath: url.path, contents: nil)
+        }
+    }
+
+    // Pure parser exposed for unit testing. Input is a list of "<tty> <command>"
+    // lines (output of `ps -axo tty=,command=`); output is a deduplicated,
+    // sorted list of active-ttys/ entry names matching the shell's TTY_SAFE
+    // convention (leading "_dev_", e.g., "_dev_ttys001").
+    static func parseAgentTTYEntries(from psLines: [String]) -> [String] {
+        let agentNames = ["claude", "gemini", "codex", "opencode"]
+        var entries = Set<String>()
+        for raw in psLines {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            guard !line.isEmpty else { continue }
+            let parts = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+            guard parts.count == 2 else { continue }
+            let tty = String(parts[0])
+            let command = String(parts[1])
+            // Skip processes without a real TTY (kernel daemons, headless
+            // services, etc.) — ps reports "??" or "?" for those.
+            guard tty.hasPrefix("ttys") || tty.hasPrefix("ttyp") else { continue }
+            // Permissive substring match over the full command line. False
+            // positives (a process whose argv happens to contain "claude")
+            // are harmless: we just touch one extra registry entry and the
+            // 24h cutoff in enumerateActiveTTYs prunes it eventually.
+            let isAgent = agentNames.contains { command.contains($0) }
+            guard isAgent else { continue }
+            entries.insert("_dev_\(tty)")
+        }
+        return Array(entries).sorted()
+    }
+
+    private static func runPsForAgentTTYs() throws -> [String] {
+        let process = Process()
+        process.launchPath = "/bin/ps"
+        process.arguments = ["-axo", "tty=,command="]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = Pipe()
+        try process.run()
+        // CRITICAL: read BEFORE waitUntilExit. ps -axo on a busy host can
+        // emit >64KB which would fill the pipe buffer and block the child;
+        // waitUntilExit would then deadlock waiting for an exit that the
+        // child can't reach because it's blocked on write. readDataToEndOfFile
+        // drains as data arrives; waitUntilExit returns immediately after.
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard let output = String(data: data, encoding: .utf8) else { return [] }
+        return output.split(separator: "\n").map(String.init)
+    }
+
     private func writeToAllActiveTTYs(_ data: Data) {
         let validTTYs = enumerateActiveTTYs()
 
