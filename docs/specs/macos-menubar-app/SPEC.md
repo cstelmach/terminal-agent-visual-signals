@@ -555,9 +555,21 @@ across round-trips.
 | `TAVS_DIR_ICON_TYPE` | Identity → Dir Icon | enum: flags, plants, buildings, auto |
 | `ENABLE_STYLISH_BACKGROUNDS` | Appearance → Stylish Backgrounds | bool |
 | `ENABLE_LIGHT_DARK_SWITCHING` | Appearance → Light/Dark Switching | bool |
+| `TAVS_PAUSE_BG_DARK` | Appearance → Paused State (dark) | hex color `#RRGGBB` (default `#3A3A3A`) |
+| `TAVS_PAUSE_BG_LIGHT` | Appearance → Paused State (light) | hex color `#RRGGBB` (default `#D0D0D0`) |
 
-Total: 9 controls across 2 tabs. Schedule tab contents live in
-`schedule.json`, not `user.conf`.
+**Total: 11 controls across 2 tabs.** The two pause-bg keys were
+added by commit `df164af` (post-Phase-2 follow-on) so light-mode and
+dark-mode users can configure different paused-state shades. The
+broadcaster picks the colour based on
+`NSApplication.shared.effectiveAppearance` at the moment of paint.
+A `Broadcaster.sanitizeHexColor` guard rejects malformed values and
+falls back to the dark default so a bad user.conf cannot wedge the
+pause paint. Tracked in scheduler state via `lastPaintedPauseColor`
+so a Preferences edit while currently paused triggers a live
+re-paint within one fs-watch tick.
+
+Schedule tab contents live in `schedule.json`, not `user.conf`.
 
 ---
 
@@ -746,7 +758,7 @@ exists as a runnable stub with an empty menu, but does nothing real yet.
 
 - **T2.3** — Implement `UserConfStore.swift`: line-oriented bash-KV
   parser that preserves line order, comments (`#` prefix), blank lines,
-  and unknown keys. Exposes typed accessors for the 9 curated keys
+  and unknown keys. Exposes typed accessors for the 11 curated keys
   (§5.5). Save writes the full file with only curated keys mutated.
   *Verify:* round-trip test: load a fixture `user.conf` with comments
   and unknown keys, save without changes, `diff` shows zero bytes.
