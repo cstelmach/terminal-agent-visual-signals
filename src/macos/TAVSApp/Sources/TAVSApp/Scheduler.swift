@@ -30,16 +30,22 @@ enum ScheduleEvaluator {
 
         let truncated = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         guard var checkDate = calendar.date(from: truncated) else { return nil }
-        checkDate = calendar.date(byAdding: .minute, value: 1, to: checkDate)!
+        // Apple's Gregorian Calendar empirically never returns nil here, even
+        // across DST gaps (it skips them). Use safe unwrap anyway so a future
+        // Calendar swap (custom plug-in calendar, non-Gregorian locale) cannot
+        // crash the entire scheduler instead of just returning "no transition".
+        guard let firstStep = calendar.date(byAdding: .minute, value: 1, to: checkDate) else { return nil }
+        checkDate = firstStep
 
-        let maxDate = calendar.date(byAdding: .hour, value: 48, to: date)!
+        guard let maxDate = calendar.date(byAdding: .hour, value: 48, to: date) else { return nil }
 
         while checkDate <= maxDate {
             let nextResult = evaluate(at: checkDate, rules: rules, calendar: calendar)
             if nextResult.muted != currentResult.muted {
                 return checkDate
             }
-            checkDate = calendar.date(byAdding: .minute, value: 1, to: checkDate)!
+            guard let nextStep = calendar.date(byAdding: .minute, value: 1, to: checkDate) else { return nil }
+            checkDate = nextStep
         }
 
         return nil
@@ -362,6 +368,12 @@ final class Scheduler: ObservableObject {
                 let interval = next.timeIntervalSince(clock.now())
                 if interval > 0 {
                     let minutes = Int(interval / 60)
+                    if minutes < 1 {
+                        // Render sub-minute transitions in seconds so the
+                        // status no longer reads "next mute in 0 min".
+                        let seconds = max(1, Int(interval))
+                        return "Active — next mute in \(seconds) sec"
+                    }
                     if minutes < 60 {
                         return "Active — next mute in \(minutes) min"
                     }

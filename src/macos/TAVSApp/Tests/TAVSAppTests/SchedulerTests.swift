@@ -486,6 +486,53 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertTrue(scheduler.statusText.contains("min"), "Status should mention minutes to next mute")
     }
 
+    func testStatusTextSubMinuteRendersInSeconds() throws {
+        // Reviewer N2: previously rendered "next mute in 0 min" for any
+        // transition under 60 seconds. Now uses seconds for that range so
+        // the menu reads cleanly through the final minute before mute.
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let nowDate = cal.date(from: DateComponents(
+            calendar: cal, timeZone: cal.timeZone,
+            year: 2026, month: 4, day: 20, hour: 9, minute: 0, second: 30
+        ))!
+
+        let subMinClock = VirtualClock(startingAt: nowDate)
+        let subMinScheduler = Scheduler(
+            clock: subMinClock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: cal
+        )
+
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: true,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: [
+                QuietPeriod(id: "soon", enabled: true, kind: .fixedDaily,
+                            startMinute: nil, endMinute: nil,
+                            start: "09:01", end: "09:02")
+            ]
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        subMinScheduler.start()
+
+        XCTAssertFalse(subMinScheduler.isMuted, "Should be unmuted at 09:00:30")
+        XCTAssertTrue(subMinScheduler.statusText.contains("sec"),
+                      "Sub-minute transition should render seconds, got: \(subMinScheduler.statusText)")
+        XCTAssertFalse(subMinScheduler.statusText.contains("0 min"),
+                       "Must not render '0 min' for sub-minute transitions")
+    }
+
     func testStatusTextMuted() throws {
         let config = ScheduleConfig(
             version: 1,
