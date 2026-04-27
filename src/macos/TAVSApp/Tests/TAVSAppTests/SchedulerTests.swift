@@ -730,14 +730,17 @@ final class SchedulerLifecycleTests: XCTestCase {
                        "Restart with stale muted state must fire clear transition")
         XCTAssertEqual(broadcaster.broadcastCallCount, 1,
                        "Restart with stale muted state must replay pending")
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 1,
-                       "Post-unmute clearPending must discard orphan bytes")
     }
 
-    func testUnmuteTransitionCallsClearPending() throws {
-        // H2: On unmute transition, clearPending() must be called AFTER
-        // writeMuteState so bytes that hooks dropped into pending/ during the
-        // tiny gap are discarded rather than replayed as stale state later.
+    func testUnmuteTransitionDoesNotPurgePending() throws {
+        // Race-window contract: a hook firing in the narrow gap between
+        // broadcast()'s drain and writeMuteState(false) writes its OSC bytes
+        // to pending/. The Scheduler must NOT delete those bytes — they
+        // reflect the hook's current intent, not stale state. Earlier code
+        // called `broadcaster.clearPending()` here, which silently dropped
+        // the byte and made the user miss a paint. We verify the broadcaster
+        // protocol no longer exposes a destructive clear method, so the
+        // drift cannot regress without a compile error first.
         let config = ScheduleConfig(
             version: 1,
             masterActive: false,
@@ -752,31 +755,15 @@ final class SchedulerLifecycleTests: XCTestCase {
 
         scheduler.start()
         XCTAssertTrue(scheduler.isMuted)
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 0,
-                       "clearPending must not fire on enter-mute")
 
         scheduler.togglePause()
         scheduler.loadAndEvaluate()
 
         XCTAssertFalse(scheduler.isMuted)
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 1,
-                       "clearPending must fire once on unmute")
-    }
-
-    func testEnterMuteDoesNotCallClearPending() throws {
-        // H2 negative: clearPending is exclusively a post-unmute cleanup;
-        // it must not fire when going active→muted.
-        try writeStandardConfig()
-        scheduler.start()
-
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 0)
-
-        scheduler.togglePause()
-        scheduler.loadAndEvaluate()
-
-        XCTAssertTrue(scheduler.isMuted)
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 0,
-                       "clearPending must not fire on enter-mute")
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1,
+                       "Unmute fires the clear-paused paint exactly once")
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1,
+                       "Unmute drains pending exactly once")
     }
 
     func testStartupWithNoMuteStateFileDefaultsToUnmuted() throws {
@@ -804,7 +791,6 @@ final class SchedulerLifecycleTests: XCTestCase {
                        "Startup into muted still fires paint")
         XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0,
                        "No spurious clear when seed is absent")
-        XCTAssertEqual(broadcaster.clearPendingCallCount, 0)
     }
 
     // MARK: - Helpers

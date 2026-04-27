@@ -200,23 +200,6 @@ final class BroadcasterTests: XCTestCase {
                        "Must not emit empty-title OSC 0 with ST terminator either")
     }
 
-    // MARK: - clearPending (H2)
-
-    func testClearPendingRemovesAllPendingFiles() throws {
-        try Data([0x01]).write(to: pendingDir.appendingPathComponent("dev_ttys001.osc"))
-        try Data([0x02]).write(to: pendingDir.appendingPathComponent("dev_ttys002.osc"))
-
-        broadcaster.clearPending()
-
-        let remaining = try FileManager.default.contentsOfDirectory(atPath: pendingDir.path)
-        XCTAssertTrue(remaining.isEmpty, "All pending files removed")
-    }
-
-    func testClearPendingMissingDirectoryIsNoOp() throws {
-        try FileManager.default.removeItem(at: pendingDir)
-        broadcaster.clearPending()  // must not throw
-    }
-
     // MARK: - SystemProcessRunner throwing contract (B1)
 
     func testSystemProcessRunnerThrowsOnUnwritablePath() {

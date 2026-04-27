@@ -147,11 +147,6 @@ protocol BroadcasterProtocol: AnyObject {
     func broadcast()
     func broadcastPaused(backgroundColor: String)
     func broadcastPausedClear()
-    // Discards any bytes that landed in pending/ during the tiny window
-    // between broadcast()'s drain and writeMuteState(muted:false). Those bytes
-    // reflect mid-transition state that is stale by the time this is called,
-    // and would otherwise re-play as "current" on the next unmute cycle.
-    func clearPending()
 }
 
 final class Scheduler: ObservableObject {
@@ -255,14 +250,16 @@ final class Scheduler: ObservableObject {
 
         writeMuteState(muted: result.muted, reason: result.reason, untilEpoch: untilEpoch)
 
-        // Discard any OSC bytes that hooks appended to pending/ during the
-        // narrow gap between broadcast()'s drain above and the writeMuteState
-        // that just flipped MUTED=false. Those bytes reflect stale state
-        // captured mid-transition and would otherwise be replayed as "current"
-        // on the next unmute cycle.
-        if wasMuted && !result.muted {
-            broadcaster.clearPending()
-        }
+        // Note on the race window between broadcast()'s drain above and
+        // writeMuteState(): a hook firing in this gap reads MUTED=true from
+        // disk and buffers its OSC bytes into pending/. We deliberately do
+        // NOT delete those bytes — they reflect the hook's *current* intent,
+        // not stale state. Earlier code called `broadcaster.clearPending()`
+        // here, which silently dropped the byte and made the user miss a
+        // visual response. Race-window captures are now picked up on the
+        // next mute→unmute cycle, or overwritten by the next hook from the
+        // same TTY. Reordering broadcast/writeMuteState would trade this
+        // missed-paint for a stale-over-correct flicker, which is worse.
 
         if !wasMuted && result.muted {
             broadcaster.broadcastPaused(backgroundColor: pauseColorProvider())

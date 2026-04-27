@@ -50,15 +50,6 @@ final class Broadcaster: BroadcasterProtocol {
         writeToAllActiveTTYs(data)
     }
 
-    func clearPending() {
-        let pendingDir = runtimeDir.appendingPathComponent("pending")
-        let fm = FileManager.default
-        guard let entries = try? fm.contentsOfDirectory(atPath: pendingDir.path) else { return }
-        for entry in entries {
-            try? fm.removeItem(atPath: pendingDir.appendingPathComponent(entry).path)
-        }
-    }
-
     func broadcast() {
         let pendingDir = runtimeDir.appendingPathComponent("pending")
         let fm = FileManager.default
