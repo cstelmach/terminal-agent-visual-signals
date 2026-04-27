@@ -151,21 +151,35 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertTrue(written.contains("SetBackgroundImageFile="), "iTerm2 bg image clear present")
     }
 
-    func testBroadcastPausedDoesNotEmitTitle() throws {
-        // Pause must not emit any OSC 0 sequence. Any title emission here
-        // either blanks user-set tab names (empty OSC 0) or sticks on idle
-        // terminals that never fire a hook during mute. Resume can only be
-        // "instantly back" if there is no title state to restore.
+    func testBroadcasterMethodsDoNotEmitOSC0() throws {
+        // Contract-level guarantee: NO Broadcaster method emits OSC 0
+        // (title sequence). The previous version of this test only covered
+        // broadcastPaused, which let a future title-restore in
+        // broadcastPausedClear or a new method slip through unnoticed.
+        // This loops over every public paint surface and asserts the
+        // invariant uniformly. Adding a new method that emits OSC 0
+        // without an explicit title contract should fail this test.
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
         )
 
-        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
+        let invocations: [(String, () -> Void)] = [
+            ("broadcastPaused",      { self.broadcaster.broadcastPaused(backgroundColor: "#3A3A3A") }),
+            ("broadcastPausedClear", { self.broadcaster.broadcastPausedClear() })
+        ]
 
-        let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
-        XCTAssertFalse(written.contains("\u{1B}]0;"), "Must not emit OSC 0 title during pause")
-        XCTAssertFalse(written.contains("⏸ Paused"), "Must not emit paused title text")
+        for (label, fire) in invocations {
+            mockRunner.resetWrittenDevices()
+            fire()
+            for (_, bytes) in mockRunner.writtenDevices {
+                let written = try XCTUnwrap(String(data: bytes, encoding: .utf8))
+                XCTAssertFalse(written.contains("\u{1B}]0;"),
+                               "\(label) must not emit OSC 0 title sequence; got: \(written)")
+                XCTAssertFalse(written.contains("⏸ Paused"),
+                               "\(label) must not emit paused title text")
+            }
+        }
     }
 
     func testBroadcastPausedClearWritesResetBytes() throws {
@@ -198,6 +212,40 @@ final class BroadcasterTests: XCTestCase {
                        "Must not emit empty-title OSC 0 — would blank user tab names")
         XCTAssertFalse(written.contains("]0;\u{1B}\\"),
                        "Must not emit empty-title OSC 0 with ST terminator either")
+    }
+
+    // MARK: - 24h cutoff boundary (L3)
+
+    func testEnumerateActiveTTYsPrunesEntryAt24h01m() throws {
+        // Boundary contract: an entry whose mtime is older than 24h is
+        // pruned from active-ttys/ on the next enumeration. Long-idle
+        // tmux/screen/SSH sessions get pruned predictably; the next
+        // hook re-registers them naturally.
+        let path = activeTTYsDir.appendingPathComponent("dev_ttys077").path
+        FileManager.default.createFile(atPath: path, contents: nil)
+        let oldDate = Date().addingTimeInterval(-86_460)  // 24h01m ago
+        try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: path)
+
+        // Force enumeration via a real broadcast call (writes nothing because
+        // pending is empty, but does walk active-ttys/).
+        broadcaster.broadcast()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path),
+                       "Entries older than 24h must be pruned")
+    }
+
+    func testEnumerateActiveTTYsKeepsEntryAt23h59m() throws {
+        // Negative boundary: an entry just inside the 24h window survives.
+        // Catches an off-by-one that would prune fresh-but-quiet sessions.
+        let path = activeTTYsDir.appendingPathComponent("dev_ttys078").path
+        FileManager.default.createFile(atPath: path, contents: nil)
+        let oldDate = Date().addingTimeInterval(-86_340)  // 23h59m ago
+        try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: path)
+
+        broadcaster.broadcast()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path),
+                      "Entries inside the 24h window must NOT be pruned")
     }
 
     // MARK: - TTY auto-discovery parser (M3)

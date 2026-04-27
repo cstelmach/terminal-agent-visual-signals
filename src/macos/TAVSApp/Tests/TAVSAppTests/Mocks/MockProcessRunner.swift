@@ -27,4 +27,12 @@ final class MockProcessRunner: ProcessRunner {
         _writtenDevices.append((path, data))
         lock.unlock()
     }
+
+    // Test helper: clear the captured writes so a single test can run
+    // multiple invocations and inspect each independently.
+    func resetWrittenDevices() {
+        lock.lock()
+        _writtenDevices.removeAll()
+        lock.unlock()
+    }
 }
