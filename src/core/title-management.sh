@@ -418,6 +418,7 @@ compose_title() {
         load_context_data  # From context-data.sh: bridge → transcript → empty
         # Context display tokens (10 types)
         title="${title//\{CONTEXT_PCT\}/$(resolve_context_token CONTEXT_PCT "$TAVS_CONTEXT_PCT")}"
+        title="${title//\{CONTEXT_TOKENS\}/${TAVS_CONTEXT_TOKENS:-}}"
         title="${title//\{CONTEXT_FOOD\}/$(resolve_context_token CONTEXT_FOOD "$TAVS_CONTEXT_PCT")}"
         title="${title//\{CONTEXT_FOOD_10\}/$(resolve_context_token CONTEXT_FOOD_10 "$TAVS_CONTEXT_PCT")}"
         title="${title//\{CONTEXT_BAR_H\}/$(resolve_context_token CONTEXT_BAR_H "$TAVS_CONTEXT_PCT")}"

@@ -71,6 +71,7 @@ _extract() {
 }
 
 _pct=$(_extract 'used_percentage')
+_tokens=$(_extract 'total_input_tokens')
 _model=$(_extract 'display_name')
 _cost=$(_extract 'total_cost_usd')
 _duration=$(_extract 'total_duration_ms')
@@ -79,6 +80,7 @@ _lines_rem=$(_extract 'total_lines_removed')
 
 # Filter out literal "null" (used_percentage is null before first API call)
 [[ "$_pct" == "null" ]] && _pct=""
+[[ "$_tokens" == "null" ]] && _tokens=""
 [[ "$_model" == "null" ]] && _model=""
 [[ "$_cost" == "null" ]] && _cost=""
 [[ "$_duration" == "null" ]] && _duration=""
@@ -93,6 +95,7 @@ _tmp_file=$(mktemp "${_state_file}.tmp.XXXXXX" 2>/dev/null) || exit 0
 cat > "$_tmp_file" << EOF
 # TAVS Context Bridge - $(date -u +%Y-%m-%dT%H:%M:%S+00:00)
 pct=${_pct:-}
+tokens=${_tokens:-}
 model=${_model:-}
 cost=${_cost:-}
 duration=${_duration:-}

@@ -265,6 +265,7 @@ MOCK_STATE_FILE="${MOCK_STATE_DIR}/context._dev_ttys001"
 cat > "$MOCK_STATE_FILE" << 'EOF'
 # TAVS Context Bridge - 2026-02-15T10:45:23+00:00
 pct=72
+tokens=90000
 model=Opus
 cost=1.23
 duration=300000
@@ -280,10 +281,12 @@ TAVS_CONTEXT_BRIDGE_MAX_AGE=30
 
 # Test: read_bridge_state should populate TAVS_CONTEXT_* globals
 TAVS_CONTEXT_PCT=""
+TAVS_CONTEXT_TOKENS=""
 TAVS_CONTEXT_MODEL=""
 TAVS_CONTEXT_COST=""
 read_bridge_state
 assert_eq "bridge pct" "72" "$TAVS_CONTEXT_PCT"
+assert_eq "bridge tokens" "90000" "$TAVS_CONTEXT_TOKENS"
 assert_eq "bridge model" "Opus" "$TAVS_CONTEXT_MODEL"
 assert_eq "bridge cost" "1.23" "$TAVS_CONTEXT_COST"
 assert_eq "bridge duration" "300000" "$TAVS_CONTEXT_DURATION"
@@ -344,6 +347,7 @@ MOCK_STATE_DIR=$(mktemp -d)
 MOCK_STATE_FILE="${MOCK_STATE_DIR}/context._dev_ttys001"
 cat > "$MOCK_STATE_FILE" << EOF
 pct=45
+tokens=45000
 model=Opus
 cost=0.42
 duration=300000
@@ -356,9 +360,11 @@ TTY_SAFE="_dev_ttys001"
 _TAVS_CONTEXT_STATE_DIR="$MOCK_STATE_DIR"
 TAVS_CONTEXT_BRIDGE_MAX_AGE=30
 TAVS_CONTEXT_PCT=""
+TAVS_CONTEXT_TOKENS=""
 
 load_context_data
 assert_eq "load_context pct" "45" "$TAVS_CONTEXT_PCT"
+assert_eq "load_context tokens" "45000" "$TAVS_CONTEXT_TOKENS"
 assert_eq "load_context model" "Opus" "$TAVS_CONTEXT_MODEL"
 
 rm -rf "$MOCK_STATE_DIR"

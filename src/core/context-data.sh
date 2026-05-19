@@ -10,6 +10,7 @@
 # === GLOBAL STATE ===
 # These are populated by load_context_data() and consumed by compose_title()
 TAVS_CONTEXT_PCT=""
+TAVS_CONTEXT_TOKENS=""
 TAVS_CONTEXT_MODEL=""
 TAVS_CONTEXT_COST=""
 TAVS_CONTEXT_DURATION=""
@@ -45,7 +46,7 @@ read_bridge_state() {
 
     # Safe key=value parsing — NEVER source state files
     # Pattern from title-state-persistence.sh:104-128
-    local _pct="" _model="" _cost="" _duration="" _lines_add="" _lines_rem="" _ts=""
+    local _pct="" _tokens="" _model="" _cost="" _duration="" _lines_add="" _lines_rem="" _ts=""
     while IFS='=' read -r k v; do
         # Skip comments and empty lines
         [[ "$k" =~ ^[[:space:]]*# ]] && continue
@@ -55,6 +56,7 @@ read_bridge_state() {
         v="${v%\'}" ; v="${v#\'}"
         case "$k" in
             pct)       _pct="$v" ;;
+            tokens)    _tokens="$v" ;;
             model)     _model="$v" ;;
             cost)      _cost="$v" ;;
             duration)  _duration="$v" ;;
@@ -81,6 +83,7 @@ read_bridge_state() {
 
     # Populate globals
     TAVS_CONTEXT_PCT="$_pct"
+    TAVS_CONTEXT_TOKENS="$_tokens"
     TAVS_CONTEXT_MODEL="$_model"
     TAVS_CONTEXT_COST="$_cost"
     TAVS_CONTEXT_DURATION="$_duration"
@@ -166,6 +169,7 @@ _parse_jsonl_usage() {
     [[ $pct -gt 100 ]] && pct=100
 
     TAVS_CONTEXT_PCT="$pct"
+    TAVS_CONTEXT_TOKENS="$total"
 
     # Bonus: populate model name for {MODEL} token if not already set
     if [[ -z "${TAVS_CONTEXT_MODEL:-}" ]]; then
@@ -215,6 +219,7 @@ _estimate_from_file_size() {
     [[ $pct -gt 100 ]] && pct=100
 
     TAVS_CONTEXT_PCT="$pct"
+    TAVS_CONTEXT_TOKENS="$estimated_tokens"
     return 0
 }
 
@@ -234,6 +239,7 @@ load_context_data() {
 
     # Reset globals
     TAVS_CONTEXT_PCT=""
+    TAVS_CONTEXT_TOKENS=""
     TAVS_CONTEXT_MODEL=""
     TAVS_CONTEXT_COST=""
     TAVS_CONTEXT_DURATION=""
@@ -252,6 +258,7 @@ load_context_data() {
 
     # Neither available — default to 0% (session start / no activity yet)
     TAVS_CONTEXT_PCT="0"
+    TAVS_CONTEXT_TOKENS="0"
     return 0
 }
 

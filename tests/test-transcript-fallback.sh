@@ -106,11 +106,13 @@ cat > "$TEST_TMP/real_transcript.jsonl" << 'EOF'
 EOF
 
 TAVS_CONTEXT_PCT=""
+TAVS_CONTEXT_TOKENS=""
 TAVS_CONTEXT_MODEL=""
 TAVS_CONTEXT_WINDOW_SIZE=200000
 unset CONTEXT_WINDOW_SIZE 2>/dev/null || true
 _parse_jsonl_usage "$TEST_TMP/real_transcript.jsonl"
 assert_eq "Real-world: 131080/200000 = 65%" "65" "$TAVS_CONTEXT_PCT"
+assert_eq "Real-world: total tokens 131080" "131080" "$TAVS_CONTEXT_TOKENS"
 
 # ==============================================================================
 echo -e "${YELLOW}=== Test: _parse_jsonl_usage — uses LAST assistant entry ===${NC}"
@@ -343,6 +345,7 @@ unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 assert_eq "fallback: pct from JSONL parsing" "65" "$TAVS_CONTEXT_PCT"
+assert_eq "fallback: tokens from JSONL parsing" "131080" "$TAVS_CONTEXT_TOKENS"
 assert_eq "fallback: model from JSONL" "claude-opus-4-6" "$TAVS_CONTEXT_MODEL"
 # JSONL doesn't provide cost — should be empty (reset by load_context_data)
 assert_empty "fallback: cost empty" "$TAVS_CONTEXT_COST"
@@ -419,6 +422,7 @@ unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 
 load_context_data
 assert_eq "stale bridge → JSONL: pct=65" "65" "$TAVS_CONTEXT_PCT"
+assert_eq "stale bridge → JSONL: tokens=131080" "131080" "$TAVS_CONTEXT_TOKENS"
 assert_eq "stale bridge → JSONL: model from JSONL" "claude-opus-4-6" "$TAVS_CONTEXT_MODEL"
 
 rm -rf "$MOCK_STATE_DIR"

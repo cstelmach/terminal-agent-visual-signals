@@ -150,12 +150,13 @@ assert_file_exists "State file created" "$STATE_FILE"
 
 # Parse the state file to verify fields
 if [[ -f "$STATE_FILE" ]]; then
-    _pct="" _model="" _cost="" _duration="" _lines_add="" _lines_rem="" _ts=""
+    _pct="" _tokens="" _model="" _cost="" _duration="" _lines_add="" _lines_rem="" _ts=""
     while IFS='=' read -r k v; do
         [[ "$k" =~ ^[[:space:]]*# ]] && continue
         [[ -z "$k" ]] && continue
         case "$k" in
             pct)       _pct="$v" ;;
+            tokens)    _tokens="$v" ;;
             model)     _model="$v" ;;
             cost)      _cost="$v" ;;
             duration)  _duration="$v" ;;
@@ -166,6 +167,7 @@ if [[ -f "$STATE_FILE" ]]; then
     done < "$STATE_FILE"
 
     assert_eq "State file pct=72" "72" "$_pct"
+    assert_eq "State file tokens=90000" "90000" "$_tokens"
     assert_eq "State file model=Opus" "Opus" "$_model"
     assert_eq "State file cost=1.23" "1.23" "$_cost"
     assert_eq "State file duration=300000" "300000" "$_duration"
@@ -184,7 +186,7 @@ if [[ -f "$STATE_FILE" ]]; then
     fi
 else
     # File doesn't exist — fail all field tests
-    for f in pct model cost duration lines_add lines_rem ts freshness; do
+    for f in pct tokens model cost duration lines_add lines_rem ts freshness; do
         FAIL=$((FAIL + 1))
         ERRORS="${ERRORS}\n  ${RED}FAIL${NC}: State file field '$f' — file not created"
     done
@@ -205,18 +207,20 @@ STATE_FILE="$TEST_DIR/context._dev_ttys999"
 assert_file_exists "State file created with partial JSON" "$STATE_FILE"
 
 if [[ -f "$STATE_FILE" ]]; then
-    _pct="" _model="" _cost=""
+    _pct="" _tokens="" _model="" _cost=""
     while IFS='=' read -r k v; do
         [[ "$k" =~ ^[[:space:]]*# ]] && continue
         [[ -z "$k" ]] && continue
         case "$k" in
             pct)   _pct="$v" ;;
+            tokens) _tokens="$v" ;;
             model) _model="$v" ;;
             cost)  _cost="$v" ;;
         esac
     done < "$STATE_FILE"
 
     assert_eq "Partial JSON: pct=45" "45" "$_pct"
+    assert_empty "Partial JSON: tokens empty" "$_tokens"
     assert_empty "Partial JSON: model empty" "$_model"
     assert_empty "Partial JSON: cost empty" "$_cost"
 fi

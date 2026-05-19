@@ -128,6 +128,7 @@ assert "bridge: state file exists" "true" "$([[ -f "$TEST_DIR/context._test_pipe
 # Step 2: Read bridge state via load_context_data (set TTY_SAFE to match)
 export TTY_SAFE="_test_pipeline"
 TAVS_CONTEXT_PCT=""
+TAVS_CONTEXT_TOKENS=""
 TAVS_CONTEXT_MODEL=""
 TAVS_CONTEXT_COST=""
 TAVS_CONTEXT_DURATION=""
@@ -137,6 +138,7 @@ unset _TAVS_CONTEXT_LOADED 2>/dev/null || true
 load_context_data
 
 assert "pipeline: pct=45" "45" "${TAVS_CONTEXT_PCT:-}"
+assert "pipeline: tokens=90000" "90000" "${TAVS_CONTEXT_TOKENS:-}"
 assert "pipeline: model=Opus" "Opus" "${TAVS_CONTEXT_MODEL:-}"
 assert "pipeline: cost=1.85" "1.85" "${TAVS_CONTEXT_COST:-}"
 assert "pipeline: duration=420000" "420000" "${TAVS_CONTEXT_DURATION:-}"
@@ -144,12 +146,12 @@ assert "pipeline: lines_add=256" "256" "${TAVS_CONTEXT_LINES_ADD:-}"
 
 # Step 3: compose_title PERMISSION with context tokens
 # Use a simple format to avoid state-leak complexity from agent resolution
-export TAVS_TITLE_FORMAT_PERMISSION="{CONTEXT_FOOD} {CONTEXT_PCT} {MODEL}"
+export TAVS_TITLE_FORMAT_PERMISSION="{CONTEXT_FOOD} {CONTEXT_TOKENS} {MODEL}"
 result=$(compose_title "permission" 2>/dev/null) || true
 
 # 45% food = index 9 = 🌽
 assert_contains "pipeline title: food 🌽" "🌽" "$result"
-assert_contains "pipeline title: pct 45%" "45%" "$result"
+assert_contains "pipeline title: tokens 90000" "90000" "$result"
 assert_contains "pipeline title: model Opus" "Opus" "$result"
 assert_not_contains "pipeline title: no unresolved" "{CONTEXT_" "$result"
 

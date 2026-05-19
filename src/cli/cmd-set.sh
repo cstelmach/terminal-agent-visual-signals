@@ -35,6 +35,9 @@ _handle_title_preset_set() {
 
     set_config_value "TAVS_TITLE_PRESET" "$value"
     case "$value" in
+        none)
+            cli_success "Set title-preset = none (use explicit title format settings)"
+            ;;
         compact)
             cli_success "Set title-preset = compact (emoji eyes + guillemet identity)"
             ;;

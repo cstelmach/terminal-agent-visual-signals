@@ -61,6 +61,8 @@ _load_config_file() {
 # via the 4-level fallback chain in compose_title.
 _apply_title_preset() {
     case "${TAVS_TITLE_PRESET:-}" in
+        none)
+            ;;
         dashboard)
             TAVS_FACE_MODE="standard"
             # Global: face + info group (food in parens, agents+pct outside)
