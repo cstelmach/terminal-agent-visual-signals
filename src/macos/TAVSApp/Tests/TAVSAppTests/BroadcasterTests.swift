@@ -137,18 +137,29 @@ final class BroadcasterTests: XCTestCase {
 
     // MARK: - broadcastPaused / broadcastPausedClear tests
 
-    func testBroadcastPausedWritesGreyBytes() throws {
+    func testBroadcastPausedWritesForegroundAndBackgroundBytes() throws {
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
         )
 
-        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
+        let visual = PauseVisual(
+            backgroundColor: "#3A3A3A",
+            foregroundColor: "#F8F8F2",
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+        broadcaster.broadcastPaused(visual: visual)
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 1)
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
-        XCTAssertTrue(written.contains("#3A3A3A"), "Grey background OSC present")
-        XCTAssertTrue(written.contains("SetBackgroundImageFile="), "iTerm2 bg image clear present")
+        XCTAssertTrue(written.contains("\u{1B}]104\u{07}"), "Palette reset OSC present")
+        XCTAssertTrue(written.contains("\u{1B}]10;#F8F8F2\u{07}"), "Foreground OSC present")
+        XCTAssertTrue(written.contains("\u{1B}]11;#3A3A3A\u{07}"), "Background OSC present")
+        XCTAssertLessThan(
+            try XCTUnwrap(written.range(of: "\u{1B}]10;#F8F8F2\u{07}")?.lowerBound),
+            try XCTUnwrap(written.range(of: "\u{1B}]11;#3A3A3A\u{07}")?.lowerBound),
+            "Foreground must be set before background"
+        )
     }
 
     func testBroadcasterMethodsDoNotEmitOSC0() throws {
@@ -165,7 +176,15 @@ final class BroadcasterTests: XCTestCase {
         )
 
         let invocations: [(String, () -> Void)] = [
-            ("broadcastPaused",      { self.broadcaster.broadcastPaused(backgroundColor: "#3A3A3A") }),
+            ("broadcastPaused",      {
+                self.broadcaster.broadcastPaused(
+                    visual: PauseVisual(
+                        backgroundColor: "#3A3A3A",
+                        foregroundColor: "#F8F8F2",
+                        defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+                    )
+                )
+            }),
             ("broadcastPausedClear", { self.broadcaster.broadcastPausedClear() })
         ]
 
@@ -182,7 +201,7 @@ final class BroadcasterTests: XCTestCase {
         }
     }
 
-    func testBroadcastPausedClearWritesResetBytes() throws {
+    func testBroadcastPausedClearResetsForegroundAndBackground() throws {
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
@@ -192,8 +211,14 @@ final class BroadcasterTests: XCTestCase {
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 1)
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
-        XCTAssertTrue(written.contains("]111"), "Background reset OSC present")
         XCTAssertTrue(written.contains("]104"), "Palette reset OSC present")
+        XCTAssertTrue(written.contains("]110"), "Foreground reset OSC present")
+        XCTAssertTrue(written.contains("]111"), "Background reset OSC present")
+        XCTAssertLessThan(
+            try XCTUnwrap(written.range(of: "\u{1B}]110\u{07}")?.lowerBound),
+            try XCTUnwrap(written.range(of: "\u{1B}]111\u{07}")?.lowerBound),
+            "Foreground reset must happen before background reset"
+        )
     }
 
     func testBroadcastPausedClearDoesNotWipeTitle() throws {
@@ -358,7 +383,13 @@ final class BroadcasterTests: XCTestCase {
             contents: nil
         )
 
-        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
+        broadcaster.broadcastPaused(
+            visual: PauseVisual(
+                backgroundColor: "#3A3A3A",
+                foregroundColor: "#F8F8F2",
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
+        )
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 2, "Both TTYs written")
         XCTAssertEqual(mockRunner.writtenDevices[0].1, mockRunner.writtenDevices[1].1,
@@ -371,7 +402,13 @@ final class BroadcasterTests: XCTestCase {
         let oldDate = Date().addingTimeInterval(-25 * 3600)
         try FileManager.default.setAttributes([.modificationDate: oldDate], ofItemAtPath: entryPath)
 
-        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
+        broadcaster.broadcastPaused(
+            visual: PauseVisual(
+                backgroundColor: "#3A3A3A",
+                foregroundColor: "#F8F8F2",
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
+        )
 
         XCTAssertEqual(mockRunner.writtenDevices.count, 0, "Stale entry skipped")
         XCTAssertFalse(FileManager.default.fileExists(atPath: entryPath), "Stale entry pruned")
@@ -385,7 +422,13 @@ final class BroadcasterTests: XCTestCase {
 
         mockRunner.writeError = ProcessRunnerError.deviceNotWritable("/dev/ttys001")
 
-        broadcaster.broadcastPaused(backgroundColor: "#3A3A3A")
+        broadcaster.broadcastPaused(
+            visual: PauseVisual(
+                backgroundColor: "#3A3A3A",
+                foregroundColor: "#F8F8F2",
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
+        )
 
         XCTAssertFalse(
             FileManager.default.fileExists(
@@ -395,38 +438,45 @@ final class BroadcasterTests: XCTestCase {
         )
     }
 
-    // MARK: - Configurable pause background colour
+    // MARK: - Configurable pause visual
 
-    func testBroadcastPausedUsesCallerSuppliedColor() throws {
+    func testBroadcastPausedUsesCallerSuppliedVisual() throws {
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
         )
 
-        broadcaster.broadcastPaused(backgroundColor: "#E8E8E8")
+        let visual = PauseVisual(
+            backgroundColor: "#E8E8E8",
+            foregroundColor: "#181818",
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+        broadcaster.broadcastPaused(visual: visual)
 
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
+        XCTAssertTrue(written.contains("\u{1B}]10;#181818\u{07}"),
+                      "OSC 10 must carry the caller-supplied foreground")
         XCTAssertTrue(written.contains("\u{1B}]11;#E8E8E8\u{07}"),
-                      "OSC 11 must carry the caller-supplied hex color")
+                      "OSC 11 must carry the caller-supplied background")
         XCTAssertFalse(written.contains("#3A3A3A"),
                        "Legacy hardcoded grey must not appear when caller overrides")
     }
 
-    func testBroadcastPausedSanitizesMalformedColor() throws {
-        // Defence-in-depth: if user.conf ever yields a non-hex string, the
-        // broadcaster must fall back to the legacy grey rather than emit
-        // garbage bytes that could corrupt the OSC stream.
+    func testBroadcastPausedPreservesImageClear() throws {
         FileManager.default.createFile(
             atPath: activeTTYsDir.appendingPathComponent("dev_ttys001").path,
             contents: nil
         )
 
-        broadcaster.broadcastPaused(backgroundColor: "not-a-hex")
+        let visual = PauseVisual(
+            backgroundColor: "#3A3A3A",
+            foregroundColor: "#F8F8F2",
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+        broadcaster.broadcastPaused(visual: visual)
 
         let written = try XCTUnwrap(String(data: mockRunner.writtenDevices[0].1, encoding: .utf8))
-        XCTAssertTrue(written.contains("\u{1B}]11;#3A3A3A\u{07}"),
-                      "Malformed colour must fall back to the documented default")
-        XCTAssertFalse(written.contains("not-a-hex"),
-                       "Raw malformed value must not leak into the OSC payload")
+        XCTAssertTrue(written.contains("\u{1B}]1337;SetBackgroundImageFile=\u{07}"),
+                      "iTerm2 background image clear must be preserved")
     }
 }

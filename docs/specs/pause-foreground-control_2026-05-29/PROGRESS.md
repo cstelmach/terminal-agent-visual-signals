@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 14:32 CEST
+**Last Updated:** 2026-05-29 14:38 CEST
 
 ---
 
@@ -26,8 +26,8 @@
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 0: Baseline and Safety Lock | DONE | 2026-05-29 14:22 CEST | 2026-05-29 14:24 CEST | eafa556 | 124/124 tests | 2 min | Baseline green; no production behavior changes |
-| Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | pending | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
-| Phase 2: Broadcast Payload Contract | Not Started | | | | | | |
+| Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | 93ad5c6 | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
+| Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | pending | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
 | Phase 3: Scheduler Integration and Repaint Behavior | Not Started | | | | | | |
 | Phase 4: Preferences, User Configuration, and Documentation | Not Started | | | | | | |
 | Phase 5: Product Validation and Release Readiness | Not Started | | | | | | |
@@ -42,6 +42,52 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 2: Broadcast Payload Contract — 2026-05-29 14:38 CEST COMPLETE
+
+**What Was Done:**
+- Changed `BroadcasterProtocol.broadcastPaused` to accept a sanitized
+  `PauseVisual`.
+- Changed `Broadcaster.broadcastPaused` to emit OSC 104, OSC 10 foreground,
+  OSC 11 background, and the existing OSC 1337 background-image clear.
+- Changed `Broadcaster.broadcastPausedClear()` to emit OSC 104, OSC 110
+  foreground reset, and OSC 111 background reset.
+- Removed broadcaster-owned pause color fallback/sanitization; `PauseVisual`
+  remains the sanitization boundary.
+- Updated `MockBroadcaster` to capture `lastPausedVisual` while retaining
+  `lastPausedBackgroundColor` as a test compatibility accessor.
+- Updated broadcaster byte-contract tests for foreground set/reset ordering,
+  caller-supplied `PauseVisual`, preserved image clear, multiple TTYs, stale TTY
+  pruning, dead TTY pruning, and no OSC 0 title emission.
+
+**What Worked:**
+- The red phase failed on the missing `broadcastPaused(visual:)` API in
+  production and the old `BroadcasterProtocol` signature, proving the new tests
+  were exercising the new contract.
+- The existing process-runner test double captured full payload bytes cleanly,
+  so OSC ordering assertions stayed byte-level and did not need new fixtures.
+
+**What Didn't Work:**
+- No implementation blockers. The only plan tension was that changing the
+  protocol signature requires `Scheduler` call sites to compile before the full
+  Phase 3 provider/idempotence refactor.
+
+**Decisions Made:**
+- D2: `Broadcaster` now trusts `PauseVisual` and only serializes its values; it
+  no longer chooses fallback colors.
+- D3: Phase 2 keeps `pauseColorProvider` and `lastPaintedPauseColor` unchanged,
+  wrapping the existing background string into a `PauseVisual` at the current
+  call sites. Phase 3 remains responsible for the full scheduler visual model.
+
+**Deviations from Plan:**
+- Minimal compile bridge in `Scheduler.loadAndEvaluate()`: two existing call
+  sites now construct `PauseVisual` from the existing background provider. This
+  is necessary after the protocol signature change and does not implement the
+  Phase 3 provider/idempotence rewrite.
+
+**Tests:** 135/135 pass in 1.385 seconds. Committed: `pending`.
+
+**Next:** Phase 3: Scheduler Integration and Repaint Behavior
 
 ### Phase 1: Pause Visual Model and Config Foundation — 2026-05-29 14:31 CEST COMPLETE
 
@@ -85,7 +131,7 @@ _(Most recent first — reverse chronological)_
 - `UserConfStore` already preserves unmanaged shell syntax by retaining raw
   lines, so last-wins behavior can stay narrow and parser-compatible.
 
-**Tests:** 135/135 pass in 1.525 seconds. Committed: `pending`.
+**Tests:** 135/135 pass in 1.525 seconds. Committed: `93ad5c6`.
 
 **Next:** Phase 2: Broadcast Payload Contract
 
@@ -136,7 +182,7 @@ _(Most recent first — reverse chronological)_
 - Shell active-state paths may reset palette/background/title, but they do not
   currently own terminal default foreground color.
 
-**Tests:** 124/124 pass in 1.386 seconds. Committed: `pending`.
+**Tests:** 124/124 pass in 1.386 seconds. Committed: `eafa556`.
 
 **Next:** Phase 1: Pause Visual Model and Config Foundation
 
@@ -178,6 +224,16 @@ _(Entries added when the same error occurs 3+ times)_
 
 _(Entries added after each phase completion)_
 
+### Divergence Check — Phase 2
+- [x] Files modified vs plan: 5/5 (100% match, including `PROGRESS.md`)
+- [x] Max cyclomatic complexity: reasonable (threshold: <15)
+- [x] Test coverage: broadcaster pause byte-contract tests updated for
+  foreground set/reset and preserved legacy cleanup behavior
+- [x] All changes link to `PLAN.md` Phase 2 steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
 ### Divergence Check — Phase 1
 - [x] Files modified vs plan: 6/6 (100% match, including `PROGRESS.md`)
 - [x] Max cyclomatic complexity: reasonable (threshold: <15)
@@ -205,7 +261,8 @@ _(Entries added after each phase completion)_
 | Planning | 1 | — | — | GPT-5 Codex |
 | Phase 0 | 1 | — | — | GPT-5 Codex |
 | Phase 1 | 1 | — | — | GPT-5 Codex |
-| **Total** | 2 | — | $0.00 | |
+| Phase 2 | 1 | — | — | GPT-5 Codex |
+| **Total** | 3 | — | $0.00 | |
 
 ---
 

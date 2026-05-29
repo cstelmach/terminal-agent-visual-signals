@@ -151,7 +151,7 @@ enum ScheduleEvaluator {
 
 protocol BroadcasterProtocol: AnyObject {
     func broadcast()
-    func broadcastPaused(backgroundColor: String)
+    func broadcastPaused(visual: PauseVisual)
     func broadcastPausedClear()
     // Called once at Scheduler.start to pre-register TTYs hosting running
     // agent processes (claude / gemini / codex / opencode). Closes the
@@ -299,7 +299,12 @@ final class Scheduler: ObservableObject {
 
         if !wasMuted && result.muted {
             let color = pauseColorProvider()
-            broadcaster.broadcastPaused(backgroundColor: color)
+            let visual = PauseVisual(
+                backgroundColor: color,
+                foregroundColor: nil,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
+            broadcaster.broadcastPaused(visual: visual)
             lastPaintedPauseColor = color
         } else if wasMuted && result.muted {
             // Still muted, but the user may have changed the pause-bg colour
@@ -309,7 +314,12 @@ final class Scheduler: ObservableObject {
             // re-paint; otherwise no-op so we don't churn the TTYs.
             let color = pauseColorProvider()
             if color != lastPaintedPauseColor {
-                broadcaster.broadcastPaused(backgroundColor: color)
+                let visual = PauseVisual(
+                    backgroundColor: color,
+                    foregroundColor: nil,
+                    defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+                )
+                broadcaster.broadcastPaused(visual: visual)
                 lastPaintedPauseColor = color
             }
         }
