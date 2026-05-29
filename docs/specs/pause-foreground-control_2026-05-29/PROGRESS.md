@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 15:02 CEST
+**Last Updated:** 2026-05-29 15:13 CEST
 
 ---
 
@@ -29,8 +29,8 @@
 | Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | 93ad5c6 | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
 | Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
 | Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | f39dfed | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
-| Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | pending | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
-| Phase 5: Product Validation and Release Readiness | Not Started | | | | | | |
+| Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | 5a51eda | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
+| Phase 5: Product Validation and Release Readiness | DONE | 2026-05-29 15:06 CEST | 2026-05-29 15:13 CEST | pending | 140/140 tests | 7 min | Source app live-byte validation passed; residual visual smoke risk recorded |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -42,6 +42,86 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 5: Product Validation and Release Readiness — 2026-05-29 15:13 CEST COMPLETE
+
+**What Was Done:**
+- Ran the full Swift suite: `swift test` in `src/macos/TAVSApp` passed
+  140/140 tests in 1.413 seconds.
+- Ran targeted shell regressions:
+  `bats tests/unit/mute-gate.bats tests/integration/idle-worker-mute.bats
+  tests/integration/emit-osc.bats` passed 29/29 tests.
+- Ran the plan's active-shell OSC scan. The literal pattern matched
+  `OSC 104` in `idle-worker-background.sh`, which is a false positive because
+  the string starts with `OSC 10`; a stricter foreground-only scan returned no
+  matches for OSC 10/110 in active shell paths.
+- Confirmed `/Applications/TAVS.app` was an older April 27 binary, so live
+  product validation used the freshly built app from this checkout rather than
+  replacing the installed app.
+- Temporarily stopped the installed app, launched the local source-built app,
+  and captured real broadcast bytes through a fake writable `/tmp` TTY entry.
+- Validated pause emitted OSC 10 foreground and OSC 11 background, resume
+  emitted OSC 110 and OSC 111 resets, config edits while muted repainted with
+  explicit foreground/background values, and malformed foreground/background
+  config emitted sanitized `#RRGGBB` values without leaking raw text.
+- Restored `~/.tavs/user.conf` and `~/.tavs/schedule.json` byte-for-byte from
+  backups, relaunched `/Applications/TAVS.app`, and verified the schedule is
+  valid and active.
+
+**What Worked:**
+- The source-built app exercised the real scheduler/file-watch/broadcaster path
+  without replacing the user's installed app.
+- The fake `/tmp` TTY capture gave byte-level evidence for the same payloads
+  that would be written to registered terminals.
+- Last-wins config semantics made temporary validation lines easy to append and
+  then restore without permanently normalizing the user's config.
+
+**What Didn't Work:**
+- The exact required shell grep pattern is too broad for documentation text:
+  it matches `OSC 104`. Do NOT treat that hit as a foreground emission; use the
+  stricter `OSC 10([^0-9]|$)|OSC 110([^0-9]|$)` form for foreground checks.
+- The first restore pass reformatted `schedule.json` by calling
+  `./tavs schedule resume` after copying the backup. The exact backup was copied
+  again afterward and verified byte-for-byte.
+
+**Decisions Made:**
+- D8: Did not run `./tavs install macos-app` because Phase 5 did not require
+  replacing `/Applications/TAVS.app`, and replacing the installed app would be a
+  broader user-environment change than needed for byte-contract validation.
+- D9: Accepted source-app byte capture plus existing Ghostty support evidence as
+  release-readiness validation, with a residual risk noted for final human
+  visual inspection after installing the rebuilt app.
+
+**Deviations from Plan:**
+- Direct Preferences GUI clicking and human visual Ghostty inspection were not
+  performed from this terminal-only run. Phase 4 tests covered Preferences
+  persistence, and Phase 5 validated the same persisted `user.conf` path through
+  the live source app.
+
+### Divergence Check — Phase 5
+- [x] Files modified vs plan: 1/1 planned file (`PROGRESS.md`)
+- [x] Max cyclomatic complexity: not applicable; no production code changed
+- [x] All changes link to `PLAN.md` Phase 5 validation steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
+**Accepted Residual Risk:**
+- A final human visual smoke in Ghostty should be run after installing the
+  rebuilt app. The byte-level source-app validation proves the OSC 10/11 and
+  110/111 contract, but it does not inspect terminal pixels for the explicit
+  TrueColor sample-text scenario.
+
+**Lessons Learned:**
+- A writable fake TTY entry under `/tmp/tavs-$UID/active-ttys/` is a practical
+  way to validate macOS app broadcast bytes without disturbing real terminals.
+- Keep exact backups when validating against `~/.tavs`; CLI schedule commands
+  can reformat JSON even when they preserve behavior.
+
+**Tests:** 140/140 Swift tests pass in 1.413 seconds; 29/29 targeted Bats tests
+pass. Committed: `pending`.
+
+**Next:** Completion mode final verification
 
 ### Phase 4: Preferences, User Configuration, and Documentation — 2026-05-29 15:02 CEST COMPLETE
 
@@ -102,7 +182,7 @@ _(Most recent first — reverse chronological)_
 - Runtime `PauseVisual` resolution is small enough to reuse directly for
   Preferences display without adding another fallback path.
 
-**Tests:** 140/140 pass in 1.389 seconds. Committed: `pending`.
+**Tests:** 140/140 pass in 1.389 seconds. Committed: `5a51eda`.
 
 **Next:** Phase 5: Product Validation and Release Readiness
 
@@ -387,7 +467,9 @@ _(Entries added after each phase completion)_
 | Phase 1 | 1 | — | — | GPT-5 Codex |
 | Phase 2 | 1 | — | — | GPT-5 Codex |
 | Phase 3 | 1 | — | — | GPT-5 Codex |
-| **Total** | 4 | — | $0.00 | |
+| Phase 4 | 1 | — | — | GPT-5 Codex |
+| Phase 5 | 1 | — | — | GPT-5 Codex |
+| **Total** | 6 | — | $0.00 | |
 
 ---
 
