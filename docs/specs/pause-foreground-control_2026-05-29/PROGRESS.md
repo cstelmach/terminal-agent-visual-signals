@@ -30,7 +30,7 @@
 | Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
 | Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | f39dfed | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
 | Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | 5a51eda | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
-| Phase 5: Product Validation and Release Readiness | DONE | 2026-05-29 15:06 CEST | 2026-05-29 16:44 CEST | pending | 143/143 Swift + 29/29 Bats | 98 min | Direct Ghostty visual and Preferences GUI validation completed |
+| Phase 5: Product Validation and Release Readiness | DONE | 2026-05-29 15:06 CEST | 2026-05-29 16:44 CEST | b903cc6 | 143/143 Swift + 29/29 Bats | 98 min | Direct Ghostty visual and Preferences GUI validation completed |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -122,7 +122,7 @@ _(Most recent first — reverse chronological)_
 **Status:** No divergence detected
 
 **Tests:** 143/143 Swift tests pass; 29/29 targeted Bats tests pass.
-Committed: `pending`.
+Committed: `b903cc6`.
 
 **Next:** Completion Mode final verification.
 
