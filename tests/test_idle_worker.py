@@ -67,34 +67,34 @@ class TestIdleFaceKeyGeneration:
         assert "idle_" in result.stdout
 
 
-class TestIdleWorkerFdPattern:
-    """Test that idle worker uses >&3 file descriptor correctly."""
+class TestIdleWorkerEmitOscPattern:
+    """Test that idle worker writes OSC bytes through emit_osc."""
 
-    def test_uses_fd3_for_color_writes(self):
-        """Color writes should use >&3 file descriptor."""
+    def test_uses_emit_osc_for_color_writes(self):
+        """Color writes should use the mute-aware emit_osc choke point."""
         result = run_bash(
-            'grep -E "printf.*>&3" src/core/idle-worker-background.sh | head -3'
+            'grep -E \'emit_osc "\\\\033\\]11\' src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0
-        assert ">&3" in result.stdout
+        assert "emit_osc" in result.stdout
 
-    def test_uses_fd3_for_title_writes(self):
-        """Title writes should use >&3 file descriptor."""
+    def test_uses_emit_osc_for_title_writes(self):
+        """Title writes should use the mute-aware emit_osc choke point."""
         result = run_bash(
-            'grep -E \'printf.*\\]0;.*>&3\' src/core/idle-worker-background.sh'
+            'grep -E \'emit_osc "\\\\033\\]0;\' src/core/idle-worker-background.sh'
         )
 
-        assert result.returncode == 0, "Title writes should use >&3"
+        assert result.returncode == 0, "Title writes should use emit_osc"
 
-    def test_opens_fd3_to_tty(self):
-        """Worker should open fd 3 to tty device."""
+    def test_sets_tty_for_emit_osc(self):
+        """Worker should set TTY_DEVICE before calling emit_osc."""
         result = run_bash(
-            'grep -E "exec 3>" src/core/idle-worker-background.sh'
+            'grep -E \'TTY_DEVICE="\\$tty_device"\' src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0
-        assert 'exec 3>"$tty_device"' in result.stdout or "exec 3>" in result.stdout
+        assert 'TTY_DEVICE="$tty_device"' in result.stdout
 
 
 class TestIdleWorkerFaceComposition:

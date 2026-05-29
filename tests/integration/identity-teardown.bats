@@ -9,8 +9,7 @@
 # independent of OSC emission.
 #
 # This file pins:
-#   1. assign + release while muted leaves the registry empty for that
-#      session.
+#   1. assign + release while muted removes per-TTY and active-session state.
 #   2. Two concurrent sessions get distinct icons even if both run muted.
 #   3. release_session_icon is idempotent: re-running on an already-released
 #      session does not throw or corrupt the registry.
@@ -53,46 +52,48 @@ _dispatch() {
     shift 3
     env -i HOME="$TEST_HOME" PATH="$PATH" \
         TAVS_RUNTIME_DIR="$RUNTIME_DIR" \
+        TAVS_TMP_DIR="$RUNTIME_DIR" \
         TTY_DEVICE="$tty_dev" \
         TAVS_SESSION_ID="$session_id" \
         TAVS_IDENTITY_MODE="dual" \
         bash "$REPO_ROOT/src/core/trigger.sh" "$state" "$@" 2>/dev/null || true
 }
 
-# The identity registry lives under the same XDG-style state dir used by
-# spinner / subagent-counter. We search both common locations.
-_registry_dir() {
-    for candidate in \
-        "$XDG_RUNTIME_DIR/tavs" \
-        "${XDG_RUNTIME_DIR:-/tmp}/tavs" \
-        "$TEST_HOME/.tavs/state" \
-        "$TEST_HOME/.cache/tavs"; do
-        if [[ -d "$candidate" ]]; then
-            echo "$candidate"
-            return
-        fi
-    done
+_tty_safe_for() {
+    printf '%s' "${1//\//_}"
 }
 
-_registry_contains_session() {
-    local session="$1"
-    local dir
-    dir=$(_registry_dir)
-    [[ -z "$dir" ]] && return 1
-    grep -rq "$session" "$dir" 2>/dev/null
+_session_cache_for() {
+    printf '%s/session-icon.%s' "$TEST_HOME/.cache/tavs" "$(_tty_safe_for "$1")"
 }
 
-@test "identity: muted assign + release leaves registry without the session" {
+_active_sessions_file() {
+    printf '%s/identity/active-sessions' "$RUNTIME_DIR"
+}
+
+_session_registry_file() {
+    printf '%s/identity/session-registry' "$RUNTIME_DIR"
+}
+
+@test "identity: muted assign + release removes live session state" {
     _set_muted
     local session="abc12345"
     local tty="/tmp/test-identity-1"
+    local cache active_sessions
+    cache=$(_session_cache_for "$tty")
+    active_sessions=$(_active_sessions_file)
     : > "$tty"
 
     _dispatch "$tty" reset "$session"           # initial assign
+    [ -f "$cache" ]
+    grep -q "^session_key=$session$" "$cache"
+
     _dispatch "$tty" reset "$session" session-end  # release
 
-    if _registry_contains_session "$session"; then
-        skip "Registry layout differs in this env; pinning best-effort"
+    [ ! -e "$cache" ]
+    if [[ -f "$active_sessions" ]]; then
+        ! grep -q "$session" "$active_sessions"
+        ! grep -q "$(_tty_safe_for "$tty")" "$active_sessions"
     fi
 }
 
@@ -102,22 +103,27 @@ _registry_contains_session() {
     local session_b="bbbb2222"
     local tty_a="/tmp/test-identity-A"
     local tty_b="/tmp/test-identity-B"
+    local cache_a cache_b primary_a primary_b registry
+    cache_a=$(_session_cache_for "$tty_a")
+    cache_b=$(_session_cache_for "$tty_b")
+    registry=$(_session_registry_file)
     : > "$tty_a"
     : > "$tty_b"
 
     _dispatch "$tty_a" reset "$session_a"
     _dispatch "$tty_b" reset "$session_b"
 
-    local dir
-    dir=$(_registry_dir)
-    [[ -n "$dir" ]] || skip "Identity registry dir not located in this env"
+    [ -f "$cache_a" ]
+    [ -f "$cache_b" ]
 
-    # If both per-session caches exist, distinctness is verified.
-    local files
-    files=$(find "$dir" -name "*${session_a}*" -o -name "*${session_b}*" 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$files" -lt 1 ]; then
-        skip "Per-session caches not located in this env (got: $files matches)"
-    fi
+    primary_a=$(grep '^primary=' "$cache_a" | cut -d= -f2-)
+    primary_b=$(grep '^primary=' "$cache_b" | cut -d= -f2-)
+
+    [ -n "$primary_a" ]
+    [ -n "$primary_b" ]
+    [ "$primary_a" != "$primary_b" ]
+    grep -q "^$session_a=" "$registry"
+    grep -q "^$session_b=" "$registry"
 }
 
 @test "identity: re-releasing an already-released session does not corrupt registry" {
@@ -130,7 +136,5 @@ _registry_contains_session() {
     _dispatch "$tty" reset "$session" session-end
     _dispatch "$tty" reset "$session" session-end  # idempotent re-release
 
-    # No assertion on byte-level state; we just need no crash and a clean
-    # exit. Bats records the exit code via the harness — getting here = pass.
-    [ -d "$RUNTIME_DIR" ]
+    [ ! -e "$(_session_cache_for "$tty")" ]
 }

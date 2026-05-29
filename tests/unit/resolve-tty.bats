@@ -13,7 +13,9 @@
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     TEST_HOME=$(mktemp -d)
+    TEST_BIN="$TEST_HOME/bin"
     mkdir -p "$TEST_HOME/.tavs"
+    mkdir -p "$TEST_BIN"
 
     export HOME="$TEST_HOME"
     # resolve_tty side-effects TTY_DEVICE; start each test clean.
@@ -28,24 +30,45 @@ teardown() {
 
 # --- Contract ---
 
-@test "resolve_tty returns a /dev/tty* path in a normal shell" {
-    run resolve_tty
+write_ps_stub_with_writable_tty() {
+    cat > "$TEST_BIN/ps" <<'EOF'
+#!/bin/bash
+if [[ "$1" == "-o" && "$2" == "tty=" ]]; then
+    echo "null"
+    exit 0
+fi
+if [[ "$1" == "-o" && "$2" == "ppid=" ]]; then
+    echo "1"
+    exit 0
+fi
+exit 1
+EOF
+    chmod +x "$TEST_BIN/ps"
+}
+
+@test "resolve_tty returns a writable /dev path from process ancestry" {
+    write_ps_stub_with_writable_tty
+
+    PATH="$TEST_BIN:$PATH" run resolve_tty
     [ "$status" -eq 0 ]
-    [[ "$output" == /dev/tty* ]] || [[ "$output" == /dev/ptmx* ]] || [[ "$output" == /dev/ptty* ]] || {
-        echo "Expected /dev/tty*, got: $output" >&2
+    [[ "$output" == /dev/* ]] || {
+        echo "Expected /dev path, got: $output" >&2
         return 1
     }
 }
 
 @test "resolve_tty returned path is writable" {
-    run resolve_tty
+    write_ps_stub_with_writable_tty
+
+    PATH="$TEST_BIN:$PATH" run resolve_tty
     [ "$status" -eq 0 ]
-    # Under bats the controlling TTY is real; resolved path must be writable.
     [ -w "$output" ]
 }
 
 @test "resolve_tty sets the output path to a char device node" {
-    run resolve_tty
+    write_ps_stub_with_writable_tty
+
+    PATH="$TEST_BIN:$PATH" run resolve_tty
     [ "$status" -eq 0 ]
     [ -c "$output" ] || {
         echo "Expected character-device, got: $output ($(stat -f '%HT' "$output" 2>/dev/null || echo unknown))" >&2

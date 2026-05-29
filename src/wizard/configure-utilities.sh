@@ -45,7 +45,7 @@ SELECTED_SESSION_IDENTITY="true"
 # === HELPER FUNCTIONS ===
 
 print_header() {
-    clear
+    clear 2>/dev/null || true
     echo ""
     echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BOLD}${CYAN}║               TAVS - Configuration Wizard                      ║${NC}"

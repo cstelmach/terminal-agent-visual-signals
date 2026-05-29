@@ -68,7 +68,7 @@ resolve_tty() {
 
 # Auto-detect TTY on source if not already set
 if [[ -z "${TTY_DEVICE:-}" ]]; then
-    TTY_DEVICE=$(resolve_tty)
+    TTY_DEVICE=$(resolve_tty || true)
     # If still empty, we can't do anything (exit handled by caller usually)
 fi
 
