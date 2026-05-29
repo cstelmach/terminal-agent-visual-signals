@@ -3,7 +3,7 @@
 **Status:** Final
 **Created:** 2026-05-29
 **Last Updated:** 2026-05-29
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Author:** Codex
 
 ---
@@ -12,15 +12,17 @@
 
 1. [Project Overview](#project-overview)
 2. [Goals & Success Criteria](#goals--success-criteria)
-3. [Architecture & Design](#architecture--design)
-4. [Decisions & Rationale](#decisions--rationale)
-5. [Implementation Phases](#implementation-phases)
-6. [Constraints & Boundaries](#constraints--boundaries)
-7. [Rejected Alternatives](#rejected-alternatives)
-8. [Verification Strategy](#verification-strategy)
-9. [Open Questions](#open-questions)
-10. [Research Notes](#research-notes)
-11. [Review Notes](#review-notes)
+3. [Product Context](#product-context)
+4. [Architecture & Design](#architecture--design)
+5. [Behavior Contracts](#behavior-contracts)
+6. [Decisions & Rationale](#decisions--rationale)
+7. [Implementation Phases](#implementation-phases)
+8. [Constraints & Boundaries](#constraints--boundaries)
+9. [Rejected Alternatives](#rejected-alternatives)
+10. [Verification Strategy](#verification-strategy)
+11. [Open Questions](#open-questions)
+12. [Research Notes](#research-notes)
+13. [Review Notes](#review-notes)
 
 ---
 
@@ -41,17 +43,88 @@ preserving fast resume, user tab titles, and normal active-state text coloring.
 
 ## Goals & Success Criteria
 
-| Goal | Success Criterion | Priority |
-|------|-------------------|----------|
-| Set pause foreground | Entering any muted state emits OSC 10 with the configured foreground color. | Must Have |
-| Restore foreground | Leaving mute emits OSC 110 before pending state bytes are replayed. | Must Have |
-| Keep pause visuals configurable | Preferences exposes dark/light pause foreground controls beside pause backgrounds. | Must Have |
-| Preserve current pause semantics | All muted reasons continue to share one visual path and no pause method emits OSC 0. | Must Have |
-| Avoid normal-state disruption | Processing, permission, complete, idle, compacting, subagent, and tool-error states do not set foreground in v1. | Must Have |
-| Live repaint on persisted change | A persisted pause foreground/background or appearance change while muted repaints active TTYs on the next scheduler evaluation. | Must Have |
-| Safe malformed config | Malformed pause foreground/background values fall back to appearance-correct defaults before OSC bytes are built. | Must Have |
-| Document terminal limits | Docs clearly state that explicit TrueColor app output can override OSC 10. | Must Have |
-| Leave palette extensible | The model can grow to optional pause palette control later, but v1 does not implement it. | Should Have |
+### Must Have
+
+- **Set pause foreground:** entering any muted state emits OSC 10 with the
+  configured foreground color.
+- **Restore foreground:** leaving mute emits OSC 110 before pending state bytes
+  are replayed.
+- **Keep pause visuals configurable:** Preferences exposes dark/light pause
+  foreground controls beside pause backgrounds.
+- **Preserve current pause semantics:** all muted reasons continue to share one
+  visual path and no pause method emits OSC 0.
+- **Avoid normal-state disruption:** active shell states do not set foreground
+  in v1.
+- **Live repaint on persisted change:** a persisted pause visual or appearance
+  change while muted repaints active TTYs on the next scheduler evaluation.
+- **Safe malformed config:** malformed pause colors fall back to
+  appearance-correct defaults before OSC bytes are built.
+- **Document terminal limits:** docs state that explicit TrueColor app output
+  can override OSC 10.
+- **Support team handoff:** the spec describes product behavior, ownership
+  boundaries, phases, and verification gates without prior conversation context.
+- **Provide direct feedback loops:** implementers can verify visible Ghostty
+  behavior and inspect OSC-byte contracts through tests.
+
+### Should Have
+
+- **Leave palette extensible:** the model can grow to optional pause palette
+  control later, but v1 does not implement it.
+
+---
+
+## Product Context
+
+### User Problem
+
+TAVS is used to manage many concurrent AI-agent terminal sessions. Background
+colors already make session state glanceable, but a break or pause period should
+feel more definitive than another state tint. During scheduled quiet periods or
+manual pause, users want the terminal to visually communicate: "TAVS is muted
+right now; this session is not actively signaling normal state changes."
+
+The current paused background is useful, but it does not control the default
+text color. In Ghostty, adding default foreground control lets the muted state
+feel like a complete temporary appearance mode while still leaving normal agent
+states alone.
+
+### Primary Users
+
+- **Multi-session agent operator:** needs paused/break terminals to be visible
+  at a glance across many Ghostty windows. Success means paused terminals have
+  both background and default text color changed.
+- **TAVS maintainer:** needs foreground control without destabilizing scheduling,
+  titles, or active state coloring. Success means existing focused tests keep
+  passing with targeted additions.
+- **Future implementer:** needs exact scope and ownership boundaries. Success
+  means implementation planning can start from this SPEC without re-opening
+  decisions.
+
+### User Workflows
+
+1. **Manual pause:** User pauses TAVS from the menu bar or CLI. Existing active
+   agent terminals change to the configured pause background and foreground.
+2. **Scheduled break:** A quiet-period break begins. The same pause visual is
+   applied because all muted reasons share one visual contract.
+3. **Resume:** User resumes or schedule re-enters an active window. TAVS resets
+   foreground/background and replays pending state bytes.
+4. **Customize:** User opens Preferences -> Appearance -> Paused State and
+   adjusts foreground/background colors for dark and light macOS appearance.
+5. **Recover from bad config:** If `user.conf` contains malformed pause colors,
+   TAVS falls back to documented defaults and still paints a valid pause visual.
+
+### Product Principles
+
+- **Pause means temporary ownership:** While muted, TAVS can own default
+  foreground and background. When unmuted, it must give both back.
+- **Titles remain sacred:** Pause must not emit OSC 0 or blank/stale user-set
+  terminal tab names.
+- **Normal states stay normal:** This feature must not change text colors for
+  processing, permission, complete, idle, compacting, subagent, or tool-error.
+- **Truthful control claim:** TAVS controls terminal default foreground and
+  background. Explicit TrueColor app output can still override foreground.
+- **Boring config behavior:** Bad color config should degrade to known defaults,
+  not leak raw strings into terminal control sequences.
 
 ---
 
@@ -83,14 +156,68 @@ graph LR
 
 ### Key Components
 
-| Component | Purpose | Location |
-|-----------|---------|----------|
-| `PauseVisual` | Sanitized value type for pause background and foreground colors. | `src/macos/TAVSApp/Sources/TAVSApp/` |
-| Pause visual resolver | Reads `user.conf`, selects dark/light values, constructs `PauseVisual`. | `src/macos/TAVSApp/Sources/TAVSApp/TAVSApp.swift` |
-| `Scheduler` | Evaluates mute state, compares last painted visual, triggers repaint. | `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift` |
-| `Broadcaster` | Emits pause and pause-clear OSC bytes to registered TTYs. | `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift` |
-| `UserConfStore` | Stores curated pause foreground keys and defaults. | `src/macos/TAVSApp/Sources/TAVSApp/UserConfStore.swift` |
-| `PreferencesView` | Adds dark/light foreground color pickers in "Paused State". | `src/macos/TAVSApp/Sources/TAVSApp/PreferencesView.swift` |
+- **`PauseVisual`**
+  - Purpose: sanitized value type for pause background and foreground colors.
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/`
+- **Pause visual resolver**
+  - Purpose: reads `user.conf`, selects dark/light values, constructs
+    `PauseVisual`.
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/TAVSApp.swift`
+- **`Scheduler`**
+  - Purpose: evaluates mute state, compares last painted visual, triggers
+    repaint.
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/Scheduler.swift`
+- **`Broadcaster`**
+  - Purpose: emits pause and pause-clear OSC bytes to registered TTYs.
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/Broadcaster.swift`
+- **`UserConfStore`**
+  - Purpose: stores curated pause foreground keys and defaults.
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/UserConfStore.swift`
+- **`PreferencesView`**
+  - Purpose: adds dark/light foreground color pickers in "Paused State".
+  - Location: `src/macos/TAVSApp/Sources/TAVSApp/PreferencesView.swift`
+
+### Ownership Boundaries
+
+- **Muted/pause visual state:** Swift macOS app. It broadcasts directly to
+  registered TTYs.
+- **Active agent state visuals:** shell hooks. Foreground control for these
+  states is out of scope for v1.
+- **Pause color parsing and defaults:** `PauseVisual` plus `UserConfStore`.
+  Values are sanitized before `Broadcaster` sees them.
+- **Pause repaint timing:** `Scheduler`. Repaints happen on scheduler
+  evaluations while muted.
+- **User-facing controls:** Preferences Appearance tab. V1 exposes pause-only
+  controls.
+- **Terminal compatibility claim:** documentation. Ghostty is the target;
+  non-Ghostty terminals are best-effort.
+
+### Palette Reset Rationale
+
+The current pause broadcaster already emits OSC 104 palette reset on pause entry
+and pause clear. V1 preserves that behavior to avoid mixing a foreground feature
+with a separate pause-cleanup policy change. This is not a pause palette
+override: v1 does not emit OSC 4 palette-setting sequences and does not expose
+pause palette controls.
+
+The preserved OSC 104 behavior must be documented as existing pause cleanup. A
+future palette-focused spec may revisit whether TAVS should keep, remove, or
+make that reset configurable.
+
+### Required User-Visible Outcomes
+
+- **Enter manual pause:** existing agent terminals switch to pause background and
+  default text color. Verify with a direct Ghostty visual check.
+- **Enter quiet-period break:** the same pause visual appears; no separate break
+  style is expected. Verify through schedule or CLI pause checks.
+- **Resume:** terminal foreground/background reset, and pending state paint can
+  restore the latest state. Verify visually and through broadcaster tests.
+- **Change pause foreground while muted:** the new persisted value appears on
+  the next scheduler evaluation. Verify through Preferences or `user.conf`.
+- **Malformed foreground config:** pause still paints using documented fallback.
+  Verify with unit tests and a manual bad-config check.
+- **Normal processing state fires:** shell active-state paths emit no foreground
+  OSC. Verify with shell regression coverage.
 
 ### Current State
 
@@ -165,10 +292,10 @@ colors because it has no macOS appearance context.
 
 Fallbacks are:
 
-| Field | Dark fallback | Light fallback |
-|-------|---------------|----------------|
-| Background | `UserConfStore.defaultPauseBgDark` (`#3A3A3A`) | `UserConfStore.defaultPauseBgLight` (`#D0D0D0`) |
-| Foreground | `UserConfStore.defaultPauseFgDark` (`#F2F2F2`) | `UserConfStore.defaultPauseFgLight` (`#202020`) |
+- **Background, dark:** `UserConfStore.defaultPauseBgDark` (`#3A3A3A`)
+- **Background, light:** `UserConfStore.defaultPauseBgLight` (`#D0D0D0`)
+- **Foreground, dark:** `UserConfStore.defaultPauseFgDark` (`#F2F2F2`)
+- **Foreground, light:** `UserConfStore.defaultPauseFgLight` (`#202020`)
 
 This intentionally fixes the current background sanitizer limitation where
 malformed background values always fall back to dark grey.
@@ -204,11 +331,99 @@ schedule transition can cause a reevaluation. If macOS appearance changes while
 already muted, repaint on the next scheduler evaluation is acceptable for v1;
 immediate appearance-change observation is out of scope.
 
+"Next scheduler evaluation" means one of the existing scheduler evaluation
+paths runs. Automated tests may call `loadAndEvaluate()` directly. In the
+running app, expected evaluation paths include file-watch callbacks after
+persisted `~/.tavs` changes, wake handling, transition timers, and the existing
+heartbeat. The v1 product target is eventual repaint within the scheduler's
+normal heartbeat window, not instant repaint on every OS/UI event.
+
 Terminals that register after mute has already begun are covered by the same
 bounded scheduler behavior. The app already pre-registers running agents at
 startup and evaluates on heartbeat. V1 does not add an active-tty file watcher;
 newly registered TTYs during an existing mute may receive pause paint on the
 next scheduler evaluation.
+
+---
+
+## Behavior Contracts
+
+These contracts are product-facing and test-facing. They define what must remain
+true regardless of implementation details.
+
+### Pause Entry Contract
+
+When `Scheduler` evaluates to `muted == true` after previously being unmuted:
+
+1. `mute.state` reflects muted state before pause paint.
+   Shell hooks should buffer into pending instead of writing live state bytes.
+2. `PauseVisual` is resolved for current macOS appearance.
+   Unit tests can inject provider values; manual tests can switch dark/light
+   config.
+3. Pause payload includes palette reset, foreground set, background set, and
+   image clear. Broadcaster byte assertions prove this.
+4. No title bytes are emitted. Existing no-OSC-0 tests must remain green.
+
+### Pause Steady-State Contract
+
+While `Scheduler` remains muted:
+
+- Same resolved `PauseVisual`: do not re-broadcast pause paint.
+- Changed persisted foreground: re-broadcast pause paint on next scheduler
+  evaluation.
+- Changed persisted background: re-broadcast pause paint on next scheduler
+  evaluation.
+- macOS appearance changes: re-broadcast on next scheduler evaluation if the
+  resolved visual changes.
+- New TTY registers: it may remain unpainted until the next scheduler
+  evaluation; v1 does not add immediate active-tty watching.
+
+The scheduler evaluation boundary is intentionally explicit. V1 does not require
+live preview during ColorPicker dragging, immediate appearance observers, or a
+new watcher for the active TTY registry.
+
+### Pause Exit Contract
+
+When `Scheduler` evaluates to `muted == false` after previously being muted:
+
+1. Emit pause-clear payload with OSC 104, OSC 110, and OSC 111.
+   This gives terminal palette, default foreground, and background back.
+2. Replay pending OSC bytes so each terminal catches up to its latest buffered
+   TAVS state.
+3. Clear `lastPaintedPauseVisual`; the next mute should paint even if colors
+   match the previous mute.
+4. Do not emit OSC 0, avoiding blank or stale user tab titles.
+
+### Configuration Contract
+
+- **Key absent:** use documented default for current appearance.
+- **Key valid `#RRGGBB`:** use configured value exactly; preserving user casing
+  is not required.
+- **Key malformed:** use documented default for that field and appearance.
+- **Foreground malformed, background valid:** use fallback foreground and
+  configured background.
+- **Background malformed, foreground valid:** use fallback background and
+  configured foreground.
+
+Preferences write semantics:
+
+- Opening and closing Preferences without changing pause foreground controls
+  must not materialize absent foreground keys into `user.conf`.
+- Defaults are display-time fallbacks until the user changes a foreground
+  control or explicitly writes the key.
+- When Preferences saves changed keys, it must preserve comments, blank lines,
+  unknown settings, unmanaged shell content, and ordering of unrelated lines.
+- Only the targeted first matching pause key should be replaced or appended.
+
+### Compatibility Contract
+
+- Ghostty is the target terminal for manual validation.
+- Non-Ghostty terminals are best-effort in v1. They may ignore OSC 10/110; this
+  spec does not require manual acceptance on those terminals.
+- Existing background behavior must not regress for terminals that already
+  handled pause background before this feature.
+- TrueColor app output may keep explicit colors. This does not violate the
+  feature; it must be documented.
 
 ---
 
@@ -433,110 +648,299 @@ time.
 persisted state avoids continuous TTY churn during color dragging while still
 supporting live updates after a saved config edit.
 
+### D15: Existing palette reset behavior
+
+**Question:** Should this foreground feature remove the existing OSC 104 palette
+reset from pause entry and pause clear?
+
+**Options Considered:**
+- A) Preserve existing OSC 104 behavior and document it.
+- B) Remove OSC 104 because v1 does not own pause palette.
+- C) Make palette reset configurable in this feature.
+
+**Decision:** A) Preserve existing OSC 104 behavior and document it.
+
+**Reasoning:** Removing OSC 104 would be a separate behavior change from adding
+foreground control. V1 should avoid silently changing legacy pause cleanup while
+making clear that it does not implement pause palette overrides.
+
+### D16: Absent foreground key persistence
+
+**Question:** Should Preferences materialize default foreground keys when the
+user opens and closes Preferences without changes?
+
+**Options Considered:**
+- A) Keep absent keys absent until the user changes a control.
+- B) Always write foreground defaults on Preferences save.
+- C) Require config-only setup before Preferences can edit foreground values.
+
+**Decision:** A) Keep absent keys absent until changed.
+
+**Reasoning:** This preserves sparse user config files and matches the existing
+pattern where defaults are fallbacks, not forced file churn. A changed control
+still writes the corresponding key.
+
+### D17: Shared user.conf preservation
+
+**Question:** How strict must Preferences saves be for the shared shell-sourced
+`user.conf` file?
+
+**Options Considered:**
+- A) Preserve comments, blank lines, unknown keys, unmanaged shell content, and
+  unrelated ordering.
+- B) Reformat the file around curated app-owned keys.
+- C) Rewrite the file from a generated model.
+
+**Decision:** A) Preserve file structure outside targeted key changes.
+
+**Reasoning:** `user.conf` is user-editable and shell-sourced. A Preferences
+save must not strip comments, custom shell entries, or unrelated TAVS settings.
+
+### D18: Compatibility validation scope
+
+**Question:** Which terminals must be manually validated for v1 acceptance?
+
+**Options Considered:**
+- A) Ghostty only.
+- B) Ghostty plus a representative unsupported terminal.
+- C) Full terminal compatibility matrix.
+
+**Decision:** A) Ghostty only.
+
+**Reasoning:** The user uses Ghostty, and Ghostty support for OSC 10/110 is the
+feature driver. Other terminals remain best-effort as long as existing
+background behavior is not regressed.
+
 ---
 
 ## Implementation Phases
 
-### Phase 1: Pause visual model and config store
+The phases below are intended as implementation slices. Each phase should leave
+the project in a coherent, reviewable state and should not require decisions
+outside this SPEC.
 
-**Scope:** Add the pause foreground configuration surface in Swift data models,
-without changing broadcaster output yet.
+### Phase 0: Baseline and safety lock
 
-**Depends On:** Existing `UserConfStore` pause background accessors and
-`PreferencesView` color helper behavior.
+**Purpose:** Confirm the starting behavior and protect existing pause contracts
+before changing them.
 
-**Inputs:**
-- Current pause background defaults and accessors in `UserConfStore`.
-- Existing color parsing and `hexString()` helpers in `PreferencesView`.
+**Depends On:** Current repository state.
+
+**Tasks:**
+- Capture current relevant Swift test status for the macOS app.
+- Identify existing broadcaster, scheduler, and user config tests that will be
+  expanded.
+- Confirm no implementation work will touch shell active-state foreground logic.
+- Preserve the current no-OSC-0 pause/title contract as a regression boundary.
 
 **Outputs:**
-- `PauseVisual` value type with `backgroundColor` and `foregroundColor`.
-- `PauseVisual` validates both fields and falls back to appearance-specific
-  defaults before storage.
+- Known baseline for `src/macos/TAVSApp` tests.
+- Implementation notes identifying the current pause paths:
+  `Broadcaster`, `Scheduler`, `UserConfStore`, `PreferencesView`, and `TAVSApp`.
+
+**Acceptance Criteria:**
+- [ ] Baseline Swift tests are run or documented if they cannot run.
+- [ ] Existing no-title pause tests are identified and remain part of the suite.
+- [ ] No active-state shell foreground changes are planned in this phase.
+
+**Verification:**
+- [ ] `cd src/macos/TAVSApp && swift test`
+- [ ] `git diff` shows no production behavior changes after this phase.
+
+### Phase 1: Pause visual model and config foundation
+
+**Purpose:** Establish a safe, testable data contract for pause foreground and
+background values before any OSC behavior changes.
+
+**Depends On:** Phase 0.
+
+**Tasks:**
+- Add `PauseVisual` as the pause-specific visual contract.
+- Make `PauseVisual` responsible for storing valid `#RRGGBB` values only.
+- Add foreground defaults and accessors beside existing pause background keys.
+- Update `user.conf.template` with foreground keys and concise comments.
+- Keep pause foreground defaults app-owned; do not add shell theme defaults.
+
+**Outputs:**
+- `PauseVisual` with background and foreground fields.
+- Appearance-correct fallback behavior for malformed background and foreground.
 - `UserConfStore.defaultPauseFgDark == "#F2F2F2"`.
 - `UserConfStore.defaultPauseFgLight == "#202020"`.
 - `pauseFgDark` and `pauseFgLight` accessors.
-- `TAVS_PAUSE_FG_DARK/LIGHT` documented in `user.conf.template`.
+- Template documentation for `TAVS_PAUSE_FG_DARK/LIGHT`.
 
 **Acceptance Criteria:**
-- [ ] Missing foreground keys return `nil` from `UserConfStore` accessors.
+- [ ] Missing foreground keys return `nil` from `UserConfStore`.
 - [ ] Foreground defaults are available as Swift constants.
-- [ ] Malformed foreground and background values are normalized by `PauseVisual`
-  using the correct appearance-specific defaults.
-- [ ] Saving foreground keys preserves unrelated `user.conf` lines.
+- [ ] Malformed foreground and background values normalize to the correct
+  appearance-specific defaults.
+- [ ] Valid configured values are preserved semantically as `#RRGGBB` colors.
+- [ ] Saving foreground keys preserves comments, blank lines, unknown settings,
+  unmanaged shell content, and unrelated ordering in `user.conf`.
+- [ ] Opening and closing Preferences without changing foreground controls does
+  not write default foreground keys into `user.conf`.
 - [ ] `user.conf.template` documents foreground keys beside pause background keys.
 
 **Verification:**
 - [ ] Add or extend `UserConfStoreTests` for foreground round-trip and defaults.
+- [ ] Add `PauseVisual` tests for valid values, malformed foreground, malformed
+  background, absent values, and mixed valid/malformed inputs.
+- [ ] Confirm `src/config/defaults.conf` is not required for pause foreground.
 
-### Phase 2: Resolver, scheduler, and broadcaster behavior
+### Phase 2: Broadcast payload contract
 
-**Scope:** Make the macOS app resolve, compare, emit, and clear foreground
-colors for every muted state.
+**Purpose:** Teach the pause broadcaster to emit and clear default foreground
+color while preserving all existing pause byte guarantees.
 
 **Depends On:** Phase 1.
 
-**Inputs:**
-- `PauseVisual`.
-- Existing `PauseColorResolver.resolve(userConfURL:)`.
-- Existing `BroadcasterProtocol.broadcastPaused(backgroundColor:)`.
+**Tasks:**
+- Update the broadcaster pause method to consume `PauseVisual`.
+- Add OSC 10 foreground set to the pause payload.
+- Add OSC 110 foreground reset to the pause-clear payload.
+- Keep OSC 104 palette reset, OSC 11 background set, OSC 111 background reset,
+  and iTerm2 background image clear behavior.
+- Keep all pause methods title-free.
 
 **Outputs:**
-- A resolver that returns `PauseVisual`.
-- `Scheduler` uses `pauseVisualProvider: () -> PauseVisual`.
-- `Scheduler` tracks `lastPaintedPauseVisual`.
-- `Broadcaster.broadcastPaused(visual:)` emits OSC 10 and OSC 11.
-- `Broadcaster.broadcastPausedClear()` emits OSC 110 and OSC 111.
+- Pause entry payload sets default foreground and background.
+- Pause exit payload resets foreground and background before pending replay.
+- Existing image-clear and no-title contracts remain intact.
 
 **Acceptance Criteria:**
-- [ ] Active -> muted writes one pause payload including foreground.
-- [ ] Muted -> active writes foreground reset before pending replay.
-- [ ] Foreground-only config changes while muted repaint once.
-- [ ] Unchanged foreground/background across re-evaluations do not repaint.
-- [ ] Appearance changes while muted repaint on the next scheduler evaluation.
-- [ ] Newly registered TTYs during mute are documented as repainting no later
-  than the next scheduler evaluation.
-- [ ] No broadcaster pause method emits OSC 0.
-- [ ] Existing `OSC 1337;SetBackgroundImageFile=` pause image clearing remains
-  in the paused payload.
+- [ ] Pause payload contains OSC 104, OSC 10, OSC 11, and the existing OSC 1337
+  background-image clear sequence.
+- [ ] Pause-clear payload contains OSC 104, OSC 110, and OSC 111.
+- [ ] OSC 104 is documented as preserved legacy pause cleanup, not as v1 palette
+  override support.
+- [ ] `Broadcaster` does not own fallback decisions; it serializes sanitized
+  `PauseVisual` values.
+- [ ] No pause broadcaster method emits OSC 0 or paused title text.
+- [ ] Multiple active TTYs receive the same pause payload.
+- [ ] Stale/dead TTY pruning behavior is unchanged.
 
 **Verification:**
-- [ ] Add `BroadcasterTests` for OSC 10, OSC 110, malformed foreground fallback,
-  and no OSC 0.
-- [ ] Add `SchedulerTests` for foreground repaint and idempotence.
+- [ ] Extend `BroadcasterTests` for OSC 10 set and OSC 110 reset.
+- [ ] Extend no-OSC-0 tests to cover the new method signature.
+- [ ] Add regression assertion for `OSC 1337;SetBackgroundImageFile=`.
+- [ ] Confirm existing stale/dead/multiple TTY broadcaster tests still pass.
 
-### Phase 3: Preferences and documentation
+### Phase 3: Scheduler integration and repaint behavior
 
-**Scope:** Expose foreground controls in the app UI and document behavior,
-limits, and verification.
+**Purpose:** Make muted-state transitions use the complete pause visual and
+repaint only when the resolved visual changes.
 
 **Depends On:** Phase 2.
 
-**Inputs:**
-- Existing "Paused State" section in `PreferencesView`.
-- Existing docs in `docs/reference/macos-menubar-app.md`,
-  `docs/reference/palette-theming.md`, `docs/reference/testing.md`, and
-  `README.md`.
+**Tasks:**
+- Replace the single-color provider with a pause visual provider.
+- Track `lastPaintedPauseVisual` instead of only background color.
+- Repaint on active -> muted.
+- Clear and replay on muted -> active in the existing order.
+- Repaint during steady mute only when the resolved visual changes.
+- Treat persisted config changes and appearance changes as resolved-value
+  changes observed at scheduler evaluation time.
 
 **Outputs:**
-- Dark/light foreground color pickers in Preferences.
-- Docs list the new `TAVS_PAUSE_FG_DARK/LIGHT` keys.
-- Docs state OSC 10/110 behavior and TrueColor limitations.
-- Docs state palette override is future work, not v1 behavior.
+- All muted reasons use the same `PauseVisual`.
+- Foreground-only and background-only changes can repaint while muted.
+- Identical resolved visuals do not cause redundant broadcasts.
+- Resume behavior remains: clear pause visual, replay pending bytes, clear last
+  painted visual state.
 
 **Acceptance Criteria:**
-- [ ] Preferences loads foreground colors from `UserConfStore` with defaults.
-- [ ] Preferences saves changed foreground colors to `user.conf`.
-- [ ] Docs do not promise control over explicit TrueColor text.
-- [ ] Docs preserve the existing no-title-change pause contract.
-- [ ] Docs state appearance changes and newly registered TTYs may repaint on the
-  next scheduler evaluation rather than immediately.
+- [ ] Active -> muted writes one pause payload including foreground.
+- [ ] Muted -> active clears foreground/background and replays pending bytes.
+- [ ] Foreground-only config changes while muted repaint once.
+- [ ] Background-only config changes while muted repaint once.
+- [ ] No visual change across heartbeat/file-watch reevaluations does not repaint.
+- [ ] Appearance changes while muted repaint on the next scheduler evaluation if
+  they change the resolved visual.
+- [ ] Automated scheduler tests can force that "next scheduler evaluation" with
+  a direct evaluation call rather than sleeping for heartbeat timing.
+- [ ] Newly registered TTYs during mute are not guaranteed immediate paint, but
+  the documented next-evaluation behavior remains true.
 
 **Verification:**
-- [ ] Run Swift tests.
-- [ ] Manually inspect Preferences to confirm four pause color pickers render.
-- [ ] In Ghostty, pause changes default foreground/background and resume resets
-  both.
+- [ ] Extend `SchedulerTests` for visual provider wiring.
+- [ ] Add tests for foreground-only, background-only, unchanged, and appearance
+  derived visual changes while muted.
+- [ ] Confirm muted -> active still calls pause clear and pending replay once.
+- [ ] Confirm startup-into-muted behavior still paints the pause visual.
+
+### Phase 4: Preferences, user configuration, and documentation
+
+**Purpose:** Expose the feature to users and document exactly what it controls.
+
+**Depends On:** Phase 3.
+
+**Tasks:**
+- Add dark/light foreground color pickers to the existing "Paused State" section.
+- Load foreground values from `UserConfStore`, using documented defaults when
+  keys are absent.
+- Save foreground values to `user.conf` using the existing Preferences save
+  lifecycle.
+- Update user-facing docs and testing docs.
+- Document the TrueColor limitation and next-evaluation repaint timing.
+
+**Outputs:**
+- Preferences UI for pause foreground/background pairs.
+- `user.conf.template` and public docs for `TAVS_PAUSE_FG_DARK/LIGHT`.
+- Updated pause visual documentation in macOS app docs and README.
+- Testing docs that describe Ghostty manual validation.
+
+**Acceptance Criteria:**
+- [ ] Preferences renders dark/light foreground controls in "Paused State".
+- [ ] Preferences persists foreground values to `user.conf`.
+- [ ] Preferences preserves comments, blank lines, unknown settings, unmanaged
+  shell content, and unrelated ordering when saving.
+- [ ] Preferences does not materialize default foreground keys on an unchanged
+  open/close cycle.
+- [ ] Docs describe OSC 10/110 and OSC 11/111 behavior.
+- [ ] Docs state that explicit TrueColor text may override default foreground.
+- [ ] Docs state that palette override is future work, not v1 behavior.
+- [ ] Docs explain why OSC 104 remains part of the pause payload in v1.
+- [ ] Docs preserve the no-title-change pause contract.
+
+**Verification:**
+- [ ] Run Swift tests after Preferences changes.
+- [ ] Manually open Preferences and confirm four pause color pickers render.
+- [ ] Change foreground values, close Preferences, inspect `~/.tavs/user.conf`.
+- [ ] Review docs for the words "default foreground" and TrueColor caveat.
+
+### Phase 5: Product validation and release readiness
+
+**Purpose:** Verify that the final product behaves correctly in the way it will
+actually be used: Ghostty, menu-bar pause/resume, schedule breaks, and config
+customization.
+
+**Depends On:** Phase 4.
+
+**Tasks:**
+- Run automated tests for the macOS app and any affected shell regressions.
+- Validate manual Ghostty pause/resume behavior.
+- Validate Preferences-driven customization.
+- Validate malformed config fallback.
+- Validate that normal active states do not gain foreground control.
+- Update any progress or release notes used by the project workflow.
+
+**Outputs:**
+- Passing automated test report or documented blockers.
+- Manual validation notes covering pause, resume, customization, and bad config.
+- Final implementation confidence that the feature matches this SPEC.
+
+**Acceptance Criteria:**
+- [ ] Automated tests pass or failures are explicitly unrelated and documented.
+- [ ] Ghostty manual pause changes default foreground and background.
+- [ ] Ghostty manual resume resets default foreground and background.
+- [ ] Scheduled quiet-period mute uses the same visual behavior as manual pause.
+- [ ] Foreground customization from Preferences affects the next muted paint.
+- [ ] Malformed config does not break pause paint.
+- [ ] Normal shell-driven active states still do not emit OSC 10/110.
+
+**Verification:**
+- [ ] Complete the [Manual Product Acceptance Scenarios](#manual-product-acceptance-scenarios).
+- [ ] Record any accepted residual risk in implementation notes or PR text.
 
 ---
 
@@ -580,24 +984,37 @@ limits, and verification.
 
 ## Rejected Alternatives
 
-| Alternative | Why Rejected |
-|-------------|--------------|
-| Breaks only | Current mute visual path is reason-agnostic; reason-specific visuals add branching and config not needed for v1. |
-| All state foregrounds now | Normal states are shell-owned and should keep terminal/app default text colors for v1. |
-| Full visual profiles now | Too broad for the requested pause/break feature and would require palette/state UI design. |
-| Auto contrast foreground defaults | Hidden color math is less predictable than explicit defaults and can surprise users after background edits. |
-| Config-only foreground keys | The existing pause background controls are GUI-first; foreground should match that user experience. |
-| Always override ANSI palette on pause | Palette changes are more invasive and can surprise users who rely on prompt or app colors. |
-| Emit pause title text | Existing history showed title emission can blank or stale user tab titles. The no-OSC-0 invariant remains. |
-| Pure black/white foreground defaults | Max contrast is readable but harsher than needed for the default pause backgrounds. |
-| Immediate appearance-change observer | It would add new app event plumbing. V1 accepts repaint on the next scheduler evaluation. |
-| Active-tty watcher during mute | It would add new registry monitoring infrastructure. V1 accepts repaint on the next scheduler evaluation. |
+- **Breaks only**: Current mute visual path is reason-agnostic.
+  Reason-specific visuals add branching and config not needed for v1.
+- **All state foregrounds now**: Normal states are shell-owned and should keep
+  terminal/app default text colors for v1.
+- **Full visual profiles now**: Too broad for the requested pause/break feature
+  and would require palette/state UI design.
+- **Auto contrast foreground defaults**: Hidden color math is less predictable
+  than explicit defaults and can surprise users after background edits.
+- **Config-only foreground keys**: The existing pause background controls are
+  GUI-first; foreground should match that user experience.
+- **Always override ANSI palette on pause**: Palette changes are more invasive
+  and can surprise users who rely on prompt or app colors.
+- **Emit pause title text**: Existing history showed title emission can blank or
+  stale user tab titles. The no-OSC-0 invariant remains.
+- **Pure black/white foreground defaults**: Max contrast is readable but harsher
+  than needed for the default pause backgrounds.
+- **Immediate appearance-change observer**: It would add new app event plumbing.
+  V1 accepts repaint on the next scheduler evaluation.
+- **Active-tty watcher during mute**: It would add new registry monitoring
+  infrastructure. V1 accepts repaint on the next scheduler evaluation.
 
 ---
 
 ## Verification Strategy
 
-### Code Testing
+Verification must prove two things:
+
+1. The byte-level and state-machine contracts are correct.
+2. The user-visible Ghostty behavior matches how TAVS is actually used.
+
+### Automated Test Gates
 
 Run the Swift test suite from the macOS app package:
 
@@ -606,7 +1023,7 @@ cd src/macos/TAVSApp
 swift test
 ```
 
-Required targeted coverage:
+Required targeted coverage by area:
 
 - `BroadcasterTests`
   - Pause payload contains `]10;#F2F2F2` or caller-supplied foreground.
@@ -634,18 +1051,184 @@ Required targeted coverage:
   - Verify v1 does not add OSC 10/110 emission to shell-driven active states in
     `src/core/trigger.sh` or `src/core/idle-worker-background.sh`.
 
-### Manual Validation
+### Manual Product Acceptance Scenarios
 
-Manual validation should use Ghostty because Ghostty is the target terminal:
+Manual validation should use Ghostty because Ghostty is the target terminal.
+Each scenario should record pass/fail and the exact command/menu action used.
 
-1. Launch TAVS.app.
-2. Open Preferences -> Appearance -> Paused State.
-3. Confirm dark/light background and foreground color pickers render.
-4. Set a visibly different pause foreground.
-5. Pause TAVS from the menu or CLI.
-6. Confirm default terminal text foreground changes in Ghostty.
+#### Scenario A: Default manual pause and resume
+
+**Purpose:** Prove the main product workflow.
+
+**Setup:**
+- Ghostty terminal running an agent session registered with TAVS.
+- TAVS menu-bar app running.
+- No custom pause foreground values required.
+
+**Steps:**
+1. Observe current terminal default text and background.
+2. Pause TAVS from the menu bar or `./tavs schedule pause`.
+3. Confirm the terminal background changes to the configured pause background.
+4. Confirm default foreground text changes to the configured pause foreground.
+5. Resume TAVS from the menu bar or `./tavs schedule resume`.
+6. Confirm foreground and background reset.
+
+**Pass Criteria:**
+- Pause visibly changes both background and default text color.
+- Resume restores normal terminal appearance.
+- Terminal tab title is not blanked or replaced with stale pause text.
+
+#### Scenario B: Preferences customization
+
+**Purpose:** Prove user control through the GUI.
+
+**Setup:**
+- TAVS app open.
+- Ghostty terminal available for visual inspection.
+
+**Steps:**
+1. Open Preferences -> Appearance -> Paused State.
+2. Set a highly visible dark-mode foreground value.
+3. Close Preferences so the value is persisted.
+4. Inspect `~/.tavs/user.conf` and confirm `TAVS_PAUSE_FG_DARK` is present or
+   updated.
+5. Pause TAVS.
+6. Confirm the chosen foreground appears.
 7. Resume TAVS.
-8. Confirm default foreground and background reset.
+
+**Pass Criteria:**
+- Preferences shows four paused-state color controls.
+- Persisted foreground config changes actual pause paint.
+- Resume still resets foreground.
+
+#### Scenario C: Quiet-period break
+
+**Purpose:** Prove all muted reasons share the same visual.
+
+**Setup:**
+- Configure or temporarily create a quiet period that starts soon.
+- Ghostty terminal registered with TAVS.
+
+**Steps:**
+1. Wait for or trigger the quiet period.
+2. Confirm pause foreground/background are applied.
+3. Let the quiet period end or resume manually.
+4. Confirm foreground/background reset.
+
+**Pass Criteria:**
+- Scheduled break behavior matches manual pause behavior.
+- No separate break-specific visual is required or expected.
+
+#### Scenario D: Persisted config change while muted
+
+**Purpose:** Prove steady-muted repaint behavior.
+
+**Setup:**
+- TAVS is already muted.
+- Ghostty terminal shows current pause visual.
+
+**Steps:**
+1. Change pause foreground in Preferences or by editing `user.conf`.
+2. Persist the change.
+3. Wait for the next scheduler evaluation.
+4. Confirm foreground changes without resume/re-pause.
+
+**Pass Criteria:**
+- A foreground-only change repaints while muted.
+- If the value is unchanged, no repeated visible flicker is observed.
+
+#### Scenario E: Malformed config fallback
+
+**Purpose:** Prove invalid user config cannot break pause paint.
+
+**Setup:**
+- Back up relevant pause color lines from `~/.tavs/user.conf`.
+- Intentionally set one foreground or background key to an invalid value.
+
+**Steps:**
+1. Save malformed config.
+2. Pause TAVS.
+3. Confirm pause paint still occurs.
+4. Confirm fallback foreground/background is readable.
+5. Restore valid config.
+
+**Pass Criteria:**
+- No raw malformed value appears in OSC payload behavior.
+- Terminal remains readable during pause.
+- Restoring config restores expected custom behavior.
+
+#### Scenario F: Normal-state non-disruption
+
+**Purpose:** Prove v1 does not become a broad active-state foreground feature.
+
+**Setup:**
+- TAVS unmuted.
+- Agent session can trigger processing, complete, permission, or idle states.
+
+**Steps:**
+1. Trigger normal processing/complete states.
+2. Observe that background/title behavior remains normal.
+3. Use tests or debug capture to confirm shell active-state paths do not emit
+   OSC 10/110.
+
+**Pass Criteria:**
+- Active states do not change default foreground because of this feature.
+- Existing state backgrounds and titles remain functional.
+
+#### Scenario G: Bounded-delay cases
+
+**Purpose:** Validate the accepted v1 timing behavior.
+
+**Cases:**
+- **New TTY registers while TAVS is already muted:** It may not paint
+  immediately. It should paint when the scheduler next evaluates while muted.
+- **macOS dark/light appearance changes while TAVS is already muted:** The
+  previous pause visual may remain until the scheduler next evaluates.
+
+**Test Method:**
+1. Pause TAVS in Ghostty.
+2. For the appearance case, toggle macOS dark/light mode while still muted.
+3. Confirm the terminal remains readable during the bounded delay.
+4. Force or wait for a scheduler evaluation.
+5. Confirm the resolved pause visual matches the new appearance/config.
+6. Resume and confirm the terminal does not remain stuck in pause colors.
+
+**Pass Criteria:**
+- The spec does not require immediate repaint.
+- Repaint on the next scheduler evaluation is acceptable and documented.
+- The interim foreground/background pairing remains readable enough for a muted
+  terminal.
+- No terminal gets stuck after resume.
+
+If Ghostty drops OSC 10/11 overrides during the macOS appearance switch and the
+interim state becomes unreadable, D12 must be revisited before release.
+
+#### Scenario H: Resume polish
+
+**Purpose:** Define the expected user-visible quality of clear-then-replay.
+
+**Steps:**
+1. Pause TAVS in Ghostty.
+2. Trigger or buffer a normal state update while muted.
+3. Resume TAVS.
+4. Watch for obvious foreground/background flicker.
+
+**Pass Criteria:**
+- A brief, self-correcting transient reset is acceptable in v1.
+- Persistent wrong foreground/background after resume is not acceptable.
+- Tab title must not blank or show stale pause text.
+
+### Direct Feedback Signals
+
+Implementers should use these feedback signals during development:
+
+| Signal | What it proves |
+|--------|----------------|
+| Swift broadcaster byte tests | Exact OSC contracts are correct. |
+| Scheduler call-count tests | Repaint/idempotence behavior is correct. |
+| `~/.tavs/user.conf` inspection | Preferences persisted the expected keys. |
+| Ghostty visual pause/resume | The final product works in the target terminal. |
+| Active-state shell regression | Normal states were not accidentally expanded. |
 
 ### Documentation Validation
 
@@ -653,6 +1236,22 @@ Manual validation should use Ghostty because Ghostty is the target terminal:
 - Confirm docs state TrueColor limitations.
 - Confirm docs do not imply v1 controls normal active-state foregrounds.
 - Confirm docs do not imply v1 implements pause palette overrides.
+- Confirm docs describe next-scheduler-evaluation timing for appearance changes
+  and newly registered TTYs during mute.
+
+### Release Readiness Checklist
+
+- [ ] All automated tests relevant to changed files pass.
+- [ ] Manual Ghostty Scenario A passes.
+- [ ] Preferences customization Scenario B passes.
+- [ ] At least one scheduled/quiet-period Scenario C pass is recorded.
+- [ ] Appearance flip readability from Scenario G is checked or explicitly
+  deferred with accepted risk.
+- [ ] Malformed config Scenario E passes or is covered by an equivalent
+  deterministic test plus manual smoke.
+- [ ] Resume polish Scenario H has no persistent wrong visual state.
+- [ ] Docs are updated and match the implemented behavior.
+- [ ] Implementation notes mention any accepted residual risk.
 
 ---
 
@@ -665,12 +1264,23 @@ future work, not unresolved requirements.
 
 ## Research Notes
 
-Research artifacts from discovery:
+This SPEC is self-contained. Discovery produced temporary `/tmp` reports during
+the planning session, but implementers do not need those files to implement the
+feature. The durable conclusions are captured below.
 
-- `/tmp/explore-tavs-pause-fg-architecture-20260529.md`
-- `/tmp/explore-tavs-pause-fg-current-state-20260529.md`
-- `/tmp/explore-tavs-pause-fg-tests-config-20260529.md`
-- `/tmp/ghostty-osc-foreground-research-20260529_103118.md`
+### Codebase Conclusions
+
+- Pause visual rendering is owned by the Swift macOS app, not by shell
+  `trigger.sh`.
+- Normal active states are shell-owned and should not gain foreground behavior
+  in v1.
+- `Scheduler -> Broadcaster` is the relevant pause paint path.
+- `UserConfStore` and `PreferencesView` are the relevant user configuration
+  path.
+- Existing tests already cover broadcaster pause bytes, scheduler pause
+  transitions, and user config round-trips; these should be extended rather than
+  replaced.
+- Existing pause behavior deliberately avoids OSC 0 title emission.
 
 Key external facts:
 
@@ -707,6 +1317,17 @@ Primary Ghostty references:
   scheduler evaluation, not intermediate ColorPicker drag events.
 - Added verification for shell active-state non-disruption and existing iTerm2
   background-image clear behavior.
+- Expanded the SPEC for team handoff with product context, ownership contracts,
+  behavior contracts, and phase/task gates.
+- Replaced `/tmp` research dependency with self-contained durable findings.
+- Added explicit absent-key and structure-preserving `user.conf` save semantics.
+- Defined "next scheduler evaluation" in testable terms.
+- Narrowed v1 compatibility validation to Ghostty, with non-Ghostty behavior as
+  best-effort.
+- Documented preserved OSC 104 palette reset as legacy pause cleanup, not v1
+  palette override support.
+- Added manual validation for macOS appearance flips while muted and resume
+  polish/flicker tolerance.
 
 ### Accepted Risks
 
@@ -715,3 +1336,7 @@ Primary Ghostty references:
   immediately. This avoids adding active-tty or appearance observers in v1.
 - Preferences persistence remains partly manual-verified because the app has no
   SwiftUI UI test target or extracted view-model seam today.
+- V1 preserves the existing OSC 104 pause palette reset rather than changing
+  palette cleanup policy at the same time as adding foreground control.
+- A brief, self-correcting visual transient during resume is acceptable; a
+  persistent wrong foreground/background after resume is not.
