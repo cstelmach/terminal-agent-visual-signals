@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 14:51 CEST
+**Last Updated:** 2026-05-29 15:02 CEST
 
 ---
 
@@ -28,8 +28,8 @@
 | Phase 0: Baseline and Safety Lock | DONE | 2026-05-29 14:22 CEST | 2026-05-29 14:24 CEST | eafa556 | 124/124 tests | 2 min | Baseline green; no production behavior changes |
 | Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | 93ad5c6 | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
 | Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
-| Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | pending | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
-| Phase 4: Preferences, User Configuration, and Documentation | Not Started | | | | | | |
+| Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | f39dfed | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
+| Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | pending | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
 | Phase 5: Product Validation and Release Readiness | Not Started | | | | | | |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
@@ -42,6 +42,69 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 4: Preferences, User Configuration, and Documentation — 2026-05-29 15:02 CEST COMPLETE
+
+**What Was Done:**
+- Added `PauseVisualPreferenceColors` as the testable bridge between
+  `UserConfStore`, runtime `PauseVisual` fallback logic, and the Appearance tab.
+- Added dark/light pause foreground pickers beside the existing dark/light
+  pause background pickers.
+- Changed Appearance save logic so pause foreground/background keys are written
+  only when the displayed picker value changes after load.
+- Added preference helper coverage for runtime fallback display, preservation
+  of malformed raw pause lines on unrelated saves, and changed foreground
+  persistence without materializing untouched foreground keys.
+- Updated `README.md`, `docs/reference/macos-menubar-app.md`,
+  `docs/reference/testing.md`, `docs/reference/architecture.md`, and
+  `docs/reference/palette-theming.md` for OSC 10/110, OSC 11/111, TrueColor
+  limitations, OSC 104 legacy cleanup, OSC 1337 image clear, no title changes,
+  and heartbeat/file-watch-bounded repaint timing.
+- Corrected the Phase 3 progress table/log hash from `pending` to `f39dfed`
+  based on the existing git history.
+
+**What Worked:**
+- The red phase failed on the missing `PauseVisualPreferenceColors` symbol,
+  proving the new tests exercised the intended UI-adjacent save/load seam.
+- Keeping the helper string-based avoided brittle SwiftUI automation while
+  still testing the exact persistence decision that protects malformed raw
+  `user.conf` values.
+
+**What Didn't Work:**
+- No implementation blockers. A live GUI smoke test was not run in this
+  terminal-only iteration; source-level verification found the four paused
+  state `ColorPicker` controls and `swift test` compiled the SwiftUI view.
+
+**Decisions Made:**
+- D6: Preferences tracks the resolved picker values at load time and compares
+  against that snapshot on save. This preserves absent and malformed raw keys
+  on unrelated saves while still persisting deliberate picker changes.
+- D7: Documentation now describes the pause foreground as terminal default
+  foreground behavior, not a TrueColor or palette override.
+
+**Deviations from Plan:**
+- Used a focused new Swift test file instead of extending the already-large
+  `UserConfStoreTests.swift`, matching the plan allowance for an extracted
+  UI-adjacent seam.
+
+### Divergence Check — Phase 4
+- [x] Files modified vs plan: 8/8 planned files, using the allowed focused new
+  Swift test file instead of `UserConfStoreTests.swift`
+- [x] Max cyclomatic complexity: reasonable (threshold: <15)
+- [x] All changes link to specific PLAN.md Phase 4 steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
+**Lessons Learned:**
+- The Appearance tab previously compared picker output to raw config values,
+  which would have clobbered malformed pause values during unrelated saves.
+- Runtime `PauseVisual` resolution is small enough to reuse directly for
+  Preferences display without adding another fallback path.
+
+**Tests:** 140/140 pass in 1.389 seconds. Committed: `pending`.
+
+**Next:** Phase 5: Product Validation and Release Readiness
 
 ### Phase 3: Scheduler Integration and Repaint Behavior — 2026-05-29 14:51 CEST COMPLETE
 
@@ -90,7 +153,7 @@ _(Most recent first — reverse chronological)_
 - The broadcaster mock needed only simple ordered string capture to prove
   pause clear happens before pending replay.
 
-**Tests:** 137/137 pass in 1.389 seconds. Committed: `pending`.
+**Tests:** 137/137 pass in 1.389 seconds. Committed: `f39dfed`.
 
 **Next:** Phase 4: Preferences, User Configuration, and Documentation
 

@@ -323,6 +323,61 @@ private struct QuietPeriodRow: View {
 
 // MARK: - Appearance Tab
 
+struct PauseVisualPreferenceColors: Equatable {
+    var darkBackground: String
+    var darkForeground: String
+    var lightBackground: String
+    var lightForeground: String
+
+    static let defaults = PauseVisualPreferenceColors(
+        darkBackground: UserConfStore.defaultPauseBgDark,
+        darkForeground: UserConfStore.defaultPauseFgDark,
+        lightBackground: UserConfStore.defaultPauseBgLight,
+        lightForeground: UserConfStore.defaultPauseFgLight
+    )
+
+    static func resolved(from store: UserConfStore) -> PauseVisualPreferenceColors {
+        let darkVisual = PauseVisual(
+            backgroundColor: store.pauseBgDark,
+            foregroundColor: store.pauseFgDark,
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+        let lightVisual = PauseVisual(
+            backgroundColor: store.pauseBgLight,
+            foregroundColor: store.pauseFgLight,
+            defaultBackgroundColor: UserConfStore.defaultPauseBgLight
+        )
+
+        return PauseVisualPreferenceColors(
+            darkBackground: darkVisual.backgroundColor,
+            darkForeground: darkVisual.foregroundColor,
+            lightBackground: lightVisual.backgroundColor,
+            lightForeground: lightVisual.foregroundColor
+        )
+    }
+
+    func applyChanges(since initial: PauseVisualPreferenceColors, to store: UserConfStore) -> Bool {
+        var changed = false
+        if darkBackground != initial.darkBackground {
+            store.pauseBgDark = darkBackground
+            changed = true
+        }
+        if darkForeground != initial.darkForeground {
+            store.pauseFgDark = darkForeground
+            changed = true
+        }
+        if lightBackground != initial.lightBackground {
+            store.pauseBgLight = lightBackground
+            changed = true
+        }
+        if lightForeground != initial.lightForeground {
+            store.pauseFgLight = lightForeground
+            changed = true
+        }
+        return changed
+    }
+}
+
 private struct AppearanceTab: View {
     let userConfURL: URL
 
@@ -334,6 +389,9 @@ private struct AppearanceTab: View {
     @State private var lightDarkSwitching = false
     @State private var pauseBgDark = Color(hex: UserConfStore.defaultPauseBgDark)
     @State private var pauseBgLight = Color(hex: UserConfStore.defaultPauseBgLight)
+    @State private var pauseFgDark = Color(hex: UserConfStore.defaultPauseFgDark)
+    @State private var pauseFgLight = Color(hex: UserConfStore.defaultPauseFgLight)
+    @State private var initialPauseVisualColors = PauseVisualPreferenceColors.defaults
     @State private var initialized = false
 
     private static let themePresets = [
@@ -386,8 +444,21 @@ private struct AppearanceTab: View {
 
             Section("Paused State") {
                 ColorPicker("Dark mode background", selection: $pauseBgDark, supportsOpacity: false)
-                ColorPicker("Light mode background", selection: $pauseBgLight, supportsOpacity: false)
-                Text("Used as the terminal background while TAVS is paused. The colour is picked from the macOS system appearance at the moment TAVS enters pause.")
+                ColorPicker("Dark mode foreground", selection: $pauseFgDark, supportsOpacity: false)
+                ColorPicker(
+                    "Light mode background",
+                    selection: $pauseBgLight,
+                    supportsOpacity: false
+                )
+                ColorPicker(
+                    "Light mode foreground",
+                    selection: $pauseFgLight,
+                    supportsOpacity: false
+                )
+                Text(
+                    "Used as the terminal default foreground and background while paused. " +
+                    "The colours are picked from the macOS system appearance at pause time."
+                )
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -405,8 +476,12 @@ private struct AppearanceTab: View {
         compactTheme = store.compactTheme ?? "squares"
         stylishBackgrounds = store.stylishBackgrounds ?? false
         lightDarkSwitching = store.lightDarkSwitching ?? false
-        pauseBgDark = Color(hex: store.pauseBgDark ?? UserConfStore.defaultPauseBgDark)
-        pauseBgLight = Color(hex: store.pauseBgLight ?? UserConfStore.defaultPauseBgLight)
+        let pauseColors = PauseVisualPreferenceColors.resolved(from: store)
+        initialPauseVisualColors = pauseColors
+        pauseBgDark = Color(hex: pauseColors.darkBackground)
+        pauseFgDark = Color(hex: pauseColors.darkForeground)
+        pauseBgLight = Color(hex: pauseColors.lightBackground)
+        pauseFgLight = Color(hex: pauseColors.lightForeground)
         DispatchQueue.main.async { initialized = true }
     }
 
@@ -421,20 +496,18 @@ private struct AppearanceTab: View {
         if stylishBackgrounds != (store.stylishBackgrounds ?? false) { store.stylishBackgrounds = stylishBackgrounds; changed = true }
         if lightDarkSwitching != (store.lightDarkSwitching ?? false) { store.lightDarkSwitching = lightDarkSwitching; changed = true }
 
-        let darkHex = pauseBgDark.hexString()
-        let lightHex = pauseBgLight.hexString()
-        if darkHex != (store.pauseBgDark ?? UserConfStore.defaultPauseBgDark) {
-            store.pauseBgDark = darkHex
-            changed = true
-        }
-        if lightHex != (store.pauseBgLight ?? UserConfStore.defaultPauseBgLight) {
-            store.pauseBgLight = lightHex
-            changed = true
-        }
+        let pauseColors = PauseVisualPreferenceColors(
+            darkBackground: pauseBgDark.hexString(),
+            darkForeground: pauseFgDark.hexString(),
+            lightBackground: pauseBgLight.hexString(),
+            lightForeground: pauseFgLight.hexString()
+        )
+        if pauseColors.applyChanges(since: initialPauseVisualColors, to: store) { changed = true }
 
         if changed {
             do {
                 try store.save()
+                initialPauseVisualColors = pauseColors
             } catch {
                 TAVSLog.userConfStore.error("user.conf save failed: \(error.localizedDescription, privacy: .public)")
             }
@@ -442,7 +515,7 @@ private struct AppearanceTab: View {
     }
 }
 
-// MARK: - Color <-> hex helpers (for OSC 11 round-trip)
+// MARK: - Color <-> hex helpers (for OSC colour round-trip)
 
 private extension Color {
     // Parses `#RRGGBB`. Fails over to mid-grey so a malformed user.conf value

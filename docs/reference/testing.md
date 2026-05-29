@@ -286,6 +286,28 @@ This tests:
 
 > **Note:** The legacy `./test-terminal.sh` script also works but the CLI command is preferred.
 
+### Test macOS Pause Visual State
+
+In Ghostty or another terminal with OSC 10/110 and OSC 11/111 support:
+
+```bash
+printf 'default foreground sample\n'
+printf '\033[38;2;255;0;0mtruecolor red sample\033[0m\n'
+```
+
+1. Open **TAVS → Preferences → Appearance → Paused State**.
+2. Confirm the section renders four pickers: dark/light background and
+   dark/light foreground.
+3. Pause TAVS from the menu bar.
+4. Verify default-coloured text uses the pause foreground and the terminal
+   background uses the pause background.
+5. Verify the TrueColor red sample stays red; OSC 10 changes only the terminal
+   default foreground.
+6. Resume TAVS and verify foreground/background reset through OSC 110/111.
+
+If you change a paused-state picker while currently paused, repaint occurs on
+the next scheduler evaluation: either the file-watch callback or the heartbeat.
+
 ## Testing Hooks
 
 ### Claude Code
@@ -433,14 +455,14 @@ End and start new session:
 
 ## Terminal Compatibility
 
-| Terminal | OSC 4 (palette) | OSC 11 (bg) | OSC 1337 (images) | Title Detection |
-|----------|-----------------|-------------|-------------------|-----------------|
-| Ghostty | ✅ | ✅ | ❌ | State file* |
-| iTerm2 | ✅ | ✅ | ✅ | OSC 1337 query |
-| Kitty | ✅ | ✅ | ❌** | State file |
-| WezTerm | ✅ | ✅ | ❌*** | State file |
-| Terminal.app | ❌ | ❌ | ❌ | State file |
-| VS Code | ❌ | ❌ | ❌ | State file |
+| Terminal | OSC 4 | OSC 10/110 | OSC 11/111 | OSC 1337 | Titles |
+|----------|-------|------------|------------|----------|--------|
+| Ghostty | ✅ | ✅ | ✅ | ❌ | State file* |
+| iTerm2 | ✅ | ✅ | ✅ | ✅ | OSC 1337 query |
+| Kitty | ✅ | ✅ | ✅ | ❌** | State file |
+| WezTerm | ✅ | ✅ | ✅ | ❌*** | State file |
+| Terminal.app | ❌ | ❌ | ❌ | ❌ | State file |
+| VS Code | ❌ | ❌ | ❌ | ❌ | State file |
 
 \* Ghostty requires `shell-integration-features = no-title` (see below).
 \** Kitty uses its own image protocol, not OSC 1337.
@@ -448,6 +470,8 @@ End and start new session:
 
 **Note:** OSC 4 palette theming only affects applications using ANSI palette indices.
 Claude Code uses TrueColor (24-bit RGB) by default, which bypasses the palette.
+The pause foreground uses OSC 10 and has the same limitation: explicit TrueColor
+foreground output keeps its application-chosen color.
 
 ### Ghostty Shell Integration (Required for Titles)
 

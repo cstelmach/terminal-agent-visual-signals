@@ -4,7 +4,10 @@
 
 TAVS can optionally modify the terminal's 16-color ANSI palette (OSC 4) for cohesive light/dark mode theming. This affects shell prompts, `ls` colors, `git status`, and any application using ANSI palette indices.
 
-**Key point:** This is separate from background colors (OSC 11). Palette theming changes how text colors appear, while background theming changes the terminal background.
+**Key point:** This is separate from pause foreground/background colors.
+Palette theming changes ANSI palette indices (OSC 4), pause foreground changes
+the terminal default foreground (OSC 10), and background theming changes the
+terminal background (OSC 11).
 
 ## How It Works
 
@@ -117,6 +120,12 @@ When a state change occurs:
 1. **Palette applied FIRST** (if enabled) - prevents contrast flicker
 2. **Background color applied** - OSC 11
 3. **Title updated** - OSC 0
+
+The macOS pause path is separate from normal state changes. On pause, the app
+resets palette overrides with OSC 104, sets the pause default foreground with
+OSC 10, sets the pause background with OSC 11, and clears legacy iTerm2
+background images with OSC 1337 `SetBackgroundImageFile`. On resume, it resets
+palette, default foreground, and background with OSC 104/110/111.
 
 ### Mode Detection
 

@@ -52,7 +52,8 @@ TAVS - Terminal Agent Visual Signals provides terminal state indicators for mult
 │                          ▼                                      │
 │  ┌────────────────────────────────────────────────────────┐    │
 │  │                  Terminal (OSC Sequences)               │    │
-│  │     • Background color (OSC 11)                        │    │
+│  │     • Default foreground (OSC 10 / OSC 110)            │    │
+│  │     • Background color/reset (OSC 11 / OSC 111)        │    │
 │  │     • 16-color palette (OSC 4) - optional              │    │
 │  │     • Tab title (OSC 0)                                │    │
 │  │     • Background image (OSC 1337 / kitten @)          │    │
@@ -109,6 +110,13 @@ Terminal escape sequence functions:
 - `send_osc_palette_reset` - Reset palette to terminal defaults (OSC 104)
 - `send_bell_if_enabled` - Notification bell (BEL)
 - `_build_osc_palette_seq` - Build palette sequence (shared by trigger and idle-worker)
+
+The macOS menu-bar broadcaster has an additional pause contract: pause entry
+resets legacy palette overrides (OSC 104), sets default foreground/background
+(OSC 10/11), and clears legacy iTerm2 background images (OSC 1337
+`SetBackgroundImageFile`). Pause clear resets palette, default foreground, and
+background (OSC 104/110/111). Normal shell-driven active states do not emit
+OSC 10/110; they continue to own state backgrounds, palettes, and titles only.
 
 ### session-icon.sh (Session Identity)
 

@@ -235,36 +235,42 @@ paused terminal is unmistakable from an idle one:
 
 | Element | Value |
 |---|---|
-| Background | Caller-picked colour, keyed by macOS system appearance (see below) |
+| Foreground | Caller-picked terminal default foreground, keyed by macOS system appearance |
+| Background | Caller-picked terminal background, keyed by macOS system appearance |
 | Title | *(unchanged — TAVS does not touch the tab label on pause)* |
 | Background image (iTerm2) | Cleared |
 | Palette | Reset to terminal defaults |
 
-**Configurable pause background.** The Scheduler reads
+**Configurable pause colours.** The Scheduler reads
 `NSApp.effectiveAppearance` at pause time and picks one of two user-configurable
-colours from `~/.tavs/user.conf`:
+foreground/background pairs from `~/.tavs/user.conf`:
 
 | Key | Default | Active when |
 |---|---|---|
 | `TAVS_PAUSE_BG_DARK` | `#3A3A3A` | macOS in dark mode |
 | `TAVS_PAUSE_BG_LIGHT` | `#D0D0D0` | macOS in light mode |
+| `TAVS_PAUSE_FG_DARK` | `#F2F2F2` | macOS in dark mode |
+| `TAVS_PAUSE_FG_LIGHT` | `#202020` | macOS in light mode |
 
 Edit via **TAVS → Preferences → Appearance → Paused State**, or by hand-editing
 `user.conf`. Values must be `#RRGGBB` hex; malformed entries fall back to the
-default so a bad save cannot wedge the pause paint. The colour is resolved at
-each pause transition AND on every fs-watch / heartbeat tick — so editing the
-colour in Preferences while currently paused triggers a live re-paint within
-~2 seconds (no app restart, no resume-then-repause needed). When the colour
-matches the last paint the broadcaster skips the round-trip, so steady-state
-mute does not generate redundant TTY traffic.
+default so a bad save cannot wedge the pause paint. Missing or malformed
+foreground values are derived from the resolved pause background with readable
+contrast. The colours are resolved at each pause transition and on every
+fs-watch / heartbeat tick, so editing Preferences while currently paused
+triggers a live repaint no later than the next scheduler evaluation. When the
+foreground/background pair matches the last paint the broadcaster skips the
+round-trip, so steady-state mute does not generate redundant TTY traffic.
 
-The background is the single user-facing pause signal. TAVS deliberately does
-not emit an OSC 0 title during pause: an empty OSC 0 blanks user-set tab names,
-and a "Paused" label would stick on idle terminals that never fire a hook
-during the mute window, leaving them mislabelled after resume. Dropping the
-title entirely makes "instantly back" true by construction — there is no title
-state for resume to restore. The menu-bar status line still surfaces the
-precise mute reason (manual pause, schedule window, quiet period).
+The pause foreground uses OSC 10, which changes the terminal's default
+foreground. It does not recolour explicit TrueColor output such as text printed
+with `\033[38;2;R;G;Bm`. TAVS deliberately does not emit an OSC 0 title during
+pause: an empty OSC 0 blanks user-set tab names, and a "Paused" label would
+stick on idle terminals that never fire a hook during the mute window, leaving
+them mislabelled after resume. Dropping the title entirely makes "instantly
+back" true by construction — there is no title state for resume to restore. The
+menu-bar status line still surfaces the precise mute reason (manual pause,
+schedule window, quiet period).
 
 ### Transition Ordering
 
@@ -273,12 +279,14 @@ Ordering on the two transitions is load-bearing:
 **Active → muted:**
 1. `writeMuteState(muted:true)` — shell's stage-0 gate now suppresses hook OSC
    output to `pending/<tty>.osc` instead of the TTY
-2. `broadcastPaused()` — paint grey on every active TTY
+2. `broadcastPaused()` — reset legacy palette overrides (OSC 104), set pause
+   foreground/background (OSC 10/11), and clear legacy iTerm2 background images
+   (OSC 1337 `SetBackgroundImageFile`)
 
 **Muted → active:**
-1. `broadcastPausedClear()` — reset background + palette on every TTY (title is
-   intentionally **not** reset; empty OSC 0 would blank user-configured tab
-   names in `TAVS_TITLE_MODE=prefix-only`)
+1. `broadcastPausedClear()` — reset palette, default foreground, and background
+   on every TTY (OSC 104/110/111). Title is intentionally **not** reset; empty
+   OSC 0 would blank user-configured tab names in `TAVS_TITLE_MODE=prefix-only`.
 2. `broadcast()` — drain `pending/*.osc` so each TTY sees the latest bookkept
    state
 
@@ -317,7 +325,7 @@ leave terminals painted grey indefinitely.
 | Behaviour | Why |
 |---|---|
 | Idle sessions (no hook during mute) return to palette defaults on unmute, not their pre-pause idle gradient | The app has no way to repaint the per-session idle stage; the owning session's idle worker repaints on its next tick. |
-| Pause signals background-only, no tab-title label | Emitting a title on pause either blanks user-set tab names (empty OSC 0) or sticks on idle terminals. Resume instant-ness is prioritised over an explicit "Paused" label; the menu-bar status line surfaces the mute reason instead. |
+| Pause signals foreground/background only, no tab-title label | Emitting a title on pause either blanks user-set tab names (empty OSC 0) or sticks on idle terminals. Resume instant-ness is prioritised over an explicit "Paused" label; the menu-bar status line surfaces the mute reason instead. |
 
 ### DST Behavior
 

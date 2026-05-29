@@ -935,6 +935,10 @@ and a **preferences UI** for the most-used settings.
 After install, a menu bar icon appears. Click it to pause/resume TAVS or open
 preferences. The app writes `~/.tavs/mute.state` which the shell reads on every
 hook — terminals go dark during scheduled quiet periods and snap back automatically.
+Preferences → Appearance → Paused State exposes separate dark/light pickers for
+the pause background and terminal default foreground. Explicit TrueColor output
+keeps its own foreground color; the pause foreground applies to default-colored
+text and is reset on resume.
 
 ```bash
 ./tavs schedule add-window --days mon,tue,wed,thu,fri --start 08:00 --end 20:00
@@ -979,9 +983,13 @@ sent directly to the TTY device (`/dev/ttysXXX`), bypassing stdout capture:
 
 | Sequence | Purpose |
 |----------|---------|
+| `OSC 10` | Set terminal default foreground color during pause |
+| `OSC 110` | Reset terminal default foreground to default |
 | `OSC 11` | Set terminal background color |
 | `OSC 111` | Reset background to default |
 | `OSC 4` | Modify 16-color ANSI palette (optional) |
+| `OSC 104` | Reset ANSI palette to terminal defaults |
+| `OSC 1337` | Set or clear iTerm2 background image |
 | `OSC 0` | Set window/tab title |
 
 ### Hook Event Flow
