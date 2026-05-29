@@ -2,10 +2,10 @@
 
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/PLAN.md
-**Status:** All Phases Done; Completion Mode Pending
+**Status:** All Phases Complete; Completion Mode Verified
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 16:44 CEST
+**Last Updated:** 2026-05-29 17:04 CEST
 
 ---
 
@@ -42,6 +42,44 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Completion Mode Final Verification — 2026-05-29 17:04 CEST COMPLETE
+
+**What Was Done:**
+- Entered Completion Mode because every phase in the status table was `DONE`.
+- Ran the final full automated verification suite after all edits:
+  - `cd src/macos/TAVSApp && swift test`: 143/143 tests passed in 1.434 seconds.
+  - `pytest tests/*.py`: 362 tests passed in 19.30 seconds.
+  - `for t in tests/test-*.sh; do bash "$t"; done`: 351 shell-script tests
+    passed across context, integration, per-state title, statusline bridge, and
+    transcript fallback suites.
+  - `bats tests/unit/*.bats tests/integration/*.bats`: 68/68 tests passed with
+    no `not ok` or `# skip` lines.
+- Ran the strict active-shell foreground scan:
+  `rg -n '\]10(;|\\|$)|\]110(;|\\|$)|OSC 10([^0-9]|$)|OSC 110([^0-9]|$)'
+  src/core/trigger.sh src/core/idle-worker-background.sh` returned no matches.
+- Ran `git diff --check`; no whitespace errors were reported.
+
+**Completion-Gate Fixes:**
+- Fixed `src/wizard/configure-utilities.sh` so `print_header` does not abort
+  under `TERM=dumb` or no-term verification shells when `clear` returns
+  nonzero.
+- Fixed `src/core/terminal-osc-sequences.sh` so sourcing the file succeeds when
+  no TTY is discoverable; `TTY_DEVICE` remains empty and callers continue to
+  own that failure mode.
+- Updated stale idle-worker Python tests to assert the current mute-aware
+  `emit_osc` contract instead of the removed fd-3 write pattern.
+- Made `resolve_tty` Bats coverage hermetic by stubbing `ps` instead of relying
+  on the test runner having a controlling TTY.
+- Replaced conditional identity teardown skips with direct assertions against
+  per-TTY cache and active-session state, while preserving the intentional v2
+  registry mapping behavior.
+
+**Commits:**
+- Source/test completion fixes: `a9205b9`.
+
+**Next:** Emit Completion Mode checkpoint and promise after the progress update
+commit leaves the working tree clean.
 
 ### Phase 5: Product Validation and Release Readiness — 2026-05-29 16:44 CEST COMPLETE
 
