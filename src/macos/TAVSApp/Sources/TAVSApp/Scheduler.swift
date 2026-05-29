@@ -172,18 +172,18 @@ final class Scheduler: ObservableObject {
     private let muteStateURL: URL
     private let scheduleURL: URL
     private let calendar: Calendar
-    private let pauseColorProvider: () -> String
+    private let pauseVisualProvider: () -> PauseVisual
 
     private var config: ScheduleConfig?
     private var previousMuted: Bool = false
     private var nextTransitionDate: Date?
     private var wakeObserver: NSObjectProtocol?
 
-    // Tracks the OSC 11 background colour we most recently broadcast on enter-
-    // mute. Lets the file-watch / heartbeat path re-emit the paused paint when
-    // the user changes the pause-bg colour (Preferences or `./tavs set`)
-    // while currently muted, instead of waiting for the next mute cycle.
-    private var lastPaintedPauseColor: String?
+    // Tracks the pause visual we most recently broadcast on enter-mute. Lets
+    // the file-watch / heartbeat path re-emit the paused paint when the user
+    // changes pause colours (Preferences or `./tavs set`) while currently
+    // muted, instead of waiting for the next mute cycle.
+    private var lastPaintedPauseVisual: PauseVisual?
 
     init(
         clock: Clock,
@@ -193,7 +193,13 @@ final class Scheduler: ObservableObject {
         muteStateURL: URL,
         scheduleURL: URL,
         calendar: Calendar = .current,
-        pauseColorProvider: @escaping () -> String = { UserConfStore.defaultPauseBgDark }
+        pauseVisualProvider: @escaping () -> PauseVisual = {
+            PauseVisual(
+                backgroundColor: UserConfStore.defaultPauseBgDark,
+                foregroundColor: nil,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
+        }
     ) {
         self.clock = clock
         self.timerScheduler = timerScheduler
@@ -202,7 +208,7 @@ final class Scheduler: ObservableObject {
         self.muteStateURL = muteStateURL
         self.scheduleURL = scheduleURL
         self.calendar = calendar
-        self.pauseColorProvider = pauseColorProvider
+        self.pauseVisualProvider = pauseVisualProvider
     }
 
     func start() {
@@ -274,7 +280,7 @@ final class Scheduler: ObservableObject {
         if wasMuted && !result.muted {
             broadcaster.broadcastPausedClear()
             broadcaster.broadcast()
-            lastPaintedPauseColor = nil
+            lastPaintedPauseVisual = nil
         }
 
         let untilEpoch: Int64
@@ -298,29 +304,19 @@ final class Scheduler: ObservableObject {
         // missed-paint for a stale-over-correct flicker, which is worse.
 
         if !wasMuted && result.muted {
-            let color = pauseColorProvider()
-            let visual = PauseVisual(
-                backgroundColor: color,
-                foregroundColor: nil,
-                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
-            )
+            let visual = pauseVisualProvider()
             broadcaster.broadcastPaused(visual: visual)
-            lastPaintedPauseColor = color
+            lastPaintedPauseVisual = visual
         } else if wasMuted && result.muted {
-            // Still muted, but the user may have changed the pause-bg colour
+            // Still muted, but the user may have changed the pause visual
             // (Preferences ColorPicker, ./tavs set, external user.conf edit).
             // FileWatcher fires loadAndEvaluate on any change inside ~/.tavs/,
-            // and the heartbeat re-evaluates every 60s. If the colour changed,
+            // and the heartbeat re-evaluates every 60s. If the visual changed,
             // re-paint; otherwise no-op so we don't churn the TTYs.
-            let color = pauseColorProvider()
-            if color != lastPaintedPauseColor {
-                let visual = PauseVisual(
-                    backgroundColor: color,
-                    foregroundColor: nil,
-                    defaultBackgroundColor: UserConfStore.defaultPauseBgDark
-                )
+            let visual = pauseVisualProvider()
+            if visual != lastPaintedPauseVisual {
                 broadcaster.broadcastPaused(visual: visual)
-                lastPaintedPauseColor = color
+                lastPaintedPauseVisual = visual
             }
         }
         updatePublishedState(muted: result.muted, reason: result.reason, transitionDate: transition)

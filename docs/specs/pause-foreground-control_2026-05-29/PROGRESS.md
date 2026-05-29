@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 14:38 CEST
+**Last Updated:** 2026-05-29 14:51 CEST
 
 ---
 
@@ -27,8 +27,8 @@
 |-------|--------|---------|-----------|--------|-------|----------|-------|
 | Phase 0: Baseline and Safety Lock | DONE | 2026-05-29 14:22 CEST | 2026-05-29 14:24 CEST | eafa556 | 124/124 tests | 2 min | Baseline green; no production behavior changes |
 | Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | 93ad5c6 | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
-| Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | pending | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
-| Phase 3: Scheduler Integration and Repaint Behavior | Not Started | | | | | | |
+| Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
+| Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | pending | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
 | Phase 4: Preferences, User Configuration, and Documentation | Not Started | | | | | | |
 | Phase 5: Product Validation and Release Readiness | Not Started | | | | | | |
 
@@ -42,6 +42,57 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 3: Scheduler Integration and Repaint Behavior — 2026-05-29 14:51 CEST COMPLETE
+
+**What Was Done:**
+- Replaced `Scheduler`'s pause background string provider with an injectable
+  `pauseVisualProvider: () -> PauseVisual`.
+- Replaced `lastPaintedPauseColor` with `lastPaintedPauseVisual` so muted
+  steady-state reevaluations compare foreground and background together.
+- Kept muted-to-active ordering as pause clear first, pending replay second,
+  then reset the cached painted visual.
+- Replaced `PauseColorResolver` with `PauseVisualResolver`, including a
+  testable `resolve(userConfURL:isDarkAppearance:)` path that does not query
+  `NSApplication.shared`.
+- Extended `MockBroadcaster` with call-order capture.
+- Added scheduler coverage for full visual paint on active-to-muted,
+  foreground-only repaint, background-only repaint, unchanged visual
+  idempotence, appearance-derived repaint, startup muted paint, and
+  clear-before-replay ordering.
+- Corrected the Phase 2 progress table/log hash from `pending` to `d6889d7`
+  based on the existing git history.
+
+**What Worked:**
+- The red phase failed on the missing `pauseVisualProvider` constructor label,
+  wrong `String` provider result type, and missing `PauseVisualResolver`, which
+  proved the new tests exercised the intended Phase 3 contract.
+- Comparing `PauseVisual` directly kept scheduler repaint logic small and made
+  foreground-only and background-only changes use one path.
+
+**What Didn't Work:**
+- Nothing notable. No implementation blockers after the expected red compile
+  failures.
+
+**Decisions Made:**
+- D4: Kept the default scheduler provider dark-default based, matching the
+  previous default background behavior for tests that do not inject a provider.
+- D5: Added explicit appearance input to `PauseVisualResolver.resolve` so unit
+  tests can force dark/light behavior without depending on app-global state.
+
+**Deviations from Plan:**
+- None. Implementation matches Phase 3 scope exactly.
+
+**Lessons Learned:**
+- The existing scheduler heartbeat/file-watch path already provides the
+  "next scheduler evaluation" hook needed for visual repaint tests without
+  sleeps.
+- The broadcaster mock needed only simple ordered string capture to prove
+  pause clear happens before pending replay.
+
+**Tests:** 137/137 pass in 1.389 seconds. Committed: `pending`.
+
+**Next:** Phase 4: Preferences, User Configuration, and Documentation
 
 ### Phase 2: Broadcast Payload Contract — 2026-05-29 14:38 CEST COMPLETE
 
@@ -85,7 +136,7 @@ _(Most recent first — reverse chronological)_
   is necessary after the protocol signature change and does not implement the
   Phase 3 provider/idempotence rewrite.
 
-**Tests:** 135/135 pass in 1.385 seconds. Committed: `pending`.
+**Tests:** 135/135 pass in 1.385 seconds. Committed: `d6889d7`.
 
 **Next:** Phase 3: Scheduler Integration and Repaint Behavior
 
@@ -224,6 +275,16 @@ _(Entries added when the same error occurs 3+ times)_
 
 _(Entries added after each phase completion)_
 
+### Divergence Check — Phase 3
+- [x] Files modified vs plan: 5/5 (100% match, including `PROGRESS.md`)
+- [x] Max cyclomatic complexity: reasonable (threshold: <15)
+- [x] Test coverage: 2 new scheduler lifecycle tests added and existing
+  pause-color scheduler tests upgraded to full `PauseVisual` assertions
+- [x] All changes link to `PLAN.md` Phase 3 steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
 ### Divergence Check — Phase 2
 - [x] Files modified vs plan: 5/5 (100% match, including `PROGRESS.md`)
 - [x] Max cyclomatic complexity: reasonable (threshold: <15)
@@ -262,7 +323,8 @@ _(Entries added after each phase completion)_
 | Phase 0 | 1 | — | — | GPT-5 Codex |
 | Phase 1 | 1 | — | — | GPT-5 Codex |
 | Phase 2 | 1 | — | — | GPT-5 Codex |
-| **Total** | 3 | — | $0.00 | |
+| Phase 3 | 1 | — | — | GPT-5 Codex |
+| **Total** | 4 | — | $0.00 | |
 
 ---
 

@@ -94,8 +94,8 @@ extension Scheduler {
             broadcaster: Broadcaster(runtimeDir: runtimeDir, processRunner: SystemProcessRunner()),
             muteStateURL: homeDir.appendingPathComponent(".tavs/mute.state"),
             scheduleURL: homeDir.appendingPathComponent(".tavs/schedule.json"),
-            pauseColorProvider: {
-                PauseColorResolver.resolve(userConfURL: userConfURL)
+            pauseVisualProvider: {
+                PauseVisualResolver.resolveForCurrentAppearance(userConfURL: userConfURL)
             }
         )
         DispatchQueue.main.async { scheduler.start() }
@@ -103,23 +103,34 @@ extension Scheduler {
     }
 }
 
-// Resolves the paused-state background colour from user.conf keyed by the
-// macOS system appearance. Re-reads on every call so a Preferences edit takes
-// effect on the next mute transition without needing the Scheduler to watch
-// user.conf. Falls back to the documented defaults if a key is absent or the
-// file cannot be read.
-enum PauseColorResolver {
+// Resolves the paused-state visual from user.conf keyed by macOS appearance.
+// Re-reads on every call so a Preferences edit takes effect on the next
+// scheduler evaluation. Tests pass the appearance explicitly to avoid touching
+// NSApplication.shared.
+enum PauseVisualResolver {
     // Called from Scheduler.loadAndEvaluate, which always runs on the main
     // queue (heartbeat timer, file-watch callback, wake notification, and
     // explicit `start()`-time dispatch all target `.main`). Not marked
     // @MainActor so the Scheduler's non-isolated closure signature stays
     // simple; if callers change, audit.
-    static func resolve(userConfURL: URL) -> String {
+    static func resolveForCurrentAppearance(userConfURL: URL) -> PauseVisual {
+        resolve(userConfURL: userConfURL, isDarkAppearance: isEffectivelyDark())
+    }
+
+    static func resolve(userConfURL: URL, isDarkAppearance: Bool) -> PauseVisual {
         let store = try? UserConfStore(url: userConfURL)
-        if isEffectivelyDark() {
-            return store?.pauseBgDark ?? UserConfStore.defaultPauseBgDark
+        if isDarkAppearance {
+            return PauseVisual(
+                backgroundColor: store?.pauseBgDark,
+                foregroundColor: store?.pauseFgDark,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            )
         } else {
-            return store?.pauseBgLight ?? UserConfStore.defaultPauseBgLight
+            return PauseVisual(
+                backgroundColor: store?.pauseBgLight,
+                foregroundColor: store?.pauseFgLight,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgLight
+            )
         }
     }
 

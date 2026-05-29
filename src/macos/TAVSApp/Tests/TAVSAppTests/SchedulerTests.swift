@@ -551,22 +551,35 @@ final class SchedulerLifecycleTests: XCTestCase {
 
     // MARK: - Paused visual transition tests
 
-    func testActiveToMutedPaintsGrey() throws {
+    func testActiveToMutedPaintsPauseVisual() throws {
         try writeStandardConfig()
-        scheduler.start()
+        let expectedVisual = makePauseVisual(background: "#123456", foreground: "#ABCDEF")
+        let visualScheduler = Scheduler(
+            clock: clock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: testCalendar,
+            pauseVisualProvider: { expectedVisual }
+        )
 
-        XCTAssertFalse(scheduler.isMuted)
+        visualScheduler.start()
+
+        XCTAssertFalse(visualScheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
 
-        scheduler.togglePause()
-        scheduler.loadAndEvaluate()
+        visualScheduler.togglePause()
+        visualScheduler.loadAndEvaluate()
 
-        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertTrue(visualScheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.lastPausedVisual, expectedVisual)
         XCTAssertEqual(broadcaster.broadcastCallCount, 0)
     }
 
-    func testMutedToActiveClearsAndReplays() throws {
+    func testMutedToActiveClearsBeforePendingReplay() throws {
         let config = ScheduleConfig(
             version: 1,
             masterActive: false,
@@ -590,6 +603,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertFalse(scheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
         XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+        XCTAssertEqual(Array(broadcaster.callOrder.suffix(2)), ["broadcastPausedClear", "broadcast"])
     }
 
     private var testCalendar: Calendar {
@@ -598,11 +612,15 @@ final class SchedulerLifecycleTests: XCTestCase {
         return cal
     }
 
-    func testPauseColorChangeWhileMutedRepaints() throws {
-        // M1: editing pause-bg colour in Preferences (or via `./tavs set`)
-        // while currently muted must re-emit broadcastPaused with the new
-        // colour. Previously the change applied only on the next mute cycle,
-        // which could be hours away.
+    private func makePauseVisual(background: String = "#3A3A3A", foreground: String = "#F2F2F2") -> PauseVisual {
+        PauseVisual(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+    }
+
+    func testForegroundOnlyChangeWhileMutedRepaints() throws {
         let config = ScheduleConfig(
             version: 1,
             masterActive: false,
@@ -615,7 +633,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         )
         try ScheduleStore.save(config, to: scheduleURL)
 
-        var currentColor = "#3A3A3A"
+        var currentVisual = makePauseVisual(background: "#3A3A3A", foreground: "#F2F2F2")
         let dynScheduler = Scheduler(
             clock: clock,
             timerScheduler: timerScheduler,
@@ -624,27 +642,23 @@ final class SchedulerLifecycleTests: XCTestCase {
             muteStateURL: muteStateURL,
             scheduleURL: scheduleURL,
             calendar: testCalendar,
-            pauseColorProvider: { currentColor }
+            pauseVisualProvider: { currentVisual }
         )
 
         dynScheduler.start()
         XCTAssertTrue(dynScheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
-        XCTAssertEqual(broadcaster.lastPausedBackgroundColor, "#3A3A3A")
+        XCTAssertEqual(broadcaster.lastPausedVisual, currentVisual)
 
-        // User edits user.conf — fileWatcher fires, scheduler re-evaluates.
-        currentColor = "#FF0000"
+        currentVisual = makePauseVisual(background: "#3A3A3A", foreground: "#101010")
         dynScheduler.loadAndEvaluate()
 
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2,
-                       "Colour change while muted must trigger re-paint")
-        XCTAssertEqual(broadcaster.lastPausedBackgroundColor, "#FF0000")
+                       "Foreground-only visual change while muted must trigger re-paint")
+        XCTAssertEqual(broadcaster.lastPausedVisual, currentVisual)
     }
 
-    func testPauseColorUnchangedAcrossHeartbeatsIsIdempotent() throws {
-        // M1 negative: re-evaluations during a steady muted state must not
-        // emit redundant broadcastPaused calls when the colour is unchanged.
-        // Otherwise we'd churn every active TTY on every heartbeat tick.
+    func testBackgroundOnlyChangeWhileMutedRepaints() throws {
         let config = ScheduleConfig(
             version: 1,
             masterActive: false,
@@ -657,6 +671,45 @@ final class SchedulerLifecycleTests: XCTestCase {
         )
         try ScheduleStore.save(config, to: scheduleURL)
 
+        var currentVisual = makePauseVisual(background: "#3A3A3A", foreground: "#F2F2F2")
+        let dynScheduler = Scheduler(
+            clock: clock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: testCalendar,
+            pauseVisualProvider: { currentVisual }
+        )
+
+        dynScheduler.start()
+        XCTAssertTrue(dynScheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.lastPausedVisual, currentVisual)
+
+        currentVisual = makePauseVisual(background: "#FF0000", foreground: "#F2F2F2")
+        dynScheduler.loadAndEvaluate()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2,
+                       "Background-only visual change while muted must trigger re-paint")
+        XCTAssertEqual(broadcaster.lastPausedVisual, currentVisual)
+    }
+
+    func testUnchangedPauseVisualIsIdempotent() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        let stableVisual = makePauseVisual(background: "#3A3A3A", foreground: "#F2F2F2")
         let stableScheduler = Scheduler(
             clock: clock,
             timerScheduler: timerScheduler,
@@ -665,7 +718,7 @@ final class SchedulerLifecycleTests: XCTestCase {
             muteStateURL: muteStateURL,
             scheduleURL: scheduleURL,
             calendar: testCalendar,
-            pauseColorProvider: { "#3A3A3A" }
+            pauseVisualProvider: { stableVisual }
         )
 
         stableScheduler.start()
@@ -677,7 +730,60 @@ final class SchedulerLifecycleTests: XCTestCase {
         stableScheduler.loadAndEvaluate()
 
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
-                       "Same colour across re-evals must NOT trigger re-paint")
+                       "Same visual across re-evals must NOT trigger re-paint")
+    }
+
+    func testAppearanceDerivedVisualChangeRepaintsOnEvaluation() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        let userConfURL = tempDir.appendingPathComponent("user.conf")
+        try """
+        TAVS_PAUSE_BG_DARK="#112233"
+        TAVS_PAUSE_FG_DARK="#E0E0E0"
+        TAVS_PAUSE_BG_LIGHT="#DDEEFF"
+        TAVS_PAUSE_FG_LIGHT="#202020"
+        """.write(to: userConfURL, atomically: true, encoding: .utf8)
+
+        var isDark = true
+        let appearanceScheduler = Scheduler(
+            clock: clock,
+            timerScheduler: timerScheduler,
+            fileWatcher: fileWatcher,
+            broadcaster: broadcaster,
+            muteStateURL: muteStateURL,
+            scheduleURL: scheduleURL,
+            calendar: testCalendar,
+            pauseVisualProvider: {
+                PauseVisualResolver.resolve(userConfURL: userConfURL, isDarkAppearance: isDark)
+            }
+        )
+
+        appearanceScheduler.start()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.lastPausedVisual,
+                       makePauseVisual(background: "#112233", foreground: "#E0E0E0"))
+
+        isDark = false
+        appearanceScheduler.loadAndEvaluate()
+
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2,
+                       "Appearance-driven visual changes must repaint on the next evaluation")
+        XCTAssertEqual(broadcaster.lastPausedVisual,
+                       PauseVisual(
+                           backgroundColor: "#DDEEFF",
+                           foregroundColor: "#202020",
+                           defaultBackgroundColor: UserConfStore.defaultPauseBgLight
+                       ))
     }
 
     func testHeartbeatDuringMuteIsStable() throws {
@@ -722,7 +828,8 @@ final class SchedulerLifecycleTests: XCTestCase {
 
         XCTAssertTrue(scheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1,
-                       "Startup into muted should paint grey")
+                       "Startup into muted should paint the pause visual")
+        XCTAssertEqual(broadcaster.lastPausedVisual, makePauseVisual())
     }
 
     func testScheduleUnmuteClearsAndReplays() throws {
