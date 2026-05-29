@@ -5,7 +5,7 @@
 **Status:** In Progress
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 14:24 CEST
+**Last Updated:** 2026-05-29 14:32 CEST
 
 ---
 
@@ -25,8 +25,8 @@
 
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |-------|--------|---------|-----------|--------|-------|----------|-------|
-| Phase 0: Baseline and Safety Lock | DONE | 2026-05-29 14:22 CEST | 2026-05-29 14:24 CEST | pending | 124/124 tests | 2 min | Baseline green; no production behavior changes |
-| Phase 1: Pause Visual Model and Config Foundation | Not Started | | | | | | |
+| Phase 0: Baseline and Safety Lock | DONE | 2026-05-29 14:22 CEST | 2026-05-29 14:24 CEST | eafa556 | 124/124 tests | 2 min | Baseline green; no production behavior changes |
+| Phase 1: Pause Visual Model and Config Foundation | DONE | 2026-05-29 14:28 CEST | 2026-05-29 14:31 CEST | pending | 135/135 tests | 3 min | PauseVisual and foreground config foundation added |
 | Phase 2: Broadcast Payload Contract | Not Started | | | | | | |
 | Phase 3: Scheduler Integration and Repaint Behavior | Not Started | | | | | | |
 | Phase 4: Preferences, User Configuration, and Documentation | Not Started | | | | | | |
@@ -42,6 +42,52 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 1: Pause Visual Model and Config Foundation — 2026-05-29 14:31 CEST COMPLETE
+
+**What Was Done:**
+- Added `src/macos/TAVSApp/Sources/TAVSApp/PauseVisual.swift` with a sanitized
+  `Equatable` value type for pause background and foreground colors.
+- Implemented strict `#RRGGBB` normalization, malformed-background fallback, and
+  deterministic WCAG 4.5:1 foreground fallback selection.
+- Added `defaultPauseFgDark`, `defaultPauseFgLight`, `pauseFgDark`, and
+  `pauseFgLight` in `UserConfStore`.
+- Changed `UserConfStore` duplicate-key reads and writes to match shell sourcing:
+  the last matching key is effective and changed saves replace the last match.
+- Added `TAVS_PAUSE_FG_DARK` and `TAVS_PAUSE_FG_LIGHT` documentation to
+  `src/config/user.conf.template`.
+- Added 11 tests across `PauseVisualTests.swift` and `UserConfStoreTests.swift`.
+
+**What Worked:**
+- The red phase failed on the missing `PauseVisual` type and missing foreground
+  config accessors/defaults, proving the new tests covered new behavior.
+- Reversing the parsed config line scan was enough to implement last-wins reads
+  and writes while preserving comments, blank lines, unknown shell content, and
+  unrelated ordering.
+
+**What Didn't Work:**
+- The first red-phase command piped `swift test` through `tail` without
+  `pipefail`, so the displayed build errors were useful but the pipeline exit
+  status was not. Subsequent Swift test runs used `set -o pipefail`.
+
+**Decisions Made:**
+- D1: `PauseVisual` normalizes valid configured colors to uppercase `#RRGGBB`
+  strings so downstream OSC serialization receives one stable representation.
+- D2: `PauseVisual` treats the appearance-specific default background as a
+  required valid input from `UserConfStore`, avoiding speculative fallback paths.
+
+**Deviations from Plan:**
+- None. Implementation matches Phase 1 scope exactly.
+
+**Lessons Learned:**
+- The current Swift package discovers new source and test files automatically
+  under the package target paths; no `Package.swift` edits were needed.
+- `UserConfStore` already preserves unmanaged shell syntax by retaining raw
+  lines, so last-wins behavior can stay narrow and parser-compatible.
+
+**Tests:** 135/135 pass in 1.525 seconds. Committed: `pending`.
+
+**Next:** Phase 2: Broadcast Payload Contract
 
 ### Phase 0: Baseline and Safety Lock — 2026-05-29 14:24 CEST COMPLETE
 
@@ -132,6 +178,15 @@ _(Entries added when the same error occurs 3+ times)_
 
 _(Entries added after each phase completion)_
 
+### Divergence Check — Phase 1
+- [x] Files modified vs plan: 6/6 (100% match, including `PROGRESS.md`)
+- [x] Max cyclomatic complexity: reasonable (threshold: <15)
+- [x] Test coverage: 11 new tests added; no coverage drop identified
+- [x] All changes link to `PLAN.md` Phase 1 steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
 ### Divergence Check — Phase 0
 - [x] Files modified vs plan: 1/1 (100% match)
 - [x] Max cyclomatic complexity: not applicable; no production code changed
@@ -149,7 +204,8 @@ _(Entries added after each phase completion)_
 |-------|------------|-----------------|------|-------|
 | Planning | 1 | — | — | GPT-5 Codex |
 | Phase 0 | 1 | — | — | GPT-5 Codex |
-| **Total** | 1 | — | $0.00 | |
+| Phase 1 | 1 | — | — | GPT-5 Codex |
+| **Total** | 2 | — | $0.00 | |
 
 ---
 

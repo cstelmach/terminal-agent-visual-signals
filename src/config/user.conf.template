@@ -41,12 +41,16 @@
 # ENABLE_LIGHT_DARK_SWITCHING="false"
 # FORCE_MODE="auto"
 
-# Paused background colour (macOS menu-bar app only)
-#   TAVS_PAUSE_BG_DARK  — OSC 11 colour while macOS is in dark mode
-#   TAVS_PAUSE_BG_LIGHT — OSC 11 colour while macOS is in light mode
+# Paused colours (macOS menu-bar app only)
+#   TAVS_PAUSE_BG_DARK  — OSC 11 background while macOS is in dark mode
+#   TAVS_PAUSE_BG_LIGHT — OSC 11 background while macOS is in light mode
+#   TAVS_PAUSE_FG_DARK  — OSC 10 default foreground while macOS is in dark mode
+#   TAVS_PAUSE_FG_LIGHT — OSC 10 default foreground while macOS is in light mode
 #   Format: "#RRGGBB". Edit via TAVS.app → Preferences → Appearance → Paused State.
 # TAVS_PAUSE_BG_DARK="#3A3A3A"
 # TAVS_PAUSE_BG_LIGHT="#D0D0D0"
+# TAVS_PAUSE_FG_DARK="#F2F2F2"
+# TAVS_PAUSE_FG_LIGHT="#202020"
 
 
 # ╔════════════════════════════════════════════════════════════════════════════╗

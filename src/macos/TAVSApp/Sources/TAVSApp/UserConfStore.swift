@@ -10,6 +10,7 @@ final class UserConfStore {
         "TAVS_IDENTITY_MODE", "TAVS_DIR_ICON_TYPE",
         "ENABLE_STYLISH_BACKGROUNDS", "ENABLE_LIGHT_DARK_SWITCHING",
         "TAVS_PAUSE_BG_DARK", "TAVS_PAUSE_BG_LIGHT",
+        "TAVS_PAUSE_FG_DARK", "TAVS_PAUSE_FG_LIGHT",
     ]
 
     // Defaults if keys absent: mid-grey for dark appearance preserves the
@@ -17,6 +18,8 @@ final class UserConfStore {
     // the "paused ≠ active" contrast without reading as an error state.
     static let defaultPauseBgDark = "#3A3A3A"
     static let defaultPauseBgLight = "#D0D0D0"
+    static let defaultPauseFgDark = "#F2F2F2"
+    static let defaultPauseFgLight = "#202020"
 
     init(url: URL) throws {
         self.url = url
@@ -88,6 +91,16 @@ final class UserConfStore {
         set { setValue(newValue, for: "TAVS_PAUSE_BG_LIGHT") }
     }
 
+    var pauseFgDark: String? {
+        get { value(for: "TAVS_PAUSE_FG_DARK") }
+        set { setValue(newValue, for: "TAVS_PAUSE_FG_DARK") }
+    }
+
+    var pauseFgLight: String? {
+        get { value(for: "TAVS_PAUSE_FG_LIGHT") }
+        set { setValue(newValue, for: "TAVS_PAUSE_FG_LIGHT") }
+    }
+
     // MARK: - Save
 
     func save() throws {
@@ -99,7 +112,7 @@ final class UserConfStore {
     // MARK: - Internal
 
     private func value(for key: String) -> String? {
-        for line in lines {
+        for line in lines.reversed() {
             if case .keyValue(let k, let v, _) = line, k == key {
                 return v
             }
@@ -110,7 +123,7 @@ final class UserConfStore {
     private func setValue(_ newValue: String?, for key: String) {
         guard let newValue = newValue else { return }
 
-        for i in lines.indices {
+        for i in lines.indices.reversed() {
             if case .keyValue(let k, _, _) = lines[i], k == key {
                 lines[i] = .keyValue(key: k, value: newValue, raw: "\(key)=\"\(newValue)\"")
                 return

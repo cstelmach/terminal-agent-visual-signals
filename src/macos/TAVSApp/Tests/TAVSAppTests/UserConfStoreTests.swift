@@ -116,6 +116,87 @@ final class UserConfStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.pauseBgLight, "#EEEEEE")
     }
 
+    func testPauseFgAccessorsRoundTrip() throws {
+        let dest = try copyFixture()
+        let store = try UserConfStore(url: dest)
+
+        XCTAssertNil(store.pauseFgDark)
+        XCTAssertNil(store.pauseFgLight)
+        XCTAssertEqual(UserConfStore.defaultPauseFgDark, "#F2F2F2")
+        XCTAssertEqual(UserConfStore.defaultPauseFgLight, "#202020")
+
+        store.pauseFgDark = "#F2F2F2"
+        store.pauseFgLight = "#202020"
+        try store.save()
+
+        let reloaded = try UserConfStore(url: dest)
+        XCTAssertEqual(reloaded.pauseFgDark, "#F2F2F2")
+        XCTAssertEqual(reloaded.pauseFgLight, "#202020")
+    }
+
+    func testMissingPauseForegroundKeysAreNotPersistedOnUnrelatedSave() throws {
+        let dest = tempDir.appendingPathComponent("no-foreground.conf")
+        try """
+        # minimal config
+        THEME_PRESET="nord"
+        TAVS_PAUSE_BG_DARK="#111111"
+        """
+        .write(to: dest, atomically: true, encoding: .utf8)
+
+        let store = try UserConfStore(url: dest)
+        XCTAssertNil(store.pauseFgDark)
+        XCTAssertNil(store.pauseFgLight)
+
+        store.pauseBgDark = "#222222"
+        try store.save()
+
+        let content = try String(contentsOf: dest, encoding: .utf8)
+        XCTAssertFalse(content.contains("TAVS_PAUSE_FG_DARK"))
+        XCTAssertFalse(content.contains("TAVS_PAUSE_FG_LIGHT"))
+    }
+
+    func testDuplicateKeysReadLastMatch() throws {
+        let dest = tempDir.appendingPathComponent("duplicates.conf")
+        try """
+        THEME_PRESET="nord"
+        THEME_PRESET="dracula"
+        TAVS_PAUSE_FG_LIGHT="#111111"
+        TAVS_PAUSE_FG_LIGHT="#222222"
+        """
+        .write(to: dest, atomically: true, encoding: .utf8)
+
+        let store = try UserConfStore(url: dest)
+
+        XCTAssertEqual(store.themePreset, "dracula")
+        XCTAssertEqual(store.pauseFgLight, "#222222")
+    }
+
+    func testSettingDuplicateKeyReplacesLastMatchOnly() throws {
+        let dest = tempDir.appendingPathComponent("duplicate-save.conf")
+        try """
+        # keep this comment
+        TAVS_PAUSE_FG_DARK="#111111"
+
+        UNMANAGED_SHELL_ARRAY=("a" "b")
+        TAVS_PAUSE_FG_DARK="#222222"
+        """
+        .write(to: dest, atomically: true, encoding: .utf8)
+
+        let store = try UserConfStore(url: dest)
+        store.pauseFgDark = "#333333"
+        try store.save()
+
+        let content = try String(contentsOf: dest, encoding: .utf8)
+        let lines = content.components(separatedBy: "\n")
+
+        XCTAssertTrue(content.contains("# keep this comment"))
+        XCTAssertTrue(content.contains("\n\n"))
+        XCTAssertTrue(content.contains("UNMANAGED_SHELL_ARRAY=(\"a\" \"b\")"))
+        XCTAssertEqual(lines.filter { $0 == "TAVS_PAUSE_FG_DARK=\"#111111\"" }.count, 1)
+        XCTAssertEqual(lines.filter { $0 == "TAVS_PAUSE_FG_DARK=\"#333333\"" }.count, 1)
+        XCTAssertFalse(content.contains("TAVS_PAUSE_FG_DARK=\"#222222\""))
+    }
+
     // MARK: - Mutate one key, diff shows exactly that line
 
     func testMutateOneKeyChangesOnlyThatLine() throws {
