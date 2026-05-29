@@ -2,10 +2,10 @@
 
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/PLAN.md
-**Status:** Review Fixes Complete; Manual Visual Validation Pending
+**Status:** All Phases Done; Completion Mode Pending
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 16:07 CEST
+**Last Updated:** 2026-05-29 16:44 CEST
 
 ---
 
@@ -30,7 +30,7 @@
 | Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
 | Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | f39dfed | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
 | Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | 5a51eda | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
-| Phase 5: Product Validation and Release Readiness | Blocked | 2026-05-29 15:06 CEST | — | 4c663cd | 140/140 Swift + 29/29 Bats | 7 min | Source-app byte validation passed; direct Ghostty visual and Preferences GUI validation still pending |
+| Phase 5: Product Validation and Release Readiness | DONE | 2026-05-29 15:06 CEST | 2026-05-29 16:44 CEST | pending | 143/143 Swift + 29/29 Bats | 98 min | Direct Ghostty visual and Preferences GUI validation completed |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -42,6 +42,89 @@ status when a tool does not report a count.
 ## Log
 
 _(Most recent first — reverse chronological)_
+
+### Phase 5: Product Validation and Release Readiness — 2026-05-29 16:44 CEST COMPLETE
+
+**What Was Done:**
+- Re-ran the full Swift suite after review fixes:
+  `cd src/macos/TAVSApp && swift test` passed 143/143 tests in 1.455 seconds.
+- Re-ran targeted shell regressions:
+  `bats tests/unit/mute-gate.bats tests/integration/idle-worker-mute.bats
+  tests/integration/emit-osc.bats` passed 29/29 tests.
+- Re-ran the strict active-shell foreground scan:
+  `rg -n '\]10(;|\\|$)|\]110(;|\\|$)|OSC 10([^0-9]|$)|OSC 110([^0-9]|$)'
+  src/core/trigger.sh src/core/idle-worker-background.sh` returned no matches.
+- Built a temporary source app bundle at
+  `/tmp/TAVS-validation-20260529-162950/TAVS.app` from the current checkout
+  instead of replacing `/Applications/TAVS.app`.
+- Backed up `~/.tavs/user.conf`, `~/.tavs/schedule.json`, and
+  `~/.tavs/mute.state` under `/tmp/tavs-phase5-validation-20260529-162957/`.
+- Opened a Ghostty validation window registered as `/dev/ttys045` with a
+  default-coloured sample and an explicit TrueColor red control sample.
+- Validated manual pause/resume visually in Ghostty:
+  - Before: `/tmp/tavs-phase5-ghostty-before-window.png`
+  - Paused: `/tmp/tavs-phase5-ghostty-paused-default.png`
+  - Resumed: `/tmp/tavs-phase5-ghostty-resumed-default.png`
+- Validated scheduled quiet-period mute visually with `mute.state` reason
+  `quiet_period`: `/tmp/tavs-phase5-ghostty-quiet-period.png`.
+- Opened the source-built Preferences window from the menu-bar app and verified
+  the Appearance tab renders all four Paused State controls:
+  `/tmp/tavs-phase5-preferences-paused-state.png`.
+- Changed the Light mode foreground through the native color panel. The GUI save
+  persisted `TAVS_PAUSE_FG_LIGHT="#092118"` in `~/.tavs/user.conf`, and the next
+  pause repainted Ghostty with that foreground:
+  `/tmp/tavs-phase5-ghostty-paused-preferences-fg.png`.
+- Restored `~/.tavs/user.conf`, `~/.tavs/schedule.json`, and
+  `~/.tavs/mute.state` from backup, verified `./tavs schedule validate`, quit
+  the temporary source app, relaunched `/Applications/TAVS.app`, and confirmed
+  the installed app rewrote `mute.state` as active with PID `24215`.
+
+**What Worked:**
+- Ghostty visibly changed both terminal default foreground and background on
+  manual pause, then reset both on resume.
+- The explicit TrueColor red control sample stayed red while default-coloured
+  text followed the pause foreground, matching the SPEC's OSC 10 scope.
+- Quiet-period mute used the same visual behavior as manual pause.
+- Preferences GUI customization persisted through `user.conf` and affected the
+  next muted paint.
+- Previously recorded byte validation still covers malformed foreground and
+  background fallback: raw malformed strings did not leak into OSC payloads.
+
+**What Didn't Work:**
+- Launching the source-built app with the real runtime registry caused
+  `discoverAndRegisterActiveAgentTTYs()` to populate `/tmp/tavs-$UID/active-ttys`
+  with live agent-session TTYs. The visual pause test therefore repainted active
+  AI-agent Ghostty windows, which the user noticed. The app reset them on resume,
+  but future manual visual validation should isolate the active-tty registry or
+  use byte capture unless the user explicitly accepts broad terminal repaint.
+- The first attempt to automate a ColorWell through accessibility attributes did
+  not change its value because `AXValue` is not settable for SwiftUI ColorPicker
+  color wells. The successful path used the native color panel opened from the
+  GUI, then closed Preferences to trigger persistence.
+
+**Decisions Made:**
+- D10: Did not install the rebuilt app into `/Applications`. The validation
+  needed source-built behavior without changing the user's installed app.
+- D11: Treated the active-agent-window repaint as a validation procedure issue,
+  not a product bug: TAVS is designed to affect registered active agent TTYs
+  during pause. The procedure should avoid surprising the user during tests.
+
+**Deviations from Plan:**
+- No product-scope deviation. Manual validation used the source-built app bundle
+  rather than replacing the installed app, matching the prior Phase 5 decision.
+
+### Divergence Check — Phase 5 Finalization
+- [x] Files modified vs plan: 1/1 planned file (`PROGRESS.md`)
+- [x] Max cyclomatic complexity: not applicable; no production code changed
+- [x] All changes link to `PLAN.md` Phase 5 validation steps
+- [x] No repeated identical tool calls (>3)
+
+**Status:** No divergence detected
+
+**Tests:** 143/143 Swift tests pass; 29/29 targeted Bats tests pass.
+Committed: `pending`.
+
+**Next:** Completion Mode final verification.
 
 ### Review Fix Pass — 2026-05-29 16:07 CEST COMPLETE
 
@@ -146,11 +229,10 @@ mode final verification.
 
 **Status:** No divergence detected
 
-**Blocking Residual Validation:**
-- A final human visual smoke in Ghostty should be run after installing the
-  rebuilt app. The byte-level source-app validation proves the OSC 10/11 and
-  110/111 contract, but it does not inspect terminal pixels for the explicit
-  TrueColor sample-text scenario.
+**Superseded Residual Validation:**
+- This earlier residual risk was closed by the 2026-05-29 16:44 CEST final
+  Phase 5 pass, which captured Ghostty pixels for the default-coloured sample
+  and explicit TrueColor control sample.
 
 **Lessons Learned:**
 - A writable fake TTY entry under `/tmp/tavs-$UID/active-ttys/` is a practical
