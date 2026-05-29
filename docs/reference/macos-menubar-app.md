@@ -256,7 +256,9 @@ Edit via **TAVS → Preferences → Appearance → Paused State**, or by hand-ed
 `user.conf`. Values must be `#RRGGBB` hex; malformed entries fall back to the
 default so a bad save cannot wedge the pause paint. Missing or malformed
 foreground values are derived from the resolved pause background with readable
-contrast. The colours are resolved at each pause transition and on every
+contrast. Preferences shows invalid stored pause color keys and the fallback
+currently displayed, but preserves the raw value until that specific picker is
+edited. The colours are resolved at each pause transition and on every
 fs-watch / heartbeat tick, so editing Preferences while currently paused
 triggers a live repaint no later than the next scheduler evaluation. When the
 foreground/background pair matches the last paint the broadcaster skips the
@@ -306,11 +308,6 @@ relaunch), it scans running processes via `ps -axo tty=,command=` for
 their controlling TTYs in `active-ttys/`. Without this, a fresh login
 after reboot would leave `active-ttys/` empty (since `/tmp` is wiped on
 reboot) and the very first mute transition would paint zero terminals.
-3. `writeMuteState(muted:false)` — shell resumes normal painting
-4. `clearPending()` — discard any bytes hooks appended to `pending/` during the
-   tiny window between steps 2 and 3; those bytes reflect mid-transition state
-   that is stale by definition and would otherwise replay as "current" on a
-   later unmute cycle
 
 ### Restart Semantics
 

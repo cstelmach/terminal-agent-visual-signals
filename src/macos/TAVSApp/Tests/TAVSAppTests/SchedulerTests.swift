@@ -606,6 +606,37 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(Array(broadcaster.callOrder.suffix(2)), ["broadcastPausedClear", "broadcast"])
     }
 
+    func testMissingConfigWhileMutedClearsPauseVisualOnce() throws {
+        let config = ScheduleConfig(
+            version: 1,
+            masterActive: false,
+            allowedWindows: [
+                TimeWindow(id: "weekday", enabled: true,
+                           days: [.mon, .tue, .wed, .thu, .fri],
+                           start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        try ScheduleStore.save(config, to: scheduleURL)
+
+        scheduler.start()
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+
+        try FileManager.default.removeItem(at: scheduleURL)
+        scheduler.loadAndEvaluate()
+
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+        XCTAssertEqual(Array(broadcaster.callOrder.suffix(2)), ["broadcastPausedClear", "broadcast"])
+
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1,
+                       "Repeated no-config evaluations must not replay the unmute transition")
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+    }
+
     private var testCalendar: Calendar {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "America/Los_Angeles")!

@@ -264,6 +264,11 @@ final class Scheduler: ObservableObject {
             config = nil
         }
         guard let config = config else {
+            let wasMuted = previousMuted
+            previousMuted = false
+            if wasMuted {
+                clearPausedVisualAndReplayPending()
+            }
             writeMuteState(muted: false, reason: .none, untilEpoch: 0)
             updatePublishedState(muted: false, reason: .none, transitionDate: nil)
             scheduleHeartbeat()
@@ -278,9 +283,7 @@ final class Scheduler: ObservableObject {
         previousMuted = result.muted
 
         if wasMuted && !result.muted {
-            broadcaster.broadcastPausedClear()
-            broadcaster.broadcast()
-            lastPaintedPauseVisual = nil
+            clearPausedVisualAndReplayPending()
         }
 
         let untilEpoch: Int64
@@ -323,6 +326,12 @@ final class Scheduler: ObservableObject {
 
         scheduleHeartbeat()
         scheduleTransitionTimer(transition, now: now)
+    }
+
+    private func clearPausedVisualAndReplayPending() {
+        broadcaster.broadcastPausedClear()
+        broadcaster.broadcast()
+        lastPaintedPauseVisual = nil
     }
 
     // MARK: - Timers

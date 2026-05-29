@@ -51,7 +51,11 @@ final class PreferencesPauseVisualPreferenceColorsTests: XCTestCase {
 
         let saveStore = try UserConfStore(url: url)
         saveStore.themePreset = "dracula"
-        XCTAssertFalse(initialColors.applyChanges(since: initialColors, to: saveStore))
+        XCTAssertFalse(initialColors.applyChanges(
+            since: initialColors,
+            to: saveStore,
+            foregroundEdits: PauseVisualPreferenceForegroundEdits()
+        ))
         try saveStore.save()
 
         let saved = try String(contentsOf: url, encoding: .utf8)
@@ -75,7 +79,11 @@ final class PreferencesPauseVisualPreferenceColorsTests: XCTestCase {
         changedColors.darkForeground = "#ABCDEF"
 
         let saveStore = try UserConfStore(url: url)
-        XCTAssertTrue(changedColors.applyChanges(since: initialColors, to: saveStore))
+        XCTAssertTrue(changedColors.applyChanges(
+            since: initialColors,
+            to: saveStore,
+            foregroundEdits: PauseVisualPreferenceForegroundEdits(dark: true)
+        ))
         try saveStore.save()
 
         let saved = try String(contentsOf: url, encoding: .utf8)
@@ -85,5 +93,68 @@ final class PreferencesPauseVisualPreferenceColorsTests: XCTestCase {
             .filter { $0.contains("TAVS_PAUSE_BG_") }
             .count
         XCTAssertEqual(pauseBackgroundCount, 2)
+    }
+
+    func testBackgroundChangeRecomputesDerivedForegroundWithoutPersistingForegroundKey() throws {
+        let url = tempDir.appendingPathComponent("user.conf")
+        try """
+        TAVS_PAUSE_BG_DARK="#333333"
+        TAVS_PAUSE_BG_LIGHT="#DDDDDD"
+        """
+        .write(to: url, atomically: true, encoding: .utf8)
+
+        let initialStore = try UserConfStore(url: url)
+        let initialColors = PauseVisualPreferenceColors.resolved(from: initialStore)
+        XCTAssertEqual(initialColors.darkForeground, UserConfStore.defaultPauseFgDark)
+
+        var changedColors = initialColors
+        changedColors.darkBackground = "#EEEEEE"
+        changedColors.recomputeDerivedForegrounds()
+
+        XCTAssertEqual(changedColors.darkForeground, UserConfStore.defaultPauseFgLight)
+
+        let saveStore = try UserConfStore(url: url)
+        XCTAssertTrue(changedColors.applyChanges(
+            since: initialColors,
+            to: saveStore,
+            foregroundEdits: PauseVisualPreferenceForegroundEdits()
+        ))
+        try saveStore.save()
+
+        let saved = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(saved.contains("TAVS_PAUSE_BG_DARK=\"#EEEEEE\""))
+        XCTAssertFalse(saved.contains("TAVS_PAUSE_FG_DARK"))
+    }
+
+    func testMalformedStoredValuesAreReportedWithDisplayedFallbacks() throws {
+        let url = tempDir.appendingPathComponent("user.conf")
+        try """
+        TAVS_PAUSE_BG_DARK="bad-bg"
+        TAVS_PAUSE_FG_DARK="bad-fg"
+        TAVS_PAUSE_BG_LIGHT="#EEEEEE"
+        TAVS_PAUSE_FG_LIGHT="bad-light-fg"
+        """
+        .write(to: url, atomically: true, encoding: .utf8)
+
+        let store = try UserConfStore(url: url)
+        let colors = PauseVisualPreferenceColors.resolved(from: store)
+
+        XCTAssertEqual(colors.malformedEntries, [
+            PauseVisualPreferenceMalformedEntry(
+                key: "TAVS_PAUSE_BG_DARK",
+                storedValue: "bad-bg",
+                displayedValue: UserConfStore.defaultPauseBgDark
+            ),
+            PauseVisualPreferenceMalformedEntry(
+                key: "TAVS_PAUSE_FG_DARK",
+                storedValue: "bad-fg",
+                displayedValue: UserConfStore.defaultPauseFgDark
+            ),
+            PauseVisualPreferenceMalformedEntry(
+                key: "TAVS_PAUSE_FG_LIGHT",
+                storedValue: "bad-light-fg",
+                displayedValue: UserConfStore.defaultPauseFgLight
+            ),
+        ])
     }
 }

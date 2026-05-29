@@ -13,7 +13,7 @@ struct PauseVisual: Equatable {
             ?? Self.readableForeground(for: resolvedBackground)
     }
 
-    private static func normalizedHexColor(_ raw: String?) -> String? {
+    static func normalizedHexColor(_ raw: String?) -> String? {
         guard let raw = raw else { return nil }
         let color = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard color.count == 7, color.first == "#" else { return nil }

@@ -2,10 +2,10 @@
 
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/pause-foreground-control_2026-05-29/PLAN.md
-**Status:** In Progress
+**Status:** Review Fixes Complete; Manual Visual Validation Pending
 **Mode:** Manual
 **Started:** 2026-05-29 14:16 CEST
-**Last Updated:** 2026-05-29 15:13 CEST
+**Last Updated:** 2026-05-29 16:07 CEST
 
 ---
 
@@ -30,7 +30,7 @@
 | Phase 2: Broadcast Payload Contract | DONE | 2026-05-29 14:33 CEST | 2026-05-29 14:38 CEST | d6889d7 | 135/135 tests | 5 min | Broadcaster serializes PauseVisual foreground/background payload |
 | Phase 3: Scheduler Integration and Repaint Behavior | DONE | 2026-05-29 14:47 CEST | 2026-05-29 14:51 CEST | f39dfed | 137/137 tests | 4 min | Scheduler compares full PauseVisual and repaints on foreground/background changes |
 | Phase 4: Preferences, User Configuration, and Documentation | DONE | 2026-05-29 14:57 CEST | 2026-05-29 15:02 CEST | 5a51eda | 140/140 tests | 5 min | Preferences exposes pause foreground controls; docs describe OSC foreground/background contract |
-| Phase 5: Product Validation and Release Readiness | DONE | 2026-05-29 15:06 CEST | 2026-05-29 15:13 CEST | pending | 140/140 tests | 7 min | Source app live-byte validation passed; residual visual smoke risk recorded |
+| Phase 5: Product Validation and Release Readiness | Blocked | 2026-05-29 15:06 CEST | — | 4c663cd | 140/140 Swift + 29/29 Bats | 7 min | Source-app byte validation passed; direct Ghostty visual and Preferences GUI validation still pending |
 
 **Status values:** Not Started, In Progress, DONE, Blocked
 **Commit:** Short git hash (7 chars)
@@ -43,7 +43,47 @@ status when a tool does not report a count.
 
 _(Most recent first — reverse chronological)_
 
-### Phase 5: Product Validation and Release Readiness — 2026-05-29 15:13 CEST COMPLETE
+### Review Fix Pass — 2026-05-29 16:07 CEST COMPLETE
+
+**Finding Evaluation:**
+- R1 confirmed. `Scheduler.loadAndEvaluate()` skipped pause-clear and pending
+  replay when `schedule.json` disappeared or failed to parse while already
+  muted. That violated the SPEC pause exit contract.
+- R2 confirmed. Preferences tracked only resolved foreground values, so a
+  background-only edit with an absent/malformed foreground could display the old
+  derived foreground while runtime later derived a different foreground.
+- R3 confirmed as a validation/accounting gap. Source-app byte capture is useful,
+  but direct Preferences GUI clicking and human Ghostty visual inspection were
+  not completed. Phase 5 is reopened as blocked on that manual validation.
+- R4 confirmed. Preferences displayed fallback picker colors for malformed pause
+  values but did not surface the invalid stored key/value causing the mismatch.
+- R5 confirmed. The menu-bar docs mixed the current non-destructive pending
+  behavior with stale `clearPending()` transition steps.
+- R6 confirmed. `PROGRESS.md` still had stale status and pending commit fields
+  after Phase 5.
+
+**Fix Plan:**
+- Add scheduler regression coverage for muted -> no config -> active cleanup.
+- Add preference helper coverage for derived foreground recompute, non-materialized
+  absent foreground keys, and malformed stored-value reporting.
+- Keep malformed raw `user.conf` lines preserved unless the user edits that exact
+  pause color control.
+- Remove stale transition-order documentation and update this progress log.
+
+**Tests:**
+- Red phase failed first on missing preference helper API and missing scheduler
+  behavior.
+- Focused Swift verification passed: 6/6 selected Scheduler/Preferences tests.
+- Full Swift verification passed: 143/143 tests.
+- Targeted Bats verification passed: 29/29 tests.
+- Static active-shell foreground scan returned no OSC 10/110 matches.
+- Legacy scheduler/docs grep found no stale numbered `clearPending()` transition
+  steps after the documentation cleanup.
+
+**Next:** Direct Ghostty visual and Preferences GUI validation, then completion
+mode final verification.
+
+### Phase 5: Product Validation and Release Readiness — 2026-05-29 15:13 CEST AUTOMATED VALIDATION COMPLETE; MANUAL VISUAL PENDING
 
 **What Was Done:**
 - Ran the full Swift suite: `swift test` in `src/macos/TAVSApp` passed
@@ -106,7 +146,7 @@ _(Most recent first — reverse chronological)_
 
 **Status:** No divergence detected
 
-**Accepted Residual Risk:**
+**Blocking Residual Validation:**
 - A final human visual smoke in Ghostty should be run after installing the
   rebuilt app. The byte-level source-app validation proves the OSC 10/11 and
   110/111 contract, but it does not inspect terminal pixels for the explicit
@@ -119,9 +159,10 @@ _(Most recent first — reverse chronological)_
   can reformat JSON even when they preserve behavior.
 
 **Tests:** 140/140 Swift tests pass in 1.413 seconds; 29/29 targeted Bats tests
-pass. Committed: `pending`.
+pass. Committed: `4c663cd`.
 
-**Next:** Completion mode final verification
+**Next:** Direct Ghostty visual and Preferences GUI validation, then completion
+mode final verification.
 
 ### Phase 4: Preferences, User Configuration, and Documentation — 2026-05-29 15:02 CEST COMPLETE
 

@@ -323,11 +323,27 @@ private struct QuietPeriodRow: View {
 
 // MARK: - Appearance Tab
 
+struct PauseVisualPreferenceForegroundEdits {
+    var dark = false
+    var light = false
+}
+
+struct PauseVisualPreferenceMalformedEntry: Equatable, Identifiable {
+    let key: String
+    let storedValue: String
+    let displayedValue: String
+
+    var id: String { key }
+}
+
 struct PauseVisualPreferenceColors: Equatable {
     var darkBackground: String
     var darkForeground: String
     var lightBackground: String
     var lightForeground: String
+    var darkForegroundIsDerived = false
+    var lightForegroundIsDerived = false
+    var malformedEntries: [PauseVisualPreferenceMalformedEntry] = []
 
     static let defaults = PauseVisualPreferenceColors(
         darkBackground: UserConfStore.defaultPauseBgDark,
@@ -337,32 +353,83 @@ struct PauseVisualPreferenceColors: Equatable {
     )
 
     static func resolved(from store: UserConfStore) -> PauseVisualPreferenceColors {
+        let darkBackground = store.pauseBgDark
+        let darkForeground = store.pauseFgDark
+        let lightBackground = store.pauseBgLight
+        let lightForeground = store.pauseFgLight
         let darkVisual = PauseVisual(
-            backgroundColor: store.pauseBgDark,
-            foregroundColor: store.pauseFgDark,
+            backgroundColor: darkBackground,
+            foregroundColor: darkForeground,
             defaultBackgroundColor: UserConfStore.defaultPauseBgDark
         )
         let lightVisual = PauseVisual(
-            backgroundColor: store.pauseBgLight,
-            foregroundColor: store.pauseFgLight,
+            backgroundColor: lightBackground,
+            foregroundColor: lightForeground,
             defaultBackgroundColor: UserConfStore.defaultPauseBgLight
         )
+
+        let malformedEntries = [
+            malformedEntry(
+                key: "TAVS_PAUSE_BG_DARK",
+                storedValue: darkBackground,
+                displayedValue: darkVisual.backgroundColor
+            ),
+            malformedEntry(
+                key: "TAVS_PAUSE_FG_DARK",
+                storedValue: darkForeground,
+                displayedValue: darkVisual.foregroundColor
+            ),
+            malformedEntry(
+                key: "TAVS_PAUSE_BG_LIGHT",
+                storedValue: lightBackground,
+                displayedValue: lightVisual.backgroundColor
+            ),
+            malformedEntry(
+                key: "TAVS_PAUSE_FG_LIGHT",
+                storedValue: lightForeground,
+                displayedValue: lightVisual.foregroundColor
+            ),
+        ].compactMap { $0 }
 
         return PauseVisualPreferenceColors(
             darkBackground: darkVisual.backgroundColor,
             darkForeground: darkVisual.foregroundColor,
             lightBackground: lightVisual.backgroundColor,
-            lightForeground: lightVisual.foregroundColor
+            lightForeground: lightVisual.foregroundColor,
+            darkForegroundIsDerived: PauseVisual.normalizedHexColor(darkForeground) == nil,
+            lightForegroundIsDerived: PauseVisual.normalizedHexColor(lightForeground) == nil,
+            malformedEntries: malformedEntries
         )
     }
 
-    func applyChanges(since initial: PauseVisualPreferenceColors, to store: UserConfStore) -> Bool {
+    mutating func recomputeDerivedForegrounds() {
+        if darkForegroundIsDerived {
+            darkForeground = PauseVisual(
+                backgroundColor: darkBackground,
+                foregroundColor: nil,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+            ).foregroundColor
+        }
+        if lightForegroundIsDerived {
+            lightForeground = PauseVisual(
+                backgroundColor: lightBackground,
+                foregroundColor: nil,
+                defaultBackgroundColor: UserConfStore.defaultPauseBgLight
+            ).foregroundColor
+        }
+    }
+
+    func applyChanges(
+        since initial: PauseVisualPreferenceColors,
+        to store: UserConfStore,
+        foregroundEdits: PauseVisualPreferenceForegroundEdits
+    ) -> Bool {
         var changed = false
         if darkBackground != initial.darkBackground {
             store.pauseBgDark = darkBackground
             changed = true
         }
-        if darkForeground != initial.darkForeground {
+        if foregroundEdits.dark && darkForeground != initial.darkForeground {
             store.pauseFgDark = darkForeground
             changed = true
         }
@@ -370,11 +437,26 @@ struct PauseVisualPreferenceColors: Equatable {
             store.pauseBgLight = lightBackground
             changed = true
         }
-        if lightForeground != initial.lightForeground {
+        if foregroundEdits.light && lightForeground != initial.lightForeground {
             store.pauseFgLight = lightForeground
             changed = true
         }
         return changed
+    }
+
+    private static func malformedEntry(
+        key: String,
+        storedValue: String?,
+        displayedValue: String
+    ) -> PauseVisualPreferenceMalformedEntry? {
+        guard let storedValue, PauseVisual.normalizedHexColor(storedValue) == nil else {
+            return nil
+        }
+        return PauseVisualPreferenceMalformedEntry(
+            key: key,
+            storedValue: storedValue,
+            displayedValue: displayedValue
+        )
     }
 }
 
@@ -392,6 +474,11 @@ private struct AppearanceTab: View {
     @State private var pauseFgDark = Color(hex: UserConfStore.defaultPauseFgDark)
     @State private var pauseFgLight = Color(hex: UserConfStore.defaultPauseFgLight)
     @State private var initialPauseVisualColors = PauseVisualPreferenceColors.defaults
+    @State private var pauseDarkForegroundIsDerived = false
+    @State private var pauseLightForegroundIsDerived = false
+    @State private var pauseDarkForegroundEdited = false
+    @State private var pauseLightForegroundEdited = false
+    @State private var malformedPauseEntries: [PauseVisualPreferenceMalformedEntry] = []
     @State private var initialized = false
 
     private static let themePresets = [
@@ -443,18 +530,38 @@ private struct AppearanceTab: View {
             }
 
             Section("Paused State") {
-                ColorPicker("Dark mode background", selection: $pauseBgDark, supportsOpacity: false)
-                ColorPicker("Dark mode foreground", selection: $pauseFgDark, supportsOpacity: false)
+                ColorPicker(
+                    "Dark mode background",
+                    selection: pauseBgDarkBinding,
+                    supportsOpacity: false
+                )
+                ColorPicker(
+                    "Dark mode foreground",
+                    selection: pauseFgDarkBinding,
+                    supportsOpacity: false
+                )
                 ColorPicker(
                     "Light mode background",
-                    selection: $pauseBgLight,
+                    selection: pauseBgLightBinding,
                     supportsOpacity: false
                 )
                 ColorPicker(
                     "Light mode foreground",
-                    selection: $pauseFgLight,
+                    selection: pauseFgLightBinding,
                     supportsOpacity: false
                 )
+                if !malformedPauseEntries.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Invalid stored pause color values")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                        ForEach(malformedPauseEntries) { entry in
+                            Text("\(entry.key)=\"\(entry.storedValue)\"; showing \(entry.displayedValue)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
                 Text(
                     "Used as the terminal default foreground and background while paused. " +
                     "The colours are picked from the macOS system appearance at pause time."
@@ -482,6 +589,11 @@ private struct AppearanceTab: View {
         pauseFgDark = Color(hex: pauseColors.darkForeground)
         pauseBgLight = Color(hex: pauseColors.lightBackground)
         pauseFgLight = Color(hex: pauseColors.lightForeground)
+        pauseDarkForegroundIsDerived = pauseColors.darkForegroundIsDerived
+        pauseLightForegroundIsDerived = pauseColors.lightForegroundIsDerived
+        pauseDarkForegroundEdited = false
+        pauseLightForegroundEdited = false
+        malformedPauseEntries = pauseColors.malformedEntries
         DispatchQueue.main.async { initialized = true }
     }
 
@@ -496,22 +608,107 @@ private struct AppearanceTab: View {
         if stylishBackgrounds != (store.stylishBackgrounds ?? false) { store.stylishBackgrounds = stylishBackgrounds; changed = true }
         if lightDarkSwitching != (store.lightDarkSwitching ?? false) { store.lightDarkSwitching = lightDarkSwitching; changed = true }
 
-        let pauseColors = PauseVisualPreferenceColors(
+        var pauseColors = PauseVisualPreferenceColors(
             darkBackground: pauseBgDark.hexString(),
             darkForeground: pauseFgDark.hexString(),
             lightBackground: pauseBgLight.hexString(),
-            lightForeground: pauseFgLight.hexString()
+            lightForeground: pauseFgLight.hexString(),
+            darkForegroundIsDerived: pauseDarkForegroundIsDerived,
+            lightForegroundIsDerived: pauseLightForegroundIsDerived,
+            malformedEntries: malformedPauseEntries
         )
-        if pauseColors.applyChanges(since: initialPauseVisualColors, to: store) { changed = true }
+        pauseColors.recomputeDerivedForegrounds()
+        let foregroundEdits = PauseVisualPreferenceForegroundEdits(
+            dark: pauseDarkForegroundEdited,
+            light: pauseLightForegroundEdited
+        )
+        if pauseColors.applyChanges(
+            since: initialPauseVisualColors,
+            to: store,
+            foregroundEdits: foregroundEdits
+        ) {
+            changed = true
+        }
 
         if changed {
             do {
                 try store.save()
-                initialPauseVisualColors = pauseColors
+                initialPauseVisualColors = PauseVisualPreferenceColors.resolved(from: store)
+                pauseDarkForegroundIsDerived = initialPauseVisualColors.darkForegroundIsDerived
+                pauseLightForegroundIsDerived = initialPauseVisualColors.lightForegroundIsDerived
+                pauseDarkForegroundEdited = false
+                pauseLightForegroundEdited = false
+                malformedPauseEntries = initialPauseVisualColors.malformedEntries
             } catch {
                 TAVSLog.userConfStore.error("user.conf save failed: \(error.localizedDescription, privacy: .public)")
             }
         }
+    }
+
+    private var pauseBgDarkBinding: Binding<Color> {
+        Binding(
+            get: { pauseBgDark },
+            set: {
+                pauseBgDark = $0
+                recomputeDarkForegroundIfDerived()
+            }
+        )
+    }
+
+    private var pauseFgDarkBinding: Binding<Color> {
+        Binding(
+            get: { pauseFgDark },
+            set: {
+                pauseFgDark = $0
+                if initialized {
+                    pauseDarkForegroundEdited = true
+                    pauseDarkForegroundIsDerived = false
+                }
+            }
+        )
+    }
+
+    private var pauseBgLightBinding: Binding<Color> {
+        Binding(
+            get: { pauseBgLight },
+            set: {
+                pauseBgLight = $0
+                recomputeLightForegroundIfDerived()
+            }
+        )
+    }
+
+    private var pauseFgLightBinding: Binding<Color> {
+        Binding(
+            get: { pauseFgLight },
+            set: {
+                pauseFgLight = $0
+                if initialized {
+                    pauseLightForegroundEdited = true
+                    pauseLightForegroundIsDerived = false
+                }
+            }
+        )
+    }
+
+    private func recomputeDarkForegroundIfDerived() {
+        guard pauseDarkForegroundIsDerived, !pauseDarkForegroundEdited else { return }
+        let visual = PauseVisual(
+            backgroundColor: pauseBgDark.hexString(),
+            foregroundColor: nil,
+            defaultBackgroundColor: UserConfStore.defaultPauseBgDark
+        )
+        pauseFgDark = Color(hex: visual.foregroundColor)
+    }
+
+    private func recomputeLightForegroundIfDerived() {
+        guard pauseLightForegroundIsDerived, !pauseLightForegroundEdited else { return }
+        let visual = PauseVisual(
+            backgroundColor: pauseBgLight.hexString(),
+            foregroundColor: nil,
+            defaultBackgroundColor: UserConfStore.defaultPauseBgLight
+        )
+        pauseFgLight = Color(hex: visual.foregroundColor)
     }
 }
 
