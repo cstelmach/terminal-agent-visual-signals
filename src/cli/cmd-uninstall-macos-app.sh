@@ -48,6 +48,14 @@ EOF
         sleep 1
     fi
 
+    local app_binary="$_TAVS_APP_DEST/Contents/MacOS/TAVSApp"
+    if [[ -x "$app_binary" ]]; then
+        echo "  Unregistering login item..."
+        if ! "$app_binary" --unregister-login-item &>/dev/null; then
+            cli_info "Login item unregister failed; continuing with app removal."
+        fi
+    fi
+
     # Remove mute.state so shells resume immediately
     local mute_state="$HOME/.tavs/mute.state"
     if [[ -f "$mute_state" ]]; then

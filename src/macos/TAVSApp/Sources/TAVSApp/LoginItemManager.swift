@@ -6,6 +6,7 @@ protocol LoginItemManagerProtocol: AnyObject {
     func register() throws
     func unregister() throws
     func registerIfNeeded() throws
+    func unregisterIfNeeded() throws
 }
 
 // Thin wrapper around `SMAppService.mainApp` so tests can substitute a fake
@@ -42,5 +43,30 @@ final class LoginItemManager: LoginItemManagerProtocol {
     func registerIfNeeded() throws {
         if service.isEnabled { return }
         try service.register()
+    }
+
+    func unregisterIfNeeded() throws {
+        if !service.isEnabled { return }
+        try service.unregister()
+    }
+}
+
+enum LoginItemRegistrationPolicy {
+    static func allowsMainAppRegistration(executableURL: URL?) -> Bool {
+        guard let executableURL else { return false }
+
+        let components = executableURL.standardizedFileURL.pathComponents
+        guard let appIndex = components.lastIndex(where: { $0.hasSuffix(".app") }) else {
+            return false
+        }
+
+        let contentsIndex = appIndex + 1
+        let macOSIndex = appIndex + 2
+        let executableIndex = appIndex + 3
+
+        return components.indices.contains(executableIndex)
+            && components[contentsIndex] == "Contents"
+            && components[macOSIndex] == "MacOS"
+            && !components[executableIndex].isEmpty
     }
 }

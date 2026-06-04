@@ -32,6 +32,26 @@ final class LoginItemManagerTests: XCTestCase {
         XCTAssertFalse(mgr.isEnabled)
     }
 
+    func testUnregisterIfNeededSkipsWhenDisabled() throws {
+        let mock = MockLoginItemService()
+        let mgr = LoginItemManager(service: mock)
+
+        try mgr.unregisterIfNeeded()
+
+        XCTAssertEqual(mock.unregisterCallCount, 0)
+    }
+
+    func testUnregisterIfNeededUnregistersWhenEnabled() throws {
+        let mock = MockLoginItemService()
+        mock.isEnabled = true
+        let mgr = LoginItemManager(service: mock)
+
+        try mgr.unregisterIfNeeded()
+
+        XCTAssertEqual(mock.unregisterCallCount, 1)
+        XCTAssertFalse(mgr.isEnabled)
+    }
+
     func testRegisterIfNeededSkipsWhenEnabled() throws {
         let mock = MockLoginItemService()
         mock.isEnabled = true
@@ -71,5 +91,21 @@ final class LoginItemManagerTests: XCTestCase {
         let mgr = LoginItemManager(service: mock)
 
         XCTAssertThrowsError(try mgr.registerIfNeeded())
+    }
+
+    func testRegistrationPolicyAllowsAppBundleExecutable() {
+        let url = URL(fileURLWithPath: "/Applications/TAVS.app/Contents/MacOS/TAVSApp")
+
+        XCTAssertTrue(LoginItemRegistrationPolicy.allowsMainAppRegistration(executableURL: url))
+    }
+
+    func testRegistrationPolicyRejectsSwiftPackageDebugExecutable() {
+        let url = URL(fileURLWithPath: "/repo/src/macos/TAVSApp/.build/arm64-apple-macosx/debug/TAVSApp")
+
+        XCTAssertFalse(LoginItemRegistrationPolicy.allowsMainAppRegistration(executableURL: url))
+    }
+
+    func testRegistrationPolicyRejectsMissingExecutableURL() {
+        XCTAssertFalse(LoginItemRegistrationPolicy.allowsMainAppRegistration(executableURL: nil))
     }
 }

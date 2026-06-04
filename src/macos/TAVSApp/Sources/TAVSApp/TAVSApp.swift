@@ -17,6 +17,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         // SPEC G9: register the app as a login item so it survives reboot.
+        // Only real .app bundle launches may self-register. SwiftPM debug
+        // executables are raw Unix tools; registering one makes macOS reopen
+        // it in Terminal at login, leaving a stuck `TAVSApp ; exit;` shell.
+        guard LoginItemRegistrationPolicy.allowsMainAppRegistration(executableURL: Bundle.main.executableURL) else {
+            TAVSLog.appDelegate.info("skipping login item registration outside app bundle")
+            return
+        }
+
         // Idempotent — skipped when already enabled. A throw here is not fatal:
         // the user can still operate TAVS for this session and approve the
         // login item later via System Settings → General → Login Items.
@@ -49,6 +57,17 @@ enum TAVSAppMain {
             let status = mgr.isEnabled ? "enabled" : "not_enabled"
             print("login_item_status=\(status)")
             exit(mgr.isEnabled ? 0 : 1)
+        }
+        if args.contains("--unregister-login-item") {
+            let mgr = LoginItemManager()
+            do {
+                try mgr.unregisterIfNeeded()
+                print("login_item_status=unregistered")
+                exit(0)
+            } catch {
+                fputs("unregister error: \(error)\n", stderr)
+                exit(1)
+            }
         }
         if args.contains("--dump-state") {
             let home = FileManager.default.homeDirectoryForCurrentUser

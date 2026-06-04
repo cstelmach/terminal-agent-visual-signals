@@ -386,6 +386,25 @@ security find-identity -v -p codesigning ~/Library/Keychains/login.keychain-db |
 
 If missing, the next `tavs install macos-app` will recreate it.
 
+### Terminal opens `TAVSApp ; exit;` at login
+
+This means a raw SwiftPM debug executable was registered as a login item.
+macOS opens raw Unix executables through Terminal, and TAVSApp is a long-running
+menu bar app, so the shell waits forever.
+
+Inspect stale entries:
+```bash
+osascript <<'APPLESCRIPT'
+tell application "System Events"
+    get the path of every login item whose name is "TAVSApp"
+end tell
+APPLESCRIPT
+```
+
+Remove only those stale debug-executable entries in System Settings → General →
+Login Items, or delete the duplicate `TAVSApp` login items with System Events.
+Keep the real `/Applications/TAVS.app` item enabled.
+
 ### Schedule not taking effect
 
 1. Check the app is running: `pgrep -x TAVSApp`
