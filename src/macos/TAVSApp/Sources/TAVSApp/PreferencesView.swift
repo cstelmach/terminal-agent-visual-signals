@@ -84,7 +84,7 @@ private struct ScheduleTab: View {
                 }
 
                 HStack {
-                    Button("Save") { saveDraft() }
+                    Button("Save") { attemptSave() }
                         .disabled(!isValid)
                         .keyboardShortcut(.return)
                     Spacer()
@@ -135,6 +135,18 @@ private struct ScheduleTab: View {
         } catch {
             validationHint = error.localizedDescription
             isValid = false
+        }
+    }
+
+    // Schedule edits (including the master toggle) are challenge-gated while
+    // a hard lock is effective (spec D7).
+    private func attemptSave() {
+        if scheduler.isHardLocked {
+            ChallengeGate.present { passed in
+                if passed { saveDraft() }
+            }
+        } else {
+            saveDraft()
         }
     }
 
@@ -197,6 +209,10 @@ private struct WindowRow: View {
                 TextField("ID", text: $window.id)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 180)
+                Toggle("🔒 Hard", isOn: hardBinding)
+                    .toggleStyle(.checkbox)
+                    .font(.caption)
+                    .help("Outside this window's hours, resuming requires the unlock challenge")
                 Spacer()
                 Button(role: .destructive, action: onDelete) {
                     Image(systemName: "trash")
@@ -240,6 +256,15 @@ private struct WindowRow: View {
             }
         )
     }
+
+    // hard is Bool? in the model (nil encodes as an absent key); the checkbox
+    // maps false back to nil so untouched schedules stay byte-stable.
+    private var hardBinding: Binding<Bool> {
+        Binding(
+            get: { window.hard == true },
+            set: { window.hard = $0 ? true : nil }
+        )
+    }
 }
 
 // MARK: - Quiet Period Row
@@ -263,6 +288,10 @@ private struct QuietPeriodRow: View {
                 TextField("ID", text: $quiet.id)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 140)
+                Toggle("🔒 Hard", isOn: hardBinding)
+                    .toggleStyle(.checkbox)
+                    .font(.caption)
+                    .help("While inside this quiet period, resuming requires the unlock challenge")
                 Spacer()
                 Button(role: .destructive, action: onDelete) {
                     Image(systemName: "trash")
@@ -300,6 +329,14 @@ private struct QuietPeriodRow: View {
                 }
             }
         }
+    }
+
+    // Same nil-mapping as WindowRow: false stores nil (absent key on disk).
+    private var hardBinding: Binding<Bool> {
+        Binding(
+            get: { quiet.hard == true },
+            set: { quiet.hard = $0 ? true : nil }
+        )
     }
 
     private func optionalIntBinding(

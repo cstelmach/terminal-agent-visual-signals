@@ -106,3 +106,36 @@
       `_lock_resolve_colors` returned 1 under the dispatcher's `set -e` (bats sourced
       without set -e, hiding it).
 - [ ] App-integrated broadcast paint (all-terminal): Phase 5 after app reinstall.
+
+### Phase 4 — Challenge + gated unlock
+- [x] T4.1 `src/core/challenge.sh` (config load with puzzle degradation, spec-2.4 hash,
+      first-letter-to-end transform, 3 attempts per kind, stdin prompts so tests can
+      pipe answers) + `src/core/challenge-sentences.txt` (40 sentences, lowercase
+      words + spaces only).
+- [x] T4.2 `tavs unlock [--for 15m|2h30m|rest-of-day]` (interactive preset menu
+      otherwise; preserves lock fields, writes grant; clean no-op without a lock),
+      `tavs lock set-password [--type both]` (double prompt, 16-byte urandom salt,
+      600-mode challenge.conf), top-level `tavs unlock` dispatcher alias.
+- [x] T4.3 `_schedule_challenge_gate` in cmd-schedule.sh: resume/add-window/add-quiet/
+      remove gated while a hard lock is effective (edit permission only, no grant);
+      pause never gated.
+- [x] T4.4 `ChallengeVerifier.swift` (hash spec twin, transform, config degradation,
+      sentence pools: app has its own embedded pool since puzzles are per-side
+      ephemeral) + `TAVSApp --verify-password-hash <salt> <pw>` parity hook.
+- [x] T4.5 `ChallengeGate.swift`: NSAlert password (NSSecureTextField) / puzzle /
+      both flows with 3 attempts, NSPopUpButton grant-duration picker
+      (15m/1h/4h/rest-of-day), NSApp.activate + main-async deferral.
+- [x] T4.6 MenuContent: "Lock Now (1h)", "Unlock…" (visible while hard-locked),
+      Resume routed through ChallengeGate (passing resumes, no grant);
+      Scheduler.lockNow/grantUnlock/togglePause(force:); PreferencesView: per-row
+      "🔒 Hard" toggles (false maps to nil so untouched files stay byte-stable),
+      saveDraft challenge-gated while hard-locked.
+- [x] T4.7 Tests: challenge.bats (19: hash/transform vectors, attempt limits,
+      degradation, unlock grant + re-engage, failed challenge leaves lock, schedule
+      gating matrix), challenge-parity.bats (6: ascii/empty/unicode/special/long +
+      the salt-is-literal-string spec guard), ChallengeVerifierTests (12; hardcoded
+      hash vector verified against shasum after an initial WRONG guess, the verify
+      rule earning its keep). Totals: Swift 193/0, bats 142/0.
+- [x] CLI flows exercised end-to-end through ./tavs by the bats tests (real binary,
+      temp runtime). App dialogs (menu unlock, gated preferences save) are user-gated
+      visual checks in Phase 5 (V3/V4/V8).

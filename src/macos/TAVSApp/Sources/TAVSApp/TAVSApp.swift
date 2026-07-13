@@ -52,6 +52,12 @@ enum TAVSAppMain {
                 exit(1)
             }
         }
+        if args.count >= 4, args[1] == "--verify-password-hash" {
+            // Contract-test hook for tests/integration/challenge-parity.bats:
+            // prints the spec-2.4 digest for (saltHex, password).
+            print(ChallengeVerifier.passwordHash(saltHex: args[2], password: args[3]))
+            exit(0)
+        }
         if args.contains("--reported-status") {
             let mgr = LoginItemManager()
             let status = mgr.isEnabled ? "enabled" : "not_enabled"

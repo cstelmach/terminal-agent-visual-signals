@@ -259,13 +259,13 @@ final class Scheduler: ObservableObject {
         }
     }
 
-    func togglePause() {
+    func togglePause(force: Bool = false) {
         guard var cfg = config else { return }
-        // Defense in depth under the UI gate (Phase 4 routes the menu through
-        // the challenge dialog): while hard-locked, resuming is refused here
-        // too. Pausing MORE is always allowed (spec D7).
+        // Defense in depth under the UI gate: while hard-locked, resuming is
+        // refused unless the caller passed the challenge (force). Pausing
+        // MORE is always allowed (spec D7).
         let wouldResume = !cfg.masterActive
-        if wouldResume && isHardLocked {
+        if wouldResume && isHardLocked && !force {
             TAVSLog.scheduler.info("togglePause refused: hard lock active")
             return
         }
@@ -275,6 +275,41 @@ final class Scheduler: ObservableObject {
         } catch {
             TAVSLog.scheduler.error("togglePause save failed: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    // Menu-bar "Lock Now": manual hard lock, CLI merge semantics (keep the
+    // later end of an existing lock; engaging cancels any grant). Never
+    // challenge-gated (spec D7: engaging is one click).
+    func lockNow(seconds: Int64 = 3600) {
+        let now = Int64(clock.now().timeIntervalSince1970)
+        var until = now + seconds
+        if let existing = LockStateReader.read(at: lockStateURL),
+           existing.locked, existing.lockUntilEpoch > until, existing.lockUntilEpoch > now {
+            until = existing.lockUntilEpoch
+        }
+        let visual = pauseVisualProvider()
+        let state = LockStateData(
+            locked: true, reason: .manual,
+            lockUntilEpoch: until, unlockUntilEpoch: 0,
+            writtenEpoch: now,
+            lockBg: visual.backgroundColor, lockFg: visual.foregroundColor
+        )
+        writeLockStateIfChanged(state, existing: nil)
+        loadAndEvaluate()
+    }
+
+    // Called after the challenge was passed: writes the time-boxed unlock
+    // grant (spec D5) and re-evaluates immediately.
+    func grantUnlock(untilEpoch: Int64) {
+        guard var state = LockStateReader.read(at: lockStateURL) else { return }
+        state.unlockUntilEpoch = untilEpoch
+        state.writtenEpoch = Int64(clock.now().timeIntervalSince1970)
+        do {
+            try LockStateWriter.write(state, to: lockStateURL)
+        } catch {
+            TAVSLog.muteState.error("grant write failed: \(error.localizedDescription, privacy: .public)")
+        }
+        loadAndEvaluate()
     }
 
     // MARK: - Core evaluation loop

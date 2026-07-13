@@ -14,7 +14,27 @@ struct MenuContent: View {
             Button(scheduler.isMuted && scheduler.reason == .masterPaused
                    ? "Resume TAVS"
                    : "Pause TAVS") {
-                scheduler.togglePause()
+                let resuming = scheduler.isMuted && scheduler.reason == .masterPaused
+                if resuming && scheduler.isHardLocked {
+                    // Resume is challenge-gated while hard-locked (spec D7).
+                    // Passing permits the resume; it does NOT create a grant.
+                    ChallengeGate.present { passed in
+                        if passed { scheduler.togglePause(force: true) }
+                    }
+                } else {
+                    scheduler.togglePause()
+                }
+            }
+            Button("Lock Now (1h)") {
+                scheduler.lockNow()
+            }
+            if scheduler.isHardLocked {
+                Button("Unlock…") {
+                    ChallengeGate.present { passed in
+                        guard passed, let until = ChallengeGate.pickGrantEnd() else { return }
+                        scheduler.grantUnlock(untilEpoch: until)
+                    }
+                }
             }
             if #available(macOS 14.0, *) {
                 PreferencesButtonsModern()
