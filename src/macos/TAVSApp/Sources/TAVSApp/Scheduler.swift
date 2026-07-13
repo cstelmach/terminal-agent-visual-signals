@@ -392,12 +392,17 @@ final class Scheduler: ObservableObject {
             }
         }
 
+        // Resolve the pause visual only while muted so the shell integration
+        // can self-paint soft pauses; unmuted state carries no colors.
+        let visual: PauseVisual? = muted ? pauseVisualProvider() : nil
         let state = MuteStateData(
             muted: muted,
             reason: reason,
             untilEpoch: untilEpoch,
             writtenEpoch: Int64(clock.now().timeIntervalSince1970),
-            appPID: ProcessInfo.processInfo.processIdentifier
+            appPID: ProcessInfo.processInfo.processIdentifier,
+            pauseBg: visual?.backgroundColor ?? "",
+            pauseFg: visual?.foregroundColor ?? ""
         )
         do {
             try MuteStateWriter.write(state, to: muteStateURL)

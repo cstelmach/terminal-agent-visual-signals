@@ -13,6 +13,11 @@ struct MuteStateData {
     var untilEpoch: Int64
     var writtenEpoch: Int64
     var appPID: Int32
+    // Resolved pause visual at write time, so the shell integration can paint
+    // soft pauses at shell open without any theme resolution. Additive fields;
+    // shell readers parse known keys only, so SCHEMA_VERSION stays 1.
+    var pauseBg: String = ""
+    var pauseFg: String = ""
 
     func serialize() -> String {
         var lines: [String] = []
@@ -21,6 +26,8 @@ struct MuteStateData {
         lines.append("UNTIL_EPOCH=\"\(untilEpoch)\"")
         lines.append("WRITTEN_EPOCH=\"\(writtenEpoch)\"")
         lines.append("APP_PID=\"\(appPID)\"")
+        lines.append("PAUSE_BG=\"\(pauseBg)\"")
+        lines.append("PAUSE_FG=\"\(pauseFg)\"")
         lines.append("SCHEMA_VERSION=\"1\"")
         return lines.joined(separator: "\n") + "\n"
     }

@@ -74,13 +74,34 @@ final class MuteStateTests: XCTestCase {
     func testSerializeLineOrder() {
         let state = MuteStateData(muted: true, reason: .quietPeriod, untilEpoch: 100, writtenEpoch: 200, appPID: 300)
         let lines = state.serialize().split(separator: "\n", omittingEmptySubsequences: true)
-        XCTAssertEqual(lines.count, 6)
+        XCTAssertEqual(lines.count, 8)
         XCTAssertTrue(lines[0].hasPrefix("MUTED="))
         XCTAssertTrue(lines[1].hasPrefix("REASON="))
         XCTAssertTrue(lines[2].hasPrefix("UNTIL_EPOCH="))
         XCTAssertTrue(lines[3].hasPrefix("WRITTEN_EPOCH="))
         XCTAssertTrue(lines[4].hasPrefix("APP_PID="))
-        XCTAssertTrue(lines[5].hasPrefix("SCHEMA_VERSION="))
+        XCTAssertTrue(lines[5].hasPrefix("PAUSE_BG="))
+        XCTAssertTrue(lines[6].hasPrefix("PAUSE_FG="))
+        XCTAssertTrue(lines[7].hasPrefix("SCHEMA_VERSION="))
+    }
+
+    func testSerializePauseVisualFields() {
+        let state = MuteStateData(
+            muted: true, reason: .quietPeriod, untilEpoch: 0, writtenEpoch: 0, appPID: 0,
+            pauseBg: "#3A3A3A", pauseFg: "#CCCCCC"
+        )
+        let kvString = state.serialize()
+        XCTAssertTrue(kvString.contains("PAUSE_BG=\"#3A3A3A\""))
+        XCTAssertTrue(kvString.contains("PAUSE_FG=\"#CCCCCC\""))
+        // Additive fields must not bump the schema: shell readers key on 1.
+        XCTAssertTrue(kvString.contains("SCHEMA_VERSION=\"1\""))
+    }
+
+    func testSerializePauseVisualFieldsDefaultEmpty() {
+        let state = MuteStateData(muted: false, reason: .none, untilEpoch: 0, writtenEpoch: 0, appPID: 0)
+        let kvString = state.serialize()
+        XCTAssertTrue(kvString.contains("PAUSE_BG=\"\""))
+        XCTAssertTrue(kvString.contains("PAUSE_FG=\"\""))
     }
 
     // MARK: - Atomic Write
@@ -129,7 +150,8 @@ final class MuteStateTests: XCTestCase {
             DispatchQueue.global().async {
                 if let content = try? String(contentsOf: path, encoding: .utf8) {
                     let lines = content.split(separator: "\n", omittingEmptySubsequences: true)
-                    XCTAssertTrue(lines.count == 6 || lines.isEmpty,
+                    // 8 lines = full schema-1 serialization incl. PAUSE_BG/PAUSE_FG.
+                    XCTAssertTrue(lines.count == 8 || lines.isEmpty,
                                   "Partial read detected: \(lines.count) lines")
                 }
                 expectation.fulfill()

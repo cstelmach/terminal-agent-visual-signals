@@ -61,6 +61,12 @@ EOF
         return 1
     fi
 
+    # --- Target 3: Installed shell integration (only when present) ---
+    if [[ -f "$HOME/.tavs/shellrc" && -f "$TAVS_ROOT/src/shell/tavs-shellrc.sh" ]]; then
+        cp "$TAVS_ROOT/src/shell/tavs-shellrc.sh" "$HOME/.tavs/shellrc"
+        echo "  Synced ~/.tavs/shellrc"
+    fi
+
     echo ""
     cli_success "Plugin cache synced. Submit a prompt to test."
 }
