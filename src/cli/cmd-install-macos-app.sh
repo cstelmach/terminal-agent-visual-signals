@@ -5,10 +5,12 @@
 # Usage: tavs install macos-app [--dry-run] [--help]
 #
 # Builds, bundles, codesigns, and installs TAVS.app to /Applications.
-# Registers as a login item via SMAppService.
+# The app self-registers as a login item via SMAppService on launch; this
+# script only launches it and verifies the registration took effect.
 # ==============================================================================
 
 source "$CLI_DIR/cli-utils.sh"
+source "$CLI_DIR/login-item-doctor.sh"
 
 _TAVS_APP_VERSION="${TAVS_VERSION:-3.0.0}"
 _TAVS_BUILD_DIR="/tmp/TAVS-build"
@@ -57,6 +59,11 @@ EOF
     _codesign_bundle
     _install_bundle
     _launch_and_register
+
+    if [[ "$_DRY_RUN" != "true" ]]; then
+        cli_bold "Checking login items..."
+        _tavs_login_item_doctor
+    fi
 
     echo ""
     cli_success "TAVS.app installed successfully!"
@@ -309,7 +316,9 @@ _cert_exists() {
 }
 
 _create_cert() {
-    security create-keychain -p "" /tmp/tavs-build.keychain-db 2>/dev/null || true
+    # Clean up the temp keychain a pre-fix version of this script created and
+    # never used (the cert lives in login.keychain-db; nothing references it).
+    security delete-keychain /tmp/tavs-build.keychain-db 2>/dev/null || true
 
     local cert_pem="$_TAVS_BUILD_DIR/cert.pem"
     local key_pem="$_TAVS_BUILD_DIR/key.pem"
