@@ -33,7 +33,7 @@ STATES=(processing permission compacting subagent-start tool_error reset)
 _make_isolated_home() {
     local iso
     iso=$(mktemp -d "${TMPDIR:-/tmp}/tavs-baseline-home.XXXXXX")
-    mkdir -p "$iso/.tavs"
+    mkdir -p "$iso/.tavs" "$iso/runtime"
     echo "$iso"
 }
 
@@ -45,8 +45,12 @@ _capture_one() {
     tmp=$(mktemp)
     # env -i wipes inherited variables; trigger.sh re-derives everything from
     # the few we forward. HOME points at the isolated dir so any read or
-    # write to ~/.tavs/* lands there.
+    # write to ~/.tavs/* lands there. TAVS_RUNTIME_DIR must be isolated too:
+    # the identity registry lives there, and reset bytes embed the dir icon.
+    # Without this, live-session registry churn drifts the golden (observed:
+    # dir flag 🇧🇬 → 🇧🇪 made same-size byte diffs).
     env -i HOME="$iso_home" PATH="$PATH" TTY_DEVICE="$tmp" \
+        TAVS_RUNTIME_DIR="$iso_home/runtime" \
         bash "$REPO_ROOT/src/core/trigger.sh" "$state" 2>/dev/null || true
     cp "$tmp" "$outfile"
     rm -f "$tmp"
