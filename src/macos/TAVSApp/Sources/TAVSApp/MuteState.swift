@@ -4,6 +4,8 @@ enum MuteReason: String, Codable {
     case scheduleWindow = "schedule_window"
     case quietPeriod = "quiet_period"
     case masterPaused = "master_paused"
+    // Manual hard lock (tavs lock now) muting outside any schedule cause.
+    case hardLock = "hard_lock"
     case none = ""
 }
 

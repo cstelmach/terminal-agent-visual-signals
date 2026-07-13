@@ -5,6 +5,10 @@ enum ScheduleEvaluator {
     struct Result: Equatable {
         let muted: Bool
         let reason: MuteReason
+        // Hard mute: resuming is challenge-gated and the state projects to
+        // lock.state (spec D7). masterPaused is NEVER hard: the manual master
+        // toggle stays a soft pause; ad-hoc hard locking is `tavs lock now`.
+        var hard: Bool = false
     }
 
     static func evaluate(at date: Date, rules: ScheduleConfig, calendar: Calendar) -> Result {
@@ -14,12 +18,20 @@ enum ScheduleEvaluator {
 
         let enabledWindows = rules.allowedWindows.filter { $0.enabled }
         if !isInsideAnyWindow(at: date, windows: enabledWindows, calendar: calendar) {
-            return Result(muted: true, reason: .scheduleWindow)
+            // An allowed window marked hard means "outside my allowed hours,
+            // resume is gated" — so ANY enabled hard window makes the
+            // outside-windows mute hard.
+            let hard = enabledWindows.contains { $0.hard == true }
+            return Result(muted: true, reason: .scheduleWindow, hard: hard)
         }
 
         let enabledQuiets = rules.quietPeriods.filter { $0.enabled }
-        if isInsideAnyQuietPeriod(at: date, quietPeriods: enabledQuiets, calendar: calendar) {
-            return Result(muted: true, reason: .quietPeriod)
+        let insideQuiets = enabledQuiets.filter {
+            isInsideQuietPeriod(at: date, quiet: $0, calendar: calendar)
+        }
+        if !insideQuiets.isEmpty {
+            let hard = insideQuiets.contains { $0.hard == true }
+            return Result(muted: true, reason: .quietPeriod, hard: hard)
         }
 
         return Result(muted: false, reason: .none)
@@ -41,7 +53,10 @@ enum ScheduleEvaluator {
 
         while checkDate <= maxDate {
             let nextResult = evaluate(at: checkDate, rules: rules, calendar: calendar)
-            if nextResult.muted != currentResult.muted {
+            // hard is part of the transition condition: a hard quiet period
+            // ending while still outside allowed windows keeps muted=true but
+            // must still release the lock projection at that minute.
+            if nextResult.muted != currentResult.muted || nextResult.hard != currentResult.hard {
                 return checkDate
             }
             guard let nextStep = calendar.date(byAdding: .minute, value: 1, to: checkDate) else { return nil }
@@ -86,44 +101,30 @@ enum ScheduleEvaluator {
 
     // MARK: - Quiet period evaluation
 
-    private static func isInsideAnyQuietPeriod(at date: Date, quietPeriods: [QuietPeriod], calendar: Calendar) -> Bool {
+    private static func isInsideQuietPeriod(at date: Date, quiet: QuietPeriod, calendar: Calendar) -> Bool {
         let comps = calendar.dateComponents([.hour, .minute], from: date)
         let hour = comps.hour!
         let minute = comps.minute!
         let timeMinutes = hour * 60 + minute
 
-        for quiet in quietPeriods {
-            switch quiet.kind {
-            case .hourly:
-                guard let startMin = quiet.startMinute, let endMin = quiet.endMinute else { continue }
-                if startMin <= endMin {
-                    if minute >= startMin && minute <= endMin {
-                        return true
-                    }
-                } else {
-                    if minute >= startMin || minute <= endMin {
-                        return true
-                    }
-                }
-
-            case .fixedDaily:
-                guard let startTime = quiet.start, let endTime = quiet.end else { continue }
-                let startMins = parseTimeToMinutes(startTime)
-                let endMins = parseTimeToMinutes(endTime)
-
-                if startMins < endMins {
-                    if timeMinutes >= startMins && timeMinutes < endMins {
-                        return true
-                    }
-                } else {
-                    if timeMinutes >= startMins || timeMinutes < endMins {
-                        return true
-                    }
-                }
+        switch quiet.kind {
+        case .hourly:
+            guard let startMin = quiet.startMinute, let endMin = quiet.endMinute else { return false }
+            if startMin <= endMin {
+                return minute >= startMin && minute <= endMin
             }
-        }
+            return minute >= startMin || minute <= endMin
 
-        return false
+        case .fixedDaily:
+            guard let startTime = quiet.start, let endTime = quiet.end else { return false }
+            let startMins = parseTimeToMinutes(startTime)
+            let endMins = parseTimeToMinutes(endTime)
+
+            if startMins < endMins {
+                return timeMinutes >= startMins && timeMinutes < endMins
+            }
+            return timeMinutes >= startMins || timeMinutes < endMins
+        }
     }
 
     // MARK: - Helpers
@@ -152,6 +153,7 @@ enum ScheduleEvaluator {
 protocol BroadcasterProtocol: AnyObject {
     func broadcast()
     func broadcastPaused(visual: PauseVisual)
+    func broadcastLocked(visual: PauseVisual, untilText: String)
     func broadcastPausedClear()
     // Called once at Scheduler.start to pre-register TTYs hosting running
     // agent processes (claude / gemini / codex / opencode). Closes the
@@ -164,6 +166,9 @@ final class Scheduler: ObservableObject {
     @Published private(set) var isMuted: Bool = false
     @Published private(set) var reason: MuteReason = .none
     @Published private(set) var statusText: String = "Starting…"
+    // True while the effective-lock predicate holds (spec 2.2): an unexpired
+    // hard lock without an active unlock grant. UI gates resume paths on it.
+    @Published private(set) var isHardLocked: Bool = false
 
     private let clock: Clock
     private let timerScheduler: TimerScheduler
@@ -171,6 +176,8 @@ final class Scheduler: ObservableObject {
     private let broadcaster: BroadcasterProtocol
     private let muteStateURL: URL
     private let scheduleURL: URL
+    private let lockStateURL: URL
+    private let runtimeWatcher: FileWatcherProtocol?
     private let calendar: Calendar
     private let pauseVisualProvider: () -> PauseVisual
 
@@ -184,6 +191,10 @@ final class Scheduler: ObservableObject {
     // changes pause colours (Preferences or `./tavs set`) while currently
     // muted, instead of waiting for the next mute cycle.
     private var lastPaintedPauseVisual: PauseVisual?
+    private var lastPaintedWasLock: Bool = false
+    // Last lock.state content seen on disk; the runtime-dir watcher compares
+    // against it so active-ttys/pending churn does not re-trigger evaluation.
+    private var lastReadLockState: LockStateData?
 
     init(
         clock: Clock,
@@ -192,6 +203,10 @@ final class Scheduler: ObservableObject {
         broadcaster: BroadcasterProtocol,
         muteStateURL: URL,
         scheduleURL: URL,
+        // Defaults derive lock.state next to mute.state so existing tests stay
+        // hermetic; production (createDefault) passes the real runtime-dir URL.
+        lockStateURL: URL? = nil,
+        runtimeWatcher: FileWatcherProtocol? = nil,
         calendar: Calendar = .current,
         pauseVisualProvider: @escaping () -> PauseVisual = {
             PauseVisual(
@@ -207,6 +222,9 @@ final class Scheduler: ObservableObject {
         self.broadcaster = broadcaster
         self.muteStateURL = muteStateURL
         self.scheduleURL = scheduleURL
+        self.lockStateURL = lockStateURL
+            ?? muteStateURL.deletingLastPathComponent().appendingPathComponent("lock.state")
+        self.runtimeWatcher = runtimeWatcher
         self.calendar = calendar
         self.pauseVisualProvider = pauseVisualProvider
     }
@@ -227,12 +245,14 @@ final class Scheduler: ObservableObject {
         }
         loadAndEvaluate()
         startFileWatch()
+        startRuntimeWatch()
         registerWakeNotification()
     }
 
     func stop() {
         timerScheduler.cancelAll()
         fileWatcher.stop()
+        runtimeWatcher?.stop()
         if let obs = wakeObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(obs)
             wakeObserver = nil
@@ -241,6 +261,14 @@ final class Scheduler: ObservableObject {
 
     func togglePause() {
         guard var cfg = config else { return }
+        // Defense in depth under the UI gate (Phase 4 routes the menu through
+        // the challenge dialog): while hard-locked, resuming is refused here
+        // too. Pausing MORE is always allowed (spec D7).
+        let wouldResume = !cfg.masterActive
+        if wouldResume && isHardLocked {
+            TAVSLog.scheduler.info("togglePause refused: hard lock active")
+            return
+        }
         cfg.masterActive.toggle()
         do {
             try ScheduleStore.save(cfg, to: scheduleURL)
@@ -263,37 +291,83 @@ final class Scheduler: ObservableObject {
             TAVSLog.scheduler.error("schedule.json load failed: \(error.localizedDescription, privacy: .public)")
             config = nil
         }
+
+        let now = clock.now()
         guard let config = config else {
-            let wasMuted = previousMuted
-            previousMuted = false
-            if wasMuted {
-                clearPausedVisualAndReplayPending()
-            }
-            writeMuteState(muted: false, reason: .none, untilEpoch: 0)
-            updatePublishedState(muted: false, reason: .none, transitionDate: nil)
-            scheduleHeartbeat()
+            // No schedule: nothing is schedule-muted, but a manual lock
+            // written by the CLI must still project (hard lock implies mute).
+            finishEvaluation(result: .init(muted: false, reason: .none), transition: nil, now: now)
             return
         }
 
-        let now = clock.now()
         let result = ScheduleEvaluator.evaluate(at: now, rules: config, calendar: calendar)
         let transition = ScheduleEvaluator.nextTransition(after: now, rules: config, calendar: calendar)
+        finishEvaluation(result: result, transition: transition, now: now)
+    }
+
+    // Shared tail of the evaluation loop: merges the lock projection (spec
+    // 2.2), derives the projected mute, writes both state files, broadcasts
+    // transitions, and arms all wake timers.
+    private func finishEvaluation(result: ScheduleEvaluator.Result, transition: Date?, now: Date) {
+        let nowEpoch = Int64(now.timeIntervalSince1970)
+
+        let existingLock = LockStateReader.read(at: lockStateURL)
+        let scheduleHard = result.muted && result.hard
+        let visual = pauseVisualProvider()
+        let scheduleUntil: Int64 = {
+            guard scheduleHard, let t = transition else { return 0 }
+            return Int64(t.timeIntervalSince1970)
+        }()
+        let mergedLock = LockStateMerge.merged(
+            existing: existingLock,
+            scheduleHardMuted: scheduleHard,
+            scheduleUntilEpoch: scheduleUntil,
+            now: nowEpoch,
+            lockBg: visual.backgroundColor,
+            lockFg: visual.foregroundColor
+        )
+        let effectiveLock = mergedLock.isEffectivelyLocked(now: nowEpoch)
+        let grantActive = mergedLock.unlockUntilEpoch > nowEpoch
+
+        // A hard lock implies mute; an active grant suspends HARD-caused mute
+        // only (soft rules are never affected by grants, spec D5/D7).
+        let projectedMuted: Bool
+        let projectedReason: MuteReason
+        if result.muted && !(scheduleHard && grantActive) {
+            projectedMuted = true
+            projectedReason = result.reason
+        } else if effectiveLock {
+            // Manual lock while the schedule itself would allow signals.
+            projectedMuted = true
+            projectedReason = .hardLock
+        } else {
+            projectedMuted = false
+            projectedReason = .none
+        }
 
         let wasMuted = previousMuted
-        previousMuted = result.muted
+        previousMuted = projectedMuted
 
-        if wasMuted && !result.muted {
+        if wasMuted && !projectedMuted {
             clearPausedVisualAndReplayPending()
         }
 
+        writeLockStateIfChanged(mergedLock, existing: existingLock)
+
         let untilEpoch: Int64
-        if result.muted, let t = transition {
-            untilEpoch = Int64(t.timeIntervalSince1970)
+        if projectedMuted {
+            if projectedReason == .hardLock {
+                untilEpoch = mergedLock.lockUntilEpoch
+            } else if let t = transition {
+                untilEpoch = Int64(t.timeIntervalSince1970)
+            } else {
+                untilEpoch = 0
+            }
         } else {
             untilEpoch = 0
         }
 
-        writeMuteState(muted: result.muted, reason: result.reason, untilEpoch: untilEpoch)
+        writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch)
 
         // Note on the race window between broadcast()'s drain above and
         // writeMuteState(): a hook firing in this gap reads MUTED=true from
@@ -306,26 +380,48 @@ final class Scheduler: ObservableObject {
         // same TTY. Reordering broadcast/writeMuteState would trade this
         // missed-paint for a stale-over-correct flicker, which is worse.
 
-        if !wasMuted && result.muted {
-            let visual = pauseVisualProvider()
-            broadcaster.broadcastPaused(visual: visual)
-            lastPaintedPauseVisual = visual
-        } else if wasMuted && result.muted {
-            // Still muted, but the user may have changed the pause visual
-            // (Preferences ColorPicker, ./tavs set, external user.conf edit).
-            // FileWatcher fires loadAndEvaluate on any change inside ~/.tavs/,
-            // and the heartbeat re-evaluates every 60s. If the visual changed,
-            // re-paint; otherwise no-op so we don't churn the TTYs.
-            let visual = pauseVisualProvider()
-            if visual != lastPaintedPauseVisual {
-                broadcaster.broadcastPaused(visual: visual)
-                lastPaintedPauseVisual = visual
+        if !wasMuted && projectedMuted {
+            paintMuted(visual: visual, effectiveLock: effectiveLock, lockUntil: mergedLock.lockUntilEpoch)
+        } else if wasMuted && projectedMuted {
+            // Still muted, but the visual may have changed (Preferences,
+            // ./tavs set) or the state upgraded/downgraded between plain
+            // pause and hard lock. Repaint only on an actual change.
+            if visual != lastPaintedPauseVisual || effectiveLock != lastPaintedWasLock {
+                paintMuted(visual: visual, effectiveLock: effectiveLock, lockUntil: mergedLock.lockUntilEpoch)
             }
         }
-        updatePublishedState(muted: result.muted, reason: result.reason, transitionDate: transition)
+
+        isHardLocked = effectiveLock
+        updatePublishedState(
+            muted: projectedMuted,
+            reason: projectedReason,
+            transitionDate: transition,
+            lock: mergedLock,
+            effectiveLock: effectiveLock,
+            grantActive: grantActive
+        )
 
         scheduleHeartbeat()
         scheduleTransitionTimer(transition, now: now)
+        // One-shot wakes at lock expiry and grant expiry so re-lock/release
+        // happens on the second, not at the next 60s heartbeat.
+        if mergedLock.locked {
+            scheduleEpochWake(mergedLock.lockUntilEpoch, now: nowEpoch)
+        }
+        scheduleEpochWake(mergedLock.unlockUntilEpoch, now: nowEpoch)
+
+        lastReadLockState = LockStateReader.read(at: lockStateURL)
+    }
+
+    private func paintMuted(visual: PauseVisual, effectiveLock: Bool, lockUntil: Int64) {
+        if effectiveLock {
+            let untilText = formatTime(Date(timeIntervalSince1970: TimeInterval(lockUntil)))
+            broadcaster.broadcastLocked(visual: visual, untilText: untilText)
+        } else {
+            broadcaster.broadcastPaused(visual: visual)
+        }
+        lastPaintedPauseVisual = visual
+        lastPaintedWasLock = effectiveLock
     }
 
     private func clearPausedVisualAndReplayPending() {
@@ -355,6 +451,13 @@ final class Scheduler: ObservableObject {
         }
     }
 
+    private func scheduleEpochWake(_ epoch: Int64, now: Int64) {
+        guard epoch > now else { return }
+        timerScheduler.scheduleOnce(after: TimeInterval(epoch - now), on: .main) { [weak self] in
+            self?.loadAndEvaluate()
+        }
+    }
+
     // MARK: - File watch
 
     private func startFileWatch() {
@@ -362,6 +465,29 @@ final class Scheduler: ObservableObject {
         fileWatcher.start(watching: dir) { [weak self] in
             DispatchQueue.main.async {
                 self?.loadAndEvaluate()
+            }
+        }
+    }
+
+    // Watches the runtime dir so CLI-written lock.state changes (tavs lock
+    // now / tavs unlock) propagate within the watcher debounce. The dir also
+    // hosts active-ttys/ and pending/ churn from every shell open and muted
+    // hook, so events re-evaluate ONLY when lock.state content changed.
+    private func startRuntimeWatch() {
+        guard let runtimeWatcher = runtimeWatcher else { return }
+        let dir = lockStateURL.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(
+            at: dir,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        runtimeWatcher.start(watching: dir) { [weak self] in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                let current = LockStateReader.read(at: self.lockStateURL)
+                if current != self.lastReadLockState {
+                    self.loadAndEvaluate()
+                }
             }
         }
     }
@@ -379,6 +505,38 @@ final class Scheduler: ObservableObject {
     }
 
     // MARK: - State writing
+
+    // Persists lock.state only on semantic change (writtenEpoch excluded):
+    // the runtime-dir watcher would otherwise feed our own heartbeat rewrite
+    // back into re-evaluation. A machine that never uses locks never gets a
+    // lock.state file at all.
+    private func writeLockStateIfChanged(_ merged: LockStateData, existing: LockStateData?) {
+        if existing == nil && !merged.locked && merged.unlockUntilEpoch == 0 {
+            return
+        }
+        if var normalized = existing {
+            normalized.writtenEpoch = merged.writtenEpoch
+            if normalized == merged { return }
+        }
+        let dir = lockStateURL.deletingLastPathComponent()
+        do {
+            try FileManager.default.createDirectory(
+                at: dir,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+        } catch {
+            let nsErr = error as NSError
+            if nsErr.code != NSFileWriteFileExistsError {
+                TAVSLog.muteState.error("lock.state dir create failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        do {
+            try LockStateWriter.write(merged, to: lockStateURL)
+        } catch {
+            TAVSLog.muteState.error("lock.state write failed: \(error.localizedDescription, privacy: .public)")
+        }
+    }
 
     private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64) {
         let dir = muteStateURL.deletingLastPathComponent()
@@ -415,10 +573,28 @@ final class Scheduler: ObservableObject {
 
     // MARK: - UI state
 
-    private func updatePublishedState(muted: Bool, reason: MuteReason, transitionDate: Date?) {
+    private func updatePublishedState(
+        muted: Bool,
+        reason: MuteReason,
+        transitionDate: Date?,
+        lock: LockStateData? = nil,
+        effectiveLock: Bool = false,
+        grantActive: Bool = false
+    ) {
         self.isMuted = muted
         self.reason = reason
         self.nextTransitionDate = transitionDate
+
+        if effectiveLock, let lock = lock {
+            let until = Date(timeIntervalSince1970: TimeInterval(lock.lockUntilEpoch))
+            self.statusText = "Locked until \(formatTime(until))"
+            return
+        }
+        if grantActive, let lock = lock {
+            let until = Date(timeIntervalSince1970: TimeInterval(lock.unlockUntilEpoch))
+            self.statusText = "Unlocked until \(formatTime(until)) (grant)"
+            return
+        }
         self.statusText = formatStatusText(muted: muted, reason: reason, transitionDate: transitionDate)
     }
 
@@ -437,6 +613,8 @@ final class Scheduler: ObservableObject {
                     return "Muted until \(formatTime(next))"
                 }
                 return "Muted — quiet period"
+            case .hardLock:
+                return "Locked"
             case .none:
                 return "Active"
             }

@@ -21,6 +21,20 @@ final class Broadcaster: BroadcasterProtocol {
         writeToAllActiveTTYs(data)
     }
 
+    // Hard-lock paint: the paused bytes PLUS an OSC 0 title. This is the one
+    // deliberate exception to the no-OSC-0 rule below: a hard lock is a
+    // commitment device and the 🔒-until title is its primary signal; the
+    // stale-title tradeoff (next hook repaints after release) is accepted.
+    func broadcastLocked(visual: PauseVisual, untilText: String) {
+        var data = Data()
+        data.append(contentsOf: "\u{1B}]104\u{07}".utf8)
+        data.append(contentsOf: "\u{1B}]10;\(visual.foregroundColor)\u{07}".utf8)
+        data.append(contentsOf: "\u{1B}]11;\(visual.backgroundColor)\u{07}".utf8)
+        data.append(contentsOf: "\u{1B}]1337;SetBackgroundImageFile=\u{07}".utf8)
+        data.append(contentsOf: "\u{1B}]0;🔒 locked until \(untilText)\u{07}".utf8)
+        writeToAllActiveTTYs(data)
+    }
+
     func broadcastPausedClear() {
         var data = Data()
         data.append(contentsOf: "\u{1B}]104\u{07}".utf8)

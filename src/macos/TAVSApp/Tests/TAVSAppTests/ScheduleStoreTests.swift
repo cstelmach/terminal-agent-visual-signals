@@ -361,4 +361,42 @@ final class ScheduleStoreTests: XCTestCase {
         )
         XCTAssertNoThrow(try ScheduleStore.validate(config))
     }
+
+    // MARK: - Hard flag (spec D7)
+
+    func testDecodeHardFlags() throws {
+        let json = """
+        {"version":1,"master_active":true,
+         "allowed_windows":[{"id":"wk","enabled":true,"days":["mon"],
+                             "start":"08:00","end":"20:00","hard":true}],
+         "quiet_periods":[{"id":"lunch","enabled":true,"kind":"fixed_daily",
+                           "start":"12:00","end":"13:00","hard":true}]}
+        """
+        let config = try JSONDecoder().decode(ScheduleConfig.self, from: Data(json.utf8))
+        XCTAssertEqual(config.allowedWindows[0].hard, true)
+        XCTAssertEqual(config.quietPeriods[0].hard, true)
+    }
+
+    func testDecodeMissingHardIsNilAndEncodeOmitsIt() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tavs-hard-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let config = ScheduleConfig(
+            version: 1, masterActive: true,
+            allowedWindows: [
+                TimeWindow(id: "wk", enabled: true, days: [.mon], start: "08:00", end: "20:00")
+            ],
+            quietPeriods: []
+        )
+        XCTAssertNil(config.allowedWindows[0].hard)
+
+        try ScheduleStore.save(config, to: url)
+        let written = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertFalse(written.contains("\"hard\""),
+                       "nil hard must encode as an absent key (pre-hard files stay stable)")
+
+        let reloaded = try ScheduleStore.load(from: url)
+        XCTAssertNil(reloaded.allowedWindows[0].hard)
+    }
 }

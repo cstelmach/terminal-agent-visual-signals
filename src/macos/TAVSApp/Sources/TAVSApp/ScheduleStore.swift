@@ -15,6 +15,10 @@ struct TimeWindow: Codable, Equatable {
     var days: [Day]
     var start: String
     var end: String
+    // Hard window: OUTSIDE this window's hours, resuming requires the unlock
+    // challenge (spec D7). Optional so pre-hard schedule.json keeps parsing;
+    // nil encodes as an absent key.
+    var hard: Bool?
 }
 
 struct QuietPeriod: Codable, Equatable {
@@ -28,11 +32,15 @@ struct QuietPeriod: Codable, Equatable {
     var start: String?
     var end: String?
 
+    // Hard quiet period: while inside it, resuming requires the unlock
+    // challenge (spec D7).
+    var hard: Bool?
+
     enum CodingKeys: String, CodingKey {
         case id, enabled, kind
         case startMinute = "start_minute"
         case endMinute = "end_minute"
-        case start, end
+        case start, end, hard
     }
 }
 

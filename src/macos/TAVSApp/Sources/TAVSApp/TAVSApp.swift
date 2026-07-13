@@ -113,6 +113,8 @@ extension Scheduler {
             broadcaster: Broadcaster(runtimeDir: runtimeDir, processRunner: SystemProcessRunner()),
             muteStateURL: homeDir.appendingPathComponent(".tavs/mute.state"),
             scheduleURL: homeDir.appendingPathComponent(".tavs/schedule.json"),
+            lockStateURL: runtimeDir.appendingPathComponent("lock.state"),
+            runtimeWatcher: FileWatcher(),
             pauseVisualProvider: {
                 PauseVisualResolver.resolveForCurrentAppearance(userConfURL: userConfURL)
             }

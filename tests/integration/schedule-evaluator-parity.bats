@@ -58,6 +58,10 @@ EOF
 {"version":1,"master_active":true,"allowed_windows":[{"id":"wk","enabled":true,"days":["mon"],"start":"08:00","end":"20:00"}],"quiet_periods":[{"id":"lunch","enabled":true,"kind":"fixed_daily","start":"12:00","end":"13:00"}]}
 EOF
 
+    cat > "$FIXTURE_DIR/valid-hard-flags.json" << 'EOF'
+{"version":1,"master_active":true,"allowed_windows":[{"id":"wk","enabled":true,"days":["mon"],"start":"08:00","end":"20:00","hard":true}],"quiet_periods":[{"id":"lunch","enabled":true,"kind":"fixed_daily","start":"12:00","end":"13:00","hard":true}]}
+EOF
+
     cat > "$FIXTURE_DIR/valid-wrapping-minutes.json" << 'EOF'
 {"version":1,"master_active":true,"allowed_windows":[{"id":"wk","enabled":true,"days":["mon"],"start":"08:00","end":"20:00"}],"quiet_periods":[{"id":"wrap","enabled":true,"kind":"hourly","start_minute":55,"end_minute":5}]}
 EOF
@@ -122,6 +126,13 @@ _run_cli_validator() {
     run _run_swift_validator "$FIXTURE_DIR/valid-canonical.json"
     [ "$status" -eq 0 ]
     run _run_cli_validator "$FIXTURE_DIR/valid-canonical.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "parity: valid-hard-flags — both pass" {
+    run _run_swift_validator "$FIXTURE_DIR/valid-hard-flags.json"
+    [ "$status" -eq 0 ]
+    run _run_cli_validator "$FIXTURE_DIR/valid-hard-flags.json"
     [ "$status" -eq 0 ]
 }
 
