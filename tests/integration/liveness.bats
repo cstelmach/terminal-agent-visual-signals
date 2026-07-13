@@ -12,6 +12,10 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     TEST_HOME=$(mktemp -d)
     mkdir -p "$TEST_HOME/.tavs"
+    # Isolated runtime dir: a real hard lock in the live /tmp/tavs-$UID would
+    # suppress the fail-open cases this file asserts.
+    export TAVS_RUNTIME_DIR="$TEST_HOME/runtime"
+    mkdir -p "$TAVS_RUNTIME_DIR"
 }
 
 teardown() {

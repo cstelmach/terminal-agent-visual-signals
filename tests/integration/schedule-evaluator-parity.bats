@@ -29,6 +29,10 @@ setup() {
     export HOME="$TEST_HOME"
     export TAVS_ROOT="$REPO_ROOT"
     export CLI_DIR="$REPO_ROOT/src/cli"
+    # Isolated runtime dir: a real hard lock would challenge-gate the
+    # schedule add-window calls in the atomicity test.
+    export TAVS_RUNTIME_DIR="$TEST_HOME/runtime"
+    mkdir -p "$TAVS_RUNTIME_DIR"
 }
 
 teardown() {

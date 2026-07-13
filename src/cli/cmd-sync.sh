@@ -81,10 +81,11 @@ _sync_to_target() {
     echo "  To:   $target_dir"
     echo ""
 
-    # Core modules
+    # Core modules (+ data files like challenge-sentences.txt)
     if [[ -d "$target_dir/src/core" ]]; then
         cp "$TAVS_ROOT/src/core/"*.sh "$target_dir/src/core/"
-        echo "  Synced src/core/*.sh"
+        cp "$TAVS_ROOT/src/core/"*.txt "$target_dir/src/core/" 2>/dev/null || true
+        echo "  Synced src/core/*.sh (+ data files)"
     fi
 
     # Config files

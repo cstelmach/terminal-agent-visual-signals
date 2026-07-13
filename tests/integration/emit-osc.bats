@@ -12,15 +12,15 @@ RUNTIME_DIR=""
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     TEST_HOME=$(mktemp -d)
-    RUNTIME_DIR="/tmp/tavs-$(id -u)"
-    mkdir -p "$TEST_HOME/.tavs"
+    # Isolated runtime dir: the live /tmp/tavs-$UID may carry a real hard
+    # lock (lock.state), which would suppress the "unmuted" cases here.
+    RUNTIME_DIR="$TEST_HOME/runtime"
+    export TAVS_RUNTIME_DIR="$RUNTIME_DIR"
+    mkdir -p "$TEST_HOME/.tavs" "$RUNTIME_DIR"
 }
 
 teardown() {
     rm -rf "$TEST_HOME"
-    # Clean up any pending caches we created
-    rm -f "$RUNTIME_DIR"/pending/_var_folders_*.osc 2>/dev/null
-    rm -f "$RUNTIME_DIR"/active-ttys/_var_folders_* 2>/dev/null
 }
 
 _create_mute_state() {
@@ -44,7 +44,7 @@ EOF
     local tty_file
     tty_file=$(mktemp)
     # No mute.state = unmuted
-    env -i HOME="$TEST_HOME" PATH="$PATH" TTY_DEVICE="$tty_file" \
+    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$tty_file" \
         bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
     local bytes
     bytes=$(wc -c < "$tty_file" | tr -d ' ')
@@ -98,7 +98,7 @@ EOF
     local tty_file
     tty_file=$(mktemp)
     # Unmuted dispatch
-    env -i HOME="$TEST_HOME" PATH="$PATH" TTY_DEVICE="$tty_file" \
+    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$tty_file" \
         bash "$REPO_ROOT/src/core/trigger.sh" reset 2>/dev/null
     local tty_safe="${tty_file//\//_}"
     [ -f "$RUNTIME_DIR/active-ttys/$tty_safe" ]
@@ -109,7 +109,7 @@ EOF
     # Capture unmuted bytes
     local unmuted_tty
     unmuted_tty=$(mktemp)
-    env -i HOME="$TEST_HOME" PATH="$PATH" TTY_DEVICE="$unmuted_tty" \
+    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$unmuted_tty" \
         bash "$REPO_ROOT/src/core/trigger.sh" compacting 2>/dev/null
 
     # Capture muted bytes (should be in pending cache)

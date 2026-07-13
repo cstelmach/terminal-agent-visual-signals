@@ -84,6 +84,7 @@ _diff_all() {
         current=$(mktemp)
 
         env -i HOME="$iso_home" PATH="$PATH" TTY_DEVICE="$current" \
+            TAVS_RUNTIME_DIR="$iso_home/runtime" \
             bash "$REPO_ROOT/src/core/trigger.sh" "$s" 2>/dev/null || true
 
         if [[ ! -f "$baseline" ]]; then

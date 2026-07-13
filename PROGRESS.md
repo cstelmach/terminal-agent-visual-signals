@@ -139,3 +139,42 @@
 - [x] CLI flows exercised end-to-end through ./tavs by the bats tests (real binary,
       temp runtime). App dialogs (menu unlock, gated preferences save) are user-gated
       visual checks in Phase 5 (V3/V4/V8).
+
+### Phase 5 — Acceptance, docs, deploy
+- [x] T5.1 `tests/e2e/hard-lock.sh`: fully isolated 12-step lifecycle, 12/12.
+- [x] T5.3 Docs: new `docs/reference/hard-lock.md` (incl. honest-limits section),
+      scheduling.md hard flag, macos-menubar-app.md menu tour (Lock Now / Unlock… /
+      gated Resume / quit-keeps-lock), cmd-help.sh, CLAUDE.md (key files, docs table,
+      quick start, test counts; CLAUDE.md is gitignored by design, updated locally).
+- [x] T5.4 Deploy: `./tavs sync` (cache + marketplace + installed shellrc; sync now
+      also copies src/core data files so challenge-sentences.txt travels), TAVS.app
+      rebuilt from source and reinstalled; login item enabled; doctor clean
+      ("Login item OK: /Applications/TAVS.app", "No stale TAVS login items found").
+- [x] Live app-integration verified with the NEW app: `tavs lock now --for 2m` →
+      runtime FileWatcher picked up the CLI lock within ~1s, projected
+      MUTED=true/REASON=hard_lock with UNTIL_EPOCH = lock end, broadcastLocked fired;
+      at the expiry epoch the one-shot timer released everything on the second
+      (lock.state LOCKED=false WRITTEN at exactly the expiry epoch, MUTED=false).
+- [x] Test-infra hardening found by running suites DURING a live lock: liveness.bats,
+      emit-osc.bats, schedule-evaluator-parity.bats (atomic add-window would hit the
+      challenge gate!), and baseline-capture's _diff_all leaked the LIVE runtime dir.
+      All now isolate TAVS_RUNTIME_DIR. Proof: full bats suite 142/0 and golden diff
+      6/6 WHILE a live 4-minute hard lock was active.
+- [x] T5.2 Final suite totals: Swift 193/0, bats 142/0, e2e hard-lock 12/12,
+      e2e scheduling unchanged.
+- [ ] T5.5 V1-V10 user-gated visual checklist: awaiting user (see below).
+
+## User-gated acceptance checklist (V1-V10)
+
+| # | Scenario | Expected |
+|---|---|---|
+| V1 | Scheduled hard window begins (app running, 3 terminals open: 1 agent, 2 plain) | All 3 turn gray with 🔒 title within 1s |
+| V2 | Open a 4th terminal during the lock | Painted gray + 🔒 at open, instantly |
+| V3 | Menu "Resume TAVS" during hard window | Challenge dialog; wrong answer keeps lock; Esc keeps lock |
+| V4 | `tavs unlock`, correct answer, pick 15m | All terminals clear; agent signals work; menu shows "Unlocked until …" |
+| V5 | Grant expires | Lock re-engages, terminals repaint without user action |
+| V6 | `pkill -x TAVSApp` during lock, then open new terminal | New terminal still paints locked; `tavs lock status` says locked |
+| V7 | Reboot during a manual `tavs lock now --for 4h` | After login: manual lock gone (D6); scheduled hard window re-engages once the login item starts |
+| V8 | `tavs schedule add-window` during lock | Challenge required |
+| V9 | `tavs lock now` / menu "Lock Now" | Engages with zero prompts |
+| V10 | Uninstall + reinstall app | Exactly one login item, no debug items, doctor clean (programmatic half already verified in T5.4) |
