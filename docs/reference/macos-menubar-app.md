@@ -91,10 +91,12 @@ Click the menu bar icon to see:
 
 | Item | Description |
 |------|-------------|
-| **Status line** | "Active — next mute in 23 min" or "Muted until 20:00" or "Paused" |
-| **Pause/Resume** | Toggle master pause. Overrides schedule. |
+| **Status line** | "Active — next mute in 23 min", "Muted until 20:00", "Paused", "Locked until 18:00", or "Unlocked until 15:30 (grant)" |
+| **Pause/Resume** | Toggle master pause. Overrides schedule. While a hard lock is active, Resume requires the unlock challenge. |
+| **Lock Now (1h)** | Engage a manual hard lock for one hour (never gated; repeated clicks keep the later end time). See [Hard Lock](hard-lock.md). |
+| **Unlock…** | Shown while hard-locked: challenge, then a time-boxed unlock grant (15m/1h/4h/rest of day). |
 | **Open Preferences…** | Opens the three-tab settings window (⌘,) |
-| **Quit TAVS** | Stops the app. Shells resume normal painting within 2 minutes. |
+| **Quit TAVS** | Stops the app. Shells resume normal painting within 2 minutes; an active hard lock KEEPS holding until its end time. |
 
 ### Icon States
 

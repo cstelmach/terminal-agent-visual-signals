@@ -28,7 +28,12 @@ Commands:
   test [--quick]        Test visual signals in current terminal
   migrate               Migrate old config to v3 format
   config <action>       Manage configuration (show, edit, reset, validate)
+  schedule <action>     Manage muting schedule (show, pause, add-window, etc.)
+  lock <action>         Hard lock: now [--for 2h], status, set-password
+  unlock [--for 1h]     Challenge-gated, time-boxed unlock of a hard lock
   install <agent>       Install TAVS for an agent (gemini, codex)
+  install macos-app     Build and install the macOS menu bar companion app
+  install shell-integration  All-terminal lock/pause coverage (~/.zshrc block)
   sync                  Sync source to plugin cache (developer tool)
   help [command]        Show help for a command
   version               Show version information

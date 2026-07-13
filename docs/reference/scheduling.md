@@ -85,6 +85,7 @@ enabled window. Windows define when TAVS is **active**.
 | `days` | array | One or more of: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun` |
 | `start` | string | `HH:MM` format, two digits each. `HH` in [00,23], `MM` in [00,59] |
 | `end` | string | Same format as `start`. Must differ from `start` |
+| `hard` | bool (optional) | When true, the mute OUTSIDE this window's hours becomes a hard lock (challenge-gated resume). Absent means false. See [Hard Lock](hard-lock.md). |
 
 ### Quiet Periods
 
@@ -109,6 +110,10 @@ Quiet periods carve out muted intervals inside allowed windows.
 | `kind` | string | `"fixed_daily"` |
 | `start` | string | `HH:MM`, same rules as window times |
 | `end` | string | `HH:MM`, must differ from `start` |
+
+Both quiet-period kinds also accept the optional `hard` flag: a hard quiet
+period is a hard lock while inside it (challenge-gated resume, see
+[Hard Lock](hard-lock.md)). The master pause is never hard.
 
 ---
 
