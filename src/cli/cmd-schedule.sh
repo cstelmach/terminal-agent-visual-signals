@@ -9,12 +9,30 @@
 # ==============================================================================
 
 source "$CLI_DIR/cli-utils.sh"
+source "$TAVS_ROOT/src/core/lock-state-lib.sh"
+source "$TAVS_ROOT/src/core/challenge.sh"
 
 SCHEDULE_FILE="$TAVS_USER_CONFIG_DIR/schedule.json"
 
 # ==============================================================================
 # HELPERS
 # ==============================================================================
+
+# Challenge gate for schedule-mutating subcommands (spec D7): while a hard
+# lock is effective, resume/add/remove require passing the unlock challenge.
+# Passing here permits THIS edit only; it does not create an unlock grant.
+# `tavs schedule pause` (pausing MORE) is never gated.
+_schedule_challenge_gate() {
+    if ! _tavs_lock_effective; then
+        return 0
+    fi
+    cli_info "A hard lock is active: this change requires the unlock challenge."
+    if ! _tavs_challenge_verify; then
+        cli_error "Challenge failed. Schedule unchanged."
+        return 1
+    fi
+    return 0
+}
 
 _schedule_require_jq() {
     if ! command -v jq &>/dev/null; then
@@ -357,6 +375,7 @@ _schedule_pause() {
 }
 
 _schedule_resume() {
+    _schedule_challenge_gate || return 1
     _schedule_require_jq || return 1
     local json
     json=$(_schedule_load_or_create)
@@ -373,6 +392,7 @@ _schedule_resume() {
 }
 
 _schedule_add_window() {
+    _schedule_challenge_gate || return 1
     _schedule_require_jq || return 1
 
     local days="" start="" end="" id=""
@@ -438,6 +458,7 @@ _schedule_add_window() {
 }
 
 _schedule_add_quiet() {
+    _schedule_challenge_gate || return 1
     _schedule_require_jq || return 1
 
     local kind="" start_minute="" end_minute="" start="" end="" id=""
@@ -509,6 +530,7 @@ _schedule_add_quiet() {
 }
 
 _schedule_remove() {
+    _schedule_challenge_gate || return 1
     _schedule_require_jq || return 1
 
     local target_id="$1"
@@ -630,6 +652,9 @@ Usage:
   tavs schedule add-quiet           Add a quiet period
   tavs schedule remove <id>         Remove a rule by id
   tavs schedule validate            Validate schedule.json
+
+While a hard lock is active (tavs lock status), resume/add-window/add-quiet/
+remove require the unlock challenge; pause is never gated.
 
 Add Window Options:
   --days <mon,tue,...>    Comma-separated days (required)

@@ -13,6 +13,7 @@
 
 source "$CLI_DIR/cli-utils.sh"
 source "$TAVS_ROOT/src/core/lock-state-lib.sh"
+source "$TAVS_ROOT/src/core/challenge.sh"
 
 # Parses "15m", "2h", "2h30m", "1d" (units d/h/m, any combination) to seconds.
 _lock_parse_duration() {
@@ -140,6 +141,148 @@ _lock_status() {
     fi
 }
 
+# Next local midnight ("rest of day" grant end).
+_lock_next_midnight() {
+    date -v+1d -v0H -v0M -v0S +%s 2>/dev/null
+}
+
+_lock_unlock() {
+    local duration_spec=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --for)
+                shift
+                duration_spec="${1:-}"
+                [[ -z "$duration_spec" ]] && { cli_error "--for requires a duration (e.g. 1h)"; return 1; }
+                ;;
+            *)
+                cli_error "Unknown option: $1"
+                return 1
+                ;;
+        esac
+        shift
+    done
+
+    local now
+    now=$(date +%s)
+    if ! _tavs_lock_effective "$now"; then
+        cli_info "No effective lock right now. Nothing to unlock."
+        return 0
+    fi
+
+    if ! _tavs_challenge_verify; then
+        cli_error "Challenge failed. The lock stays."
+        return 1
+    fi
+
+    local grant_until
+    if [[ -n "$duration_spec" ]]; then
+        if [[ "$duration_spec" == "rest-of-day" ]]; then
+            grant_until=$(_lock_next_midnight)
+        else
+            local seconds
+            if ! seconds=$(_lock_parse_duration "$duration_spec"); then
+                cli_error "Invalid duration: '$duration_spec' (use e.g. 15m, 2h30m, rest-of-day)"
+                return 1
+            fi
+            grant_until=$(( now + seconds ))
+        fi
+    else
+        printf 'Unlock for:  1) 15m   2) 1h   3) 4h   4) rest of day\n' >&2
+        printf 'Choice [1-4]: ' >&2
+        local choice
+        IFS= read -r choice || return 1
+        case "$choice" in
+            1) grant_until=$(( now + 900 )) ;;
+            2) grant_until=$(( now + 3600 )) ;;
+            3) grant_until=$(( now + 14400 )) ;;
+            4) grant_until=$(_lock_next_midnight) ;;
+            *) cli_error "Invalid choice."; return 1 ;;
+        esac
+    fi
+
+    if [[ -z "$grant_until" || "$grant_until" == *[!0-9]* ]]; then
+        cli_error "Could not compute the unlock end time."
+        return 1
+    fi
+
+    # _tavs_lock_effective populated _LS_*; preserve everything, set the grant.
+    if ! _tavs_lock_write "$_LS_LOCKED" "$_LS_REASON" "$_LS_LOCK_UNTIL" "$grant_until" "$_LS_BG" "$_LS_FG"; then
+        cli_error "Could not write lock state"
+        return 1
+    fi
+
+    cli_success "Unlocked until $(_lock_format_until "$grant_until")."
+    if (( _LS_LOCK_UNTIL > grant_until )); then
+        cli_info "The lock re-engages automatically at $(_lock_format_until "$grant_until")."
+    fi
+    if ! pgrep -x TAVSApp &>/dev/null; then
+        cli_info "TAVS.app is not running: painted terminals clear on their next repaint."
+    fi
+    return 0
+}
+
+_lock_set_password() {
+    local challenge_type="password"
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --type)
+                shift
+                challenge_type="${1:-}"
+                case "$challenge_type" in
+                    password|both) ;;
+                    *) cli_error "--type must be 'password' or 'both'"; return 1 ;;
+                esac
+                ;;
+            *)
+                cli_error "Unknown option: $1"
+                return 1
+                ;;
+        esac
+        shift
+    done
+
+    local p1 p2
+    printf 'New unlock password: ' >&2
+    IFS= read -rs p1 || return 1
+    printf '\n' >&2
+    printf 'Repeat password: ' >&2
+    IFS= read -rs p2 || return 1
+    printf '\n' >&2
+
+    if [[ -z "$p1" ]]; then
+        cli_error "Password must not be empty."
+        return 1
+    fi
+    if [[ "$p1" != "$p2" ]]; then
+        cli_error "Passwords do not match."
+        return 1
+    fi
+
+    local salt hash conf tmp
+    salt=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')
+    hash=$(_tavs_challenge_hash "$salt" "$p1")
+    conf="$HOME/.tavs/challenge.conf"
+    mkdir -p "$HOME/.tavs"
+    tmp=$(mktemp "$HOME/.tavs/.challenge.XXXXXX") || return 1
+    {
+        printf 'CHALLENGE_TYPE="%s"\n' "$challenge_type"
+        printf 'PASSWORD_SALT_HEX="%s"\n' "$salt"
+        printf 'PASSWORD_HASH_HEX="%s"\n' "$hash"
+        printf 'PUZZLE_SENTENCES_FILE=""\n'
+        printf 'SCHEMA_VERSION="1"\n'
+    } > "$tmp"
+    chmod 600 "$tmp"
+    mv -f "$tmp" "$conf"
+
+    cli_success "Unlock challenge set (type: $challenge_type)."
+    if [[ "$challenge_type" == "both" ]]; then
+        cli_info "Unlocking now requires the password AND the typing puzzle."
+    fi
+    cli_info "Deleting ~/.tavs/challenge.conf falls back to the typing puzzle."
+    return 0
+}
+
 cmd_lock() {
     local subcmd="${1:-}"
 
@@ -148,15 +291,21 @@ cmd_lock() {
 tavs lock — Manual hard lock (visual commitment device)
 
 Usage:
-  tavs lock now [--for <duration>]   Engage a hard lock (default: 1h)
-  tavs lock status                   Show current lock state
+  tavs lock now [--for <duration>]      Engage a hard lock (default: 1h)
+  tavs lock status                      Show current lock state
+  tavs lock unlock [--for <duration>]   Challenge-gated, time-boxed unlock
+                                        (also: tavs unlock)
+  tavs lock set-password [--type both]  Set the unlock password (default type
+                                        'password'; 'both' adds the puzzle)
 
-Durations: 15m, 2h, 2h30m, 1d (units d/h/m in any combination).
+Durations: 15m, 2h, 2h30m, 1d (units d/h/m), plus 'rest-of-day' for unlock.
 
 A hard lock mutes agent signals and paints every registered terminal with the
 pause visual plus a 🔒 title. It stays in force until its end time even if
 TAVS.app is killed (fail-closed). It does NOT survive a reboot. Unlocking
-early requires the challenge: tavs unlock [--for <duration>].
+early requires the challenge; without a configured password the challenge is
+a typing puzzle (retype a sentence with each word's first letter moved to
+the word's end). After the unlock grant expires the lock re-engages.
 EOF
         return 0
     fi
@@ -170,9 +319,17 @@ EOF
             shift
             _lock_status "$@"
             ;;
+        unlock)
+            shift
+            _lock_unlock "$@"
+            ;;
+        set-password)
+            shift
+            _lock_set_password "$@"
+            ;;
         *)
             cli_error "Unknown subcommand: $subcmd"
-            cli_info "Usage: tavs lock now [--for <duration>] | tavs lock status"
+            cli_info "Usage: tavs lock now|status|unlock|set-password (see tavs lock --help)"
             return 1
             ;;
     esac
