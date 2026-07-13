@@ -46,10 +46,42 @@ _tavs_resolve_runtime_dir() {
 # ==============================================================================
 
 _tavs_validate_mute_liveness() {
-    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" != "1" ]] && return 0
+    if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" != "1" ]]; then
+        return 0
+    fi
 
     local now
     now=$(date +%s)
+
+    # Hard lock first (spec D3, fail-closed): an unexpired lock without an
+    # active grant keeps suppression on REGARDLESS of every mute check below
+    # (dead APP_PID, stale heartbeat, absent mute.state). Expiry always wins;
+    # a missing or non-numeric LOCK_UNTIL means not locked.
+    if [[ "${_TAVS_S0_LOCKED:-}" == "true" ]]; then
+        if [[ -n "${_TAVS_S0_LOCK_UNTIL:-}" && "${_TAVS_S0_LOCK_UNTIL}" != *[!0-9]* ]] \
+            && (( now < _TAVS_S0_LOCK_UNTIL )); then
+            local _grant="${_TAVS_S0_UNLOCK_UNTIL:-}"
+            if ! { [[ -n "$_grant" && "$_grant" != *[!0-9]* ]] && (( now < _grant )); }; then
+                _tavs_debug_mute "LOCK effective until ${_TAVS_S0_LOCK_UNTIL}"
+                unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
+                return 0
+            fi
+        fi
+    fi
+
+    # Lock not effective: stage-0 sets suppression for EITHER cause, so the
+    # mute-only verdict must be recomputed from scratch here, including the
+    # PID/version gates stage-0 applies only on the mute path.
+    if [[ "${_TAVS_S0_MUTED:-}" != "true" || "${_TAVS_S0_VER:-1}" != "1" ]]; then
+        _TAVS_SUPPRESS_OUTPUT=0
+        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
+        return 0
+    fi
+    if [[ -n "${_TAVS_S0_PID:-}" ]] && ! kill -0 "$_TAVS_S0_PID" 2>/dev/null; then
+        _TAVS_SUPPRESS_OUTPUT=0
+        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
+        return 0
+    fi
 
     # UNTIL_EPOCH: 0 means indefinite; non-zero means mute expires at that epoch
     if [[ -n "${_TAVS_S0_UNTIL:-}" && "${_TAVS_S0_UNTIL}" != "0" ]]; then
@@ -69,6 +101,7 @@ _tavs_validate_mute_liveness() {
 
     # Clean up stage-0 temporaries
     unset _TAVS_S0_MUTED _TAVS_S0_PID _TAVS_S0_VER _TAVS_S0_UNTIL _TAVS_S0_WRITTEN _TAVS_S0_REASON
+    unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
 }
 
 # ==============================================================================
@@ -81,6 +114,35 @@ _tavs_validate_mute_liveness() {
 
 _tavs_check_mute_state() {
     _TAVS_SUPPRESS_OUTPUT=0
+
+    # Hard lock first (spec D3): fail-closed, no PID/heartbeat gates, finite
+    # expiry always wins, an active grant suspends it.
+    local lock_file="${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state"
+    if [[ -f "$lock_file" ]]; then
+        local _lk="" _lv="" _l_locked="" _l_until="" _l_grant="" _l_ver=""
+        while IFS='=' read -r _lk _lv; do
+            _lv="${_lv%\"}"
+            _lv="${_lv#\"}"
+            case "$_lk" in
+                LOCKED) _l_locked="$_lv" ;;
+                LOCK_UNTIL_EPOCH) _l_until="$_lv" ;;
+                UNLOCK_UNTIL_EPOCH) _l_grant="$_lv" ;;
+                SCHEMA_VERSION) _l_ver="$_lv" ;;
+            esac
+        done < "$lock_file"
+        if [[ "$_l_locked" == "true" && "${_l_ver:-1}" == "1" ]] \
+            && [[ -n "$_l_until" && "$_l_until" != *[!0-9]* ]]; then
+            local _l_now
+            _l_now=$(date +%s)
+            if (( _l_now < _l_until )); then
+                if ! { [[ -n "$_l_grant" && "$_l_grant" != *[!0-9]* ]] && (( _l_now < _l_grant )); }; then
+                    _TAVS_SUPPRESS_OUTPUT=1
+                    return 0
+                fi
+            fi
+        fi
+    fi
+
     local mute_file="$HOME/.tavs/mute.state"
 
     [[ ! -f "$mute_file" ]] && return 1

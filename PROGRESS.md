@@ -62,3 +62,47 @@
       the shellrc fast path measured at ~0-10ms (measurement noise floor; user zshrc
       baseline itself is 4.3s). Menu-bar pause paint check deferred to Phase 5 V1-V2.
       Suite totals after Phase 2: Swift 150/0, bats 90/0 expected (76 + 14).
+- [x] Fixed pre-existing golden flakiness found en route: baseline-capture.sh now
+      isolates TAVS_RUNTIME_DIR (reset golden embeds the dir-icon flag; live registry
+      churn drifted it). Separate commit.
+
+### Phase 3 — Lock model, projection, fail-closed shell gate
+- [x] T3.1 `LockState.swift`: serialize/read/parse (nil on malformed, D3), effective-lock
+      predicate, `LockStateMerge.merged` pure function (manual-max, grant preservation,
+      24h cap for unknown transitions).
+- [x] T3.2 `hard: Bool?` on TimeWindow + QuietPeriod (nil = absent key, old files parse
+      unchanged); parity fixture `valid-hard-flags.json` + test (CLI validator accepts).
+      NOTE: `Fixtures/schedule-canonical.json` intentionally NOT changed (round-trip
+      tests keep covering the pre-hard shape; hard coverage lives in dedicated tests).
+- [x] T3.3 `ScheduleEvaluator.Result.hard`; hardness rules (any enabled hard window
+      hardens outside-window mute; matching hard quiet hardens quiet mute; masterPaused
+      never hard); `nextTransition` now fires on hard-flips too (lock release while
+      still muted would otherwise wait for the 60s heartbeat).
+- [x] T3.4 Scheduler: `finishEvaluation` shared tail (config + no-config paths), lock
+      merge + grant-aware projection (grant unmutes hard-caused mute only; manual lock
+      implies mute via new MuteReason `hard_lock`), `isHardLocked` published, lock/grant
+      one-shot timers, runtime-dir FileWatcher with content-change dedupe, write-on-
+      change only (no lock.state file on machines that never lock), `togglePause`
+      refuses resume while hard-locked. New init params default-derived so existing
+      tests stay hermetic; createDefault passes real runtime-dir URLs.
+- [x] T3.5 `Broadcaster.broadcastLocked` (paused bytes + OSC 0 🔒 title, documented
+      exception), MockBroadcaster extended.
+- [x] T3.6 `src/core/lock-state-lib.sh` (read/predicate/atomic-write) +
+      `src/cli/cmd-lock.sh` (`lock now [--for]`, `lock status`, duration parser d/h/m,
+      merge-max, grant cancel on engage, colors from TAVS_PAUSE_*_DARK) + dispatcher.
+- [x] T3.7 Shell gate: trigger.sh stage-0 reads lock.state builtins-only WITHOUT the
+      PID gate; mute-gate stage-1 evaluates the predicate first and keeps suppression
+      fail-closed; on lock-not-effective the mute verdict is recomputed from scratch
+      (incl. PID/version, since stage-0 sets suppression for either cause);
+      `_tavs_check_mute_state` (idle worker) checks the lock first.
+- [x] T3.8 Tests: LockStateTests (19), SchedulerLockTests (10), ScheduleStore hard (2),
+      cmd-lock.bats (15), lock-gate.bats (11, incl. the fail-closed core: dead APP_PID +
+      stale heartbeat still suppressed; expiry/grant/malformed release; fail-open
+      regression guard). Totals: Swift 181/0, bats 117/0.
+- [x] Live verify: `./tavs lock now --for 2m` on this machine → status LOCKED,
+      repo trigger.sh suppressed (0 TTY bytes, pending buffered), installed shellrc
+      painted `🔒 locked until 21:51` with user's #4A4A4A pause bg. Lock left to
+      self-expire. Bug found live and fixed: `[[ ]] &&` as last command of
+      `_lock_resolve_colors` returned 1 under the dispatcher's `set -e` (bats sourced
+      without set -e, hiding it).
+- [ ] App-integrated broadcast paint (all-terminal): Phase 5 after app reinstall.

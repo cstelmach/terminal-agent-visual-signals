@@ -56,6 +56,27 @@ if [[ -f "$HOME/.tavs/mute.state" ]]; then
     unset _tavs_s0_k _tavs_s0_v
 fi
 
+# Hard lock (spec D3): read /tmp/tavs-$UID/lock.state with builtins only.
+# Unlike the mute path there is deliberately NO APP_PID gate: an unexpired
+# lock suppresses even when the app is dead (fail-closed). Time-sensitive
+# checks (LOCK_UNTIL/UNLOCK_UNTIL) are deferred to stage-1.
+_TAVS_S0_LOCKED="" _TAVS_S0_LOCK_UNTIL="" _TAVS_S0_UNLOCK_UNTIL="" _TAVS_S0_LOCK_VER=""
+if [[ -f "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state" ]]; then
+    while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
+        _tavs_s0_v="${_tavs_s0_v%\"}" ; _tavs_s0_v="${_tavs_s0_v#\"}"
+        case "$_tavs_s0_k" in
+            LOCKED) _TAVS_S0_LOCKED="$_tavs_s0_v" ;;
+            LOCK_UNTIL_EPOCH) _TAVS_S0_LOCK_UNTIL="$_tavs_s0_v" ;;
+            UNLOCK_UNTIL_EPOCH) _TAVS_S0_UNLOCK_UNTIL="$_tavs_s0_v" ;;
+            SCHEMA_VERSION) _TAVS_S0_LOCK_VER="$_tavs_s0_v" ;;
+        esac
+    done < "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state"
+    if [[ "$_TAVS_S0_LOCKED" == "true" && "${_TAVS_S0_LOCK_VER:-1}" == "1" ]]; then
+        _TAVS_SUPPRESS_OUTPUT=1
+    fi
+    unset _tavs_s0_k _tavs_s0_v
+fi
+
 # Resolve Script Directory and Project Root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CORE_DIR="$SCRIPT_DIR"
