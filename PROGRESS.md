@@ -164,6 +164,133 @@
       e2e scheduling unchanged.
 - [ ] T5.5 V1-V10 user-gated visual checklist: awaiting user (see below).
 
+## Checkpoint Summary — 2026-07-13/14 session (discovery → deploy)
+
+**State at checkpoint:** All phases 0-5 complete and committed (11 commits,
+`b399843..7855569` + capture commit). Suites green: Swift 193/0, bats 142/0, e2e
+hard-lock 12/12, golden diff 6/6. Deployed: TAVS.app rebuilt from source and
+reinstalled (login item verified clean), plugin cache + marketplace + ~/.tavs/shellrc
+synced, shell integration installed on this machine (~/.zshrc + ~/.bashrc fenced
+blocks; zshrc backup at ~/.zshrc.tavs-backup-*). Branch is ~75 commits ahead of
+origin/main, NOT pushed. Only V1-V10 (interactive checks, table below) remain.
+
+### What was built (one paragraph)
+A hard-lock system layered on the existing mute: `/tmp/tavs-$UID/lock.state`
+(fail-closed: no APP_PID/heartbeat, finite expiry always wins, absent/malformed =
+unlocked), engaged via `tavs lock now`, menu "Lock Now", or `hard: true` on schedule
+rules; challenge-gated unlock (`tavs unlock`, menu "Unlock…") with time-boxed grants
+that suspend hard-caused mute only; schedule edits gated while locked; all-terminal
+coverage via opt-in shellrc (registers TTY + self-paints at shell open); plus
+autolaunch cleanup (login-item doctor, uninstall fix, keychain leak).
+
+### What worked (repeat these)
+- **Adversarial plan review before code.** The codex-reviewer pass deleted planned
+  machinery (HMAC signing, watchdog, chflags, PATH shims) with the argument "zero
+  value against the machine owner". Nothing removed was ever missed.
+- **Explicit contradiction check with the user.** Original ask said "new sessions
+  cannot be started"; round-1 answer said visual-only. One targeted question settled
+  scope permanently (D1) instead of building blocking machinery on a guess.
+- **Verify subagent claims by direct reads.** All Explore/Plan file:line anchors were
+  spot-checked before design; the parity-test precedent claim was load-bearing and
+  real (tests/integration/schedule-evaluator-parity.bats).
+- **Empirical shell probes before writing tests.** One-liners revealed: zsh RESETS an
+  inherited $TTY when stdin is not a terminal (tests must assign TTY inside the zsh
+  invocation); bash passes it through; both set `i` in `$-` with `-i -c`.
+- **Live verification on the real machine per phase.** Two bugs that no test caught
+  were found this way (see below). Cost: a few brief gray-screen minutes.
+- **Running the full suite WHILE the feature's live state is active** (a real hard
+  lock engaged). This surfaced 4 latent test-infra leaks in one shot and is now the
+  de-facto hermeticity acceptance check for this repo.
+- **Contract tests for dual implementations.** challenge-parity.bats pins the shell
+  and Swift hash to one spec (incl. unicode + "salt is a literal hex string" guard).
+
+### What did NOT work / failed approaches (do not repeat)
+- **HMAC-signed state, watchdog relaunch, chflags, uninstall-blocking:** rejected by
+  design (D3). Any key/signature on an owner-controlled machine is forgeable by the
+  owner; it adds code, failure modes, and dishonest security claims. If someone
+  proposes "tamper-proofing" lock.state again: the answer is in
+  docs/reference/hard-lock.md "Honest limits".
+- **PATH shims for blocking agent launches:** out of scope (D1) AND structurally weak
+  even if scope changes: the repo's own palette-theming `alias claude=...` shadows
+  any shim (aliases beat PATH); absolute paths, `command`, `env`, non-interactive
+  shells all bypass. If blocking is ever wanted, use agent-side hooks
+  (SessionStart/UserPromptSubmit), not shims.
+- **A new Swift `--login-item-doctor` flag:** abandoned; SMAppService can only see
+  the CURRENT bundle's registration. Foreign/debug registrations are only reachable
+  via System Events enumeration (shell) + running the surviving binary with the
+  EXISTING `--unregister-login-item` flag.
+- **`[[ cond ]] && action` as the LAST command of a sourced CLI function:** silently
+  kills the whole `tavs` dispatcher (set -euo pipefail) when the guard is false,
+  while bats (sourcing without set -e) passes everything. Symptom was "command
+  prints nothing, exit 1". Use if-blocks and explicit `return 0`. (Bug shipped to
+  the working tree, caught only by live run; fixed in cmd-lock.sh.)
+- **Hardcoding a hash constant from memory in a test:** the SHA-256 vector written
+  into ChallengeVerifierTests was wrong. Compute constants (`printf ... | shasum`)
+  before committing them. This near-miss was caught pre-run.
+- **Tests that isolate HOME but not TAVS_RUNTIME_DIR:** liveness.bats, emit-osc.bats,
+  the parity atomicity test, and baseline-capture's `_diff_all` all read the LIVE
+  /tmp/tavs-$UID. Consequences observed: fail-open assertions fail while a real lock
+  is active; the parity add-window test hits the challenge gate; golden reset bytes
+  drift when the live identity registry churns (dir flag 🇧🇬→🇧🇪, same-size diff).
+  Rule: ANY test that runs trigger.sh or ./tavs must export an isolated
+  TAVS_RUNTIME_DIR. Note baseline-capture has TWO capture paths (_capture_one AND
+  _diff_all); fixing one is not fixing both.
+- **Plan-mode subagents writing /tmp reports:** blocked by plan-mode write
+  restrictions; the global "save report to /tmp" template fails there. Ask plan-mode
+  subagents for inline output with a word budget instead.
+
+### Key design decisions (beyond D1-D7 above, all in the spec file)
+- lock.state carries NO APP_PID and NO heartbeat: that IS the fail-closed mechanism.
+  Every writer sets a finite LOCK_UNTIL (schedule-driven writes cap at now+24h when
+  no transition is known; heartbeat refreshes). No indefinite locks exist.
+- Writer merge rules prevent the app's rewrite from clobbering CLI state: unexpired
+  manual lock keeps the LATER end; unexpired grants always survive; engaging a lock
+  cancels grants. Pure function `LockStateMerge.merged` + bash twin in cmd-lock.sh.
+- Grants suspend HARD-caused mute only; soft rules unaffected (pinned by
+  SchedulerLockTests.testGrantDoesNotAffectSoftMute).
+- Manual lock outside schedule mute projects `REASON="hard_lock"` into mute.state
+  (new MuteReason case); mute.state also gained additive PAUSE_BG/PAUSE_FG
+  (SCHEMA_VERSION stays 1) so shellrc paints without theme resolution.
+- masterPaused is NEVER hard; `tavs schedule pause` / menu Pause are never gated.
+- Puzzle pools are per-side (shell txt file, Swift embedded array) because puzzles
+  are generated+verified ephemerally per side; only the password HASH needs parity.
+- Challenge degradation: missing/inconsistent challenge.conf → puzzle. There is no
+  configuration state that locks the user out permanently.
+- shellrc paints to stdout (rc-sourcing context = terminal), needs no /dev write;
+  registration uses `: >|` (builtin); worst case 2 forks (bash), 0 forks (zsh via
+  zsh/datetime).
+- Scheduler init derives lockStateURL/runtimeWatcher defaults from muteStateURL so
+  the 3 pre-existing test constructions stay hermetic and unchanged; production
+  passes real runtime-dir URLs in createDefault.
+- App writes lock.state only on semantic change (writtenEpoch excluded) so its own
+  runtime-dir FileWatcher does not feed back; watcher events dedupe against the last
+  read state (active-ttys/pending churn is ignored).
+
+### Open items / next steps (in order)
+1. **V1-V10 user-gated checklist** (table below): menu dialogs, multi-terminal
+   paint, reboot semantics. Suggested smoke test: two plain terminals,
+   `./tavs lock now --for 5m`, watch paint, menu "Unlock…", puzzle, 15m grant.
+2. **Push decision:** ~75 commits ahead of origin/main; nothing pushed this session.
+3. **Observation, needs user decision:** user.conf sets pause FG == BG (#4A4A4A on
+   dark, #837677 on light) → text invisible during pauses/locks. Pre-existing user
+   config, deliberately untouched.
+4. Possible follow-ups (NOT commitments): wizard step for lock/challenge setup;
+   `hard` flag support in `tavs schedule add-window --hard`; Gemini/OpenCode hook
+   parity for lock suppression (they already funnel through trigger.sh, so they
+   inherit it — untested); light/dark lock colors in lock.state (currently dark
+   pause colors only from CLI, appearance-resolved from app).
+5. CLAUDE.md is gitignored in this repo by design; its updates live only locally.
+   The capture file META-THINKING-CAPTURE.md IS tracked and committed.
+
+### Where to look first (next developer orientation)
+- Spec + decisions: /Users/cs/.claude/plans/i-had-following-thoughts-reflective-naur.md
+- Product docs: docs/reference/hard-lock.md (start with "Honest limits")
+- State machine: src/macos/TAVSApp/Sources/TAVSApp/LockState.swift (merge rules) and
+  src/core/lock-state-lib.sh (the same predicate in bash)
+- Gate order: src/core/trigger.sh stage-0 → src/core/mute-gate.sh stage-1
+  (_tavs_validate_mute_liveness: lock first, then recomputed mute verdict)
+- Session methodology record: META-THINKING-CAPTURE.md (failure arcs F1-F4)
+
 ## User-gated acceptance checklist (V1-V10)
 
 | # | Scenario | Expected |
