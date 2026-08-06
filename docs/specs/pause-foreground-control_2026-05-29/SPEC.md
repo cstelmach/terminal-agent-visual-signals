@@ -1,3 +1,13 @@
+---
+type: spec
+spec-id: pause-foreground-control_2026-05-29
+title: "Pause Foreground Control - Specification"
+status: shipped
+phase:
+created: 2026-05-29
+updated: 2026-05-29
+---
+
 # Pause Foreground Control - Specification
 
 **Status:** Final

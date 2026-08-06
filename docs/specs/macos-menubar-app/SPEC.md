@@ -1,3 +1,13 @@
+---
+type: spec
+spec-id: macos-menubar-app
+title: "TAVS macOS Menu Bar Companion App — Specification"
+status: shipped
+phase:
+created: 2026-04-20
+updated: 2026-04-20
+---
+
 # TAVS macOS Menu Bar Companion App — Specification
 
 **Status:** Final (post-Gemini + post-Codex review — ready for Phase 1)
