@@ -26,6 +26,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
+| P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
 
 ---
 
@@ -128,6 +129,78 @@ switches, daemons, global config). Watch for recurrence before promoting.
 the claim that F2 primed F3's fast diagnosis `[R]`.
 
 ---
+
+## 2026-10-03 · model-unverified · tavs-terminal-restoration
+
+meta:
+  model: unverified (system context identifies GPT-6; exact runtime ID not verified)
+  model_source: self-reported, reconstructed [R]
+  interface: codex-desktop
+  thinking: user requested ultrathink; runtime setting unverified
+  session: 01a100cb
+  trace: observed actions in the current conversation
+  reviewers: Claude Opus requested but timed out; direct Codex reviewer model ID unverified
+
+**Framing** [O]: The user reported gray Ghostty windows with disappearing text after a
+nightly TAVS pause. Investigation established a daily 23:59-to-midnight gap and matching
+pause foreground/background colors. The user explicitly retained that pause and requested
+a manual baseline reset. Implementation therefore preserved settings and session lifetimes
+while repairing terminal I/O and adding one active-only menu action.
+
+**Strategy** [O]: Read source, installed configuration, projected mute state, and process
+stacks before editing. Reuse the existing OSC clear operation for the menu action rather
+than introduce another color reset path. Back up exact owned files and the installed app,
+run real PTY tests, build/sign the replacement, then validate the installed behavior. The
+first live check changed the implementation despite a passing test suite.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|------|--------|--------|
+| Inspect | Source, configuration, process sample | Blocking terminal opens identified |
+| Test | Real PTYs and reset contracts | Initial 202-test suite passed |
+| Install/sample | First nonblocking repair | macOS still blocked inside open |
+| Fix/test | Outer completion deadline | Final 203-test suite passed |
+| Recover | Installed app and live schedule | Pause/resume and fresh state updates observed |
+| Review | External Claude and direct reviewer | Timeout recorded; direct source review approved |
+
+**Decision points** [O]: Keep the operator-selected invisible pause colors rather than
+replace them with a readability preference. Reuse installed ad-hoc signing rather than
+create a new keychain identity. Bound the caller on a worker completion semaphore after
+live evidence showed nonblocking flags did not bound this kernel condition. Keep native
+device repair and an existing directory-watcher feedback concern outside the narrow patch.
+
+**Failure arcs**
+
+- **F1, runtime assumption** [O]: O_NONBLOCK plus a write deadline passed isolated tests,
+  but the installed app again stalled in open. A fresh sample located the same native
+  syscall instead of attributing the result to a stale binary. Correction: a 100 ms outer
+  completion deadline and the same absolute deadline before open and writes. [R] The
+  initial design treated the documented nonblocking behavior as a stronger guarantee than
+  the live kernel provided. P6 records the resulting live-validation rule.
+- **F2, test compilation** [O]: XCTAssertNoThrow inside an async closure was inferred as
+  throwing by this compiler. Replaced it with explicit do/catch; the 64 KiB delivery test
+  then compared the entire received payload successfully.
+- **F3, unavailable review** [O]: The superseded Claude request was canceled and the final
+  scoped request timed out without a report. Its failure record carries no scores or
+  approval. A separate direct source review found no actionable regression.
+- **F4, UI tooling** [O]: Computer Use rejected Ghostty and could not attach to TAVS after
+  macOS retained the earlier killed processes in exiting state. Live validation used the
+  existing schedule CLI and state file; visual acceptance was requested from the user.
+
+**Verification** [O]: The final Swift suite passed 203 tests, packaged signature checks
+passed, and the installed process completed a brief pause/resume cycle. Schedule and
+user.conf were restored byte-for-byte. Ghostty and Claude processes were not stopped.
+Fresh projected-state timestamps continued to advance. Actual menu clicks and visual
+appearance remain unverified; kernel-stalled workers remain until macOS releases devices.
+
+**Heuristics**: Treat tests as bounded evidence, sample the installed process when behavior
+contradicts them, and preserve failed review status without inventing a verdict. Record
+observed actions separately from explanations. Do not expand a narrow repair into unrelated
+watcher changes or configuration resets.
+
+**Confidence**: Execution results above are observed [O]. The explanation of the initial
+assumption is reconstructed [R]. Exact model attribution is explicitly unverified.
 
 ## Stubs
 

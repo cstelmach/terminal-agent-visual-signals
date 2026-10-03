@@ -305,3 +305,33 @@ autolaunch cleanup (login-item doctor, uninstall fix, keychain leak).
 | V8 | `tavs schedule add-window` during lock | Challenge required |
 | V9 | `tavs lock now` / menu "Lock Now" | Engages with zero prompts |
 | V10 | Uninstall + reinstall app | Exactly one login item, no debug items, doctor clean (programmatic half already verified in T5.4) |
+
+## 2026-10-03: Terminal restoration repair and manual color reset
+
+- Diagnosed the October 2 23:59 pause: the installed app blocked in terminal device opens,
+  preventing the midnight unmute. Pause foreground/background pairs intentionally match.
+- Added nonblocking terminal I/O, partial-write handling, and a 100 ms caller completion
+  deadline. Live testing disproved the initial assumption that O_NONBLOCK alone bounded
+  macOS open calls; the outer deadline isolates those kernel stalls. Late opens do not paint.
+- Added active-only **Restore Terminal Colors** using OSC 104/110/111. It does not replay
+  pending signals, change titles/preferences, or release pauses and hard locks.
+- Final Swift suite: **203 tests, 0 failures**. Coverage includes real PTYs, disconnection,
+  backpressure, successful partial writes, mixed fanout, wedged-operation deadlines, and
+  reset state preservation. Release build and packaged signature verification succeeded.
+- Installed the repaired ad-hoc-signed bundle. Original app/settings backup:
+  `/Users/cs/.tavs/backups/2026-10-03-restoration/`; source backup is in /tmp.
+- Live app PID 16452 wrote MUTED=false, completed a brief CLI pause/resume cycle, and
+  continued producing fresh state updates. Schedule and user.conf match their backups
+  byte-for-byte. Ghostty PID 961 and Claude sessions were not stopped.
+- Four kernel-stalled devices were timeout-pruned: ttys008, ttys021, ttys024, ttys032.
+  Kernel-stalled workers can remain until macOS releases those devices. Earlier TAVS
+  processes 17081 and 14110 received SIGKILL but remained in macOS exiting state.
+- Direct independent source review approved with no actionable findings:
+  `/tmp/native-review-tavs-repair-2026-10-03.md`. The external Claude review timed out;
+  `/tmp/claude-review-tavs-repair-2026-10-03.md` records that failure, not approval.
+- Visual acceptance/menu-click testing remains unverified: Computer Use blocks Ghostty
+  and cannot attach to TAVS through the stale LaunchServices registration. User observation
+  was requested. No broad settings reset or kernel-device repair was performed.
+- Separate existing observation: the schedule directory watcher also sees mute.state
+  writes and re-evaluates. Live CPU was 4%; this pre-existing watcher behavior was not changed.
+- Code commits: `f965575` (bounded terminal I/O) and `a7d070a` (manual color restore).
