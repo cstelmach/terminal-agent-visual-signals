@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 @testable import TAVSApp
 
 final class BroadcasterTests: XCTestCase {
@@ -345,16 +346,131 @@ final class BroadcasterTests: XCTestCase {
     // MARK: - SystemProcessRunner throwing contract (B1)
 
     func testSystemProcessRunnerThrowsOnUnwritablePath() {
-        // Documents the throwing contract wired in after switching from the
-        // non-throwing FileHandle.write(Data) to write(contentsOf:).
-        // The old API silently swallowed I/O errors, which broke dead-TTY
-        // pruning. This test locks in the current behavior for the path-open
-        // failure mode (nil FileHandle). Real EIO/EPIPE on a live pty requires
-        // integration-level fixtures and is out of unit-test scope.
         let runner = SystemProcessRunner()
         XCTAssertThrowsError(
             try runner.writeToDevice(path: "/nonexistent/device-xyz", data: Data([0x01]))
         )
+    }
+
+    private func openTestPTY() throws -> (master: Int32, slave: Int32, path: String) {
+        var master: Int32 = -1
+        var slave: Int32 = -1
+        var name = [CChar](repeating: 0, count: 1024)
+        guard openpty(&master, &slave, &name, nil, nil) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno)!)
+        }
+        var attributes = termios()
+        tcgetattr(slave, &attributes)
+        cfmakeraw(&attributes)
+        tcsetattr(slave, TCSANOW, &attributes)
+        return (master, slave, String(cString: name))
+    }
+
+    private func readTestPTY(_ master: Int32, count: Int) throws -> Data {
+        var descriptor = pollfd(fd: master, events: Int16(POLLIN), revents: 0)
+        guard poll(&descriptor, 1, 1000) == 1 else {
+            throw POSIXError(.ETIMEDOUT)
+        }
+        var bytes = [UInt8](repeating: 0, count: count)
+        let received = Darwin.read(master, &bytes, bytes.count)
+        guard received >= 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno)!)
+        }
+        return Data(bytes.prefix(received))
+    }
+
+    func testSystemProcessRunnerDeliversExactPTYBytes() throws {
+        let tty = try openTestPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let bytes = Data("\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
+
+        try SystemProcessRunner().writeToDevice(path: tty.path, data: bytes)
+
+        XCTAssertEqual(try readTestPTY(tty.master, count: bytes.count), bytes)
+    }
+
+    func testSystemProcessRunnerDeliversLargePTYWriteWhileReaderDrains() throws {
+        let tty = try openTestPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let bytes = Data((0..<(64 * 1024)).map { UInt8(truncatingIfNeeded: $0) })
+        let finished = expectation(description: "Writer completes partial writes")
+        DispatchQueue.global().async {
+            do {
+                try SystemProcessRunner().writeToDevice(path: tty.path, data: bytes)
+            } catch {
+                XCTFail("PTY writer failed: \(error)")
+            }
+            finished.fulfill()
+        }
+        var received = Data()
+        while received.count < bytes.count {
+            received.append(try readTestPTY(tty.master, count: 4096))
+        }
+        wait(for: [finished], timeout: 1)
+
+        XCTAssertEqual(received, bytes)
+    }
+
+    func testSystemProcessRunnerDisconnectedPTYFailsPromptly() throws {
+        let tty = try openTestPTY()
+        close(tty.master)
+        defer { close(tty.slave) }
+        let start = DispatchTime.now().uptimeNanoseconds
+
+        XCTAssertThrowsError(try SystemProcessRunner().writeToDevice(path: tty.path, data: Data([1])))
+
+        XCTAssertLessThan(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9, 1)
+    }
+
+    func testDeviceWriteDeadlineDoesNotWaitForWedgedOperation() {
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let start = DispatchTime.now().uptimeNanoseconds
+
+        XCTAssertThrowsError(try SystemProcessRunner.completeDeviceWrite(path: "wedged-test-device") { _ in
+            release.wait()
+        })
+
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
+        XCTAssertGreaterThanOrEqual(elapsed, 0.08)
+        XCTAssertLessThan(elapsed, 1)
+    }
+
+    func testSystemProcessRunnerFullPTYQueueRespectsDeadline() throws {
+        let tty = try openTestPTY()
+        defer { close(tty.master); close(tty.slave) }
+        // Leave the master unread so writes must make partial progress and
+        // then wait for capacity. The deadline must bound that wait.
+        let start = DispatchTime.now().uptimeNanoseconds
+        XCTAssertThrowsError(try SystemProcessRunner().writeToDevice(
+            path: tty.path, data: Data(repeating: 0x61, count: 1024 * 1024)
+        ))
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
+        XCTAssertGreaterThanOrEqual(elapsed, 0.08)
+        XCTAssertLessThan(elapsed, 1)
+    }
+
+    func testColorRestoreReachesHealthyPTYBesideDisconnectedPTY() throws {
+        let healthy = try openTestPTY()
+        let dead = try openTestPTY()
+        close(dead.master)
+        defer { close(healthy.master); close(healthy.slave); close(dead.slave) }
+        for path in [healthy.path, dead.path] {
+            FileManager.default.createFile(
+                atPath: activeTTYsDir.appendingPathComponent(
+                    path.replacingOccurrences(of: "/", with: "_")
+                ).path, contents: nil
+            )
+        }
+        let realBroadcaster = Broadcaster(runtimeDir: tempDir, processRunner: SystemProcessRunner())
+
+        realBroadcaster.broadcastPausedClear()
+
+        let expected = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
+        XCTAssertEqual(try readTestPTY(healthy.master, count: expected.count), expected)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: activeTTYsDir.appendingPathComponent(
+            dead.path.replacingOccurrences(of: "/", with: "_")
+        ).path))
     }
 
     // MARK: - Empty pending cleanup
