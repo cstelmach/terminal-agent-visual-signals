@@ -335,3 +335,17 @@ autolaunch cleanup (login-item doctor, uninstall fix, keychain leak).
 - Separate existing observation: the schedule directory watcher also sees mute.state
   writes and re-evaluates. Live CPU was 4%; this pre-existing watcher behavior was not changed.
 - Code commits: `f965575` (bounded terminal I/O) and `a7d070a` (manual color restore).
+
+### Fresh rebuild and replacement, 14:21 CEST
+
+- Rebuilt release and tests in a new scratch directory:
+  `/tmp/tavs-fresh-build-2026-10-03-141647/`. All 203 tests passed again.
+- Assembled a fresh app from the new executable and source Info.plist, retaining the icon.
+  Ad-hoc signing and strict installed-bundle verification passed.
+- Moved the previous installed app intact to
+  `/Users/cs/.tavs/backups/rebuild-2026-10-03-141647/TAVS.app` and installed the new bundle.
+- Relaunched with the macOS app launcher as a new instance, PID 23998, parent launchd.
+  The app is active and login-item registration is enabled. Installed executable and plist
+  match the staged bundle; user.conf and schedule.json match the new backups byte-for-byte.
+- Ghostty and Claude sessions were kept open. The three older TAVS processes remain exiting
+  in macOS; automatic menu inspection still returned procNotFound. No source code changed.

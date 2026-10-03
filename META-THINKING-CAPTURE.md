@@ -202,6 +202,16 @@ watcher changes or configuration resets.
 **Confidence**: Execution results above are observed [O]. The explanation of the initial
 assumption is reconstructed [R]. Exact model attribution is explicitly unverified.
 
+### Fresh rebuild follow-up, 14:21 CEST [O]
+
+The user explicitly requested another fresh build and replacement of /Applications/TAVS.app.
+Used an unused Swift scratch directory, rebuilt release and tests, and assembled a new bundle
+from the executable and source plist while retaining the icon. All 203 tests passed. Preserved
+the previous app intact in the timestamped rebuild backup and relaunched the new app through
+macOS using a new-instance launch. PID 23998 runs under launchd; signature checks and staged
+binary/plist comparisons pass, and settings remain byte-identical. Source code was untouched.
+Computer Use still cannot attach while macOS retains the older exiting app processes.
+
 ## Stubs
 
 <!-- Mid-task micro-captures (observe action). Folded into the next full
