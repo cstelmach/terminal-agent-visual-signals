@@ -350,6 +350,22 @@ autolaunch cleanup (login-item doctor, uninstall fix, keychain leak).
 - Ghostty and Claude sessions were kept open. The three older TAVS processes remain exiting
   in macOS; automatic menu inspection still returned procNotFound. No source code changed.
 
+### Controlled stop-all and restart, 16:50 CEST
+
+- Sent SIGTERM to responsive TAVS PID 23998 and retried SIGKILL once for the three
+  previously exiting processes. PID 23998 exited; 14110, 16452, and 17081 remained exiting.
+- Preserved runtime registry/pending state and settings under
+  `/Users/cs/.tavs/backups/restart-2026-10-03-165004/`; no runtime files were deleted.
+- Inventoried GUI-backed TTYs by process ancestry: Ghostty PID 961 and Terminal PID 978,
+  totaling 24 tabs/panes. Four ordinary shell TTYs lacked registration: 000, 001, 002, 017.
+- Refreshed registrations for all 24 before launching one replacement TAVS, PID 89556.
+  Confirmed 24/24 registered, no pending OSC files, active state, and enabled login item.
+  Configuration and schedule remain byte-identical; terminal applications stayed open.
+- Permanent startup discovery still targets agent sessions. An optional preference question
+  asks whether to include ordinary shells automatically; no source changes made this turn.
+- SIGKILL returning successfully did not remove the old kernel-held exiting records.
+  The controlled restart is complete for responsive app instances; full kernel cleanup is not.
+
 
 ## Focus restriction testing decision (2026-10-03)
 

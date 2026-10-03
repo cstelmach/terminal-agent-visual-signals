@@ -212,6 +212,18 @@ macOS using a new-instance launch. PID 23998 runs under launchd; signature check
 binary/plist comparisons pass, and settings remain byte-identical. Source code was untouched.
 Computer Use still cannot attach while macOS retains the older exiting app processes.
 
+### Controlled restart follow-up, 16:50 CEST [O]
+
+The user requested closing all TAVS processes and preserving terminal capture. Inventoried
+the exact four app PIDs, backed up runtime state/settings, stopped the responsive instance,
+and retried SIGKILL once for already exiting entries. Three kernel-held records remained.
+Process ancestry identified 24 live GUI-terminal TTYs and four missing plain-shell markers.
+Refreshed all registrations without deleting runtime data, then launched one responsive app,
+PID 89556. All 24 markers exist, settings are unchanged, and Ghostty/Terminal stayed open.
+Kept kernel record cleanup separate from app restart success instead of promising that a
+successful signal guarantees process removal. Future automatic plain-shell discovery is a
+separate optional choice; no source changes were made.
+
 ## Stubs
 
 <!-- Mid-task micro-captures (observe action). Folded into the next full
