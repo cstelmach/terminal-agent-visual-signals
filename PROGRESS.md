@@ -349,3 +349,17 @@ autolaunch cleanup (login-item doctor, uninstall fix, keychain leak).
   match the staged bundle; user.conf and schedule.json match the new backups byte-for-byte.
 - Ghostty and Claude sessions were kept open. The three older TAVS processes remain exiting
   in macOS; automatic menu inspection still returned procNotFound. No source code changed.
+
+
+## Focus restriction testing decision (2026-10-03)
+
+The operator requires all focus restrictions to stay immediately reversible while testing.
+Harder reversal is deferred until every supported restriction and recovery path is validated
+and no known unresolved focus-restriction bugs remain. A finite test suite cannot establish
+absolute bug-freeness; record actual coverage and remaining limits. Finish the existing live
+acceptance checks before considering stronger behavior. This direction does not enable a lock
+or change running sessions.
+^focus-restriction-testing-decision
+
+Deferred todo:
+`/Users/cs/local/code/apps/terminal-agent-visual-signals/docs/todo/tPC17_20261003_gate-focus-restriction-hardening-after-reversible-testing.md`.
