@@ -341,6 +341,59 @@ final class SchedulerLifecycleTests: XCTestCase {
         try ScheduleStore.save(config, to: scheduleURL)
     }
 
+    func testRestoreTerminalColorsClearsWithoutChangingStateOrReplaying() throws {
+        try writeStandardConfig()
+        scheduler.start()
+        let originalSchedule = try Data(contentsOf: scheduleURL)
+        let originalMuteState = try Data(contentsOf: muteStateURL)
+        let originalStatus = scheduler.statusText
+        let originalTimers = timerScheduler.scheduledTimers.count
+
+        scheduler.restoreTerminalColors()
+
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), originalSchedule)
+        XCTAssertEqual(try Data(contentsOf: muteStateURL), originalMuteState)
+        XCTAssertEqual(scheduler.statusText, originalStatus)
+        XCTAssertEqual(timerScheduler.scheduledTimers.count, originalTimers)
+        XCTAssertFalse(scheduler.isMuted)
+    }
+
+    func testRestoreTerminalColorsWorksWithoutSchedule() {
+        scheduler.start()
+
+        scheduler.restoreTerminalColors()
+
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+    }
+
+    func testRestoreTerminalColorsDoesNotClearPause() throws {
+        try writeStandardConfig()
+        scheduler.start()
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+        XCTAssertTrue(scheduler.isMuted)
+
+        scheduler.restoreTerminalColors()
+
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertTrue(scheduler.isMuted)
+    }
+
+    func testRestoreTerminalColorsDoesNotClearHardLock() {
+        scheduler.start()
+        scheduler.lockNow()
+        XCTAssertTrue(scheduler.isHardLocked)
+
+        scheduler.restoreTerminalColors()
+
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertTrue(scheduler.isMuted)
+    }
+
     func testStartWithConfigWritesMuteState() throws {
         try writeStandardConfig()
         scheduler.start()

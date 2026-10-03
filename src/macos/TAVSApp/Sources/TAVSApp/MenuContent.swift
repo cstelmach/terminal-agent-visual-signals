@@ -25,6 +25,10 @@ struct MenuContent: View {
                     scheduler.togglePause()
                 }
             }
+            Button("Restore Terminal Colors") {
+                scheduler.restoreTerminalColors()
+            }
+            .disabled(scheduler.isMuted || scheduler.isHardLocked)
             Button("Lock Now (1h)") {
                 scheduler.lockNow()
             }

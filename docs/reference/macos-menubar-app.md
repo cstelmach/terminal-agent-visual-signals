@@ -1,6 +1,7 @@
 # macOS Menu Bar Companion App
 
 **Version:** 3.0.0
+**Last Updated:** 2026-10-03
 **Requires:** macOS 13+ (Ventura or later)
 
 The TAVS menu bar app adds two capabilities that shell hooks alone cannot provide:
@@ -93,10 +94,15 @@ Click the menu bar icon to see:
 |------|-------------|
 | **Status line** | "Active — next mute in 23 min", "Muted until 20:00", "Paused", "Locked until 18:00", or "Unlocked until 15:30 (grant)" |
 | **Pause/Resume** | Toggle master pause. Overrides schedule. While a hard lock is active, Resume requires the unlock challenge. |
+| **Restore Terminal Colors** | Reset colors once while TAVS is active. |
 | **Lock Now (1h)** | Engage a manual hard lock for one hour (never gated; repeated clicks keep the later end time). See [Hard Lock](hard-lock.md). |
 | **Unlock…** | Shown while hard-locked: challenge, then a time-boxed unlock grant (15m/1h/4h/rest of day). |
 | **Open Preferences…** | Opens the three-tab settings window (⌘,) |
 | **Quit TAVS** | Stops the app. Shells resume normal painting within 2 minutes; an active hard lock KEEPS holding until its end time. |
+
+Restore Terminal Colors resets the configured palette, default foreground, and background.
+It preserves titles, preferences, and pending signals. The next agent signal can repaint the
+background. The action is disabled during pauses and hard locks.
 
 ### Icon States
 
@@ -365,6 +371,25 @@ The app and shell communicate only through files on disk:
 1. Check the app is running: `pgrep -x TAVSApp`
 2. Try launching manually: `open /Applications/TAVS.app`
 3. Check Console.app for errors: filter by `com.cstelmach.tavs`
+
+### App hangs during a pause and terminals stay gray
+
+Before 2026-10-03, opening a disconnected terminal or writing to a full output queue could
+block the broadcaster indefinitely. Because the scheduler waited for that broadcast, it
+could miss the next unmute transition and leave pause colors applied.
+
+Terminal I/O now uses nonblocking opens and writes with a 100 ms completion deadline per
+terminal. A worker isolates kernel-stalled calls that ignore nonblocking mode. A device
+opened after its deadline is closed without painting. Failed terminals follow the existing
+registry pruning path, so healthy terminals still restore. Tests cover wedged operations, real
+pseudoterminal disconnection, backpressure, partial writes, and mixed fanout.
+
+An uninterruptible kernel call can leave its worker blocked until macOS releases the
+device. The app's scheduler continues; this does not repair the kernel device itself.
+
+Install the repaired app and relaunch TAVS. Startup recovery clears the persisted pause
+when the schedule is active. Use Restore Terminal Colors for a one-time baseline reset.
+`tavs config reset` changes preferences and does not repaint terminal colors.
 
 ### Terminals stay muted after app crash
 
