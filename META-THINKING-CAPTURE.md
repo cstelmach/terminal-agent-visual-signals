@@ -27,6 +27,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-04 |
 
 ---
 
@@ -223,6 +224,75 @@ PID 89556. All 24 markers exist, settings are unchanged, and Ghostty/Terminal st
 Kept kernel record cleanup separate from app restart success instead of promising that a
 successful signal guarantees process removal. Future automatic plain-shell discovery is a
 separate optional choice; no source changes were made.
+
+## 2026-10-04 · model-unverified · tavs-priority-research
+
+meta:
+  model: gpt-6 (self-reported; exact variant unavailable)
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: unknown
+  session: 01a10879
+  trace: reconstructed
+
+**Framing.** [O] The user asked which existing TAVS ideas should be implemented and explicitly
+invoked discovery-to-spec, initial Q&A and parallel native research. The research pass therefore
+identified current implementation gaps and prepared decisions rather than implementing an
+unselected feature. The existing author decision keeps testing restrictions immediately
+reversible. Proposed intake groups were not treated as accepted requirements.
+
+**Strategy.** [O] Three Explore tasks covered architecture, source requirements and verification.
+Three native web specialists then covered terminal targeting, attention/recovery and integrations
+concurrently. All six reports were read. The parent checked consequential findings against current
+code, original journal passages and official sources before combining them into one report.
+[R] Separating product priority from recovery prerequisites appears useful: a read-only organizer
+does not need unrelated reboot acceptance, while new visual effects require their own undo checks.
+
+**Action trace [R].** Reconstructed from the visible conversation, not a native transcript parser.
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Read skills and memory locators | Discovery, research and recent TAVS history | Preserve scope and existing decisions |
+| 2 | Inspect paths and Git | Physical checkout, ignored specs, original journals | Clean source baseline and corrected project locator |
+| 3 | Recall wiki | Existing registered hub | No useful TAVS engineering coverage; proceed |
+| 4 | Delegate exploration | Architecture, plans and tests | Distinguish existing capabilities from missing organizer |
+| 5 | Delegate native research | Targeting, attention and integrations | Compare first principles and competing approaches |
+| 6 | Check primary evidence | Ghostty dictionaries, Codex docs, code and studies | Capability differences and support limits retained |
+| 7 | Synthesize and validate | Research report, links and text | Seven candidates assessed; first Q&A prepared |
+
+**Decision points.** [O] The user explicitly selected native research, so AGY was not substituted.
+The obsolete Obsidian project path was replaced as a locator after discovery of the current parent.
+Existing state-event priority was kept distinct from user task priority. Ghostty's installed TTY
+property was distinguished from its absence in tagged 1.3.1. Temporary surface marking was kept
+distinct from a native pane border, whose exact geometry join remains unverified. [R] These
+distinctions reduce the risk of writing acceptance criteria around unsupported assumptions.
+
+**Failure arc F1: output budgeting.** [O] An initial combined tool result exceeded its output
+budget, hiding portions of the skill/inventory reads. The next reads were split and results were
+stored for selective retrieval. [R] The cause was aggregation beyond the direct result budget,
+not missing files. Residue: separate essential source reads from large supporting inventories.
+
+**Failure arc F2: stale locator.** [O] The old IPC17_tavs.md path did not exist. A bounded filename
+search found the current project parent, which points to the same repository. No replacement
+project or duplicate idea note was created. Residue: verify current locators before interpreting
+a missing file as missing project context.
+
+**Verification.** [O] Report checks verified reference definitions, every local source path,
+coverage of all seven candidates, and absence of new em dash characters. The capture edit was
+backed up first. No functional test, AppleEvent, terminal write, app action or production setting
+change occurred. Earlier successful test counts were labeled historical; source counts were not
+presented as a fresh run. No chat bodies or full prior capture log were read.
+
+**Pattern candidate.** P7 records capability-before-version. A provider or terminal's current
+documentation and an installed version string do not establish the exact available API or its
+live behavior. This is one observation, so no model-profile generalization or skill promotion is
+justified. The synthesis favors organizer/navigation and manual priorities, with Codex hooks as a
+separate small candidate; those remain recommendations until the user answers the initial round.
+
+**Confidence.** [O] labels refer to visible actions and checked results. The trace and causal
+interpretations are [R]. Exact executor model attribution was unavailable; GPT-6 is self-reported
+from the session environment, with its variant unverified. Research is complete for the opening
+round. The SPEC, independent spec reviews and implementation remain pending scope decisions.
 
 ## Stubs
 
