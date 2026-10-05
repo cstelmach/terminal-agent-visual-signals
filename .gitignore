@@ -39,6 +39,7 @@ not a tty
 .worktrees/
 
 # Project-specific config
+.env
 CLAUDE.md
 
 # Internal development docs
