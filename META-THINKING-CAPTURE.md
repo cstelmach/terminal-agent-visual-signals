@@ -27,7 +27,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
-| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-04 |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05 |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-05 |
 
 ---
 
@@ -293,6 +294,79 @@ separate small candidate; those remain recommendations until the user answers th
 interpretations are [R]. Exact executor model attribution was unavailable; GPT-6 is self-reported
 from the session environment, with its variant unverified. Research is complete for the opening
 round. The SPEC, independent spec reviews and implementation remain pending scope decisions.
+
+## 2026-10-05 · model-unverified · tavs-spec-recovery-and-review
+
+meta:
+  model: gpt-6 family self-report; exact variant unavailable [R]
+  model_source: API environment self-report; no native transcript extraction
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible conversation and tool reports [R]
+
+**Framing [R].** The operator asked to implement a plan whose final explicit boundary was
+specification delivery, independent review and a fresh-conversation implementation-planning
+handoff. The caller stated that interpretation before work. Eighteen product choices were
+already confirmed individually; reopening them would not resolve the remaining technical gaps.
+The useful output was a grounded SPEC with source-verified review dispositions, rather than
+product code or another planning layer.
+
+**Strategy [R].** Recovery after the computer crash began from the committed synthesis and
+archived research reports. Existing dated-package reuse avoided another competing specification.
+The selected workstream remained all local Ghostty surfaces, organizational priorities, manual
+focus and opt-in automatic focus, with visual recovery first. Documentation was backed up before
+editing. Independent review was held against one unchanged initial SPEC while local source
+checks tested the findings. Product implementation and live settings were left for the handoff.
+
+**Decision points [R].** First, ordinary background intent needed lifetime binding even though
+files could remain per TTY; matching the new terminal's TTY did not authenticate an older record.
+Second, recovery needed effect records for painted plain shells, but no separate ledger or
+deployment-stamp system. Third, a pre-write generation check and a second repaint could still
+race arbitrarily delayed work. The revised contract instead serializes per-TTY output after
+bounded device open, checks suspension inside the write, and reports busy targets independently.
+Finally, coalescing an observed permission episode avoids rearming a companion notification,
+while Go To acknowledges only captured cue identities and leaves newer arrivals untouched.
+
+**Failure arc F1 [R], environment surprise.** Temporary source reports disappeared after the
+crash. The operator supplied the hourly archive location; all six October 4 reports were found
+there. The existing committed synthesis survived. The correction was to repair source links and
+continue from the locked decisions, without recreating discovery or inventing lost approval.
+
+**Failure arc F2 [R], provider transport.** The AGY report records HTTP 500 during eligibility
+lookup, empty stdout and no review. No quota signature authorized an alternate-account attempt.
+The workflow allowed substituting another independent family. Claude then encountered a hub
+timeout with zero output before its canonical CLI fallback completed. Process existence alone
+did not establish generation. The final documents retain degraded execution and unobserved
+served version, instead of presenting a generic success or an AGY approval.
+
+**Failure arc F3 [R], context budgeting.** A batched report read exceeded the aggregate output
+budget despite individually bounded commands. Narrower line ranges recovered missing findings.
+One patch then failed because its expected sentence began mid-line in the target. A targeted
+read corrected the context and the patch applied. The correction was to budget combined output
+and inspect exact patch anchors, not to broaden scans or overwrite the whole file.
+
+**Verification [O/R].** Current source checks confirmed paired Claude permission routes,
+conditional raw-payload debug logging, registry pruning, direct forced resets and old full pending
+replay. Installed Ghostty exposes input/close operations as well as navigation; the SPEC limits
+constructed commands. AppKit documents nullable launch dates and warns against PID-only identity.
+P7 recurs through this capability check. D01-D18 remain unchanged. Document validation checks
+required sections, links, formatting, secret patterns and append-only capture preservation.
+No app installation, OSC write, unsafe real-home E2E run or live rendering acceptance is claimed.
+
+**Pattern candidate and limits [R].** P8 records source adjudication before adopting reviewer
+remedies. A valid independent report does not establish that every suggested mechanism is useful.
+Original CONCERN verdicts remain attached to version 1.0; the caller's revisions are not provider
+approval of version 1.1. Neither P7's count nor this reconstructed entry identifies an exact model
+variant, so Model Profiles gain no model-specific tendency. No skill-promotion threshold is met.
+
+| Move [R] | Object | Observable result |
+|---|---|---|
+| Recover | Commit and daily tmp archive | Six source reports available |
+| Consolidate | Eighteen choices | One phased SPEC, implementation status draft |
+| Delegate | AGY, Codex and substituted Claude | Two complete reviews; failure warning retained |
+| Adjudicate | Source, dictionary and SDK header | Minimal runtime-contract revisions |
+| Preserve | SPEC, research, review synopses and capture | Durable source-linked handoff |
 
 ## Stubs
 

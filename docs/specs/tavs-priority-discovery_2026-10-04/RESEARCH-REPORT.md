@@ -1,8 +1,8 @@
 # TAVS: priority discovery and research synthesis
 
-Last Updated: 2026-10-04 (Europe/Vienna)
-Version: 1.0
-Status: Initial research complete; product decisions pending. This is not an approved SPEC.
+Last Updated: 2026-10-05 (Europe/Vienna)
+Version: 1.2
+Status: Discovery finalized through D18; SPEC implementation status remains draft.
 Source checkout: `/Users/cs/local/code/apps/terminal-agent-visual-signals`
 Source commit: `b047a33761144f7a6fa0eca90a656dab21033fc6`
 
@@ -42,11 +42,15 @@ with definitions and foundational rules before comparing approaches:
 1. [Architecture exploration][explore-architecture]: current modules, metadata and recovery.
 2. [Plans exploration][explore-plans]: original Obsidian passages, prior specs and duplicate work.
 3. [Verification exploration][explore-verification]: tests, isolation, dependencies and live gaps.
-4. [Targeting research][research-targeting]: native terminal APIs, highlighting, Spaces and permissions.
-5. [Attention research][research-attention]: interruption evidence, control, breaks and notifications.
-6. [Integration research][research-integrations]: provider events, metadata, analytics, themes and learning.
+4. [Targeting research][research-targeting]: native terminal APIs, highlighting, Spaces and
+   permissions.
+5. [Attention research][research-attention]: interruption evidence, control, breaks and
+   notifications.
+6. [Integration research][research-integrations]: provider events, metadata, analytics, themes
+   and learning.
 
-The full reports remain at their linked `/tmp/` paths. This synthesis retains their consequential
+The full reports were recovered in the linked October 4 archive after the computer crash.
+This synthesis retains their consequential
 findings, disagreements, sources and limitations so the recommendations do not depend on those
 ephemeral files remaining available. It removes repeated background rather than concatenating
 the reports.
@@ -433,9 +437,10 @@ its cleanup removes mute.state. Legacy pytest fixtures also inherit real HOME in
 Audit isolation before broad workstation runs. A green byte test is not a live appearance test.
 [Scheduling E2E source][scheduling-e2e], [legacy fixtures][python-fixtures]
 
-## 11. Initial Q&A and remaining technical questions
+## 11. Initial Q&A and technical questions (research-start snapshot)
 
-No new D01-DN product decisions have been accepted. Recommendations above are hypotheses.
+At this initial snapshot, no D01-DN decisions had been accepted. The recommendations here were
+hypotheses. The subsequent one-by-one answers and D18 convergence are recorded in SPEC.md.
 The inherited visual-only and immediately reversible testing requirements remain binding.
 
 The first round should resolve four choices:
@@ -458,7 +463,7 @@ geometry, cross-Space visibility, trusted provider-hook delivery, and current Op
 compatibility. Documentation cannot replace those small controlled probes. No minimum provider
 version, universally correct freshness threshold, or TAVS productivity effect is established.
 
-Convergence assessment: **not yet ready to draft a SPEC**. Research has narrowed the useful
+Initial convergence assessment: **not yet ready to draft a SPEC**. Research had narrowed the useful
 space, but user intent and the first support boundary are still open. After answers, continue
 only gap-directed research and decision rounds. Then draft the scoped SPEC, obtain the invoked
 workflow's independent reviews, and stop at its handoff. This report is the starting material,
@@ -472,15 +477,65 @@ kept distinct. Some Apple web API pages exposed JavaScript shells; the targeting
 cross-checked the relevant installed SDK definitions. Blocked papers were not used as evidence.
 
 Local source links refer to the inspected checkout and original Obsidian author passages.
-The repository contains no new implementation from this discovery. The two report/capture
-documentation changes are the only planned repository writes in this research pass.
+The repository contains no product implementation from discovery. The selected specification,
+source-linked research update, required review reports and session capture are the delivery work.
 
-[explore-architecture]: /tmp/explore-tavs-architecture-20261004.md
-[explore-plans]: /tmp/explore-tavs-plans-20261004.md
-[explore-verification]: /tmp/explore-tavs-verification-20261004.md
-[research-targeting]: /tmp/web-tavs-targeting-20261004.md
-[research-attention]: /tmp/web-tavs-attention-20261004.md
-[research-integrations]: /tmp/web-tavs-integrations-20261004.md
+## 13. Confirmed scope and crash recovery, 2026-10-05
+
+The operator completed one-by-one Q&A and confirmed D01-D18. The selected direction is one
+phased SPEC: all local Ghostty native surfaces, a resizable organizer, surface-owned priorities,
+two-second selection previews, explicit Go To, readable manual focus and opt-in automatic focus.
+Recovery suspends visual restrictions until explicit resumption, including after TAVS restart.
+Focus starts Off after restart. Existing provider signals are used; other strands remain deferred.
+
+The old open-question lists above describe the initial research snapshot, not current product
+uncertainty. [SPEC.md](SPEC.md) records choices, alternatives, rationale and acceptance criteria.
+Live native behavior remains empirical implementation work; it has not been verified by this Q&A.
+
+After the crash, all six /tmp reports were found in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-04/`. Their links below now point there.
+The saved synthesis remained in commit `c1dd8b4`. No terminal/app restart or live settings change
+was needed to resume discovery. No Ideas batch promotion or duplicate TaskNote creation occurred.
+
+The final source check confirmed configured Ghostty colors can be read with `+show-config`.
+That is configuration loading, not current per-surface dynamic-color capture. The selected
+renderer uses background-only effects and restores current TAVS intent or Ghostty defaults;
+it does not claim uniform dimming or exact preservation of application-painted cell colors.
+
+## 14. Specification reviews and finalization, 2026-10-05
+
+[SPEC.md](SPEC.md) version 1.1 preserves all eighteen decisions and includes three product phases.
+Within phase 1, catalogue/priorities/navigation precede independent recovery, then previews.
+Implementation planning and product code have not started; the invoked workflow now hands off
+to a fresh conversation. Root PLAN/PROGRESS remain the separate existing hard-lock workstream.
+
+Independent Codex and Claude reviews examined the unchanged version 1.0 specification. Both
+returned CONCERN, with a reported technical grade of 6/10. Findings were verified against source
+before revision; their complete source-verified dispositions are saved in
+[Codex review](reviews/CODEX-SPEC-REVIEW.md) and [Claude review](reviews/CLAUDE-SPEC-REVIEW.md).
+No provider assigned a new score or approval to the revised document.
+
+AGY was attempted but failed HTTP 500 eligibility lookup without a report. The allowed technical-
+failure substitution used Claude. Claude's canonical hub timed out with zero output, then its
+documented CLI fallback completed; that execution remains DEGRADED, with served version
+unobserved. The infrastructure follow-up is retained in its report rather than silently omitted.
+
+The revisions define per-surface intent lifetime, permission-episode coalescing, navigation cue
+cutoff and privacy across touched debug sinks. Recovery covers cached affected plain shells,
+uses per-TTY write ordering with suspension checked inside the write, retains failed targets and
+reports vanished versus unverified ones. Ownership expiry/relaunch, pause-end recomposition,
+neutral-background visibility, timing and deployed-copy acceptance are now explicit.
+These are runtime contracts for the selected feature, not a separate ledger or control plane.
+
+Future implementation must still validate actual native API behavior, signal delivery and visible
+effects using temporary paths and dedicated surfaces. Source review is not live acceptance.
+
+[explore-architecture]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/explore-tavs-architecture-20261004.md
+[explore-plans]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/explore-tavs-plans-20261004.md
+[explore-verification]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/explore-tavs-verification-20261004.md
+[research-targeting]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/web-tavs-targeting-20261004.md
+[research-attention]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/web-tavs-attention-20261004.md
+[research-integrations]: /Volumes/external/data/archive/tmp-by-day/2026-10-04/web-tavs-integrations-20261004.md
 [project]: /Users/cs/Obsidian/_/kn/projects/IPC17_terminal-agent-visual-signals/IPC17_terminal-agent-visual-signals.md
 [october-request]: /Users/cs/Obsidian/_/journal/day/JD_20261002.md:36
 [progress-decision]: /Users/cs/local/code/apps/terminal-agent-visual-signals/PROGRESS.md:370
