@@ -29,6 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05 |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-05 |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-07 |
 
 ---
 
@@ -367,6 +368,75 @@ variant, so Model Profiles gain no model-specific tendency. No skill-promotion t
 | Delegate | AGY, Codex and substituted Claude | Two complete reviews; failure warning retained |
 | Adjudicate | Source, dictionary and SDK header | Minimal runtime-contract revisions |
 | Preserve | SPEC, research, review synopses and capture | Durable source-linked handoff |
+
+## 2026-10-07 · model-unverified · tavs-execute-spec-planning
+
+meta:
+  model: gpt-6 family self-report; exact served variant unavailable [R]
+  model_source: API environment self-report; no native transcript extraction
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible conversation and tool reports [R]
+
+**Framing [R].** The operator explicitly invoked execute-spec for the finalized organizer
+SPEC. Its dispatch requires exactly one mode per iteration. Orientation found no PLAN.md or
+PROGRESS.md inside the dated SPEC package, so this invocation selected planning. Root state
+belongs to the separate hard-lock effort and could not supply phase completion for this SPEC.
+The interpretation was announced before editing: create the implementation state, then exit
+without starting product code. No new discovery question or product decision was needed.
+
+**Strategy [R].** The caller reread the SPEC and planning procedure, checked Git and state-file
+ownership, then assigned two read-only exploration tasks to the existing architecture and
+verification agents. One traced Swift scenes, timers, native identity and I/O. The other traced
+shell writers, payload flow, test roots and deployment copies. Their reports were read as
+planning inputs rather than treated as completed acceptance. Reuse won over new infrastructure:
+existing clocks/watchers/timers, one executable, the bounded device writer and PauseVisual's
+color math. New modules have concrete runtime responsibilities and are created when needed.
+
+**Decision points [R].** First, the three product phases were decomposed into nine executable
+slices. Catalogue and organizer precede shell fixture isolation, observations/intent, suspension,
+ordered recovery, previews, manual focus and automatic focus. Recovery cannot be declared
+effective until every restrictive writer shares its serialization. Second, privacy tests must
+distinguish forbidden prompt/tool/answer retention from legitimate display metadata; an initial
+plan sentence was narrowed to avoid rejecting existing title/directory behavior. Third, timer
+instances are separate because the global scheduler cancels all timers on each evaluation.
+The plan therefore reuses the timer implementation without sharing that owner's instance.
+
+**Near-miss arc F1 [R], environment assumption.** Temporary HOME alone looked like sufficient
+test isolation. Recon found independent runtime/tmp/XDG roots, an idle-worker fixture pointed
+at the real runtime and a mute-gate test that unsets its private override. Parent source reads
+confirmed both cases. The correction was a dedicated fixture-isolation phase before shell
+regressions, with explicit Swift URLs and dedicated native output targets. No unsafe suite was run.
+
+**Near-miss arc F2 [R], compatibility assumption.** The existing Swift entry point falls through
+unknown flags into the GUI. New helper verbs invoked against an older installed executable could
+therefore start the app instead of failing headlessly. The plan requires a small support check
+through an already recognized headless entry before new verbs. This is runtime compatibility
+handling, not a deployment stamp or a provenance system. Missing support remains a visible failure.
+
+**Failure arc F3 [R], tool/context use.** A combined SPEC/procedure read exceeded the aggregate
+output cap; narrower reads retrieved the omitted decision section. A zsh-expanded nonexistent
+filename wildcard later prevented one search. Repeating the search over known directories fixed
+it. These were read failures; no user data was changed or deleted to recover from them.
+
+**Verification and limits [O/R].** Current source supports the timer cancellation, registry
+pruning, raw pending replay, bypass output, lost Codex bash-$0 metadata and packaging omissions.
+Swift/Bats/shell executables were located, but no build/test suite, AppleEvent, OSC, install or
+process termination was executed. Planning validation checks phase/dependency correspondence,
+concrete scopes, unchanged SPEC/root state, exact staging and preservation of previous log entries.
+No phase is marked DONE and no old test count is reused as current evidence.
+
+**Pattern candidate [R].** P9 captures SPEC-owned state orientation. Exact executor attribution
+is unavailable, so Model Profiles gain no model-specific claim. No promotion threshold is met.
+
+| Move [R] | Object | Observable result |
+|---|---|---|
+| Orient | SPEC, skill and package state | Planning mode, no collision |
+| Delegate | Two concrete read-only recon tasks | Reports with runtime and fixture constraints |
+| Verify | Actual callers, roots and tool availability | Reuse and safe sequencing selected |
+| Write | PLAN/PROGRESS and required capture | Nine phases, all Not Started |
+| Validate | Documents and exact Git scope | Planning checkpoint, product code untouched |
 
 ## Stubs
 
