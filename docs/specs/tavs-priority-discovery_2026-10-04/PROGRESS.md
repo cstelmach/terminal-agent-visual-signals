@@ -5,8 +5,8 @@
 **Status:** Not Started
 **Mode:** Manual
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-07 22:46 CEST
-**Version:** 1.0
+**Last Updated:** 2026-10-08 07:14 CEST
+**Version:** 1.1
 
 ## Session Metadata
 
@@ -36,6 +36,19 @@ Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered 
 The implementation SPEC remains `draft`; planning is not an implementation-phase completion.
 
 ## Log
+
+### Goal preparation: 2026-10-08 07:14 CEST
+
+Created [GOAL.md](GOAL.md) after operator sign-off, "Looks good. Continue." The approved strategy
+covers all nine phases with one execute-spec phase per goal iteration, automatic continuation
+after verified checkpoints, targeted reviews after phases 1/6 and available final triple review.
+Existing tests/commit/docs requirements and separate deployment authorization remain binding.
+
+The exact copyable prompt passed the goal validator at 3560 characters. Source ownership,
+all nine Not Started states, the GOAL refresher and unchanged SPEC/PLAN were checked. This
+iteration saved the goal artifact only; no native goal activation, product edit, test suite,
+app/device operation or real settings change occurred. Mode remains Manual until activation.
+Next action: activate the Copyable /goal block in GOAL.md, which starts with plan Phase 1.
 
 ### Planning: 2026-10-07 22:46 CEST
 

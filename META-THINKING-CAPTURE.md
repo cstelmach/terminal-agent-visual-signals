@@ -29,7 +29,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05 |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-05 |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-07 |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08 |
+| P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
 
@@ -437,6 +438,81 @@ is unavailable, so Model Profiles gain no model-specific claim. No promotion thr
 | Verify | Actual callers, roots and tool availability | Reuse and safe sequencing selected |
 | Write | PLAN/PROGRESS and required capture | Nine phases, all Not Started |
 | Validate | Documents and exact Git scope | Planning checkpoint, product code untouched |
+
+## 2026-10-08 · model-unverified · tavs-master-goal-preparation
+
+meta:
+  model: gpt-6 family self-report; exact served variant unavailable [R]
+  model_source: API environment self-report; no native transcript extraction
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible conversation and tool reports [R]
+
+**Framing [R].** The operator invoked codex-goal-prompt-builder to create a goal for the
+existing TAVS implementation package. The skill separates three actions: drafting a reviewable
+policy, saving it after sign-off and activating a native goal after a separate instruction.
+Current PROGRESS showed every phase Not Started, so the proposed mode was implementation,
+not resume. The immediate deliverable was GOAL.md, not the first product-code phase. P9 recurred
+through resolving the dated package before reading any root hard-lock execution state.
+
+**Strategy [R].** The caller reread the goal contract, mode selection, state resolution and
+review policy, then checked current SPEC/PLAN/PROGRESS ownership and Git. The standard renderer
+provided a conservative first draft; its duplicated generic criteria were replaced by a concise
+project-specific prompt. Source references carried the detailed requirements rather than
+embedding the full specification. The chosen master goal covers all nine phases while each
+iteration still handles one bounded phase, reorients from files and commits only verified work.
+No new loop script, dependency, goal-control service or budget tracker was needed.
+
+**Decision points [R].** First, /goal fit a finite substantial implementation with observable
+tests, source and dedicated visual acceptance; waiting or polling did not dominate the objective.
+Second, automatic continuation was proposed as the future goal's trigger between execute-spec
+iterations, avoiding another routine approval at every checkpoint while preserving the phase
+boundary. Third, reviews target native identity and recovery before previews, with available
+final independent reviews. Failed transports and unsupported live behavior cannot count as
+approval or visible acceptance. Fourth, source/isolated completion was kept separate from real
+deployment, personal settings changes or shutdown of existing sessions, which need authorization.
+
+**Approval arc [O/R].** A validated 3560-character prompt and readable temporary packet were
+prepared before asking for sign-off. The question offered the full master goal or Phase 1 only,
+and explicitly said saving would not activate anything. No answer was inferred from the selected
+UI default or from a sixty-second wait. The operator later replied, "Looks good. Continue."
+The caller recorded approval of the presented full strategy, preserved the exact prompt when
+saving GOAL.md, and left native activation separate. P10 captures this action boundary rather
+than turning a builder approval into a live implementation trigger.
+
+**Failure arc F1 [R], context budgeting.** One batched source read exceeded the aggregate output
+cap despite per-command limits. The next read narrowed to the omitted recovery contract and
+renderer dispatch. The correction recovered the material needed to define persistent suspension,
+ordered writes and headless behavior; no missing excerpt was treated as evidence. Later reads
+kept the combined output smaller. This was a reading failure, not an implementation defect.
+
+**Verification [O/R].** The existing validator accepted the exact prompt, below its 4000-character
+limit with four source references including GOAL.md itself. Additional checks matched source
+ownership, nine initial phase states and packet/prompt content, confirmed that no GOAL existed
+before sign-off, and kept the repository clean during drafting. Saving changed only GOAL.md,
+the append-only progress log and this required capture, with backups of existing files. The
+SPEC and PLAN remained untouched. No runtime test, AppleEvent, OSC, install, process termination,
+personal preference mutation or create_goal call occurred. Required live checks remain future work.
+
+**Failure arc F2 [R], staging.** Git reported the ignored specs directory while the exact owned
+paths were nevertheless staged. The caller checked actual staged names, then used force-add only
+for the enumerated documents. The warning was not treated as proof of either missing or extra work.
+
+**Heuristics and limits [R].** Treat prompts as durable instructions with measurable completion,
+not as proof that implementation ran. Reuse the builder's validator and existing state files.
+Record approval, availability and activation as distinct facts. P9 has two occurrences and P10
+one; no promotion threshold is met. Exact model attribution remains unavailable, so no Model
+Profiles tendency is added. This record summarizes visible methods and reconstructed rationale,
+not private reasoning or native session bodies.
+
+| Move [R] | Object | Observable result |
+|---|---|---|
+| Resolve | Current package and goal contract | Implementation mode; nine phases Not Started |
+| Draft and validate | Renderer, tailored prompt and packet | VALID, 3560 characters |
+| Request sign-off | Concrete full-goal strategy | Operator approval; no timeout inference |
+| Save | GOAL.md and progress/capture | Approved artifact; activation remains separate |
+| Verify and commit | Exact document scope | Product source and phase states preserved |
 
 ## Stubs
 
