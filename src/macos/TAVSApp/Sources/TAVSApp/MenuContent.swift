@@ -12,6 +12,7 @@ struct MenuContent: View {
             OpenSessionsButton()
             Text(sessions.focusStatus).font(.caption)
             Button("Focus Selected") { sessions.focusSelected() }.disabled(!sessions.canFocusSelected)
+            Button("Automatic Focus") { sessions.enableAutomatic() }.disabled(!sessions.canEnableAutomatic)
             Button("Focus Off") { sessions.focusOff() }
                 .disabled(sessions.focusMode == .off && sessions.focusCleanupError == nil)
             if let error = sessions.focusCleanupError { Text(error).font(.caption) }

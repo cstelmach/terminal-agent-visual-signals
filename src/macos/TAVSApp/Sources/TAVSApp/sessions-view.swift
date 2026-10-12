@@ -34,15 +34,22 @@ struct SessionsView: View {
                 .foregroundColor(model.visualRestrictionsStatus.disablesRestrictions ? .primary : .secondary)
             HStack {
                 Button("Focus Selected") { model.focusSelected() }.disabled(!model.canFocusSelected)
+                Button("Automatic Focus") { model.enableAutomatic() }.disabled(!model.canEnableAutomatic)
                 Button("Focus Off") { model.focusOff() }
                     .disabled(model.focusMode == .off && model.focusCleanupError == nil)
                 Button("Restore Visibility") { model.restoreVisibility() }
                 if model.visualRestrictionsStatus.disablesRestrictions {
                     Button("Re-enable Visual Restrictions") { model.restoreVisibility(resume: true) }
-                    Text("Saved schedules and locks may apply immediately. Focus stays Off.").font(.caption)
                 }
             }
             .disabled(model.recovering)
+            if model.visualRestrictionsStatus.disablesRestrictions {
+                Text("Saved schedules and locks may apply immediately. Focus stays Off.").font(.caption)
+            }
+            if model.focusMode == .automatic {
+                Text("Automatic uses observed permission episodes. Go To acknowledges cues present when navigation begins.")
+                    .font(.caption)
+            }
             if let status = model.recoveryStatus { Text(status).font(.callout) }
             Text(model.previewStatus).font(.caption).foregroundColor(.secondary)
             Text(model.focusStatus).font(.caption).foregroundColor(.secondary)
@@ -90,7 +97,7 @@ struct SessionsView: View {
                             Text("Observed \(Date(timeIntervalSince1970: observation.observedAt), style: .relative) ago")
                                 .font(.caption).foregroundColor(.secondary)
                             if observation.provider == "codex" {
-                                Text("Completion-only coverage").font(.caption).foregroundColor(.secondary)
+                                Text("Completion-only; Go To acknowledges").font(.caption).foregroundColor(.secondary)
                             }
                         } else {
                             Text("No agent observation")
@@ -98,6 +105,9 @@ struct SessionsView: View {
                         }
                         Text(coverage?.status ?? "Observation coverage unavailable.")
                             .font(.caption).foregroundColor(.secondary).lineLimit(2)
+                        if model.cueCount(for: row.id) > 0 {
+                            Text("\(model.cueCount(for: row.id)) unacknowledged attention cues").font(.caption)
+                        }
                     }
                 }
                 .width(min: 160, ideal: 180)
@@ -111,7 +121,7 @@ struct SessionsView: View {
             HStack {
                 Text("\(model.selection.count) selected")
                 Spacer()
-                Text(model.focusMode == .manual ? "Focus: Manual" : "Focus: Off")
+                Text("Focus: \(model.focusMode.rawValue)")
                 if let date = model.refreshedAt { Text("Catalogue refreshed \(date, style: .relative) ago") }
             }
             .font(.caption).foregroundColor(.secondary)

@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.7
+Version: 1.8
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -59,6 +59,15 @@ Consumed IDs prevent replay after acknowledgement, downgrade or temporary missin
 Unknown/unverified signals and ambiguous late permission companions cannot create cues.
 The permission classifier now requires a recognized event rather than generic Notification.
 Only the latest hook observation is stored, so overwritten episode boundaries remain unknown.
-Automatic mode, renderer integration, navigation acknowledgement and GUI controls are pending.
+Automatic now stays armed at zero cues, reuses the existing render run and emphasizes all High
+rows while any cue remains. Membership changes clear old dimming; current cue-source metadata
+is rechecked before writes within the original deadline. Failed navigation acknowledges nothing,
+and successful Go To removes only its captured cue identities. Priority saves reconcile immediately.
+Sessions/menu controls expose mode and cue counts. The signed private fixture verified arming,
+explicit mode switching, accessible retained working labels, recovery from Manual/Automatic and
+Off after explicit resumption. It reported all three simulated bindings unavailable accurately.
+After owned quit/relaunch, the process remains alive and suspension is saved, but CUA attachment
+timed out. Active-cue UI, relaunch UI and physical salience/navigation cases remain unverified.
+Independent final reviews are next; source completion does not complete native acceptance.
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.
