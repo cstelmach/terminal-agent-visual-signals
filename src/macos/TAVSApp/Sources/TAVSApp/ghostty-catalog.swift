@@ -61,11 +61,29 @@ final class GhosttyCatalog {
         queue.async { self.performRefresh([completion]) }
     }
 
-    private func performRefresh(_ completions: [(Result<[GhosttySurface], Error>) -> Void]) {
-        let result = Result { () throws -> [GhosttySurface] in
-            let instance = try application()
-            return try request(["action": "enumerate", "pid": instance.pid], instance: instance).surfaces
+    // Headless recovery cannot wait for refresh's main-thread completion callback.
+    func snapshot() throws -> [GhosttySurface] {
+        let completion = SnapshotCompletion()
+        queue.async {
+            completion.result = Result { try self.enumerate() }
+            completion.finished.signal()
         }
+        completion.finished.wait()
+        return try completion.result!.get()
+    }
+
+    private final class SnapshotCompletion {
+        let finished = DispatchSemaphore(value: 0)
+        var result: Result<[GhosttySurface], Error>?
+    }
+
+    private func enumerate() throws -> [GhosttySurface] {
+        let instance = try application()
+        return try request(["action": "enumerate", "pid": instance.pid], instance: instance).surfaces
+    }
+
+    private func performRefresh(_ completions: [(Result<[GhosttySurface], Error>) -> Void]) {
+        let result = Result { try enumerate() }
         DispatchQueue.main.async { completions.forEach { $0(result) } }
         lock.lock()
         let next = pending

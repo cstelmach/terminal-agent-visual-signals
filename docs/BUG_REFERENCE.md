@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.4
+Version: 1.5
+
+## Headless catalogue needs an off-main completion
+
+Waiting on `GhosttyCatalog.refresh` from headless main would block its main-thread callback.
+The new synchronous `snapshot` explicitly enqueues enumeration on the existing native queue
+and publishes its result through a semaphore, sharing request bounds and target filters.
+
+The first implementation used `queue.sync`. Its test caught native work executing on main.
+An explicit asynchronous enqueue fixes that contract; no native result callback needs the UI
+event loop. Two new cases pin off-main work, dedicated scope, denial and application reuse.
+All 14 catalogue and 314 full isolated Swift tests pass. Live Ghostty remains unverified.
 
 ## Writer race fixture waits past its real deadline
 

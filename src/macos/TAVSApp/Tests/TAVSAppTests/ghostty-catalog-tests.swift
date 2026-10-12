@@ -107,6 +107,43 @@ final class GhosttyCatalogTests: XCTestCase {
         XCTAssertEqual(calls, 2)
     }
 
+    func testHeadlessSnapshotReturnsWithoutMainCallbackAndKeepsDedicatedScope() throws {
+        XCTAssertTrue(Thread.isMainThread)
+        let runner = MockProcessRunner()
+        let data = try reply([row("a"), row("b", tty: "/dev/ttys002")])
+        let allowed = GhosttySurfaceID(application: app, terminalID: "a")
+        runner.boundedHandler = { _, args, timeout in
+            XCTAssertFalse(Thread.isMainThread)
+            XCTAssertEqual(timeout, 2)
+            let request = try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(args.last).utf8))
+                as? [String: Any]
+            XCTAssertEqual(request?["allowedIDs"] as? [String], ["a"])
+            return data
+        }
+        let catalog = GhosttyCatalog(processRunner: runner, application: { self.app }, allowedSurfaces: [allowed])
+        XCTAssertEqual(try catalog.snapshot().map(\.id), [allowed])
+        XCTAssertEqual(runner.runCallLog.count, 1)
+    }
+
+    func testHeadlessSnapshotPreservesPermissionAndApplicationGenerationFailures() throws {
+        let runner = MockProcessRunner()
+        runner.boundedResults = [.success(Data("{\"error\":\"permissionDenied\"}".utf8))]
+        let denied = GhosttyCatalog(processRunner: runner, application: { self.app })
+        XCTAssertThrowsError(try denied.snapshot()) { error in
+            XCTAssertEqual(error as? GhosttyCatalogError, .permissionDenied)
+        }
+        runner.boundedResults = [.success(try reply([row("a")]))]
+        var calls = 0
+        let changed = ProcessGeneration(pid: app.pid, startSeconds: 2, startMicroseconds: 1)
+        let stale = GhosttyCatalog(processRunner: runner, application: {
+            calls += 1
+            return calls == 1 ? self.app : changed
+        })
+        XCTAssertThrowsError(try stale.snapshot()) { error in
+            XCTAssertEqual(error as? GhosttyCatalogError, .staleApplication)
+        }
+    }
+
     func testGoToRejectsReusedTTYAndAcceptsConfirmedMovedSurface() throws {
         let runner = MockProcessRunner()
         let target = try GhosttyCatalog.decode(reply([row("a")]), application: app)[0]
