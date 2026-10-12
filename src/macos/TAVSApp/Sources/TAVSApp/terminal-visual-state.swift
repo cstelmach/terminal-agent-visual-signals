@@ -1013,7 +1013,7 @@ private struct VisualRecordKey: CodingKey {
     init?(intValue: Int) { return nil }
 }
 
-private func requireVisualKeys(_ decoder: Decoder, _ allowed: Set<String>) throws {
+func requireVisualKeys(_ decoder: Decoder, _ allowed: Set<String>) throws {
     let keys = try decoder.container(keyedBy: VisualRecordKey.self).allKeys.map(\.stringValue)
     guard Set(keys).isSubset(of: allowed) else { throw TerminalVisualStateError.invalidRecord }
 }

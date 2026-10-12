@@ -3,6 +3,23 @@ import Darwin
 @testable import TAVSApp
 
 final class VisualRestrictionsStateTests: XCTestCase {
+    func testSerializableRevisionIdentityRejectsEveryAtomicReplacement() throws {
+        let store = VisualRestrictionsStateStore(url: url)
+        let missing = try store.captureRevision()
+        XCTAssertTrue(try store.matches(missing.identity, deadline: .max))
+        try store.write(suspended: false)
+        XCTAssertFalse(try store.matches(missing.identity, deadline: .max))
+        let revision = try store.captureRevision()
+        let data = try JSONEncoder().encode(revision.identity)
+        let identity = try JSONDecoder().decode(VisualRestrictionsIdentity.self, from: data)
+        XCTAssertTrue(try store.matches(identity, deadline: .max))
+        for suspended in [false, true, false] {
+            try store.write(suspended: suspended)
+            XCTAssertFalse(try store.matches(identity, deadline: .max))
+        }
+        withExtendedLifetime(revision) {}
+    }
+
     private var directory: URL!
     private var url: URL { directory.appendingPathComponent("visual-restrictions.state") }
 

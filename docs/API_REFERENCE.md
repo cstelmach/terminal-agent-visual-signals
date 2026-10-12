@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
-Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.6
+Last Updated: 2026-10-13 (Europe/Vienna)
+Version: 1.7
 
 ## Public recovery commands
 
@@ -61,6 +61,12 @@ Current palette, background, title and image styling is composed inside the writ
 the payload is ephemeral and is not retained as output history.
 
 ## Writer ordering
+
+`VisualRestrictionsRevision.identity` exposes only the marker's device/inode or explicit missing
+identity, with strict Codable parsing. The initiating run must retain the pinned revision while
+its effects or pending cleanup remain live. Stored identities are compared under the original
+writer deadline; atomic replacement invalidates them even when the Boolean value is unchanged.
+No descriptor, desired focus mode or extra cancellation token is serialized.
 
 `ProcessRunner.runBoundedOutput` retains stdout and exit status, accepts an explicit environment,
 and caps the process at ten seconds with bounded pipe draining. `runBounded` remains the

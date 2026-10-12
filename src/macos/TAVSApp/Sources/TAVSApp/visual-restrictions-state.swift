@@ -17,11 +17,29 @@ enum VisualRestrictionsStatus: String {
 
 enum VisualRestrictionsStateError: Error { case storageUnavailable, deadlineExceeded }
 
+struct VisualRestrictionsIdentity: Codable, Equatable {
+    let device: dev_t
+    let inode: ino_t
+    var isValid: Bool { inode != 0 || device == 0 }
+
+    init(device: dev_t, inode: ino_t) { self.device = device; self.inode = inode }
+
+    init(from decoder: Decoder) throws {
+        try requireVisualKeys(decoder, ["device", "inode"])
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        device = try values.decode(dev_t.self, forKey: .device)
+        inode = try values.decode(ino_t.self, forKey: .inode)
+        guard inode != 0 || device == 0 else { throw VisualRestrictionsStateError.storageUnavailable }
+    }
+}
+
 final class VisualRestrictionsRevision {
     fileprivate let url: URL
     fileprivate let descriptor: Int32
     fileprivate let device: dev_t
     fileprivate let inode: ino_t
+
+    var identity: VisualRestrictionsIdentity { VisualRestrictionsIdentity(device: device, inode: inode) }
 
     fileprivate init(url: URL, descriptor: Int32 = -1, device: dev_t = 0, inode: ino_t = 0) {
         self.url = url; self.descriptor = descriptor; self.device = device; self.inode = inode
@@ -57,21 +75,24 @@ final class VisualRestrictionsStateStore {
     func matches(_ revision: VisualRestrictionsRevision, deadline: UInt64) throws -> Bool {
         guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
         guard url == revision.url else { throw VisualRestrictionsStateError.storageUnavailable }
-        return try withExtendedLifetime(revision) {
-            var info = stat()
-            let result: Bool
-            if lstat(url.path, &info) != 0 {
-                guard errno == ENOENT, missingStatus() != .unavailable else {
-                    throw VisualRestrictionsStateError.storageUnavailable
-                }
-                result = revision.descriptor < 0
-            } else {
-                guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
-                result = revision.descriptor >= 0 && revision.device == info.st_dev && revision.inode == info.st_ino
+        return try withExtendedLifetime(revision) { try matches(revision.identity, deadline: deadline) }
+    }
+
+    func matches(_ identity: VisualRestrictionsIdentity, deadline: UInt64) throws -> Bool {
+        guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
+        var info = stat()
+        let result: Bool
+        if lstat(url.path, &info) != 0 {
+            guard errno == ENOENT, missingStatus() != .unavailable else {
+                throw VisualRestrictionsStateError.storageUnavailable
             }
-            guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
-            return result
+            result = identity.inode == 0 && identity.device == 0
+        } else {
+            guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
+            result = identity.inode != 0 && identity.device == info.st_dev && identity.inode == info.st_ino
         }
+        guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
+        return result
     }
 
     func read() -> VisualRestrictionsStatus {
