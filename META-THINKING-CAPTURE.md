@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 9 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 10 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1406,6 +1406,78 @@ not only its obvious refresh method. No new skill promotion or process mechanism
 Tool results and source changes are [O]; causal interpretation and model identity are [R]. The
 next slice must supply bounded configuration resolution, controller/UI wiring, copy tests and
 native acceptance before Phase 7 can be completed.
+
+## 2026-10-12 · gpt-6 (self-reported) · preview-controller-and-config
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported [R]; native message.model unavailable
+  interface: codex-desktop
+  thinking: unknown; user requested ultrathink
+  session: 01a10879
+  trace: observed visible tool calls; causal interpretation reconstructed
+
+**Framing [O]**: Continued Phase 7 from clean f27d65d. The last turn added tint and separate
+preview leases; this slice adds request ordering, the controller and bounded configuration
+resolution. The full goal remains nine phases. No GUI wiring, installation or physical native
+acceptance is claimed. Source and current progress were read before selecting this work.
+
+**Strategy [O/R]**: Two explorers examined marker ordering and installed manuals. The parent
+verified atomic replacement in source. A read-only descriptor pins the original marker identity;
+comparison after caching the target rejects queued work crossing headless recovery, while later
+accepted work is discoverable for reset. This avoids another counter, schema or watcher [O].
+Its sufficiency is a reconstruction from those two orderings plus their regressions [R].
+Separate start and cleanup queues keep Clear responsive while configured color lookup waits.
+
+**Action trace [O]**:
+
+| # | Move | Object | Evidence |
+|---|------|--------|----------|
+| 1 | Read/delegate | Current phase and exact gaps | Two scoped reports |
+| 2 | Recall/research | Ghostty output | Unrelated recall; native primary sources |
+| 3 | Test/wire | Preview request revision | Missing API red, focused 59 green |
+| 4 | Test controller | Multiselection | Shared-parent race found |
+| 5 | Discriminate/fix | Directory creation | Pre-created parent passed; fix/stress |
+| 6 | Test/query | Canonical config | Missing API red; seven parser/query tests |
+| 7 | Verify/fix fixture | Full Swift and Bats | 435/73 pass; release passes |
+| 8 | Commit/save | Features and research | Source checkpoints; capture |
+
+**Decision points [O]**: Marker contents equality was insufficient for repeated recovery or
+resume. File replacement identity, pinned against reuse, covers that case. Exact-ID clear also
+checks the original revision so it cannot repaint old ordinary intent after emergency reset.
+Configuration validation precedes parsing because ordinary Ghostty output can omit diagnostics.
+Explicit defaults avoid its missing-config template branch. Unresolved dual themes remain
+unavailable because the inspected CLI has no supported appearance selector. Research did not
+execute Ghostty; installed behavior still requires acceptance.
+
+**Failure arcs**:
+
+- F1, fixture ordering [O]: The repeated-recovery test attempted to read bytes merely because
+  a target had been cached after recovery. The parent inspected the failing path and changed
+  the fixture to read only actual restored report items. No production assertion was weakened.
+- F2, shared mutation race [O]: Multiselection failed three assertions. Pre-creating only the
+  shared targets directory made the case pass, isolating concurrent parent creation. The helper
+  now accepts a directory another writer created and rechecks type/deadline. A 32-target,
+  four-root stress test passes. The controller skeleton preceded its tests; this test-order
+  deviation is recorded rather than portrayed as missing-interface TDD.
+- F3, research transport [O]: AGY required fingerprinting incompatible with project rules.
+  It stopped before provider execution. Native research covered the bounded gap, and the parent
+  freshly read official action source. No AGY verdict or installed-runtime claim was substituted.
+- F4, fixture drift [O]: Broader shell testing found a regular-file output expectation and
+  obsolete private lock-flag assertion. Managed output correctly requires a terminal. An owned
+  PTY preserves real hook/intent/rule checks; observable suppression assertions remain. A separate
+  policy-race fixture used masterPause instead of masterPaused; source lookup corrected it.
+
+**Verification [O]**: Full Swift passes 435 in 4.926 seconds without warnings; release build
+passes in 15.74 seconds. Current-helper Bats passes 73, including shared state and suspension
+parity. Syntax/diff checks pass. Failed logs remain retained. No Python scope changed, so no
+extra rerun was used. No real schedules/settings, existing process shutdown or native UI action
+occurred. The code is committed; Phase 7 is still In Progress for GUI and copy coverage.
+
+**Heuristics and confidence**: P9 recurs: current state chooses the next work, not a historical
+phase locator. Candidates are cache-before-revision-check for discoverable cancellation, and
+validate-semantic-success rather than trusting exit zero. No new skill or process mechanism is
+proposed. Tool/source results are [O]; motives, sufficiency arguments and model identity are [R].
 
 ## Stubs
 

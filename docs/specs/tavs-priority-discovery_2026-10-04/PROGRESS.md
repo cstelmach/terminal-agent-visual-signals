@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 21:18 CEST
-**Version:** 3.0
+**Last Updated:** 2026-10-12 22:19 CEST
+**Version:** 3.1
 
 ## Session Metadata
 
@@ -28,7 +28,7 @@
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
-| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | 6ea096e, ad5d0ca | 416 Swift; 61 Bats | | Rendering foundation; UI/acceptance pending |
+| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | Feature hashes below | 435 Swift; 73 Bats | | Controller/config source verified; UI/copy/live pending |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
@@ -830,3 +830,53 @@ ID alone cannot observe headless cancellation of an effect not yet saved. Existi
 release already use safe typed composition; do not reintroduce pending replay. No actual Ghostty,
 installed-app change or real settings/schedules/process shutdown occurred. All physical cases
 remain unverified. Goal active; Phases 8/9 not started. PLAN and SPEC body remain fixed.
+
+
+### Phase 7 controller and configuration: 2026-10-12 22:19 CEST
+
+Previous turn was progress; resumed clean f27d65d. Phase 7 remains In Progress. No native or
+Ghostty runtime call was made. Two read-only follow-ups examined existing marker ordering and
+installed manuals; native primary-source research closed the canonical-output and appearance gap.
+Wiki recall returned unrelated passages (proceed). AGY stopped before provider because mandatory
+fingerprinting conflicted with project rules; no retry, verdict or substitute AGY claim was made.
+
+6ad445a adds start/clear operations and a pinned read-only marker revision. Cache the validated
+target before in-lock comparison, preserving recovery discovery ordering and the original100ms.
+Same-value recovery/resume replacements reject queued starts; stale clear cannot reapply ordinary
+color after emergency reset. No new schema, counter, marker or polling protocol. Missing-API red
+EeVWRO preceded implementation. Focused51 ZBRrkE caught a fixture reading bytes for a target
+cached only after recovery; reading actual restored report items fixed it. Focused59 vkRHZl passed.
+
+7c66769 adds one two-second selection expiry, exact current-ID guards, separate start/clear queues,
+retryable cleanup and cancellation for recovery without painting. The skeleton was drafted before
+its controller tests, a test-order deviation; tests then exposed a real multiselection failure.
+Y7XFZg failed three assertions; pre-creating only the shared targets directory made EETWo0 pass.
+7af78be fixes the common-parent creation race and preserves directory/deadline checks. A stress
+case covers 32 targets in four fresh roots; no fake pre-created directory remains in the fixture.
+Focused123 jqKiLg passed. The policy-race fixture's misspelled enum case failed compilation in
+YdbNlw; current-source masterPaused corrected it, without production semantics changes.
+
+a19a087 validates existing config before canonical color parsing. Missing nonempty config uses
+explicit defaults to avoid Ghostty's default-template branch. Duplicate/missing/bad output and
+unresolved dual-theme appearance fail explicitly. Upstream +show-config has no appearance flag
+and can omit diagnostics; +validate-config is required. Config deletion during query and optional
+file reads remain native limitations. No config input parser, copied config or OSC query was added.
+Renderer missing-API red YyaNSR preceded seven-test green JFEYuB. Installed runtime remains untested.
+
+Final full435 qr2sDR passes in 4.926s without warnings; release xHie4A passes in 15.74s. Earlier
+full430 eWsOn6 and full434 BuURVw also passed. Broadened Bats73 YrbhdG found two obsolete parity
+fixtures: regular-file output and an unused private lock-flag assertion. Fixed in 2a78209
+by using an owned PTY and keeping observable suppression/definition/intent assertions.
+Focused parity6 aU1cpi and final connected73 0wjoLC pass with the current release helper;
+preprocessing/source syntax oFTeG3 and diff checks pass. No new Python scope warranted a rerun.
+
+Reports: phase7-recovery-order-research.md, phase7-installed-config-research.md,
+phase7-native-color-gap-research.md and phase7-agy-color-research-failed.md. Backups:
+`/tmp/tavs-phase7-preview-controller-20261012/`; isolated failures/full logs retained.
+Scope: ten Swift source/test paths plus one connected parity fixture and API/bug/roadmap docs;
+shared state/recovery helpers are necessary Phase 7 extensions. PLAN and SPEC body unchanged.
+Next: connect Sessions selection/Clear/Escape/close and GUI recovery; use a PID-bound executable
+and explicit private configuration paths, then exact sync copies and signed fixture acceptance.
+Before a fixture GUI recovery action, verify its headless factory cannot enumerate real Ghostty.
+No install, sync, real settings/schedules, existing process shutdown or physical acceptance.
+Goal stays active. Phase 2 remains Blocked; Phases 8/9 not started.
