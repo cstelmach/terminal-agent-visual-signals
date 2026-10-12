@@ -25,11 +25,24 @@ struct SessionsView: View {
                 .disabled(model.selection.isEmpty || !model.catalogueAvailable || model.priorityStorageError != nil)
                 Button("Clear Selection") { model.selection.removeAll() }
                     .disabled(model.selection.isEmpty)
+                Button("Clear Preview") { model.clearPreview() }
+                    .disabled(!model.previewActive && model.previewCleanupError == nil)
                 Button("Refresh") { model.refresh() }.disabled(model.refreshing)
             }
             Text(model.status).font(.callout).foregroundColor(model.catalogueAvailable ? .secondary : .primary)
             Text(model.visualRestrictionsStatus.message).font(.callout)
                 .foregroundColor(model.visualRestrictionsStatus.disablesRestrictions ? .primary : .secondary)
+            HStack {
+                Button("Restore Visibility") { model.restoreVisibility() }
+                if model.visualRestrictionsStatus.disablesRestrictions {
+                    Button("Re-enable Visual Restrictions") { model.restoreVisibility(resume: true) }
+                    Text("Saved schedules and locks may apply immediately. Focus stays Off.").font(.caption)
+                }
+            }
+            .disabled(model.recovering)
+            if let status = model.recoveryStatus { Text(status).font(.callout) }
+            Text(model.previewStatus).font(.caption).foregroundColor(.secondary)
+            if let error = model.previewCleanupError { Text(error).font(.callout).foregroundColor(.red) }
             if let error = model.priorityStorageError { Text(error).foregroundColor(.red) }
             Table(model.rows, selection: $model.selection) {
                 TableColumn("Terminal") { row in
@@ -101,5 +114,6 @@ struct SessionsView: View {
         .frame(minWidth: 850, minHeight: 350)
         .onAppear { model.opened() }
         .onDisappear { model.closed() }
+        .onExitCommand { model.clearPreview() }
     }
 }

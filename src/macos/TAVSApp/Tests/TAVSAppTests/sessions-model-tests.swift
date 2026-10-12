@@ -318,4 +318,40 @@ final class SessionsModelTests: XCTestCase {
         ])
         XCTAssertEqual(launch.root.path, root.resolvingSymlinksInPath().path)
     }
+
+    func testFixtureRecoveryDerivesScopeAndPreservesExplicitAllowlist() throws {
+        let fixture = directory.appendingPathComponent("fixture.json")
+        let payload: [String: Any] = [
+            "application": ["pid": 43, "startSeconds": 1, "startMicroseconds": 1],
+            "surfaces": ["one", "two"].map { ["terminalID": $0, "tabID": "tab", "windowID": "window"] }
+        ]
+        try JSONSerialization.data(withJSONObject: payload).write(to: fixture)
+        var values = ["TAVS_SESSIONS_TEST_ROOT": directory.path, "TAVS_SESSIONS_TEST_FIXTURE": fixture.path]
+        let all = try IsolatedSessionsLaunch.environment(values).recoveryEnvironment(values)
+        let decode: (String) throws -> Set<GhosttySurfaceID> = {
+            Set(try JSONDecoder().decode([GhosttySurfaceID].self, from: Data($0.utf8)))
+        }
+        XCTAssertEqual(try decode(all["TAVS_SESSIONS_TEST_TARGETS"]!), [surface("one").id, surface("two").id])
+        values["TAVS_SESSIONS_TEST_TARGETS"] = String(data: try JSONEncoder().encode([surface("one").id]), encoding: .utf8)
+        let launch = try IsolatedSessionsLaunch.environment(values)
+        XCTAssertEqual(try launch.fixtureSnapshot().map(\.id), [surface("one").id])
+        XCTAssertEqual(try decode(launch.recoveryEnvironment(values)["TAVS_SESSIONS_TEST_TARGETS"]!), [surface("one").id])
+        values["TAVS_SESSIONS_TEST_TARGETS"] = "[]"
+        XCTAssertThrowsError(try IsolatedSessionsLaunch.environment(values))
+    }
+
+    func testMissingRecoveryActionStillPersistsSuspensionAndExplicitResume() {
+        let restrictions = VisualRestrictionsStateStore(url: directory.appendingPathComponent("visual-restrictions.state"))
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(.success([])) },
+            navigate: { _, done in done(.success(())) }, visualRestrictionsState: restrictions)
+        model.selection = [surface("one").id]
+        model.restoreVisibility()
+        XCTAssertEqual(restrictions.read(), .suspended)
+        XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
+        XCTAssertTrue(model.recoveryStatus?.contains("Recovery incomplete") == true)
+        XCTAssertFalse(model.recovering)
+        model.restoreVisibility(resume: true)
+        XCTAssertEqual(restrictions.read(), .active)
+        XCTAssertEqual(model.selection, [surface("one").id])
+    }
 }

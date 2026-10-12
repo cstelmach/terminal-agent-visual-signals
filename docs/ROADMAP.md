@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.1
+Version: 1.2
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -26,8 +26,11 @@ Preview ownership uses a separate two-second record so clearing it preserves an 
 selective lease. Recovery cancels both. The controller now has one selection expiry timer and
 independent cleanup, with stale callback rejection and retained failures. Color resolution is
 bounded and validates configuration before parsing canonical output. Unsupported dual-theme
-appearance is explicit. Selection/GUI recovery wiring, copied-install coverage and visible
-acceptance remain pending.
+appearance is explicit. Sessions selection, Clear Preview, Escape and window close are connected.
+Menu and Sessions recovery share the current-bundle headless client and display partial failures.
+The signed fixture app verified priority/suspension retention through relaunch, recovery controls
+and explicit unavailable preview status. Copied-install coverage and physical Ghostty acceptance
+remain pending. Fixture checks do not establish real terminal highlighting or navigation.
 
 ## Later phases
 

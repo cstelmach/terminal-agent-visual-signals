@@ -110,17 +110,12 @@ enum TAVSAppMain {
 struct TAVSApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var scheduler = Scheduler.createDefault()
-    @StateObject private var sessions = SessionsModel(prioritiesURL:
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/surface-priorities.json"),
-        visualState: TerminalVisualStateStore(runtimeDirectory: URL(fileURLWithPath:
-            ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")),
-        visualRestrictionsState: VisualRestrictionsStateStore(url:
-            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/visual-restrictions.state")))
+    @StateObject private var sessions = SessionsModel.createDefault()
 
     var body: some Scene {
         MenuBarExtra("TAVS", systemImage: scheduler.visualRestrictionsStatus.disablesRestrictions
             ? "eye.slash" : scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
-            MenuContent(scheduler: scheduler)
+            MenuContent(scheduler: scheduler, sessions: sessions)
         }
         Settings {
             PreferencesView(scheduler: scheduler)
@@ -147,38 +142,109 @@ struct IsolatedSessionsLaunch {
         guard root.path.hasPrefix(temporary) || root.path.hasPrefix(systemTemporary) else {
             throw CocoaError(.fileReadInvalidFileName)
         }
+        let allowed: Set<GhosttySurfaceID>?
+        if let json = values["TAVS_SESSIONS_TEST_TARGETS"] {
+            guard json.utf8.count <= 65_536,
+                  let ids = try? JSONDecoder().decode([GhosttySurfaceID].self, from: Data(json.utf8)),
+                  !ids.isEmpty else { throw CocoaError(.fileReadCorruptFile) }
+            allowed = Set(ids)
+        } else { allowed = nil }
         if let file = values["TAVS_SESSIONS_TEST_FIXTURE"] {
             let url = URL(fileURLWithPath: file).resolvingSymlinksInPath()
             guard url.path.hasPrefix(root.path + "/"), FileManager.default.isReadableFile(atPath: url.path) else {
                 throw CocoaError(.fileReadInvalidFileName)
             }
-            return Self(root: root, fixture: url, allowed: nil)
+            return Self(root: root, fixture: url, allowed: allowed)
         }
-        guard let json = values["TAVS_SESSIONS_TEST_TARGETS"],
-              let ids = try? JSONDecoder().decode([GhosttySurfaceID].self, from: Data(json.utf8)),
-              !ids.isEmpty else { throw CocoaError(.fileReadCorruptFile) }
-        return Self(root: root, fixture: nil, allowed: Set(ids))
+        guard let allowed = allowed else { throw CocoaError(.fileReadCorruptFile) }
+        return Self(root: root, fixture: nil, allowed: allowed)
     }
 
     func model() -> SessionsModel {
-        let url = root.appendingPathComponent("surface-priorities.json")
-        let visualState = TerminalVisualStateStore(runtimeDirectory: root.appendingPathComponent("runtime"))
-        let restrictions = VisualRestrictionsStateStore(url: root.appendingPathComponent("home/.tavs/visual-restrictions.state"))
-        if let fixture = fixture {
-            return SessionsModel(prioritiesURL: url, refresh: { done in
-                done(Result {
-                    let data = try Data(contentsOf: fixture)
-                    let instance = try JSONDecoder().decode(FixtureInstance.self, from: data).application
-                    return try GhosttyCatalog.decode(data, application: instance)
-                })
-            }, navigate: { _, done in done(.success(())) }, visualState: visualState,
-                visualRestrictionsState: restrictions)
-        }
-        return SessionsModel(prioritiesURL: url, catalog: GhosttyCatalog(allowedSurfaces: allowed),
-                             visualState: visualState, visualRestrictionsState: restrictions)
+        SessionsModel.create(home: root.appendingPathComponent("home"), runtime: root.appendingPathComponent("runtime"),
+            priorities: root.appendingPathComponent("surface-priorities.json"), launch: self)
+    }
+
+    func fixtureSnapshot() throws -> [GhosttySurface] {
+        guard let fixture = fixture else { throw GhosttyCatalogError.nativeUnavailable }
+        let data = try ManagedOutputEntry.fixtureData(fixture)
+        let instance = try JSONDecoder().decode(FixtureInstance.self, from: data).application
+        return try GhosttyCatalog.decode(data, application: instance).filter { allowed?.contains($0.id) ?? true }
+    }
+
+    func recoveryEnvironment(_ values: [String: String]) throws -> [String: String] {
+        var result = values
+        result["TAVS_SESSIONS_TEST_ROOT"] = root.path
+        if let fixture = fixture { result["TAVS_SESSIONS_TEST_FIXTURE"] = fixture.path }
+        let ids = try allowed ?? Set(fixtureSnapshot().map(\.id))
+        guard !ids.isEmpty else { throw GhosttyCatalogError.targetUnavailable }
+        result["TAVS_SESSIONS_TEST_TARGETS"] = String(data: try JSONEncoder().encode(Array(ids)), encoding: .utf8)
+        return result
     }
 
     private struct FixtureInstance: Decodable { let application: ProcessGeneration }
+}
+
+extension SessionsModel {
+    static func createDefault() -> SessionsModel {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let runtime = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")
+        return create(home: home, runtime: runtime, priorities: home.appendingPathComponent(".tavs/surface-priorities.json"))
+    }
+
+    static func create(home: URL, runtime: URL, priorities: URL, launch: IsolatedSessionsLaunch? = nil) -> SessionsModel {
+        let clock = SystemClock(), runner = SystemProcessRunner()
+        let marker = home.appendingPathComponent(".tavs/visual-restrictions.state")
+        let restrictions = VisualRestrictionsStateStore(url: marker)
+        let state = TerminalVisualStateStore(runtimeDirectory: runtime, clock: clock)
+        let catalog = launch.map { GhosttyCatalog(allowedSurfaces: $0.allowed) } ?? GhosttyCatalog.shared
+        let snapshot: () throws -> [GhosttySurface] = {
+            if let launch = launch, launch.fixture != nil { return try launch.fixtureSnapshot() }
+            return try catalog.snapshot()
+        }
+        let recovery = VisualRecovery(runtimeDirectory: runtime, restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions,
+                muteURL: home.appendingPathComponent(".tavs/mute.state"), lockURL: runtime.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: runner, clock: clock, controller: ProcessIdentity.inspect(getpid())?.generation,
+            allowedSurfaces: launch?.allowed, nativeSnapshot: snapshot)
+        let environment = ProcessInfo.processInfo.environment
+        let configRoot = URL(fileURLWithPath: environment["XDG_CONFIG_HOME"] ?? home.appendingPathComponent(".config").path)
+        let configDirectories = [configRoot.appendingPathComponent("ghostty"),
+            home.appendingPathComponent("Library/Application Support/com.mitchellh.ghostty")]
+        let configFiles = configDirectories.flatMap { folder in ["config", "config.ghostty"].map { folder.appendingPathComponent($0) } }
+        let focus = FocusController(state: state, recovery: recovery, restrictions: restrictions, clock: clock, colors: { instance in
+            guard launch?.fixture == nil else { throw TerminalConfigurationError.unavailable }
+            return try TerminalRenderer.configuredColors(executable: GhosttyCatalog.executable(for: instance),
+                configurationFiles: configFiles, runner: runner)
+        })
+        let queue = DispatchQueue(label: "tavs.gui-recovery")
+        let recover: (Bool, @escaping (Result<VisualRecoveryReport, Error>) -> Void) -> Void = { resume, done in
+            queue.async {
+                done(Result {
+                    // Save before decoding fixture scope, so a bad fixture cannot defeat recovery.
+                    var values = environment
+                    if let launch = launch { values["TAVS_SESSIONS_TEST_ROOT"] = launch.root.path }
+                    try ManagedOutputEntry.validateRoot(marker: marker, runtime: runtime, environment: values)
+                    try restrictions.write(suspended: !resume)
+                    if let launch = launch { values = try launch.recoveryEnvironment(values) }
+                    return try VisualRecovery.recoverHeadlessly(marker: marker, runtime: runtime, resume: resume,
+                        executable: Bundle.main.executableURL, environment: values, runner: runner)
+                })
+            }
+        }
+        if launch?.fixture != nil {
+            return SessionsModel(prioritiesURL: priorities, refresh: { done in
+                queue.async {
+                    let result = Result { try snapshot() }
+                    DispatchQueue.main.async { done(result) }
+                }
+            },
+                navigate: { _, done in done(.success(())) }, visualState: state, visualRestrictionsState: restrictions,
+                focus: focus, recover: recover)
+        }
+        return SessionsModel(prioritiesURL: priorities, catalog: catalog, visualState: state,
+            visualRestrictionsState: restrictions, focus: focus, recover: recover)
+    }
 }
 
 private final class IsolatedSessionsDelegate: NSObject, NSApplicationDelegate {
@@ -210,7 +276,7 @@ private struct IsolatedSessionsApp: App {
 extension Scheduler {
     static func createDefault() -> Scheduler {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let runtimeDir = URL(fileURLWithPath: "/tmp/tavs-\(getuid())")
+        let runtimeDir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")
         let userConfURL = homeDir.appendingPathComponent(".tavs/user.conf")
         let clock = SystemClock()
         let restrictions = VisualRestrictionsStateStore(url:

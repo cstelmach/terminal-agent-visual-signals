@@ -2,10 +2,11 @@ import SwiftUI
 
 struct MenuContent: View {
     @ObservedObject var scheduler: Scheduler
+    @ObservedObject var sessions: SessionsModel
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("TAVS — Terminal Agent Visual Signals")
+            Text("TAVS: Terminal Agent Visual Signals")
                 .font(.headline)
             Divider()
             OpenSessionsButton()
@@ -24,10 +25,14 @@ struct MenuContent: View {
                     scheduler.togglePause()
                 }
             }
-            Button("Restore Terminal Colors") {
-                scheduler.restoreTerminalColors()
+            Button("Restore Visibility") { sessions.restoreVisibility() }
+                .disabled(sessions.recovering)
+            if scheduler.visualRestrictionsStatus.disablesRestrictions {
+                Button("Re-enable Visual Restrictions") { sessions.restoreVisibility(resume: true) }
+                    .disabled(sessions.recovering)
+                Text("Saved schedules and locks may apply immediately. Focus stays Off.").font(.caption)
             }
-            .disabled(scheduler.visualRestrictionsStatus.disablesRestrictions || scheduler.isMuted || scheduler.isHardLocked)
+            if let status = sessions.recoveryStatus { Text(status).font(.caption) }
             Button("Lock Now (1h)") {
                 scheduler.lockNow()
             }

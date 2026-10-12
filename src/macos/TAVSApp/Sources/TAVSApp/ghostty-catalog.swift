@@ -54,6 +54,14 @@ final class GhosttyCatalog {
         return identity.generation
     }
 
+    static func executable(for generation: ProcessGeneration) throws -> URL {
+        guard let application = NSRunningApplication(processIdentifier: generation.pid),
+              !application.isTerminated, application.bundleIdentifier == "com.mitchellh.ghostty",
+              ProcessIdentity.inspect(generation.pid)?.generation == generation,
+              let executable = application.executableURL else { throw GhosttyCatalogError.staleApplication }
+        return executable
+    }
+
     func refresh(completion: @escaping (Result<[GhosttySurface], Error>) -> Void) {
         lock.lock()
         if refreshing { pending.append(completion); lock.unlock(); return }
