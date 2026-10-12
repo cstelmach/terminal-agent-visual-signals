@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 13:08 CEST
-**Version:** 2.0
+**Last Updated:** 2026-10-12 14:04 CEST
+**Version:** 2.2
 
 ## Session Metadata
 
@@ -26,14 +26,14 @@
 | 2: Sessions window and retained priorities | Blocked | 2026-10-12 09:25 | | Checkpoint by title below | 237/237 | | Source verified; live acceptance pending |
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
-| 5: Persistent suspension and policy readers | Not Started | | | | | | SPEC 1b |
+| 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | Not Started | | | | | | Every writer ordered |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 4. Six implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 5. Five implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -471,3 +471,117 @@ SPEC/PLAN/PROGRESS/GOAL; confirm private path injection before new tests. Phase 
 only on required native acceptance. Ghostty's Computer Use safety denial is not bypassed. Broader
 Python worker/root exclusions still apply. Phase 5 can proceed independently; recovery ordering,
 previews, manual focus and automatic focus are unfinished. The full Codex goal remains active.
+
+
+### Phase 5 started: 2026-10-12 13:23 CEST
+
+Reoriented from clean 120c79d. Phase 4 completed authoritative source work; Phase 2 native
+acceptance remains Blocked. The previous goal turn was progress: five source commits, one
+review/fix record and passing connected verification. Phase 5 is independent policy-reader work.
+Backups and scratch: `/tmp/tavs-phase5-20261012T132300/`.
+
+Two read-only explorations cover scheduler/UI projection and shell/CLI/standalone readers.
+The persistent marker remains `~/.tavs/visual-restrictions.state`, schema 1 plus suspended boolean.
+The planned shared data format is canonical quoted SCHEMA_VERSION/SUSPENDED text, never sourced.
+Active/suspended/unavailable statuses distinguish absent state from malformed existing state;
+unavailable disables restrictions visibly. Malformed state is not treated as an active rule.
+
+Scheduler must keep raw rule/lock/grant evaluation and timers while overriding the visual
+projection. Suspension bypasses ordinary unmute replay as well as restrictive painting.
+Standalone shellrc embeds the same small parser because its installer copies only that file.
+Cross-language fixtures must pin classification, bounds and no evaluation of marker content.
+This phase does not claim serialized repaint or queued-write cancellation, which belong to 6.
+
+
+### Phase 5 complete: 2026-10-12 14:04 CEST
+
+Persistent suspension uses the existing `.tavs` convention and canonical schema-1 text:
+`SCHEMA_VERSION="1"` plus `SUSPENDED="true"/"false"`, two quoted LF-terminated lines.
+Readers do not source data. Absent markers under accessible parents are active; valid true is
+suspended; malformed, unknown, unreadable or special-file state is unavailable and disables
+restrictions visibly. Shell and Swift writers atomically replace a regular marker. Explicit
+false resumes configured rules instead of deleting definitions or resurrecting selective focus.
+
+Bounded Bash 3.2/zsh reads were empirically probed for LF, NUL and saturation before use.
+The standalone shellrc embeds the identical reader/predicate because only that file is installed.
+One shared fixture matrix pins canonical and malformed classifications across both shells and
+Swift. Native headless capability/read/write verbs run before UI launch and require explicit
+absolute paths; unavailable read returns nonzero with a generic status.
+
+All policy readers now fresh-read suspension above restrictions: trigger stage-0, stage-1,
+worker ticks, effective-lock predicates and standalone startup. Normal observations/intent and
+TTY registration continue. CLI status explains saved versus effective state. New locks are
+saved but inert; suspended unlock/schedule edits bypass challenges and preserve definitions.
+
+Scheduler still evaluates raw rules, merges lock/grant state and arms schedule, lock/grant-expiry
+and heartbeat timers. It overrides only visual mute/hard-lock projection. Disabled state emits
+no broadcaster operation, including startup discovery, pause/lock paint and ordinary unmute
+reset/replay. Explicit resumption re-evaluates current rules. Configured master activation is
+published separately so menu labels/actions cannot mistake suspended visuals for an active
+master rule. Menu/icon/Preferences status consume that projection; Sessions reads its marker
+before the in-flight catalogue guard, with a banner independent of catalogue availability.
+
+**Verified defect/fix evidence.**
+
+- A Bash missing-file check treated an inaccessible parent as active, unlike Swift's EACCES
+  classification. A private chmod test produced red; nearest accessible-parent validation now
+  keeps both readers consistent. Additional tests cover dangling/non-directory parents and
+  genuinely absent nested directories. Canonical state and malformed controls never execute.
+- The private app's first injected marker URL was beside priorities rather than in private HOME.
+  A changed-path test went red before the constructor was corrected to `root/home/.tavs`.
+- Mute debug logging used fixed `/tmp/tavs-mute-trace.log`. A source-only red avoided writing
+  there. Logging now uses the injected runtime; the connected green asserts an owned trace.
+  Existing unrelated/global trace files were not deleted or modified by this correction.
+- Immediate quit/rebind produced transient macOS procNotFound (-600). Rebinding the same bundle
+  succeeded with its persisted suspension banner; no product code or security workaround changed.
+
+**Verification.**
+
+- Full Swift: 288/288, zero failures, 2.488 seconds, `tavs-isolated.bTx0ZO/command.log`.
+  Six state tests plus 64 focused lifecycle/lock/Sessions tests are included. Focused consumer
+  red/green and private-root mismatch logs are recorded in the saved worker report.
+- New/relevant Bats: 55/55 in `tavs-isolated.jEQIfH/command.log`: six shared-state, six native
+  parity/core/gate and 43 lock/standalone cases, including 14 original worker red regressions.
+  Existing three fixture-only shell installers were explicitly scoped to private rc/HOME.
+- Earlier isolated Bats: 55/55 in `tavs-isolated.65Sfgh/command.log`; combined 110 cases.
+- Audited Python: 230/230, 26.35 seconds, `tavs-isolated.X4ZtGs/command.log`.
+- Release: successful in 24.36 seconds, `tavs-isolated.maC83i/command.log`.
+- Every changed shell script passes its separate Bash syntax check; standalone also passes zsh.
+  New Bats files were individually preprocessed and syntax-checked. Shared/standalone functions
+  compare verbatim. ShellCheck passes with unchanged dynamic-source, cross-module-global and
+  legacy mkdir-mode notices excluded (SC1091/SC2034/SC2174). No new warning was introduced.
+- Whitespace and staged credential scans pass; `.env` remains ignored. SPEC prose is unchanged.
+
+Runner log prefixes expand to `/var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/`.
+Source backups and additional logs remain under `/tmp/tavs-phase5-20261012T132300/`.
+
+**Computer Use.** Strictly signature-verified release fixture app is open at
+`/tmp/tavs-phase5-20261012T132300/TAVS Development.app`. CUA confirmed the suspended banner,
+persistence after quit/relaunch, unavailable marker status despite a failed catalogue refresh,
+and explicit resumption with Focus Off. Catalogue navigation is labeled simulated. The private
+app has no Scheduler, so real menu/icon rendering and physical terminal recovery are unverified.
+No production install, existing app/session shutdown, live preference/schedule changes or
+Ghostty safety-denial workaround occurred. No terminal repaint is claimed for suspension alone.
+
+**Feature commits:**
+
+- `a6dbacd`: paired persistent stores, safe headless entry, six state tests per language boundary.
+- `ae4d100`: fresh shell/CLI/standalone precedence, scoped diagnostics and connected parity tests.
+- `6924216`: scheduler/UI projection, preserved definitions/timers and existing documentation.
+
+**Scope reconciliation.** 24 source/test/documentation paths changed in those three commits.
+Additional connected view/menu/model tests implement required status without changing product
+scope. Debug sink relocation is the narrow test-isolation correction in a planned touched module.
+The parser copies preserve the existing single-file install boundary; no new dependency/service,
+configuration hierarchy, watcher, daemon, lease or process-control mechanism was introduced.
+Saved reports: [shell exploration](PHASE5-SHELL-EXPLORATION.md),
+[scheduler exploration](PHASE5-SCHEDULER-EXPLORATION.md), [shell worker](PHASE5-SHELL-REPORT.md),
+[scheduler worker](PHASE5-SCHEDULER-REPORT.md). These reports predate parent's final boundary tests
+and debug correction; this entry records the final source/test results.
+
+**Next:** Phase 6, bounded independent recovery across every writer. Re-read this package and
+trace all device/pending/forced-reset paths. Keep one 100 ms deadline through fresh serialized
+policy checks. Implement actual `tavs recover`/`--resume`, ownership invalidation, safe resets,
+partial-failure reporting and no historical replay. Required independent recovery reviews follow
+that phase. Phase 2 still needs native acceptance. Preview/manual/automatic phases remain
+unfinished, and the complete Codex goal remains active.

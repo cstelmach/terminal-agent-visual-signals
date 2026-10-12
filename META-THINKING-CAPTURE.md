@@ -22,14 +22,14 @@ Model Profiles) only. The Session Log is append-only evidence.
 | ID | Pattern | Rule | Count | Models | Sessions |
 |----|---------|------|-------|--------|----------|
 | P1 | verify-constants-by-computing | Never hardcode a hash/digest/magic value in a test without computing it in the shell first | 1 | fable-5 | 2026-07-13 |
-| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 1 | fable-5 | 2026-07-13 |
+| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 2 | fable-5; gpt-6 (self-reported; variant unverified) | 2026-07-13; Phase 5 suspension |
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
-| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -876,6 +876,81 @@ or skill was promoted from a single task type.
 **Confidence.** [O] covers commands, diffs, failures, tests and UI text. [R] covers causal design
 interpretations and model self-attribution. The native executable-path condition is supported by
 local symlink/source evidence; no real agent was launched to claim runtime classification.
+
+## 2026-10-12 · model-unverified · tavs-persistent-suspension
+
+meta:
+  model: GPT-6 family self-report; exact served variant unobserved
+  model_source: self-reported [R]
+  interface: Codex desktop
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool actions and diffs; design explanations reconstructed
+
+**Framing.** [O] Goal continuation reoriented from clean 120c79d and selected Phase 5 from the
+actual package. Earlier Phase 2 native acceptance stayed open. Suspension was implemented as
+persistent policy precedence, with physical recovery and queued-write ordering explicitly left
+for Phase 6. The user had authorized automatic progress between verified phases. No routine
+permission question was added, and no real installation or user preference was modified.
+
+**Strategy.** [O] Two read-only explorations mapped scheduler/UI and shell/CLI boundaries. Two
+workers then owned separate connected consumer slices; parent owned the shared state format,
+paired stores, parity tests and final integration. Module API shape and private HOME conventions
+were stated before code. Backups preceded edits; source ownership kept builds serialized in one
+private scratch. Canonical two-field text avoided a general parser or new dependency. Existing
+watchers/timers and the old standalone install boundary were reused.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient/explore | Dated state and current consumers | Suspension versus ordinary unmute identified |
+| Probe | Bash/zsh bounded read options | LF, NUL and saturation agreed |
+| Red/green | Shared stores and fixture matrix | Missing/suspended/unavailable classified |
+| Integrate | Shell, scheduler, menu and Sessions | Saved definitions retained, visuals disabled |
+| Regress | Parent permissions and private HOME | Two boundary mismatches fixed |
+| Audit/probe | Fixed mute trace sink | Red without shared-file write, private green |
+| Computer Use | Isolated release app | Persistence, unavailable status, Focus Off confirmed |
+| Verify/commit | 288 Swift, 110 Bats, 230 Python | Three source feature commits |
+
+**Decision points.** [O] The scheduler kept raw rule/lock/grant evaluation before overriding
+visual projection. Both restrictive paints and ordinary unmute reset/replay were suppressed.
+Configured master activation was separated from effective mute, keeping menu edits meaningful.
+An unavailable marker disabled restrictions visibly instead of masquerading as valid suspension.
+The standalone shellrc embedded the identical bounded reader because its installer deploys one
+file; source comparison and shared fixtures checked the copy. Public recovery controls were
+not renamed from the old reset method before independent recovery existed.
+
+**Failure arcs.** F1, filesystem classification: [O] Bash returned active for a marker under a
+chmod-000 parent, while Swift returned unavailable. A private negative test reproduced it.
+Nearest-parent validation corrected the missing/unreadable distinction. Additional cases checked
+dangling/non-directory parents and genuinely missing nested directories. [R] Treating absence
+as a filesystem fact rather than simply a false file test made the recovery policy consistent.
+
+F2, private-root mismatch: [O] The first app constructor used a marker beside priorities. The
+actual staged HOME pointed at root/home, so the worker changed the fixture first, recorded red,
+and moved explicit injection to home/.tavs. No production path was substituted in the test.
+F3, diagnostic leakage: [O] Source audit found a fixed shared tmp sink in mute debug logging.
+A source-only assertion established red without writing that path. The logger then used the
+injected runtime and its actual private output was asserted. Existing global files were kept.
+
+F4, native launch timing: [O] Immediate quit/rebind returned macOS procNotFound (-600). The next
+call rebound the same bundle successfully and visibly retained suspension. No new build, safety
+bypass or application-code workaround was introduced. [R] Separating the launcher error from
+product behavior prevented a speculative app fix.
+
+**Verification.** [O] Full Swift, new/relevant and earlier Bats, audited Python, release build,
+individual syntax, exact parser-copy, whitespace and staged secret checks passed. Computer Use
+confirmed suspension after relaunch, an independent unavailable banner during catalogue failure,
+and explicit resumption with Focus Off. Only the private fixture app ran; no native Ghostty
+rendering, real menu/icon, physical recovery or queued-write guarantee was claimed. Old unsafe
+broader Python cases remained excluded. Historical capture entries stayed byte-for-byte intact.
+
+**Heuristics and confidence.** P2 shell probes, P7 capability checks and P9 spec-owned state were
+observed again. [R] The reusable lesson is to separate configuration, effective policy and actual
+pixels when testing recovery. A disabled predicate alone cannot prove restored visibility.
+No new control plane, profile or skill was promoted. Model attribution and causal explanations
+are reconstructed; commands, source changes, errors, counts and UI text are observed evidence.
 
 ## Stubs
 
