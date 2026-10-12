@@ -44,7 +44,7 @@ struct TerminalTargetBinding: Codable, Hashable {
 }
 
 enum TerminalTargetValidation: Equatable { case valid, vanished, unavailable }
-enum TerminalEffectKind: String, Codable { case globalRestriction, selectiveBackground, preview }
+enum TerminalEffectKind: String, Codable { case globalRestriction, selectiveBackground, preview, focus }
 
 struct TerminalEffectRecord: Codable, Equatable {
     var schema = 1
@@ -55,6 +55,8 @@ struct TerminalEffectRecord: Codable, Equatable {
     var background: String
     var heartbeatAt: Double
     var active = true
+    var focusColors: TerminalRenderer.Colors? = nil
+    var revision: VisualRestrictionsIdentity? = nil
 }
 
 struct TerminalCachedVisualRecords {
@@ -196,7 +198,8 @@ final class TerminalVisualStateStore {
         let record: TerminalEffectRecord? = try read(effectURL(target, kind: kind), deadline: deadline)
         if let record = record {
             try validate(record)
-            guard record.target == target, (record.kind == .preview) == (kind == .preview) else {
+            guard record.target == target, (record.kind == .preview) == (kind == .preview),
+                  (record.kind == .focus) == (kind == .focus) else {
                 throw TerminalVisualStateError.invalidRecord
             }
         }
@@ -210,7 +213,10 @@ final class TerminalVisualStateStore {
         if let current = try currentEffectUnlocked(effect.target, kind: effect.kind, deadline: deadline),
            current.effectID == effect.effectID {
             guard current.controller == effect.controller, current.active || !effect.active,
-                  effect.kind != .preview || current.heartbeatAt == effect.heartbeatAt else {
+                  effect.kind != .preview || current.heartbeatAt == effect.heartbeatAt,
+                  effect.kind != .focus || !effect.active || (isSelectiveLeaseActive(current)
+                    && current.focusColors == effect.focusColors && current.revision == effect.revision
+                    && effect.heartbeatAt >= current.heartbeatAt) else {
                 throw TerminalVisualStateError.staleEffect
             }
         }
@@ -233,7 +239,7 @@ final class TerminalVisualStateStore {
                                deadline: UInt64) throws -> Bool {
         guard var effect = try matchingEffectUnlocked(target, effectID: effectID,
             controller: controller, kind: kind, deadline: deadline), lookup(controller.pid)?.generation == controller,
-              effect.kind != .preview,
+              effect.kind != .preview, effect.kind != .focus,
               validateTarget(target) == .valid else { try checkDeadline(deadline); return false }
         effect.heartbeatAt = clock.now().timeIntervalSince1970
         try write(effect, to: effectURL(target, kind: effect.kind), deadline: deadline)
@@ -383,7 +389,7 @@ final class TerminalVisualStateStore {
             if info.st_mode & S_IFMT == S_IFLNK {
                 enumerator.skipDescendants(); unreadable.append(url); continue
             }
-            guard ["target.json", "effect.json", "preview.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
+            guard ["target.json", "effect.json", "preview.json", "focus.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
             do {
                 if url.lastPathComponent == "target.json" {
                     guard let saved: CachedTarget = try read(url), saved.schema == 1 else {
@@ -395,7 +401,7 @@ final class TerminalVisualStateStore {
                         throw TerminalVisualStateError.invalidRecord
                     }
                     bindings.append(saved.target)
-                } else if url.lastPathComponent == "effect.json" || url.lastPathComponent == "preview.json" {
+                } else if ["effect.json", "preview.json", "focus.json"].contains(url.lastPathComponent) {
                     guard let effect: TerminalEffectRecord = try read(url) else {
                         throw TerminalVisualStateError.invalidRecord
                     }
@@ -457,6 +463,12 @@ final class TerminalVisualStateStore {
               effect.heartbeatAt > 0, effect.heartbeatAt <= clock.now().timeIntervalSince1970 else {
             throw TerminalVisualStateError.invalidRecord
         }
+        guard (effect.kind == .focus) == (effect.focusColors != nil),
+              effect.kind != .focus || effect.revision != nil,
+              effect.revision == nil || effect.kind == .focus || effect.kind == .preview,
+              effect.revision?.isValid != false else {
+            throw TerminalVisualStateError.invalidRecord
+        }
     }
 
     private func validGeneration(_ generation: ProcessGeneration) -> Bool {
@@ -464,8 +476,8 @@ final class TerminalVisualStateStore {
     }
 
     private func effectURL(_ target: TerminalTargetBinding, kind: TerminalEffectKind?) -> URL {
-        // Global/selective effects share the legacy slot; previews must not replace them.
-        targetURL(target, filename: kind == .preview ? "preview.json" : "effect.json")
+        // Dynamic focus survives both preview and global pause without replacing legacy records.
+        targetURL(target, filename: kind == .preview ? "preview.json" : kind == .focus ? "focus.json" : "effect.json")
     }
 
     private func targetURL(_ target: TerminalTargetBinding, filename: String) -> URL {
@@ -865,7 +877,7 @@ final class TerminalVisualStateStore {
         directory.appendingPathComponent("\(kind)-\(key(tty)).json")
     }
 
-    private func withLock<T>(_ tty: String, deadline suppliedDeadline: UInt64? = nil,
+    func withLock<T>(_ tty: String, deadline suppliedDeadline: UInt64? = nil,
                              body: () throws -> T) throws -> T {
         try checkDeadline(suppliedDeadline)
         guard directory.isFileURL else { throw TerminalVisualStateError.storageUnavailable }
@@ -1107,7 +1119,7 @@ extension TerminalTargetBinding {
 
 extension TerminalEffectRecord {
     init(from decoder: Decoder) throws {
-        try requireVisualKeys(decoder, ["schema", "target", "controller", "effectID", "kind", "background", "heartbeatAt", "active"])
+        try requireVisualKeys(decoder, ["schema", "target", "controller", "effectID", "kind", "background", "heartbeatAt", "active", "focusColors", "revision"])
         let c = try decoder.container(keyedBy: CodingKeys.self)
         schema = try c.decode(Int.self, forKey: .schema)
         target = try c.decode(TerminalTargetBinding.self, forKey: .target)
@@ -1121,6 +1133,10 @@ extension TerminalEffectRecord {
         background = try c.decode(String.self, forKey: .background)
         heartbeatAt = try c.decode(Double.self, forKey: .heartbeatAt)
         active = try c.decode(Bool.self, forKey: .active)
+        focusColors = try c.decodeIfPresent(TerminalRenderer.Colors.self, forKey: .focusColors)
+        revision = try c.decodeIfPresent(VisualRestrictionsIdentity.self, forKey: .revision)
+        guard (kind == .focus) == (focusColors != nil), kind != .focus || revision != nil,
+              revision == nil || kind == .focus || kind == .preview else { throw TerminalVisualStateError.invalidRecord }
     }
 }
 

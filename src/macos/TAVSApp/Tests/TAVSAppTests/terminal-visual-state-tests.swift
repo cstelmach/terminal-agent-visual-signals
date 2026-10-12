@@ -3,6 +3,51 @@ import Darwin
 @testable import TAVSApp
 
 final class TerminalVisualStateTests: XCTestCase {
+    func testDynamicFocusHasIndependentRecoverySlotAndStrictInputs() throws {
+        let store = makeStore(), binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        var focus = effect(binding); focus.kind = .focus; focus.background = "#123ABC"
+        focus.focusColors = TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")
+        focus.revision = VisualRestrictionsIdentity(device: 0, inode: 0)
+        try store.saveEffectUnlocked(focus, deadline: deadline())
+        var global = effect(binding, id: "pause"); global.kind = .globalRestriction
+        try store.saveEffectUnlocked(global, deadline: deadline())
+        var preview = effect(binding, id: "preview"); preview.kind = .preview
+        try store.saveEffectUnlocked(preview, deadline: deadline())
+        XCTAssertEqual(Set(store.cachedRecords().effects.map(\.kind)), [.focus, .globalRestriction, .preview])
+        XCTAssertEqual(try store.currentEffectUnlocked(binding, kind: .focus, deadline: deadline()), focus)
+        let data = try JSONEncoder().encode(focus)
+        XCTAssertEqual(try JSONDecoder().decode(TerminalEffectRecord.self, from: data), focus)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["focusColors"] = ["background": "invalid", "foreground": "#EEEEEE"]
+        XCTAssertThrowsError(try JSONDecoder().decode(TerminalEffectRecord.self,
+            from: JSONSerialization.data(withJSONObject: object)))
+        object["focusColors"] = ["background": "#171717", "foreground": "#EEEEEE", "extra": "rejected"]
+        XCTAssertThrowsError(try JSONDecoder().decode(TerminalEffectRecord.self,
+            from: JSONSerialization.data(withJSONObject: object)))
+        var bad = focus; bad.focusColors = nil
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+        bad = focus; bad.revision = nil
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+        bad = global; bad.focusColors = focus.focusColors
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+        bad = focus; bad.revision = VisualRestrictionsIdentity(device: 1, inode: 0)
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+    }
+
+    func testDynamicFocusCannotUseBlindHeartbeatOrReviveExpiredSameID() throws {
+        let store = makeStore(), binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        var focus = effect(binding); focus.kind = .focus
+        focus.focusColors = TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")
+        focus.revision = VisualRestrictionsIdentity(device: 0, inode: 0)
+        try store.saveEffectUnlocked(focus, deadline: deadline())
+        XCTAssertFalse(try store.refreshEffectUnlocked(binding, effectID: focus.effectID,
+            controller: focus.controller, kind: .focus, deadline: deadline()))
+        clock.advance(by: 7); focus.heartbeatAt = 1_007
+        XCTAssertThrowsError(try store.saveEffectUnlocked(focus, deadline: deadline()))
+    }
+
     private var root: URL!
     private var records: [Int32: ProcessIdentity] = [:]
     private var devices: [String: UInt32] = [:]

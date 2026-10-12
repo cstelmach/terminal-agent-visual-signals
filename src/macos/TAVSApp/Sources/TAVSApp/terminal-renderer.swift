@@ -4,7 +4,7 @@ import Darwin
 enum TerminalConfigurationError: Error { case unavailable, unresolvedAppearance }
 
 enum TerminalRenderer {
-    struct Colors: Equatable {
+    struct Colors: Equatable, Codable {
         let background: String
         let foreground: String
 
@@ -13,6 +13,16 @@ enum TerminalRenderer {
                   let foreground = PauseVisual.normalizedHexColor(foreground) else { return nil }
             self.background = background
             self.foreground = foreground
+        }
+
+        init(from decoder: Decoder) throws {
+            try requireVisualKeys(decoder, ["background", "foreground"])
+            let values = try decoder.container(keyedBy: CodingKeys.self)
+            guard let colors = Self(background: try values.decode(String.self, forKey: .background),
+                                    foreground: try values.decode(String.self, forKey: .foreground)) else {
+                throw TerminalVisualStateError.invalidRecord
+            }
+            self = colors
         }
     }
 

@@ -87,6 +87,12 @@ new budget or late retry. No arbitrary program-set color restoration is claimed.
 
 ## Manual rendering foundation (Phase 8 in progress)
 
+Dynamic schema-1 `focus` records use `focus.json`, separate from legacy/global `effect.json`
+and `preview.json`. They require normalized `focusColors` and marker `revision`; malformed,
+missing and wrong-kind fields are rejected. Canceled or expired same-ID records cannot renew,
+and the generic heartbeat helper cannot extend dynamic focus. Legacy fixed records retain their
+existing slot and semantics. Matching current source-built components are required for this kind.
+
 `TerminalRenderer.focusBackground(ordinary:colors:)` supplies the Phase 8 pure dimming transform.
 It reduces chroma in linear light, then tries bounded neutral adjustments for visible dark/light
 background changes. Candidates need total RGB distance of 24 and luminance change at most 0.08.
