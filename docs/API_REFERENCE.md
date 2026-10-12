@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.4
+Version: 1.5
 
 ## Public recovery commands
 
@@ -31,6 +31,12 @@ omit the three isolated launch keys; recovery retains their exact private scope.
 uses its full validated ID set or the supplied narrower allowlist, never browsing selection.
 
 ## Internal helper compatibility
+
+`tavs sync` refreshes the root dispatcher, core/CLI dependencies, Claude/Codex adapters,
+both Claude hook definitions, plugin shellrc and Codex installer in existing plugin roots.
+Required copy/directory/permission failures return nonzero. Direct entry points regain execute
+permission; preferences, schedules and lock definitions are not sync inputs. A failure may leave
+earlier copies applied. Sync does not build/install the native helper or restart existing workers.
 
 The shell queries `--validate-config --managed-output-capabilities` and requires exactly
 `tavs-managed-output-schema=1`. This known validation branch is safe with older executables.

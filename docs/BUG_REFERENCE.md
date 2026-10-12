@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.16
+Version: 1.17
+
+## Synced installations retain stale or non-executable entry points
+
+Sync omitted the root dispatcher, Codex adapter/installer, hook definitions and plugin shellrc.
+Copying subcommands alone left recovery unreachable or reinstalled old lifecycle code. Existing
+0644 targets also kept that mode after plain cp. The connected files now copy explicitly, their
+required directories are created, and direct entry points regain execute permission.
+Required operations propagate errors even when Bash errexit is suppressed by a conditional
+caller. Seven fake-install tests compare bytes, execute copied CLI/adapters/installers, preserve
+user state, refuse missing helpers and inject a copy failure. No real installation was modified.
 
 ## GUI recovery loses partial reports or its isolated target scope
 

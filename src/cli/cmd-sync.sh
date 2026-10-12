@@ -14,14 +14,14 @@ cmd_sync() {
     # Handle --help
     if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
         cat <<'EOF'
-tavs sync — Sync source to plugin installations (developer tool)
+tavs sync - Sync source to plugin installations (developer tool)
 
 Usage:
   tavs sync               Copy source files to all plugin installations
 
-Copies core modules, config, and agent adapter to both the Claude Code
-plugin cache and marketplace directories. Only needed after modifying
-source code — changes to ~/.tavs/user.conf take effect immediately.
+Copies the CLI, core modules, Claude/Codex adapters, hook definitions,
+Codex installer and shell integration to existing plugin installations.
+Only needed after modifying source code. user.conf changes apply immediately.
 
 Sync targets:
   ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/
@@ -44,14 +44,14 @@ EOF
     fi
 
     if [[ -n "$cache_dir" && -d "$cache_dir" ]]; then
-        _sync_to_target "$cache_dir" "plugin cache"
+        _sync_to_target "$cache_dir" "plugin cache" || return 1
         synced_any=true
     fi
 
     # --- Target 2: Marketplace installation ---
     local market_dir="$HOME/.claude/plugins/marketplaces/terminal-agent-visual-signals"
     if [[ -d "$market_dir/src/core" ]]; then
-        _sync_to_target "$market_dir" "marketplace"
+        _sync_to_target "$market_dir" "marketplace" || return 1
         synced_any=true
     fi
 
@@ -63,7 +63,7 @@ EOF
 
     # --- Target 3: Installed shell integration (only when present) ---
     if [[ -f "$HOME/.tavs/shellrc" && -f "$TAVS_ROOT/src/shell/tavs-shellrc.sh" ]]; then
-        cp "$TAVS_ROOT/src/shell/tavs-shellrc.sh" "$HOME/.tavs/shellrc"
+        cp "$TAVS_ROOT/src/shell/tavs-shellrc.sh" "$HOME/.tavs/shellrc" || return 1
         echo "  Synced ~/.tavs/shellrc"
     fi
 
@@ -81,33 +81,34 @@ _sync_to_target() {
     echo "  To:   $target_dir"
     echo ""
 
-    # Core modules (+ data files like challenge-sentences.txt)
-    if [[ -d "$target_dir/src/core" ]]; then
-        cp "$TAVS_ROOT/src/core/"*.sh "$target_dir/src/core/"
-        cp "$TAVS_ROOT/src/core/"*.txt "$target_dir/src/core/" 2>/dev/null || true
-        echo "  Synced src/core/*.sh (+ data files)"
-    fi
+    mkdir -p "$target_dir/src/core" "$target_dir/src/config" "$target_dir/src/cli" || return 1
+    cp "$TAVS_ROOT/tavs" "$target_dir/tavs" || return 1
+    local file
+    for file in src/agents/claude/trigger.sh src/agents/codex/trigger.sh \
+        src/agents/claude/hooks.json hooks/hooks.json src/shell/tavs-shellrc.sh src/install/install-codex.sh; do
+        mkdir -p "$target_dir/${file%/*}" || return 1
+        cp "$TAVS_ROOT/$file" "$target_dir/$file" || return 1
+    done
+
+    # Core modules and their required challenge data.
+    cp "$TAVS_ROOT/src/core/"*.sh "$target_dir/src/core/" || return 1
+    cp "$TAVS_ROOT/src/core/"*.txt "$target_dir/src/core/" || return 1
+    echo "  Synced src/core/*.sh (+ data files)"
 
     # Config files
-    mkdir -p "$target_dir/src/config"
-    cp "$TAVS_ROOT/src/config/"*.conf "$target_dir/src/config/" 2>/dev/null
+    cp "$TAVS_ROOT/src/config/"*.conf "$target_dir/src/config/" || return 1
     echo "  Synced src/config/*.conf"
 
-    # Claude agent adapter
-    if [[ -d "$target_dir/src/agents/claude" ]]; then
-        cp "$TAVS_ROOT/src/agents/claude/trigger.sh" "$target_dir/src/agents/claude/"
-        echo "  Synced src/agents/claude/trigger.sh"
-    fi
-
     # CLI subcommands
-    if [[ -d "$target_dir/src/cli" ]]; then
-        cp "$TAVS_ROOT/src/cli/"*.sh "$target_dir/src/cli/"
-        echo "  Synced src/cli/*.sh"
-    fi
+    cp "$TAVS_ROOT/src/cli/"*.sh "$target_dir/src/cli/" || return 1
+    chmod +x "$target_dir/tavs" "$target_dir/src/core/trigger.sh" \
+        "$target_dir/src/agents/claude/trigger.sh" "$target_dir/src/agents/codex/trigger.sh" \
+        "$target_dir/src/install/install-codex.sh" || return 1
+    echo "  Synced CLI, adapters, hooks, Codex installer and shell integration"
 
     # Theme files
     if [[ -d "$target_dir/src/themes" ]]; then
-        cp "$TAVS_ROOT/src/themes/"*.conf "$target_dir/src/themes/" 2>/dev/null
+        cp "$TAVS_ROOT/src/themes/"*.conf "$target_dir/src/themes/" || return 1
         echo "  Synced src/themes/*.conf"
     fi
 
