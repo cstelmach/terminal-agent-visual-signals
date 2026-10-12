@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {"name": "missing", "text": null, "expected": "active"},
+    {"name": "suspended", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"true\"\n", "expected": "suspended"},
+    {"name": "resumed", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"\n", "expected": "active"},
+    {"name": "empty", "text": "", "expected": "unavailable"},
+    {"name": "future-schema", "text": "SCHEMA_VERSION=\"2\"\nSUSPENDED=\"true\"\n", "expected": "unavailable"},
+    {"name": "unknown-value", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"TRUE\"\n", "expected": "unavailable"},
+    {"name": "unquoted", "text": "SCHEMA_VERSION=1\nSUSPENDED=true\n", "expected": "unavailable"},
+    {"name": "reordered", "text": "SUSPENDED=\"true\"\nSCHEMA_VERSION=\"1\"\n", "expected": "unavailable"},
+    {"name": "duplicate", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"true\"\nSUSPENDED=\"false\"\n", "expected": "unavailable"},
+    {"name": "extra-field", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"\nUNKNOWN=\"value\"\n", "expected": "unavailable"},
+    {"name": "no-final-newline", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"", "expected": "unavailable"},
+    {"name": "crlf", "text": "SCHEMA_VERSION=\"1\"\r\nSUSPENDED=\"false\"\r\n", "expected": "unavailable"},
+    {"name": "nul", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"\n\u0000", "expected": "unavailable"},
+    {"name": "shell-content", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"$(touch $HOME/.tavs/MUST_NOT_RUN)\"\n", "expected": "unavailable"},
+    {"name": "oversize", "text": "SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "expected": "unavailable"}
+  ]
+}

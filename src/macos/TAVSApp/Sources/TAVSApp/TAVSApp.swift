@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum TAVSAppMain {
     static func main() {
         let args = CommandLine.arguments
+        if VisualRestrictionsStateStore.handle(args) { return }
         if OrganizerIntake.handle(args) { return }
         if ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"]
             .contains(where: { ProcessInfo.processInfo.environment[$0] != nil }) {
