@@ -406,6 +406,23 @@ final class VisualRecoveryTests: XCTestCase {
         try noBytes(target)
     }
 
+    func testSyntheticCheckAcceptsLiveAgentBelowContinuingShellOwner() throws {
+        let shell = try terminal(10)
+        identities[11] = ProcessIdentity(generation: generation(11), parentPID: 10,
+            group: 10, device: shell.device, foregroundGroup: 10)
+        let value = OrdinaryBackgroundIntent(tty: shell.tty, device: shell.device,
+            producer: generation(11), deliveryID: "agent-delivery", updatedAt: 1_000, background: "reset")
+        try state.publishObservation(TerminalObservation(tty: shell.tty, device: shell.device,
+            producer: value.producer, provider: "claude", verifiedAgent: true, state: "complete",
+            event: "Stop", deliveryID: value.deliveryID, responseID: nil, observedAt: 1_000))
+        let service = recovery()
+        let target = try service.target(tty: shell.tty, owner: generation(11))
+        XCTAssertEqual(target.ttyOwner, shell.ttyOwner)
+        XCTAssertFalse(try service.write(.checkSynthetic(value, intakeAt: 1_000), to: target))
+        XCTAssertTrue(state.cachedRecords().bindings.isEmpty)
+        try noBytes(shell)
+    }
+
     func testCachedTargetRejectsAmbiguousNativeSurfacesAndReusedOwner() throws {
         let plain = try terminal(10)
         for id in ["pane-a", "pane-b"] {

@@ -69,8 +69,9 @@ final class VisualRecovery {
             lockURL: state.lockURL(forTTY: target.tty)) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
             if case .checkSynthetic(let intent, let intakeAt) = operation {
-                guard intent.tty == target.tty, intent.device == target.device,
-                      intent.producer == target.ttyOwner else { throw TerminalVisualStateError.invalidRecord }
+                guard intent.tty == target.tty, intent.device == target.device else {
+                    throw TerminalVisualStateError.invalidRecord
+                }
                 try self.state.validateSyntheticUnlocked(intent, intakeAt: intakeAt, deadline: deadline)
                 return nil
             }

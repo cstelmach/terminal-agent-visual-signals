@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.7
+Version: 1.8
+
+## Synthetic styling confuses producer and shell owner
+
+An agent observation names its producer generation, while the managed target retains the
+continuing shell owner's generation. Requiring equality rejected valid background-disabled
+idle styling from an agent child. Validation now binds the target by TTY/device and verifies
+the producer independently against the latest live observation. A regression reproduces an
+agent under a continuing shell owner and proves validation produces no paint or cached target.
 
 ## Startup resets unaffected shell backgrounds
 
