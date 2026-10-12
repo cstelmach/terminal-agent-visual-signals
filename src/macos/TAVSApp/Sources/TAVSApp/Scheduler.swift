@@ -263,14 +263,6 @@ final class Scheduler: ObservableObject {
         }
     }
 
-    // A one-time baseline reset leaves the schedule and pending signals alone.
-    // Pauses and hard locks retain ownership of the terminal colours.
-    // Independent recovery handles suspended or unavailable restriction state.
-    func restoreTerminalColors() {
-        guard !visualRestrictionsState.read().disablesRestrictions, !isMuted && !isHardLocked else { return }
-        broadcaster.broadcastPausedClear()
-    }
-
     func togglePause(force: Bool = false) {
         guard var cfg = config else { return }
         // Defense in depth under the UI gate: while hard-locked, resuming is

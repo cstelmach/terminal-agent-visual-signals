@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -15,7 +15,7 @@ and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.
 Source and owned-terminal checks pass. Required physical Ghostty/UI acceptance remains open;
 the current source has not been deployed to the installed application.
 
-## Phase 7 in progress
+## Phase 7 source verified; native acceptance pending
 
 Preview color composition reuses the existing hex/luminance/contrast math. It chooses a bounded
 tint from current ordinary intent or configured defaults, preserving configured normal-text
@@ -29,8 +29,11 @@ bounded and validates configuration before parsing canonical output. Unsupported
 appearance is explicit. Sessions selection, Clear Preview, Escape and window close are connected.
 Menu and Sessions recovery share the current-bundle headless client and display partial failures.
 The signed fixture app verified priority/suspension retention through relaunch, recovery controls
-and explicit unavailable preview status. Copied-install coverage and physical Ghostty acceptance
-remain pending. Fixture checks do not establish real terminal highlighting or navigation.
+and explicit unavailable preview status. Fake installations now verify copied recovery, adapters,
+hook definitions, shell source and the Codex installer. The unused legacy reset method and its
+four dedicated tests are retired; scheduler suspension tests and independent recovery remain.
+Physical Ghostty acceptance is still blocked. Fixture checks do not establish real terminal
+highlighting or navigation, and no production deployment has occurred.
 
 ## Later phases
 
