@@ -1,10 +1,11 @@
 # Codex CLI Integration
 
-## Status: Limited Support (No Hooks System)
+## Status: Completion-only Integration
 
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-10-12
 
-As of January 2026, **Codex CLI does not have a hooks system** comparable to Claude Code or Gemini CLI.
+TAVS consumes the existing Codex `agent-turn-complete` notify signal. Coverage remains partial;
+it does not infer processing or add lifecycle hooks. The comparison below is from January 2026.
 
 | Feature | Claude Code | Gemini CLI | Codex CLI |
 |---------|-------------|------------|-----------|
@@ -19,10 +20,19 @@ The `notify` configuration fires on `agent-turn-complete`:
 
 ```toml
 # ~/.codex/config.toml
-notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "/absolute/path/to/tavs/src/agents/codex/trigger.sh", "complete"]
 ```
 
 **Result:** Terminal turns green (🟢) when Codex completes a turn.
+
+Use an absolute path. Codex appends one JSON argument, which reaches the adapter as `$2`.
+The adapter retains only supported completion/thread/turn/directory metadata and discards bodies
+before invoking core. Missing turn IDs remain missing. An unavailable helper reports unavailable
+metadata while preserving the fixed complete signal.
+
+The installer writes `notify` at TOML root before existing tables and saves `config.toml.bak`.
+It refuses an existing multiline `notify` array without changing the config; edit that array
+manually instead of allowing a partial replacement.
 
 ## What Does NOT Work
 
@@ -42,10 +52,10 @@ notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agen
 Single event: `agent-turn-complete`
 
 ```toml
-notify = ["bash", "-lc", "/path/to/script.sh"]
+notify = ["bash", "/absolute/path/to/script.sh"]
 ```
 
-Receives JSON payload:
+Receives one JSON argument appended to the command array:
 ```json
 {
   "type": "agent-turn-complete",
@@ -92,7 +102,7 @@ The community has been requesting full hooks since August 2025:
 | `README.md` | This overview |
 | `HOOKS_REFERENCE.md` | Comprehensive documentation |
 | `hooks.json` | Placeholder (empty hooks object) |
-| `trigger.sh` | Wrapper to core trigger (ready for future hooks) |
+| `trigger.sh` | Allowlisted completion metadata intake and fixed-state core delegation |
 
 ## When Hooks Are Implemented
 

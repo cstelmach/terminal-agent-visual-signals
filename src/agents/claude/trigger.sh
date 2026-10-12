@@ -2,7 +2,7 @@
 # ==============================================================================
 # Claude Code Trigger - Agent-Specific Entry Point
 # ==============================================================================
-# Sets agent identifier, extracts permission mode from hook JSON payload,
+# Sets agent identifier, extracts allowlisted metadata from hook JSON,
 # and delegates to unified core trigger.
 # This enables agent-specific theming (colors, faces, settings) and
 # mode-aware processing colors (plan, acceptEdits, bypassPermissions).
@@ -13,40 +13,21 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Set agent identifier for theme loading
 export TAVS_AGENT="claude"
 
-# Capture stdin (JSON payload from Claude Code hooks)
-# Claude Code pipes JSON to hook commands; cat reads the full payload
-# and returns when the pipe closes. [[ ! -t 0 ]] skips if stdin is a terminal.
-_tavs_stdin=""
-if [[ ! -t 0 ]]; then
-    _tavs_stdin=$(cat 2>/dev/null)
+case "${1:-}" in
+    processing|permission|complete|idle|compacting|reset|subagent-start|subagent-stop|tool_error) ;;
+    *) printf 'tavs: unsupported hook state\n' >&2; exit 1 ;;
+esac
+_tavs_args=("$1")
+case "$1:${2:-}" in
+    processing:new-prompt|reset:session-end) _tavs_args+=("$2") ;;
+esac
+
+unset _TAVS_HOOK_PAYLOAD
+source "$SCRIPT_DIR/../../core/organizer-state.sh"
+if [[ -t 0 ]]; then
+    _tavs_organizer_intake claude "$PPID" </dev/null || :
+else
+    _tavs_organizer_intake claude "$PPID" || :
 fi
 
-# Extract permission_mode from JSON without jq dependency
-# Matches: "permission_mode":"value" or "permission_mode": "value"
-if [[ -n "$_tavs_stdin" ]]; then
-    _mode=$(printf '%s' "$_tavs_stdin" | \
-        sed -n 's/.*"permission_mode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-    [[ -n "$_mode" ]] && export TAVS_PERMISSION_MODE="$_mode"
-
-    # Extract transcript_path for context fallback estimation
-    _transcript=$(printf '%s' "$_tavs_stdin" | \
-        sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-    [[ -n "$_transcript" ]] && export TAVS_TRANSCRIPT_PATH="$_transcript"
-
-    # Extract session_id for identity system (deterministic session icons)
-    _session_id=$(printf '%s' "$_tavs_stdin" | \
-        sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-    [[ -n "$_session_id" ]] && export TAVS_SESSION_ID="$_session_id"
-
-    # Extract cwd for directory identity (deterministic dir icons)
-    _cwd=$(printf '%s' "$_tavs_stdin" | \
-        sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
-    [[ -n "$_cwd" ]] && export TAVS_CWD="$_cwd"
-fi
-export TAVS_PERMISSION_MODE="${TAVS_PERMISSION_MODE:-default}"
-
-# Pass raw payload for debug logging in core trigger
-export _TAVS_HOOK_PAYLOAD="$_tavs_stdin"
-
-# Delegate to core trigger (not exec — stdin already consumed for mode extraction)
-"$SCRIPT_DIR/../../core/trigger.sh" "$@"
+exec "$SCRIPT_DIR/../../core/trigger.sh" "${_tavs_args[@]}" </dev/null

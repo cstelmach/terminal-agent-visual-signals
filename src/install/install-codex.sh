@@ -67,10 +67,26 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
     EXISTING_CONFIG=""
 else
     EXISTING_CONFIG=$(cat "$CONFIG_FILE")
+    _tavs_notify_key='^[[:space:]]*notify[[:space:]]*='
+    _tavs_notify_closed='\][[:space:]]*(#.*)?$'
+    while IFS= read -r _tavs_line || [[ -n "$_tavs_line" ]]; do
+        if [[ "$_tavs_line" =~ $_tavs_notify_key && ! "$_tavs_line" =~ $_tavs_notify_closed ]]; then
+            printf 'Error: existing multiline notify requires manual editing; config preserved.\n' >&2
+            exit 1
+        fi
+    done < "$CONFIG_FILE"
 fi
 
-# Check if notify is already configured
-NOTIFY_LINE="notify = [\"bash\", \"-lc\", \"$TRIGGER_SCRIPT complete\"]"
+# Use direct argv so the provider's appended JSON reaches the adapter as $2.
+NOTIFY_PATH="${TRIGGER_SCRIPT//\\/\\\\}"
+NOTIFY_PATH="${NOTIFY_PATH//\"/\\\"}"
+for (( _tavs_code=1; _tavs_code<32; _tavs_code++ )); do
+    printf -v _tavs_control "\\$(printf '%03o' "$_tavs_code")"
+    printf -v _tavs_escape '\\u%04x' "$_tavs_code"
+    NOTIFY_PATH="${NOTIFY_PATH//"$_tavs_control"/"$_tavs_escape"}"
+done
+NOTIFY_PATH="${NOTIFY_PATH//$'\177'/\\u007f}"
+NOTIFY_LINE="notify = [\"bash\", \"$NOTIFY_PATH\", \"complete\"]"
 
 if echo "$EXISTING_CONFIG" | grep -q "tavs.*trigger.sh"; then
     echo -e "${GREEN}✓ Visual signals already configured in $CONFIG_FILE${NC}"
@@ -88,7 +104,7 @@ fi
 # Show what will be added
 echo -e "${CYAN}Configuration to add to $CONFIG_FILE:${NC}"
 echo ""
-echo -e "${GREEN}$NOTIFY_LINE${NC}"
+printf '%b%s%b\n' "$GREEN" "$NOTIFY_LINE" "$NC"
 echo ""
 
 # Confirm
@@ -97,21 +113,20 @@ read -p "Apply this configuration? [y/N] " response
 if [[ "$response" =~ ^[yY] ]]; then
     # Backup existing config
     if [[ -f "$CONFIG_FILE" ]]; then
-        cp "$CONFIG_FILE" "$CONFIG_FILE.bak"
+        cp "$CONFIG_FILE" "$CONFIG_FILE.bak" || exit 1
         echo "Backup created: $CONFIG_FILE.bak"
     fi
 
-    # Remove existing notify line if present
-    if [[ -f "$CONFIG_FILE" ]]; then
-        # Create temp file without notify lines
-        grep -v "^notify" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" || true
-        mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    # Prepend the root option so an existing final table cannot capture it.
+    if ! printf '# TAVS - Terminal Agent Visual Signals (complete signal only)\n%s\n\n' \
+        "$NOTIFY_LINE" > "$CONFIG_FILE.tmp"; then
+        exit 1
     fi
-
-    # Append notify configuration
-    echo "" >> "$CONFIG_FILE"
-    echo "# TAVS - Terminal Agent Visual Signals (complete signal only)" >> "$CONFIG_FILE"
-    echo "$NOTIFY_LINE" >> "$CONFIG_FILE"
+    if [[ -f "$CONFIG_FILE" ]] && \
+        ! sed '/^[[:space:]]*notify[[:space:]]*=/d' "$CONFIG_FILE" >> "$CONFIG_FILE.tmp"; then
+        exit 1
+    fi
+    mv "$CONFIG_FILE.tmp" "$CONFIG_FILE" || exit 1
 
     echo ""
     echo -e "${GREEN}✓ Codex CLI visual signals installed!${NC}"

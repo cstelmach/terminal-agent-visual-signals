@@ -1,7 +1,7 @@
 # Codex CLI Hooks Reference for TAVS
 
-**Last Updated:** 2026-01-08
-**Codex CLI Version:** v0.2.x (Latest as of January 2026)
+**Last Updated:** 2026-10-12
+**Historical Codex CLI Version:** v0.2.x (January 2026 comparison)
 **Documentation Sources:** [OpenAI Codex CLI](https://developers.openai.com/codex/cli), [GitHub Repository](https://github.com/openai/codex)
 
 ---
@@ -9,7 +9,7 @@
 ## Table of Contents
 
 1. [Overview](#1-overview)
-2. [Current Status: No Hooks System](#2-current-status-no-hooks-system)
+2. [Current TAVS Integration: Completion Only](#2-current-tavs-integration-completion-only)
 3. [Available Event Mechanisms](#3-available-event-mechanisms)
    - [notify Configuration](#notify-configuration)
    - [tui.notifications](#tuinotifications)
@@ -27,9 +27,9 @@
 
 ## 1. Overview
 
-**⚠️ CRITICAL: Codex CLI does NOT have a hooks system comparable to Claude Code or Gemini CLI.**
-
-Unlike Claude Code (10 hook events) and Gemini CLI (11 hook events), OpenAI's Codex CLI currently provides only a basic notification mechanism that fires on a single event type.
+TAVS's Codex integration consumes the existing `agent-turn-complete` notify signal.
+Coverage is completion-only; TAVS does not add provider lifecycle hooks or infer processing.
+The broader provider comparisons and feature-request counts below are historical (January 2026).
 
 ### Current State Summary
 
@@ -49,9 +49,11 @@ Unlike Claude Code (10 hook events) and Gemini CLI (11 hook events), OpenAI's Co
 
 ---
 
-## 2. Current Status: No Hooks System
+## 2. Current TAVS Integration: Completion Only
 
-As of January 2026, Codex CLI does **not** implement a hooks system. The development team has acknowledged community requests but has not committed to a timeline.
+The current adapter retains supported completion metadata, including a supplied `turn-id`,
+without keeping prompt or answer bodies. Missing IDs stay missing. Unsupported helpers report
+unavailable metadata and preserve basic fixed-state signaling.
 
 ### What This Means for TAVS
 
@@ -76,7 +78,7 @@ The `notify` setting in `~/.codex/config.toml` allows running a command when spe
 
 ```toml
 # ~/.codex/config.toml
-notify = ["bash", "-lc", "/path/to/your/script.sh"]
+notify = ["bash", "/absolute/path/to/tavs/src/agents/codex/trigger.sh", "complete"]
 ```
 
 #### Supported Events
@@ -87,7 +89,11 @@ notify = ["bash", "-lc", "/path/to/your/script.sh"]
 
 #### JSON Payload
 
-The notify command receives a JSON payload via stdin:
+Codex appends one JSON argument to the notify command array. The configured `complete` is `$1`
+and the appended JSON is `$2` in the TAVS adapter. Use an absolute script path; direct argv does
+not expand `~`. The installer escapes the path as a TOML string.
+It writes the root option before existing tables and backs up the original config. Existing
+multiline notify arrays require manual editing; the installer refuses them without mutation.
 
 ```json
 {
@@ -106,18 +112,8 @@ The notify command receives a JSON payload via stdin:
 #!/bin/bash
 # ~/.codex/hooks/on-complete.sh
 
-# Read JSON payload from stdin
-payload=$(cat)
-
-# Extract information
-turn_id=$(echo "$payload" | jq -r '.["turn-id"]')
-event_type=$(echo "$payload" | jq -r '.type')
-
-# Only handle agent-turn-complete
-if [[ "$event_type" == "agent-turn-complete" ]]; then
-    # Trigger visual signal
-    ~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete
-fi
+# Forward the appended JSON argument to TAVS's allowlisted intake.
+exec "/absolute/path/to/tavs/src/agents/codex/trigger.sh" complete "${1:-}"
 ```
 
 ---
@@ -381,7 +377,7 @@ Use the single `notify` event to trigger complete, then rely on a timer to reset
 TRIGGER="$HOME/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh"
 
 # Set complete state
-"$TRIGGER" complete
+"$TRIGGER" complete "${1:-}"
 
 # Background process to reset after 60 seconds
 (sleep 60 && "$TRIGGER" reset) &
@@ -445,7 +441,7 @@ alias codex-reset='~/.claude/hooks/terminal-agent-visual-signals/src/agents/code
 # ~/.codex/config.toml
 
 # Trigger visual signal on completion
-notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "/absolute/path/to/tavs/src/agents/codex/trigger.sh", "complete"]
 ```
 
 ### With Desktop Notifications
@@ -454,7 +450,7 @@ notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agen
 # ~/.codex/config.toml
 
 # Visual signal on completion
-notify = ["bash", "-lc", "~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete"]
+notify = ["bash", "/absolute/path/to/tavs/src/agents/codex/trigger.sh", "complete"]
 
 # Desktop notifications for awareness
 [tui]
@@ -467,22 +463,18 @@ notifications = ["agent-turn-complete", "approval-requested"]
 # ~/.codex/config.toml
 
 # Script that logs and triggers visual
-notify = ["bash", "-lc", "~/.codex/hooks/on-complete.sh"]
+notify = ["bash", "/absolute/path/to/on-complete.sh"]
 ```
 
 ```bash
 #!/bin/bash
 # ~/.codex/hooks/on-complete.sh
 
-# Read payload
-payload=$(cat)
-
-# Log the event
+# Log a fixed event name only; never log provider JSON or bodies.
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] agent-turn-complete" >> ~/.codex/hooks.log
-echo "$payload" | jq . >> ~/.codex/hooks.log
 
-# Trigger visual signal
-~/.claude/hooks/terminal-agent-visual-signals/src/agents/codex/trigger.sh complete
+# Forward metadata intake to the adapter.
+exec "/absolute/path/to/tavs/src/agents/codex/trigger.sh" complete "${1:-}"
 ```
 
 ---

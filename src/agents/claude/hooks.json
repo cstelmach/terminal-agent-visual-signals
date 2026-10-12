@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing",
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh processing new-prompt",
             "async": true,
             "timeout": 5
           }
@@ -104,7 +104,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset",
+            "command": "${CLAUDE_PLUGIN_ROOT}/src/agents/claude/trigger.sh reset session-end",
             "async": true,
             "timeout": 5
           }

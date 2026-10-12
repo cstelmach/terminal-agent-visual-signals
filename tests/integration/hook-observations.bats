@@ -1,0 +1,298 @@
+#!/usr/bin/env bats
+
+setup() {
+    [[ -n "${TAVS_TEST_ROOT:-}" && -x "${TAVS_TEST_HELPER_BIN:-}" ]]
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    FIXTURE="$(cd "$BATS_TEST_TMPDIR" && pwd)/repo \"quoted\" \\path"
+    export CAPTURE="$BATS_TEST_TMPDIR/core.json"
+    mkdir -p "$FIXTURE/src/agents/claude" "$FIXTURE/src/agents/codex" \
+        "$FIXTURE/src/core" "$FIXTURE/src/install"
+    cp "$REPO_ROOT/src/agents/claude/trigger.sh" "$FIXTURE/src/agents/claude/trigger.sh"
+    cp "$REPO_ROOT/src/agents/codex/trigger.sh" "$FIXTURE/src/agents/codex/trigger.sh"
+    cp "$REPO_ROOT/src/core/organizer-state.sh" "$FIXTURE/src/core/organizer-state.sh"
+    cp "$REPO_ROOT/src/install/install-codex.sh" "$FIXTURE/src/install/install-codex.sh"
+    cat > "$FIXTURE/src/core/trigger.sh" <<'SH'
+#!/bin/bash
+python3 -c 'import json,os,sys
+keys=["TAVS_AGENT","TAVS_PERMISSION_MODE","TAVS_TRANSCRIPT_PATH","TAVS_SESSION_ID",
+      "TAVS_CWD","TAVS_ORGANIZER_CONTEXT","_TAVS_HOOK_PAYLOAD"]
+with open(os.environ["CAPTURE"],"w") as f:
+    json.dump({"args":sys.argv[1:],"env":{k:os.environ.get(k) for k in keys},
+               "stdin":sys.stdin.read()},f)' "$@"
+SH
+    chmod +x "$FIXTURE/src/core/trigger.sh"
+    CLAUDE="$FIXTURE/src/agents/claude/trigger.sh"
+    CODEX="$FIXTURE/src/agents/codex/trigger.sh"
+    export _TAVS_HOOK_PAYLOAD="INHERITED_BODY_SENTINEL"
+    export DEBUG_ALL=1
+}
+
+_claude() { bash "$CLAUDE" "$@" < "$BATS_TEST_TMPDIR/payload.json"; }
+_codex() { bash "$CODEX" "$@" < "$BATS_TEST_TMPDIR/payload.json"; }
+
+_assert_private_dispatch() {
+    python3 - "$CAPTURE" "$@" <<'PY'
+import base64,json,sys
+record=json.load(open(sys.argv[1]))
+assert record["args"] == sys.argv[2:], record["args"]
+assert record["stdin"] == "", record["stdin"]
+assert record["env"]["_TAVS_HOOK_PAYLOAD"] is None
+assert "BODY_SENTINEL" not in json.dumps(record)
+context=record["env"]["TAVS_ORGANIZER_CONTEXT"]
+if context:
+    decoded=json.loads(base64.b64decode(context))
+    assert set(decoded) <= {"schema","deliveryID","observedAt","provider","verifiedAgent",
+                            "producer","device","event","responseID"}
+    assert "BODY_SENTINEL" not in json.dumps(decoded)
+PY
+}
+
+@test "Claude intake preserves decoded top-level metadata without body or nested keys" {
+    cat > "$BATS_TEST_TMPDIR/payload.json" <<'JSON'
+{"permission_mode":"plan","session_id":"session\"\\escaped","cwd":"/fixture/space and\nnewline","transcript_path":"/fixture/transcript\"\\path.jsonl","hook_event_name":"UserPromptSubmit","prompt":"PROMPT_BODY_SENTINEL","tool_input":{"permission_mode":"bypassPermissions","session_id":"TOOL_BODY_SENTINEL","cwd":"NESTED_BODY_SENTINEL"}}
+JSON
+    run _claude processing new-prompt
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch processing new-prompt
+    python3 - "$CAPTURE" <<'PY'
+import base64,json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_AGENT"] == "claude"
+assert e["TAVS_PERMISSION_MODE"] == "plan"
+assert e["TAVS_SESSION_ID"] == 'session"\\escaped'
+assert e["TAVS_CWD"] == "/fixture/space and\nnewline"
+assert e["TAVS_TRANSCRIPT_PATH"] == '/fixture/transcript"\\path.jsonl'
+c=json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))
+assert c["provider"] == "claude" and c["event"] == "UserPromptSubmit"
+assert c["deliveryID"] and c["observedAt"] > 0
+assert not {"cwd","session_id","transcript_path","prompt","tool_input"} & c.keys()
+PY
+}
+
+@test "Claude reset keeps session-end and discards free-form arguments" {
+    printf '%s' '{"session_id":"ending","hook_event_name":"SessionEnd"}' \
+        > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude reset session-end ARG_BODY_SENTINEL
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch reset session-end
+}
+
+@test "Adapters reject unknown states without passing free-form state to core" {
+    printf '%s' '{}' > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude STATE_BODY_SENTINEL
+    [ "$status" -ne 0 ]
+    [[ "$output" != *BODY_SENTINEL* ]]
+    [ ! -e "$CAPTURE" ]
+    run _codex STATE_BODY_SENTINEL '{}'
+    [ "$status" -ne 0 ]
+    [[ "$output" != *BODY_SENTINEL* ]]
+    [ ! -e "$CAPTURE" ]
+}
+
+@test "Manual Codex fixed-state flags still reach core" {
+    : > "$BATS_TEST_TMPDIR/payload.json"
+    run _codex processing new-prompt
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch processing new-prompt
+    run _codex reset session-end
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch reset session-end
+}
+
+@test "Codex appended JSON preserves completion metadata and consumes argv and stdin" {
+    printf '%s' 'STDIN_BODY_SENTINEL' > "$BATS_TEST_TMPDIR/payload.json"
+    local payload='{"type":"agent-turn-complete","thread-id":"thread\"\\escaped","turn-id":"turn-7","cwd":"/fixture/codex dir","input-messages":["PROMPT_BODY_SENTINEL"],"last-assistant-message":"ANSWER_BODY_SENTINEL"}'
+    run _codex complete "$payload" ARG_BODY_SENTINEL
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch complete
+    python3 - "$CAPTURE" <<'PY'
+import base64,json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_AGENT"] == "codex"
+assert e["TAVS_SESSION_ID"] == 'thread"\\escaped'
+assert e["TAVS_CWD"] == "/fixture/codex dir"
+c=json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))
+assert c["event"] == "agent-turn-complete" and c["responseID"] == "turn-7"
+assert c["provider"] == "codex"
+assert not {"thread-id","cwd","input-messages","last-assistant-message"} & c.keys()
+PY
+}
+
+@test "Missing Codex turn ID stays absent instead of inferring another event" {
+    : > "$BATS_TEST_TMPDIR/payload.json"
+    run _codex complete '{"type":"agent-turn-complete","thread-id":"known-thread"}'
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch complete
+    python3 - "$CAPTURE" <<'PY'
+import base64,json,sys
+c=json.loads(base64.b64decode(json.load(open(sys.argv[1]))["env"]["TAVS_ORGANIZER_CONTEXT"]))
+assert c["event"] == "agent-turn-complete"
+assert c.get("responseID") is None
+PY
+}
+
+@test "Malformed and wrong-type hook payloads retain fixed signals without inherited metadata" {
+    export TAVS_PERMISSION_MODE=bypassPermissions TAVS_SESSION_ID=stale \
+        TAVS_CWD=/stale TAVS_TRANSCRIPT_PATH=/stale TAVS_ORGANIZER_CONTEXT=stale
+    local payload
+    for payload in '{"prompt":"BROKEN_BODY_SENTINEL"' '[]' \
+        '{"permission_mode":{},"session_id":43,"cwd":[],"transcript_path":false}'; do
+        printf '%s' "$payload" > "$BATS_TEST_TMPDIR/payload.json"
+        run _claude permission
+        [ "$status" -eq 0 ]
+        [[ "$output" != *BODY_SENTINEL* ]]
+        _assert_private_dispatch permission
+        python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_PERMISSION_MODE"] == "default"
+assert not e["TAVS_SESSION_ID"] and not e["TAVS_CWD"] and not e["TAVS_TRANSCRIPT_PATH"]
+assert e["TAVS_ORGANIZER_CONTEXT"] != "stale"
+PY
+    done
+}
+
+@test "Unknown event and mode do not become organizer authority" {
+    printf '%s' '{"hook_event_name":"UNKNOWN_BODY_SENTINEL","permission_mode":"MODE_BODY_SENTINEL","nested":{"session_id":"NESTED_BODY_SENTINEL"}}' \
+        > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude processing ARG_BODY_SENTINEL
+    [ "$status" -eq 0 ]
+    [[ "$output" != *BODY_SENTINEL* ]]
+    _assert_private_dispatch processing
+    python3 - "$CAPTURE" <<'PY'
+import base64,json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_PERMISSION_MODE"] == "default" and not e["TAVS_SESSION_ID"]
+if e["TAVS_ORGANIZER_CONTEXT"]:
+    c=json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))
+    assert c.get("event") is None
+PY
+}
+
+@test "Shell syntax stays metadata data without execution" {
+    python3 - "$BATS_TEST_TMPDIR" <<'PY' > "$BATS_TEST_TMPDIR/payload.json"
+import json,sys
+print(json.dumps({"session_id":"$(touch "+sys.argv[1]+"/executed)",
+                  "cwd":"`touch "+sys.argv[1]+"/executed`","permission_mode":"plan"}))
+PY
+    run _claude processing
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch processing
+    [ ! -e "$BATS_TEST_TMPDIR/executed" ]
+    python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_SESSION_ID"].startswith("$(touch ") and e["TAVS_CWD"].startswith("`touch ")
+PY
+}
+
+@test "Absent or legacy helper reports unavailable without losing basic signals" {
+    printf '%s' '{"prompt":"PROMPT_BODY_SENTINEL","permission_mode":"plan"}' \
+        > "$BATS_TEST_TMPDIR/payload.json"
+    local selected="$TAVS_TEST_HELPER_BIN"
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing-helper"
+    run _claude permission
+    [ "$status" -eq 0 ]
+    [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
+    _assert_private_dispatch permission
+
+    cat > "$BATS_TEST_TMPDIR/old-helper" <<'SH'
+#!/bin/bash
+[[ "$1" == "--validate-config" && "$2" == "--organizer-capabilities" ]] || exit 97
+printf 'known-validation-only\n' > "$CAPTURE.legacy"
+exit 2
+SH
+    chmod +x "$BATS_TEST_TMPDIR/old-helper"
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/old-helper"
+    run _claude permission
+    [ "$status" -eq 0 ]
+    [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
+    _assert_private_dispatch permission
+    [ "$(cat "$CAPTURE.legacy")" = "known-validation-only" ]
+    export TAVS_TEST_HELPER_BIN="$selected"
+}
+
+@test "Oversized input is rejected without raw diagnostics or core propagation" {
+    python3 - <<'PY' > "$BATS_TEST_TMPDIR/payload.json"
+import json
+print(json.dumps({"prompt":"OVERSIZED_BODY_SENTINEL" + "x" * 1048577}))
+PY
+    run _claude permission
+    [ "$status" -eq 0 ]
+    [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
+    _assert_private_dispatch permission
+}
+
+@test "Installer structured notify argv survives spaces quotes and backslashes" {
+    local config_home="$BATS_TEST_TMPDIR/config-home"
+    mkdir -p "$config_home/.codex"
+    printf 'model = "fixture"\n' > "$config_home/.codex/config.toml"
+    run env HOME="$config_home" bash "$FIXTURE/src/install/install-codex.sh" <<< y
+    [ "$status" -eq 0 ]
+    python3 - "$config_home/.codex/config.toml" "$CODEX" <<'PY'
+import json,subprocess,sys,tomllib
+with open(sys.argv[1],"rb") as f: config=tomllib.load(f)
+assert config["model"] == "fixture"
+assert config["notify"] == ["bash",sys.argv[2],"complete"]
+payload=json.dumps({"type":"agent-turn-complete","thread-id":"notify-thread",
+                    "turn-id":"notify-turn","last-assistant-message":"ANSWER_BODY_SENTINEL"})
+result=subprocess.run(config["notify"]+[payload],input="",text=True,capture_output=True)
+assert result.returncode == 0, result.stderr
+assert "BODY_SENTINEL" not in result.stdout + result.stderr
+PY
+    _assert_private_dispatch complete
+    python3 - "$CAPTURE" <<'PY'
+import base64,json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_SESSION_ID"] == "notify-thread"
+assert json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))["responseID"] == "notify-turn"
+PY
+}
+
+@test "Installer keeps notify at root above existing tables and preserves backup" {
+    local config_home="$BATS_TEST_TMPDIR/config-home"
+    mkdir -p "$config_home/.codex"
+    cat > "$BATS_TEST_TMPDIR/original.toml" <<'TOML'
+# retain this comment
+notify = ["old-command"]
+model = "fixture"
+
+[tui]
+notifications = ["agent-turn-complete"]
+theme = "fixture"
+TOML
+    cp "$BATS_TEST_TMPDIR/original.toml" "$config_home/.codex/config.toml"
+    run env HOME="$config_home" bash "$FIXTURE/src/install/install-codex.sh" <<< y
+    [ "$status" -eq 0 ]
+    cmp "$BATS_TEST_TMPDIR/original.toml" "$config_home/.codex/config.toml.bak"
+    python3 - "$config_home/.codex/config.toml" "$CODEX" <<'PY'
+import sys,tomllib
+text=open(sys.argv[1]).read()
+c=tomllib.loads(text)
+assert c["notify"] == ["bash",sys.argv[2],"complete"]
+assert c["model"] == "fixture"
+assert c["tui"] == {"notifications":["agent-turn-complete"],"theme":"fixture"}
+assert "# retain this comment" in text
+assert text.index("notify =") < text.index("[tui]")
+PY
+}
+
+@test "Installer refuses existing multiline notify without changing config" {
+    local config_home="$BATS_TEST_TMPDIR/config-home"
+    mkdir -p "$config_home/.codex"
+    cat > "$BATS_TEST_TMPDIR/original.toml" <<'TOML'
+notify = [
+    "bash",
+    "/fixture/old-command",
+]
+
+[tui]
+notifications = ["agent-turn-complete"]
+TOML
+    cp "$BATS_TEST_TMPDIR/original.toml" "$config_home/.codex/config.toml"
+    run env HOME="$config_home" bash "$FIXTURE/src/install/install-codex.sh" <<< y
+    [ "$status" -ne 0 ]
+    [[ "$output" == *multiline* ]]
+    cmp "$BATS_TEST_TMPDIR/original.toml" "$config_home/.codex/config.toml"
+    [ ! -e "$config_home/.codex/config.toml.bak" ]
+}
