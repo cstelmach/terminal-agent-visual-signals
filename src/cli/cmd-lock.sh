@@ -100,6 +100,17 @@ _lock_now() {
         return 1
     fi
 
+    if _tavs_visual_restrictions_suspended; then
+        if [[ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" == suspended ]]; then
+            cli_success "Lock saved until $(_lock_format_until "$new_until"); visual restrictions are suspended."
+            cli_info 'Saved rules apply after explicit resumption.'
+        else
+            cli_success "Lock saved until $(_lock_format_until "$new_until")."
+            cli_info 'Visual restriction state unavailable; restrictive visuals disabled.'
+        fi
+        return 0
+    fi
+
     cli_success "Hard lock engaged until $(_lock_format_until "$new_until")"
     if pgrep -x TAVSApp &>/dev/null; then
         cli_info "TAVS.app will paint all registered terminals within a second."
@@ -113,6 +124,12 @@ _lock_now() {
 _lock_status() {
     local now
     now=$(date +%s)
+    _tavs_visual_restrictions_read
+    case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
+        active) echo 'Visual restrictions: active.' ;;
+        suspended) echo 'Visual restrictions: suspended; saved rules apply after explicit resumption.' ;;
+        unavailable) echo 'Visual restriction state unavailable; restrictive visuals disabled.' ;;
+    esac
     if ! _tavs_lock_read; then
         echo "Lock: none (no lock.state)"
         return 0
@@ -166,7 +183,11 @@ _lock_unlock() {
     local now
     now=$(date +%s)
     if ! _tavs_lock_effective "$now"; then
-        cli_info "No effective lock right now. Nothing to unlock."
+        case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
+            suspended) cli_info 'Visual restrictions are suspended; the saved lock is preserved without an unlock.' ;;
+            unavailable) cli_info 'Visual restriction state unavailable; restrictive visuals disabled and the saved lock is preserved.' ;;
+            active) cli_info "No effective lock right now. Nothing to unlock." ;;
+        esac
         return 0
     fi
 
@@ -306,6 +327,8 @@ TAVS.app is killed (fail-closed). It does NOT survive a reboot. Unlocking
 early requires the challenge; without a configured password the challenge is
 a typing puzzle (retype a sentence with each word's first letter moved to
 the word's end). After the unlock grant expires the lock re-engages.
+Persistent visual suspension keeps saved locks inert until explicit resumption.
+While suspended or unavailable, unlocking needs no challenge and preserves the saved lock.
 EOF
         return 0
     fi

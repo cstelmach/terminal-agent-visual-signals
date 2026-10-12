@@ -21,6 +21,44 @@
 
 [[ -n "${ZSH_VERSION:-}" ]] && zmodload zsh/datetime 2>/dev/null
 
+# The installed shellrc is standalone; keep these readers identical to the core module.
+_tavs_visual_restrictions_read() {
+    local file="${1:-$HOME/.tavs/visual-restrictions.state}" data="" full=0
+    _TAVS_VISUAL_RESTRICTIONS_STATUS=unavailable
+    [[ "$file" == /* ]] || return 0
+    if [[ ! -e "$file" && ! -L "$file" ]]; then
+        local parent="${file%/*}"
+        [[ -n "$parent" ]] || parent=/
+        while [[ ! -e "$parent" && ! -L "$parent" ]]; do
+            parent="${parent%/*}"
+            [[ -n "$parent" ]] || parent=/
+        done
+        if [[ -d "$parent" && -x "$parent" ]]; then
+            _TAVS_VISUAL_RESTRICTIONS_STATUS=active
+        fi
+        return 0
+    fi
+    [[ -f "$file" && ! -L "$file" && -r "$file" ]] || return 0
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        IFS= read -r -k 128 -u 0 data < "$file" && full=1
+    else
+        IFS= read -r -d '' -n 128 data < "$file" && full=1
+    fi
+    [[ "$full" == 0 ]] || return 0
+    case "$data" in
+        $'SCHEMA_VERSION="1"\nSUSPENDED="true"\n') _TAVS_VISUAL_RESTRICTIONS_STATUS=suspended ;;
+        $'SCHEMA_VERSION="1"\nSUSPENDED="false"\n') _TAVS_VISUAL_RESTRICTIONS_STATUS=active ;;
+    esac
+    return 0
+}
+
+_tavs_visual_restrictions_suspended() {
+    _tavs_visual_restrictions_read
+    # An unavailable marker cannot authorize restrictive painting.
+    [[ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" != active ]]
+}
+
+
 _tavs_shellrc_main() {
     # Interactive shells only.
     case "$-" in *i*) ;; *) return 0 ;; esac
@@ -47,6 +85,13 @@ _tavs_shellrc_main() {
         command mkdir -p "$_rt/active-ttys" 2>/dev/null || return 0
     fi
     : >| "$_rt/active-ttys/$_tty_safe" 2>/dev/null
+
+    if _tavs_visual_restrictions_suspended; then
+        if [[ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" == unavailable ]]; then
+            printf 'tavs: visual restriction state unavailable; restrictive visuals disabled.\n' >&2
+        fi
+        return 0
+    fi
 
     # --- Read lock.state (builtins only; absent/malformed = unlocked, D3) ---
     local _locked="" _lock_until="" _unlock_until="" _lock_bg="" _lock_fg="" _lock_ver=""

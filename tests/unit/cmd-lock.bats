@@ -15,6 +15,8 @@ setup() {
     export CLI_DIR="$REPO_ROOT/src/cli"
     export TAVS_ROOT="$REPO_ROOT"
 
+    pgrep() { return 1; }
+
     source "$CLI_DIR/cmd-lock.sh"
     NOW=$(date +%s)
 }
@@ -150,4 +152,114 @@ state_value() {
     printf 'LOCKED="true"\nLOCK_UNTIL_EPOCH="soon"\nSCHEMA_VERSION="1"\n' > "$TEST_RUNTIME/lock.state"
     source "$TAVS_ROOT/src/core/lock-state-lib.sh"
     ! _tavs_lock_effective "$NOW"
+}
+
+write_visual_suspension() {
+    printf 'SCHEMA_VERSION="1"\nSUSPENDED="%s"\n' "$1" \
+        > "$TEST_HOME/.tavs/visual-restrictions.state"
+}
+
+@test "suspension: effective predicate reads fresh state without changing lock or grant" {
+    _tavs_lock_write true manual "$((NOW + 3600))" "$((NOW + 60))" '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
+    write_visual_suspension true
+    if _tavs_lock_effective "$((NOW + 120))"; then return 1; fi
+    [ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" = suspended ]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+    write_visual_suspension false
+    _tavs_lock_effective "$((NOW + 120))"
+    [ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" = active ]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+}
+
+@test "suspension: newly requested locks are saved and explicitly inert" {
+    write_visual_suspension true
+    run cmd_lock now --for 30m
+    [ "$status" -eq 0 ]
+    [ "$(state_value LOCKED)" = true ]
+    [[ "$output" == *'Lock saved until'* && "$output" == *'visual restrictions are suspended'* ]]
+    [[ "$output" != *'engaged'* && "$output" != *'will paint'* && "$output" != *'challenge required'* ]]
+    if _tavs_lock_effective "$NOW"; then return 1; fi
+}
+
+@test "suspension: lock status remains visible even without a saved lock" {
+    write_visual_suspension true
+    run cmd_lock status
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'Visual restrictions: suspended'* && "$output" == *'Lock: none'* ]]
+}
+
+@test "suspension: lock status shows saved definition and inert effective state" {
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
+    write_visual_suspension true
+    run cmd_lock status
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'LOCKED:       true'* && "$output" == *'Effective: not locked'* ]]
+    [[ "$output" == *'Visual restrictions: suspended'* ]]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+}
+
+@test "suspension: unlock bypasses challenge and preserves saved definitions" {
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
+    _tavs_challenge_verify() { : > "$TEST_DIR/challenge-called"; return 1; }
+    write_visual_suspension true
+    run _lock_unlock --for 15m
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'suspended'* && "$output" == *'saved lock'* ]]
+    [ ! -e "$TEST_DIR/challenge-called" ]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+}
+
+@test "suspension: schedule mutation predicate bypasses challenge without changing definitions" {
+    source "$CLI_DIR/cmd-schedule.sh"
+    _tavs_challenge_verify() { : > "$TEST_DIR/challenge-called"; return 1; }
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    printf '%s\n' '{"version":1,"master_active":true,"quiet_periods":[]}' > "$SCHEDULE_FILE"
+    cp "$SCHEDULE_FILE" "$TEST_DIR/schedule.before"
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
+    write_visual_suspension true
+    run _schedule_challenge_gate
+    [ "$status" -eq 0 ]
+    [ ! -e "$TEST_DIR/challenge-called" ]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+    cmp "$TEST_DIR/schedule.before" "$SCHEDULE_FILE"
+}
+
+@test "unavailable: malformed persistent state disables locks without executing marker text" {
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
+    printf 'SCHEMA_VERSION="1"\nSUSPENDED="$(touch "%s")"\n' \
+        "$TEST_DIR/MARKER_BODY_SENTINEL" > "$TEST_HOME/.tavs/visual-restrictions.state"
+    if _tavs_lock_effective "$NOW"; then return 1; fi
+    [ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" = unavailable ]
+    run cmd_lock status
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'unavailable'* && "$output" == *'restrictive visuals disabled'* ]]
+    [[ "$output" != *'MARKER_BODY_SENTINEL'* ]]
+    [ ! -e "$TEST_DIR/MARKER_BODY_SENTINEL" ]
+    cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
+}
+
+@test "unavailable: new lock remains saved without claiming paint" {
+    printf 'SCHEMA_VERSION="9"\nSUSPENDED="false"\n' > "$TEST_HOME/.tavs/visual-restrictions.state"
+    run cmd_lock now --for 30m
+    [ "$status" -eq 0 ]
+    [ "$(state_value LOCKED)" = true ]
+    [[ "$output" == *'Lock saved until'* && "$output" == *'unavailable'* ]]
+    [[ "$output" != *'engaged'* && "$output" != *'will paint'* ]]
+}
+
+@test "status: persistent restriction state is unfiltered and malformed content is private" {
+    source "$CLI_DIR/cmd-status.sh"
+    write_visual_suspension true
+    run cmd_status --colors
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'Visual restrictions: suspended'* && "$output" == *'explicit resumption'* ]]
+    printf 'MALFORMED_BODY_SENTINEL\n' > "$TEST_HOME/.tavs/visual-restrictions.state"
+    run cmd_status --faces
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'unavailable'* && "$output" == *'restrictive visuals disabled'* ]]
+    [[ "$output" != *'MALFORMED_BODY_SENTINEL'* ]]
 }

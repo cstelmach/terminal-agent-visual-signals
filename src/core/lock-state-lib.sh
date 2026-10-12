@@ -13,6 +13,11 @@
 # Absent/malformed state or non-numeric LOCK_UNTIL means NOT locked (D3).
 # ==============================================================================
 
+_tavs_policy_dir="${BASH_SOURCE[0]%/*}"
+[[ "$_tavs_policy_dir" == "${BASH_SOURCE[0]}" ]] && _tavs_policy_dir=.
+source "$_tavs_policy_dir/visual-restrictions-state.sh"
+unset _tavs_policy_dir
+
 _tavs_lock_runtime_dir() {
     echo "${TAVS_RUNTIME_DIR:-/tmp/tavs-$(id -u)}"
 }
@@ -49,6 +54,7 @@ _tavs_lock_read() {
 # Usage: _tavs_lock_effective [now_epoch]
 # Reads the state fresh and evaluates the spec §2.2 predicate.
 _tavs_lock_effective() {
+    if _tavs_visual_restrictions_suspended; then return 1; fi
     local now="${1:-$(date +%s)}"
     _tavs_lock_read || return 1
     [[ "$_LS_LOCKED" == "true" && "${_LS_VER:-1}" == "1" ]] || return 1

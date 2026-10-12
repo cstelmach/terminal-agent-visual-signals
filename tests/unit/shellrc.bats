@@ -17,6 +17,7 @@ setup() {
     mkdir -p "$TEST_HOME/.tavs" "$TEST_RUNTIME/active-ttys"
 
     export HOME="$TEST_HOME"
+    export ZDOTDIR="$TEST_HOME"
     export TAVS_RUNTIME_DIR="$TEST_RUNTIME"
     export CLI_DIR="$REPO_ROOT/src/cli"
     export TAVS_ROOT="$REPO_ROOT"
@@ -188,4 +189,89 @@ run_shellrc_bash() {
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* ]]
     [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+}
+
+write_visual_suspension() {
+    printf 'SCHEMA_VERSION="1"\nSUSPENDED="%s"\n' "$1" \
+        > "$TEST_HOME/.tavs/visual-restrictions.state"
+}
+
+@test "suspension: overlapping lock and mute stay inert in Bash and zsh" {
+    write_lock_state true $((NOW + 300)) 0
+    write_mute_state true "$NOW" "$$"
+    write_visual_suspension true
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *']10;'* && "$output" != *']104'* ]]
+    [[ "$output" != *'locked until'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    run_shellrc_bash
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *']10;'* && "$output" != *']104'* ]]
+    [[ "$output" != *'locked until'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+}
+
+@test "suspension: copied standalone shellrc has no repository dependency" {
+    cp "$SHELLRC" "$TEST_HOME/.tavs/shellrc"
+    SHELLRC="$TEST_HOME/.tavs/shellrc"
+    export TAVS_ROOT="$TEST_DIR/no-source-modules"
+    write_lock_state true $((NOW + 300)) 0
+    write_visual_suspension true
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *'locked until'* ]]
+    run_shellrc_bash
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *'locked until'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+}
+
+@test "suspension: fresh shell and recreated runtime honor the persistent marker" {
+    write_visual_suspension true
+    TEST_RUNTIME="$TEST_DIR/new-runtime"
+    export TAVS_RUNTIME_DIR="$TEST_RUNTIME"
+    mkdir -p "$TEST_RUNTIME"
+    write_lock_state true $((NOW + 300)) 0
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    run_shellrc_bash
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+}
+
+@test "suspension: explicit false permits the current saved lock in both shells" {
+    write_lock_state true $((NOW + 300)) 0
+    write_visual_suspension true
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* ]]
+    write_visual_suspension false
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" == *']11;#112233'* ]]
+    run_shellrc_bash
+    [ "$status" -eq 0 ]
+    [[ "$output" == *']11;#112233'* ]]
+}
+
+@test "unavailable: malformed marker registers but skips paint and raw content in both shells" {
+    write_lock_state true $((NOW + 300)) 0
+    write_mute_state true "$NOW" "$$"
+    printf 'SCHEMA_VERSION="1"\nSUSPENDED="MARKER_BODY_SENTINEL"\n' \
+        > "$TEST_HOME/.tavs/visual-restrictions.state"
+    run_shellrc_zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *'MARKER_BODY_SENTINEL'* ]]
+    [[ "$output" == *'unavailable'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    run_shellrc_bash
+    [ "$status" -eq 0 ]
+    [[ "$output" != *']11;'* && "$output" != *'MARKER_BODY_SENTINEL'* ]]
+    [[ "$output" == *'unavailable'* ]]
+    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
 }

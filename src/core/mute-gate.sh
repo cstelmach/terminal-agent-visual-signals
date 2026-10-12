@@ -13,6 +13,11 @@
 # require one date(1) fork — acceptable because sourcing already costs ~ms.
 # ==============================================================================
 
+_tavs_policy_dir="${BASH_SOURCE[0]%/*}"
+[[ "$_tavs_policy_dir" == "${BASH_SOURCE[0]}" ]] && _tavs_policy_dir=.
+source "$_tavs_policy_dir/visual-restrictions-state.sh"
+unset _tavs_policy_dir
+
 # ==============================================================================
 # RUNTIME DIRECTORY
 # ==============================================================================
@@ -40,12 +45,18 @@ _tavs_resolve_runtime_dir() {
 # If validation fails, resets _TAVS_SUPPRESS_OUTPUT to 0.
 #
 # Rationale for the split: stage-0 must use bash builtins only (SPEC §4.5)
-# because it runs before any source statement. Epoch comparison needs
+# because it runs before theme/terminal sources. Epoch comparison needs
 # date +%s which is an external command. Stage-1 runs during the normal
 # source pass (~57ms baseline) where one fork is negligible.
 # ==============================================================================
 
 _tavs_validate_mute_liveness() {
+    if _tavs_visual_restrictions_suspended; then
+        _TAVS_SUPPRESS_OUTPUT=0
+        unset _TAVS_S0_MUTED _TAVS_S0_PID _TAVS_S0_VER _TAVS_S0_UNTIL _TAVS_S0_WRITTEN _TAVS_S0_REASON
+        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
+        return 0
+    fi
     if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" != "1" ]]; then
         return 0
     fi
@@ -114,6 +125,7 @@ _tavs_validate_mute_liveness() {
 
 _tavs_check_mute_state() {
     _TAVS_SUPPRESS_OUTPUT=0
+    if _tavs_visual_restrictions_suspended; then return 1; fi
 
     # Hard lock first (spec D3): fail-closed, no PID/heartbeat gates, finite
     # expiry always wins, an active grant suspends it.
@@ -252,7 +264,8 @@ _tavs_mute_buffer_close() {
 _tavs_debug_mute() {
     [[ "${DEBUG_MUTE:-}" != "1" && "${DEBUG_ALL:-}" != "1" ]] && return 0
     local msg="$1"
-    local log="/tmp/tavs-mute-trace.log"
+    local log="${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/mute-trace.log"
+    [[ -d "${log%/*}" ]] || return 0
     printf '%s [%d] %s\n' "$(date +%H:%M:%S 2>/dev/null || echo '?')" "$$" "$msg" >> "$log"
 }
 

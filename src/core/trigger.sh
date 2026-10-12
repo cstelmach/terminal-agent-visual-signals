@@ -31,7 +31,7 @@ case "${1:-}" in
 esac
 
 # ==============================================================================
-# MUTE GATE — STAGE 0 (builtins only, before any source)
+# MUTE GATE: STAGE 0 (builtins only, before theme/terminal sources)
 # ==============================================================================
 # Reads ~/.tavs/mute.state using bash builtins. Sets _TAVS_SUPPRESS_OUTPUT=1
 # if the TAVS macOS app says we should be muted and its PID is still alive.
@@ -39,8 +39,12 @@ esac
 # (mute-gate.sh) which runs during the normal source pass.
 # Never exits early — full dispatch always runs for bookkeeping (SPEC D21).
 # ==============================================================================
+_tavs_policy_dir="${BASH_SOURCE[0]%/*}"
+[[ "$_tavs_policy_dir" == "${BASH_SOURCE[0]}" ]] && _tavs_policy_dir=.
+source "$_tavs_policy_dir/visual-restrictions-state.sh"
+unset _tavs_policy_dir
 _TAVS_SUPPRESS_OUTPUT=0
-if [[ -f "$HOME/.tavs/mute.state" ]]; then
+if ! _tavs_visual_restrictions_suspended && [[ -f "$HOME/.tavs/mute.state" ]]; then
     _TAVS_S0_MUTED="" _TAVS_S0_PID="" _TAVS_S0_VER=""
     _TAVS_S0_UNTIL="" _TAVS_S0_WRITTEN="" _TAVS_S0_REASON=""
     while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
@@ -67,7 +71,7 @@ fi
 # lock suppresses even when the app is dead (fail-closed). Time-sensitive
 # checks (LOCK_UNTIL/UNLOCK_UNTIL) are deferred to stage-1.
 _TAVS_S0_LOCKED="" _TAVS_S0_LOCK_UNTIL="" _TAVS_S0_UNLOCK_UNTIL="" _TAVS_S0_LOCK_VER=""
-if [[ -f "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state" ]]; then
+if ! _tavs_visual_restrictions_suspended && [[ -f "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state" ]]; then
     while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
         _tavs_s0_v="${_tavs_s0_v%\"}" ; _tavs_s0_v="${_tavs_s0_v#\"}"
         case "$_tavs_s0_k" in

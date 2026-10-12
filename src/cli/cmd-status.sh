@@ -9,6 +9,7 @@
 # ==============================================================================
 
 source "$CLI_DIR/cli-utils.sh"
+source "$TAVS_ROOT/src/core/visual-restrictions-state.sh"
 
 cmd_status() {
     # Handle --help
@@ -41,6 +42,12 @@ EOF
     echo ""
     echo -e "${_CLR_BOLD}TAVS v${TAVS_VERSION:-3.0.0} — Configuration Status${_CLR_RESET}"
     echo -e "${_CLR_DIM}$(printf '═%.0s' $(seq 1 50))${_CLR_RESET}"
+    _tavs_visual_restrictions_read
+    case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
+        active) echo 'Visual restrictions: active.' ;;
+        suspended) echo 'Visual restrictions: suspended; saved rules apply after explicit resumption.' ;;
+        unavailable) echo 'Visual restriction state unavailable; restrictive visuals disabled.' ;;
+    esac
 
     # =========================================================================
     # ESSENTIAL SETTINGS
