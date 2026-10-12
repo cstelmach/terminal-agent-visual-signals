@@ -741,6 +741,101 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: recordURL("observation")), observed)
     }
 
+    func testTargetAwarePublicationBindsAcrossAliasesWithoutObservationMutation() throws {
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                     device: 123, foregroundGroup: 10)
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        try store.publishObservation(observation(pid: 12))
+        let observed = try Data(contentsOf: recordURL("observation"))
+        let plain = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(12)))
+        let native = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        try store.cacheTargetUnlocked(native, deadline: deadline())
+        try store.publishIntent(intent(color: "#abcdef", time: 999, pid: 12), to: plain,
+                                synthetic: false, intakeAt: 999, deadline: deadline())
+        let fd = open(try store.lockURL(forTTY: tty).path, O_RDWR | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { XCTFail("Fixture lock unavailable"); return }
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        XCTAssertEqual(flock(fd, LOCK_UN), 0)
+        records[12] = nil
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: plain, deadline: deadline()), "#ABCDEF")
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: native, deadline: deadline()), "#ABCDEF")
+        XCTAssertEqual(try Data(contentsOf: recordURL("observation")), observed)
+    }
+
+    func testTargetAwarePublicationCannotGetFreshBudgetForHeldLock() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let original = try Data(contentsOf: recordURL("intent"))
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        let lockURL = try store.lockURL(forTTY: tty)
+        let fd = open(lockURL.path, O_RDWR | O_NOFOLLOW | O_CLOEXEC)
+        guard fd >= 0 else { XCTFail("Fixture lock unavailable"); return }
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        let start = DispatchTime.now().uptimeNanoseconds
+        XCTAssertThrowsError(try store.publishIntent(intent(color: "reset", time: 999), to: target,
+            synthetic: false, intakeAt: 999, deadline: start + 25_000_000)) { error in
+                XCTAssertEqual(String(describing: error), TerminalVisualStateError.deadlineExceeded.description)
+            }
+        XCTAssertLessThan(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9, 0.15)
+        XCTAssertEqual(flock(fd, LOCK_UN), 0)
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), original)
+        XCTAssertTrue(store.cachedRecords().bindings.isEmpty)
+        XCTAssertThrowsError(try store.publishIntent(intent(color: "reset", time: 999), to: target,
+            synthetic: false, intakeAt: 999, deadline: DispatchTime.now().uptimeNanoseconds - 1))
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), original)
+    }
+
+    func testTargetAwarePublicationRejectsStaleSyntheticAndWrongLifetimeBeforeMutation() throws {
+        let store = makeStore()
+        try store.publishObservation(observation(delivery: "latest-delivery", time: 999))
+        try store.publishIntent(intent())
+        let original = try Data(contentsOf: recordURL("intent"))
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        XCTAssertThrowsError(try store.publishIntent(intent(time: 1_000), to: target,
+            synthetic: true, intakeAt: 999, deadline: deadline())) { error in
+                XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+            }
+        let reused = TerminalTargetBinding(tty: tty, device: 123,
+            ttyOwner: generation(11, microseconds: 2), nativeSurface: nil)
+        for invalid in [reused, TerminalTargetBinding(tty: tty, device: 456, ttyOwner: generation(11), nativeSurface: nil)] {
+            XCTAssertThrowsError(try store.publishIntent(intent(time: 1_000), to: invalid,
+                synthetic: false, intakeAt: 1_000, deadline: deadline()))
+        }
+        records[43] = identity(43, device: UInt32.max)
+        let native = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        try store.cacheTargetUnlocked(native, deadline: deadline())
+        records[43] = nil
+        XCTAssertThrowsError(try store.publishIntent(intent(time: 1_000), to: target,
+            synthetic: false, intakeAt: 1_000, deadline: deadline()))
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), original)
+    }
+
+    func testTargetAwarePublicationRejectsNonPrivateAndSymlinkStableLock() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let original = try Data(contentsOf: recordURL("intent"))
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        let lockURL = try store.lockURL(forTTY: tty)
+        XCTAssertEqual(chmod(lockURL.path, 0o644), 0)
+        XCTAssertThrowsError(try store.publishIntent(intent(color: "reset", time: 999), to: target,
+            synthetic: false, intakeAt: 999, deadline: deadline()))
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), original)
+        let linkedRoot = root.appendingPathComponent("linked")
+        let linked = makeStore(directory: linkedRoot)
+        let linkedLock = try linked.lockURL(forTTY: tty)
+        try FileManager.default.createDirectory(at: linkedLock.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let destination = root.appendingPathComponent("preserved-lock-target")
+        try Data("preserved".utf8).write(to: destination)
+        try FileManager.default.createSymbolicLink(at: linkedLock, withDestinationURL: destination)
+        XCTAssertThrowsError(try linked.publishIntent(intent(color: "reset", time: 999), to: target,
+            synthetic: false, intakeAt: 999, deadline: deadline()))
+        XCTAssertEqual(try String(contentsOf: destination), "preserved")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("intent", directory: linkedRoot).path))
+    }
+
     func testExpiredIntentDeadlineCannotReplaceLatestOrTargetBoundCopy() throws {
         let store = makeStore()
         try store.publishIntent(intent())

@@ -10,6 +10,16 @@ protocol ProcessRunner: AnyObject {
     // Honor the original deadline before state mutations after any delay; nil skips paint.
     func writeManagedToDevice(path: String, lockURL: URL,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
+    // beforeOpen may publish metadata under the same original deadline, then release its lock.
+    func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
+}
+
+extension ProcessRunner {
+    func writeManagedToDevice(path: String, lockURL: URL,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
+        try writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: nil, prepare: prepare)
+    }
 }
 
 final class SystemProcessRunner: ProcessRunner {
@@ -116,9 +126,12 @@ final class SystemProcessRunner: ProcessRunner {
         }
     }
 
-    func writeManagedToDevice(path: String, lockURL: URL,
+    func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try Self.completeDeviceWrite(path: path) { deadline in
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            try beforeOpen?(deadline)
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
             let device = try self.openNonblockingDevice(path: path, deadline: deadline)
             defer { Darwin.close(device) }
             guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }

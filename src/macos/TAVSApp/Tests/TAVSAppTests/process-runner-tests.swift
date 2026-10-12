@@ -371,6 +371,225 @@ final class ProcessRunnerTests: XCTestCase {
         XCTAssertTrue(runner.writtenDevices.isEmpty)
     }
 
+    func testBeforeOpenRunsOnceAcrossOpenRetryAndSharesOriginalPrepareDeadline() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        var events: [String] = [], originalDeadline: UInt64 = 0, opens = 0
+        let runner: ProcessRunner = SystemProcessRunner(openDevice: { path, flags in
+            events.append("open")
+            opens += 1
+            if opens == 1 { errno = EINTR; return -1 }
+            return Darwin.open(path, flags)
+        })
+        XCTAssertTrue(try runner.writeManagedToDevice(path: tty.path, lockURL: root.appendingPathComponent("writer.lock"),
+            beforeOpen: { deadline in
+                XCTAssertFalse(Thread.isMainThread)
+                events.append("publish")
+                originalDeadline = deadline
+                usleep(5_000)
+            }) { _, deadline in
+                events.append("prepare")
+                XCTAssertEqual(deadline, originalDeadline)
+                return Data([0x61])
+            })
+        XCTAssertEqual(events, ["publish", "open", "open", "prepare"])
+        XCTAssertEqual(try readPTY(tty.master, count: 1), Data([0x61]))
+    }
+
+    func testBeforeOpenFailureNeverOpensOrCallsOutputPreparation() throws {
+        let lockURL = root.appendingPathComponent("writer.lock")
+        let runner = SystemProcessRunner(openDevice: { _, _ in
+            XCTFail("Failed publication must precede every device open"); return -1
+        })
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: "owned-fixture", lockURL: lockURL,
+            beforeOpen: { _ in throw ManagedPolicyError.rejected }) { _, _ in
+                XCTFail("Failed publication must not call output preparation"); return nil
+            }) { error in
+                guard case ManagedPolicyError.rejected = error else { return XCTFail("Unexpected error: \(error)") }
+            }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: lockURL.path))
+    }
+
+    func testLateBeforeOpenCompletionCannotOpenOrPrepareAfterOriginalTimeout() throws {
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let finished = expectation(description: "Original caller budget expires")
+        let lateOpen = expectation(description: "No late open")
+        lateOpen.isInverted = true
+        let result = ManagedWriteResult()
+        let runner = SystemProcessRunner(openDevice: { _, _ in lateOpen.fulfill(); return -1 })
+        let lockURL = root.appendingPathComponent("writer.lock")
+        let start = DispatchTime.now().uptimeNanoseconds
+        DispatchQueue.global().async {
+            result.set(Result {
+                try runner.writeManagedToDevice(path: "owned-fixture", lockURL: lockURL,
+                    beforeOpen: { _ in entered.signal(); release.wait() }) { _, _ in
+                        XCTFail("No late preparation after publication timeout"); return Data([0x61])
+                    }
+            })
+            finished.fulfill()
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        wait(for: [finished], timeout: 1)
+        assertTimedOut(result, since: start)
+        release.signal()
+        wait(for: [lateOpen], timeout: 0.02)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: lockURL.path))
+    }
+
+    func testIntentPrepublicationRetainsColorAndReleasesLockDuringWedgedOpen() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let (state, target, intent) = try publicationFixture(tty)
+        let lockURL = try state.lockURL(forTTY: tty.path)
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let finished = expectation(description: "Wedged open consumes original budget")
+        let opened = expectation(description: "Late open returns owned descriptor")
+        let result = ManagedWriteResult()
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            entered.signal(); release.wait()
+            let fd = Darwin.open(path, flags)
+            result.descriptor = fd
+            opened.fulfill()
+            return fd
+        })
+        let start = DispatchTime.now().uptimeNanoseconds
+        DispatchQueue.global().async {
+            result.set(Result {
+                try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+                    beforeOpen: { deadline in
+                        try state.publishIntent(intent, to: target, synthetic: false, intakeAt: 999, deadline: deadline)
+                    }) { _, _ in XCTFail("Late open cannot reach policy"); return Data([0x61]) }
+            })
+            finished.fulfill()
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        let fd = try openLock(lockURL)
+        defer { close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        XCTAssertEqual(flock(fd, LOCK_UN), 0)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
+        wait(for: [finished], timeout: 1)
+        assertTimedOut(result, since: start)
+        release.signal()
+        wait(for: [opened], timeout: 1)
+        assertDescriptorClosed(result.descriptor)
+        assertNoPTYBytes(tty.master)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
+    }
+
+    func testOutputLockFailureAfterPrepublicationRetainsResetWithoutSecondBudget() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let (state, target, color) = try publicationFixture(tty)
+        var intent = color
+        intent.background = "reset"
+        let lockURL = try state.lockURL(forTTY: tty.path)
+        var held: Int32 = -1
+        defer { if held >= 0 { flock(held, LOCK_UN); close(held) } }
+        let result = ManagedWriteResult()
+        let latePrepare = expectation(description: "No preparation after output lock timeout")
+        latePrepare.isInverted = true
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            held = Darwin.open(lockURL.path, O_RDWR | O_NOFOLLOW | O_CLOEXEC)
+            XCTAssertGreaterThanOrEqual(held, 0)
+            XCTAssertEqual(flock(held, LOCK_EX | LOCK_NB), 0)
+            let fd = Darwin.open(path, flags)
+            result.descriptor = fd
+            return fd
+        })
+        let start = DispatchTime.now().uptimeNanoseconds
+        result.set(Result {
+            try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+                beforeOpen: { deadline in
+                    try state.publishIntent(intent, to: target, synthetic: false, intakeAt: 999, deadline: deadline)
+                }) { _, _ in latePrepare.fulfill(); return Data([0x61]) }
+        })
+        assertTimedOut(result, since: start)
+        XCTAssertEqual(flock(held, LOCK_UN), 0)
+        assertDescriptorClosed(result.descriptor)
+        wait(for: [latePrepare], timeout: 0.02)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "reset")
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testFullBudgetPublicationLockFailureNeverOpensOrMutatesIntent() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let (state, target, next) = try publicationFixture(tty)
+        var old = next
+        old.background = "#123456"
+        old.updatedAt = 998
+        try state.publishIntent(old, to: target, synthetic: false, intakeAt: 998,
+                                deadline: DispatchTime.now().uptimeNanoseconds + 100_000_000)
+        let lockURL = try state.lockURL(forTTY: tty.path)
+        let fd = try openLock(lockURL)
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        let publicationFinished = DispatchSemaphore(value: 0)
+        let runner = SystemProcessRunner(openDevice: { _, _ in XCTFail("Publication failed before open"); return -1 })
+        let start = DispatchTime.now().uptimeNanoseconds
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: { deadline in
+                defer { publicationFinished.signal() }
+                try state.publishIntent(next, to: target, synthetic: false, intakeAt: 999, deadline: deadline)
+            }) { _, _ in XCTFail("Publication failed before policy"); return Data([0x61]) })
+        let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
+        XCTAssertGreaterThanOrEqual(elapsed, 0.08)
+        XCTAssertLessThan(elapsed, 0.5)
+        XCTAssertEqual(flock(fd, LOCK_UN), 0)
+        XCTAssertEqual(publicationFinished.wait(timeout: .now() + 1), .success)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#123456")
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testManagedMockForwardsBeforeOpenAndRunsItOnceBeforeInjectedError() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: beforeOpen, prepare: prepare)
+        }
+        var calls = 0, original: UInt64 = 0
+        let lockURL = root.appendingPathComponent("writer.lock")
+        XCTAssertTrue(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: { calls += 1; original = $0 }) { _, deadline in
+                XCTAssertEqual(deadline, original)
+                return Data([0x61])
+            })
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(try readPTY(tty.master, count: 1), Data([0x61]))
+        runner.writeError = ProcessRunnerError.deviceNotWritable(tty.path)
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: { deadline in
+                XCTAssertFalse(Thread.isMainThread)
+                let now = DispatchTime.now().uptimeNanoseconds
+                XCTAssertGreaterThan(deadline, now)
+                if deadline > now { XCTAssertLessThanOrEqual(deadline - now, 100_000_000) }
+                calls += 1
+            }) { _, _ in XCTFail("Injected failure cannot reach prepare"); return nil })
+        XCTAssertEqual(calls, 2)
+        assertNoPTYBytes(tty.master)
+    }
+
+    private func publicationFixture(_ tty: (master: Int32, slave: Int32, path: String)) throws
+        -> (TerminalVisualStateStore, TerminalTargetBinding, OrdinaryBackgroundIntent) {
+        let device = try XCTUnwrap(ProcessIdentity.deviceNumber(tty.path))
+        let generation = ProcessGeneration(pid: 10, startSeconds: 100, startMicroseconds: 1)
+        let identity = ProcessIdentity(generation: generation, parentPID: 1, group: 10,
+            device: device, foregroundGroup: 10)
+        let state = TerminalVisualStateStore(runtimeDirectory: root.appendingPathComponent("records"),
+            clock: VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000)),
+            lookup: { $0 == 10 ? identity : nil }, device: { $0 == tty.path ? device : nil },
+            deviceMissing: { _ in false }, processMissing: { _ in false })
+        let target = try XCTUnwrap(state.captureTarget(tty: tty.path, owner: generation))
+        let intent = OrdinaryBackgroundIntent(tty: tty.path, device: device, producer: generation,
+            deliveryID: "retained-delivery", updatedAt: 999, background: "#abcdef")
+        return (state, target, intent)
+    }
+
     private func openPTY() throws -> (master: Int32, slave: Int32, path: String) {
         var master: Int32 = -1, slave: Int32 = -1
         var name = [CChar](repeating: 0, count: 1024)

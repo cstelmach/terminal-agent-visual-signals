@@ -547,6 +547,25 @@ final class TerminalVisualStateStore {
         }
     }
 
+    func publishIntent(_ record: OrdinaryBackgroundIntent, to target: TerminalTargetBinding,
+                       synthetic: Bool, intakeAt: Double, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(record)
+        guard record.tty == target.tty, record.device == target.device,
+              intakeAt.isFinite, intakeAt > 0, intakeAt <= record.updatedAt else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        try withLock(record.tty, deadline: deadline) {
+            _ = try equivalentBindingsUnlocked(for: target, deadline: deadline)
+            let producerValid = validProducer(tty: record.tty, device: record.device, producer: record.producer)
+                && record.producer.map { continuingOwner($0, device: target.device) == target.ttyOwner } == true
+            try checkDeadline(deadline)
+            guard producerValid else { throw TerminalVisualStateError.targetUnavailable }
+            try publishIntentUnlocked(record, synthetic: synthetic, intakeAt: intakeAt, deadline: deadline)
+            try bindOrdinaryIntentUnlocked(record, to: target, deadline: deadline)
+        }
+    }
+
     // Checks frozen render context under the caller's writer lock without
     // publishing an ordinary background or changing current effect ownership.
     func validateSyntheticUnlocked(_ record: OrdinaryBackgroundIntent, intakeAt: Double,
@@ -827,35 +846,57 @@ final class TerminalVisualStateStore {
         directory.appendingPathComponent("\(kind)-\(key(tty)).json")
     }
 
-    private func withLock<T>(_ tty: String, body: () throws -> T) throws -> T {
+    private func withLock<T>(_ tty: String, deadline suppliedDeadline: UInt64? = nil,
+                             body: () throws -> T) throws -> T {
+        try checkDeadline(suppliedDeadline)
         guard directory.isFileURL else { throw TerminalVisualStateError.storageUnavailable }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                     attributes: [.posixPermissions: 0o700])
         } catch { throw TerminalVisualStateError.storageUnavailable }
+        try checkDeadline(suppliedDeadline)
         var info = stat()
         guard lstat(directory.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
             throw TerminalVisualStateError.storageUnavailable
         }
+        try checkDeadline(suppliedDeadline)
         let url = try lockURL(forTTY: tty)
-        let fd = open(url.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        var fd: Int32
+        repeat {
+            try checkDeadline(suppliedDeadline)
+            fd = open(url.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0o600)
+        } while fd < 0 && errno == EINTR
+            && suppliedDeadline.map { DispatchTime.now().uptimeNanoseconds < $0 } == true
         guard fd >= 0 else { throw TerminalVisualStateError.storageUnavailable }
         defer { close(fd) }
-        guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG else {
+        try checkDeadline(suppliedDeadline)
+        guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
+              info.st_mode & 0o777 == 0o600 else {
             throw TerminalVisualStateError.storageUnavailable
         }
-        let deadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
-        while flock(fd, LOCK_EX | LOCK_NB) != 0 {
-            guard errno == EWOULDBLOCK || errno == EAGAIN || errno == EINTR else {
+        try checkDeadline(suppliedDeadline)
+        let deadline = suppliedDeadline ?? DispatchTime.now().uptimeNanoseconds + 100_000_000
+        while true {
+            try checkDeadline(suppliedDeadline)
+            if flock(fd, LOCK_EX | LOCK_NB) == 0 { break }
+            let lockError = errno
+            guard lockError == EWOULDBLOCK || lockError == EAGAIN || lockError == EINTR else {
                 throw TerminalVisualStateError.storageUnavailable
             }
-            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+            let now = DispatchTime.now().uptimeNanoseconds
+            guard now < deadline else {
+                try checkDeadline(suppliedDeadline)
                 throw TerminalVisualStateError.lockUnavailable
             }
-            usleep(1_000)
+            usleep(useconds_t(min(1_000, max(1, (deadline - now) / 1_000))))
         }
         defer { flock(fd, LOCK_UN) }
-        return try body()
+        try checkDeadline(suppliedDeadline)
+        let result: T
+        do { result = try body() }
+        catch { try checkDeadline(suppliedDeadline); throw error }
+        try checkDeadline(suppliedDeadline)
+        return result
     }
 
     private func read<T: Decodable>(_ url: URL, deadline: UInt64? = nil) throws -> T? {

@@ -7,6 +7,8 @@ final class MockProcessRunner: ProcessRunner {
     var boundedResults: [Result<Data, Error>] = []
     var boundedHandler: ((URL, [String], TimeInterval) throws -> Data)?
     var managedHandler: ((String, URL, @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
+    var managedBeforeOpenHandler: ((String, URL, ((UInt64) throws -> Void)?,
+                                   @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
     private let lock = NSLock()
     private var _writtenDevices: [(String, Data)] = []
     private var _managedCallLog: [(String, URL)] = []
@@ -44,13 +46,28 @@ final class MockProcessRunner: ProcessRunner {
         lock.unlock()
     }
 
-    func writeManagedToDevice(path: String, lockURL: URL,
+    func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         lock.lock()
         _managedCallLog.append((path, lockURL))
         lock.unlock()
-        if let error = writeError { throw error }
-        guard let handler = managedHandler else { throw ProcessRunnerError.deviceNotWritable(path) }
+        if let error = writeError {
+            guard let beforeOpen = beforeOpen else { throw error }
+            return try SystemProcessRunner.completeDeviceWrite(path: path) { deadline in
+                guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                    throw ProcessRunnerError.deviceWriteTimedOut(path)
+                }
+                try beforeOpen(deadline)
+                guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                    throw ProcessRunnerError.deviceWriteTimedOut(path)
+                }
+                throw error
+            }
+        }
+        if let handler = managedBeforeOpenHandler { return try handler(path, lockURL, beforeOpen, prepare) }
+        guard beforeOpen == nil, let handler = managedHandler else {
+            throw ProcessRunnerError.deviceNotWritable(path)
+        }
         return try handler(path, lockURL, prepare)
     }
 
