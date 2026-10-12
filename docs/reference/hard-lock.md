@@ -28,11 +28,16 @@ saves persistent suspension/resumption before resolving the native helper, forwa
 the helper's result and returns nonzero for missing/unsupported or failed recovery.
 It preserves schedules and lock/grant definitions. Resumption leaves focus Off.
 
-The Phase 6 native target reset and managed-output routing are still in progress.
-The persistence/dispatch tests use private helper stubs and do not prove physical
-restoration. Current installed copies require the matching completed native release
-before this command can restore terminal pixels. A missing helper leaves the saved
-policy state intact and reports failure.
+The source-built helper implements recovery before UI/login initialization. Its exact capability
+query is `--validate-config --managed-output-capabilities`, returning
+`tavs-managed-output-schema=1`. Recovery reports JSON with `stateSaved`, `catalogueAvailable` and
+per-target `restored`, `vanished`, `unaffected` or `failed` outcomes. A missing helper leaves the
+saved policy intact and reports failure. Resume reads current rules and cannot replay historical
+pending alerts or titles.
+
+Connected Swift tests pass with owned PTYs and injected catalogues. Shell integration and
+independent review remain in progress. This source has not been installed into the working app;
+physical terminal restoration is unverified.
 
 ## Lock sources
 

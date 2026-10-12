@@ -125,7 +125,7 @@ enum OrganizerIntake {
         return true
     }
 
-    private static func decodedContext(_ token: String) throws -> OrganizerContext {
+    static func decodedContext(_ token: String) throws -> OrganizerContext {
         guard token.utf8.count <= 8192, let data = Data(base64Encoded: token),
               let context = try? JSONDecoder().decode(OrganizerContext.self, from: data),
               context.schema == 1, providers.contains(context.provider) else {
