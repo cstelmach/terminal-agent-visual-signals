@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
 
 ## Public recovery commands
 
@@ -79,7 +79,16 @@ When publication succeeded before a device failure, later recovery retains that 
 or reset. If publication-lock contention consumes the whole budget, publication fails without a
 new budget or late retry. No arbitrary program-set color restoration is claimed.
 
-## Preview rendering foundation (Phase 7 in progress)
+## Manual rendering foundation (Phase 8 in progress)
+
+`TerminalRenderer.focusBackground(ordinary:colors:)` supplies the Phase 8 pure dimming transform.
+It reduces chroma in linear light, then tries bounded neutral adjustments for visible dark/light
+background changes. Candidates need total RGB distance of 24 and luminance change at most 0.08.
+Configured-text contrast stays at least 4.5:1, or does not worsen a lower baseline. Invalid or
+unsafe inputs return nil. Current/reset intent handling is shared with the preview renderer.
+This function is not yet connected to renewable focus ownership or GUI activation.
+
+## Preview rendering foundation (Phase 7 source verified)
 
 `TerminalRenderer.previewBackground(ordinary:colors:)` uses normalized configured background
 and foreground colors. It returns a conservative tint or nil when no safe meaningful change

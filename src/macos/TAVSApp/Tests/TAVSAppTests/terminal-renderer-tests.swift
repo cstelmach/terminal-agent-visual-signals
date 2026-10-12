@@ -2,6 +2,42 @@ import XCTest
 @testable import TAVSApp
 
 final class TerminalRendererTests: XCTestCase {
+    func testFocusChangesNeutralDarkLightAndExtremeBackgroundsWithinBounds() throws {
+        for (background, foreground) in [("#171717", "#EEEEEE"), ("#FAFAFA", "#161616"),
+                                        ("#000000", "#FFFFFF"), ("#FFFFFF", "#000000")] {
+            let colors = try XCTUnwrap(TerminalRenderer.Colors(background: background, foreground: foreground))
+            let dim = try XCTUnwrap(TerminalRenderer.focusBackground(ordinary: nil, colors: colors))
+            let a = PauseVisual.rgbComponents(background), b = PauseVisual.rgbComponents(dim)
+            XCTAssertEqual(PauseVisual.normalizedHexColor(dim), dim)
+            XCTAssertGreaterThanOrEqual(abs(a.red - b.red) + abs(a.green - b.green) + abs(a.blue - b.blue), 24.0 / 255)
+            XCTAssertLessThanOrEqual(abs(PauseVisual.relativeLuminance(background) - PauseVisual.relativeLuminance(dim)), 0.08)
+            XCTAssertGreaterThanOrEqual(PauseVisual.contrastRatio(dim, foreground), 4.5)
+        }
+    }
+
+    func testFocusReducesChromaAndUsesCurrentIntentRatherThanConfiguredDefault() throws {
+        let colors = try XCTUnwrap(TerminalRenderer.Colors(background: "#171717", foreground: "#FFFFFF"))
+        for ordinary in ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"] {
+            let dim = try XCTUnwrap(TerminalRenderer.focusBackground(ordinary: ordinary, colors: colors))
+            let rgb = PauseVisual.rgbComponents(dim)
+            XCTAssertLessThan(max(rgb.red, rgb.green, rgb.blue) - min(rgb.red, rgb.green, rgb.blue), 1)
+            XCTAssertGreaterThanOrEqual(PauseVisual.contrastRatio(dim, colors.foreground),
+                min(4.5, PauseVisual.contrastRatio(ordinary, colors.foreground)))
+            XCTAssertNotEqual(dim, TerminalRenderer.focusBackground(ordinary: nil, colors: colors))
+        }
+        XCTAssertEqual(TerminalRenderer.focusBackground(ordinary: "reset", colors: colors),
+                       TerminalRenderer.focusBackground(ordinary: nil, colors: colors))
+    }
+
+    func testFocusDoesNotInventSafeChangesForInvalidOrLowContrastExtremes() throws {
+        for colors in [TerminalRenderer.Colors(background: "#000000", foreground: "#747474"),
+                       TerminalRenderer.Colors(background: "#FFFFFF", foreground: "#929292")] {
+            XCTAssertNil(TerminalRenderer.focusBackground(ordinary: nil, colors: try XCTUnwrap(colors)))
+        }
+        let colors = try XCTUnwrap(TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE"))
+        XCTAssertNil(TerminalRenderer.focusBackground(ordinary: "invalid", colors: colors))
+    }
+
     func testDarkAndLightPreviewTintPreservesConfiguredTextContrast() throws {
         for (background, foreground) in [("#171717", "#EEEEEE"), ("#FAFAFA", "#161616")] {
             let colors = try XCTUnwrap(TerminalRenderer.Colors(background: background, foreground: foreground))

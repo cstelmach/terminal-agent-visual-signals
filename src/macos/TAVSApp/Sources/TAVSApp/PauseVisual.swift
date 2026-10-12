@@ -72,7 +72,7 @@ struct PauseVisual: Equatable {
         )
     }
 
-    private static func linearized(_ channel: Double) -> Double {
+    static func linearized(_ channel: Double) -> Double {
         if channel <= 0.03928 {
             return channel / 12.92
         }

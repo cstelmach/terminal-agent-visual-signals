@@ -62,12 +62,7 @@ enum TerminalRenderer {
     }
 
     static func previewBackground(ordinary: String?, colors: Colors) -> String? {
-        let background: String
-        if ordinary == nil || ordinary == "reset" { background = colors.background }
-        else {
-            guard let value = PauseVisual.normalizedHexColor(ordinary) else { return nil }
-            background = value
-        }
+        guard let background = resolvedBackground(ordinary, colors: colors) else { return nil }
         let baseline = PauseVisual.contrastRatio(background, colors.foreground)
         let minimum = min(4.5, baseline)
         let tint = PauseVisual.relativeLuminance(background) < 0.5 ? "#758BD6" : "#405EBB"
@@ -85,5 +80,38 @@ enum TerminalRenderer {
             }
         }
         return nil
+    }
+
+    static func focusBackground(ordinary: String?, colors: Colors) -> String? {
+        guard let background = resolvedBackground(ordinary, colors: colors) else { return nil }
+        let rgb = PauseVisual.rgbComponents(background)
+        let channels = [rgb.red, rgb.green, rgb.blue]
+        let linear = channels.map(PauseVisual.linearized)
+        let luminance = PauseVisual.relativeLuminance(background)
+        let minimum = min(4.5, PauseVisual.contrastRatio(background, colors.foreground))
+        // Linear-light desaturation preserves luminance before a bounded neutral adjustment.
+        for shift in [0.0, -0.04, 0.04, -0.08, 0.08] {
+            let neutral = max(0, min(1, luminance + shift))
+            for amount in [0.75, 0.5, 1.0] {
+                let values = linear.map { channel -> Int in
+                    let value = channel * (1 - amount) + neutral * amount
+                    let encoded = value <= 0.0031308 ? value * 12.92 : 1.055 * pow(value, 1 / 2.4) - 0.055
+                    return Int(encoded * 255 + 0.5)
+                }
+                let distance = zip(values, channels).reduce(0) {
+                    $0 + abs($1.0 - Int($1.1 * 255 + 0.5))
+                }
+                let candidate = String(format: "#%02X%02X%02X", values[0], values[1], values[2])
+                if distance >= 24,
+                   abs(PauseVisual.relativeLuminance(candidate) - luminance) <= 0.08,
+                   PauseVisual.contrastRatio(candidate, colors.foreground) >= minimum { return candidate }
+            }
+        }
+        return nil
+    }
+
+    private static func resolvedBackground(_ ordinary: String?, colors: Colors) -> String? {
+        guard let ordinary = ordinary, ordinary != "reset" else { return colors.background }
+        return PauseVisual.normalizedHexColor(ordinary)
     }
 }
