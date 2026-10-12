@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 14:04 CEST
-**Version:** 2.2
+**Last Updated:** 2026-10-12 15:13 CEST
+**Version:** 2.4
 
 ## Session Metadata
 
@@ -27,13 +27,13 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | Not Started | | | | | | Every writer ordered |
+| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 314 Swift; 8 CLI stub | | Foundations verified; production routes unfinished |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 5. Five implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 6. Five implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -585,3 +585,107 @@ policy checks. Implement actual `tavs recover`/`--resume`, ownership invalidatio
 partial-failure reporting and no historical replay. Required independent recovery reviews follow
 that phase. Phase 2 still needs native acceptance. Preview/manual/automatic phases remain
 unfinished, and the complete Codex goal remains active.
+
+
+### Phase 6 started: 2026-10-12 14:23 CEST
+
+Reoriented from clean f067bef. Prior goal turn was progress: paired persistent stores and all
+policy readers/projections committed with 288 Swift, 110 isolated Bats, 230 Python and fixture
+UI evidence. Phase 2 native acceptance remains open. Phase 6 must establish actual ordered
+independent recovery before previews, not equate disabled policy with restored pixels.
+
+Three read-only explorations map bounded writer, target/effect binding and every shell/CLI
+output route. Scratch/backups: `/tmp/tavs-phase6-20261012T142300/`. Begin with the shared writer
+and binding foundations, then route callers and recovery through them. Whole phase remains
+In Progress until every route, recovery result and required review is verified.
+
+Use the original 100 ms deadline, open device before stable per-TTY lock, and re-read binding,
+suspension and current policy inside it. Do not invoke existing store methods that reacquire
+that same lock. Empty registry entries and generic I/O errors cannot authorize a target or
+prove disappearance. Main-dispatched native catalogue callbacks cannot be awaited on a blocked
+headless main thread. Preserve failures, explicit unavailable states and independent fanout.
+
+### Phase 6 foundation checkpoint: 2026-10-12 15:13 CEST
+
+Phase 6 remains **In Progress**. Independent recovery is not implemented end to end, and no
+preview/focus phase is released. The active Codex goal still covers all nine PLAN phases.
+
+**Committed features.** `dcb40d0` adds recover/--resume dispatch that persists the shared marker
+before helper resolution/capability queries. Eight private stub cases pin missing/old helpers,
+partial failure, unchanged saved definitions, persistence failures and help/argument behavior.
+Native support is not yet exposed by the actual helper; it fails explicitly after persistence.
+
+`bd27c08` adds managed writes with one original 100 ms caller/worker deadline, device open before
+stable per-TTY serialization, original-deadline policy callback and late-byte rejection. Nil
+policy skips output. Ten tests cover private lock inodes, paused open/policy, cleanup, timeout,
+backpressure and healthy independent output. The coordinator must supply descriptor/binding/
+current-policy validation and honor the original deadline before any record mutation.
+
+`8fb1448` adds typed target/effect records and 14 tests. Fresh native capture verifies exact
+mapping and continuing owner ancestry; cached restoration validates owner/device/app generation
+without Automation. Unknown owner/device results remain unavailable. Confirmed physical/native
+lifetime absence or replacement is vanished. Canceled IDs cannot revive through save/heartbeat;
+selective leases use the same live controller and at most six seconds. Global rules remain a
+separate current predicate. Under-lock record helpers do not reacquire the lock or add budgets.
+An exact adopted native intent survives producer exit into its still-valid shell; its observation
+and attention coverage end on exit. Unadopted owner-only intent remains conservative.
+
+`c523a26` adds headless catalogue snapshot using the same native enumeration/request path, target
+allowlist and two-second request bound. Explicit queue.async keeps native work off main; a
+semaphore publishes completion without requiring the GUI event loop. Two new tests cover scope,
+thread, permission and application-generation behavior. The API is for headless/background use.
+
+**Failures retained and corrected.** The record-store behavioral run had eight assertions fail
+because Foundation enumeration canonicalized /var to /private/var; canonical path comparison
+now accepts its own records without weakening identity. A test-first adopted-intent case exposed
+the unnecessary live-producer requirement during restoration. The first full 312 run then failed
+the separately owned paused-open fixture: XCTest main-loop waiting consumed its real deadline.
+`fb7fae7` replaces that wait with direct semaphore synchronization, retaining the 100 ms writer
+budget and strict no-timeout/no-output assertions. No timeout was lengthened.
+
+The first snapshot used queue.sync and failed its off-main assertion. Explicit asynchronous
+enqueue corrected it. The focused failed log JANC6k and full failed log tBoXai remain preserved.
+The failed full run was dispatched before the focused failure was inspected; subsequent full
+verification ran only after the focused 14-case check passed. This was a verification-order
+mistake, not evidence of a separate product defect.
+
+**Final verification.** Private runner and explicit baseline-helper, shared scratch used serially:
+
+- Writer: 49 focused and 298 full green before record integration (KDeu2t, P2qTlV).
+- Records: 41 focused green (MluliS); original full failure 6qihzf remains in the worker report.
+- Fixture correction: 57 focused (m4BK8A), full 312 (p0FX95), zero failures.
+- Catalogue correction: 14 focused (xbPNad), final **314/314**, 4.045 seconds (dNHPF8).
+- CLI stub green: eight cases (rr3A75). These prove dispatch/persistence, not restored pixels.
+- Touched source/doc diffs and staged credential scans pass; .env remains ignored. No production
+  install, real-home suite, live Ghostty operation, existing app/session shutdown or native safety
+  denial workaround occurred. No new release build or physical recovery check is claimed here.
+
+Log names expand under `/var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.<name>/command.log`.
+Backups and shared build remain in `/tmp/tavs-phase6-20261012T142300/`.
+
+**Reports.** [writer exploration](PHASE6-WRITER-EXPLORATION.md),
+[binding exploration](PHASE6-BINDINGS-EXPLORATION.md),
+[shell exploration](PHASE6-SHELL-EXPLORATION.md), [writer report](PHASE6-WRITER-REPORT.md),
+[record report](PHASE6-RECORDS-REPORT.md), saved by b4947c5. Worker reports retain their original
+test outcomes; this entry records later integration green. Current cmp shows the two Claude
+hook JSON files are identical, correcting the shell report's stale claim. Its copy has that
+source correction. Actual recovery discovery must preserve dedicated-target settings.
+
+**Scope.** Existing modules and test files were extended; no dependency, daemon or second writer
+engine was added. The connected GhosttyCatalog change is necessary to avoid headless callback
+deadlock even though not named separately in Phase 6's file list. Foundation commits are split
+by coherent feature; the large record/test diff stays together because its types, strict decoders
+and held-lock operations form one contract. Source implementation uses the existing runtime,
+kernel metadata, atomic file records, native queue and bounded writer.
+
+**Next bounded slice.** Implement visual-recovery.swift coordinator/current typed composition
+and connect actual headless support before advertising the managed capability. Revalidate opened
+fd/binding and fresh suspension/global policy inside the same lock. Persist effects before paint;
+invalidate temporary ownership/pending output, retain failed targets and fan out independently.
+Discover effects plus registry plus available catalogue, with dedicated scope preserved. Route
+Broadcaster, semantic backgrounds, standalone startup, forced idle reset and debug reconciliation;
+never fall through to raw restrictive output or historical replay. Authenticate shell caller
+generation rather than trusting passed PIDs. The remaining inner env-i tests need their explicit
+helper/private roots carried before managed shell coverage runs. Resume must keep focus Off and
+apply only current global rules. Required Phase 6 AGY/Codex reviews follow complete integration.
+Phase 2 still needs native acceptance. Do not mark Phase 6 DONE from these foundation tests.

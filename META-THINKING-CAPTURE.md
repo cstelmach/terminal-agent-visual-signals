@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 7 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -951,6 +951,86 @@ observed again. [R] The reusable lesson is to separate configuration, effective 
 pixels when testing recovery. A disabled predicate alone cannot prove restored visibility.
 No new control plane, profile or skill was promoted. Model attribution and causal explanations
 are reconstructed; commands, source changes, errors, counts and UI text are observed evidence.
+
+## 2026-10-12 · model-unverified · tavs-recovery-foundations
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unverified)
+  model_source: reconstructed from runtime instructions; no served-model field observed
+  interface: Codex desktop/API
+  thinking: extended requested; internal effort unobserved
+  session: 01a10879
+  trace: observed tool calls, source diffs and retained test logs
+
+**Framing.** [O] Continued the approved nine-phase goal at Phase 6. Persistent suspension
+already disabled policy, but actual independent restoration and managed routing remained
+unfinished. Re-read dated SPEC/PLAN/PROGRESS and Git instead of treating the carried summary
+or the goal's stale Phase 1 locator as current implementation status. The final checkpoint
+explicitly remains In Progress. No preview or focus work was started.
+
+**Strategy.** [O] Reused the assigned writer and record-store workers with disjoint files,
+one shared scratch build and bounded final reports. Parent inspected source, read complete
+reports and retained worker failures before committing connected features. [R] Sharing
+the existing deadline, file lock and native queue reduced the chance of parallel rendering
+contracts. Foundation verification was kept distinct from production integration and
+visible acceptance. No external provider review was claimed from these local checks.
+
+**Action trace [O]**
+
+| # | Move | Object | Evidence |
+|---|------|--------|----------|
+| 1 | Read | Goal, phase state, skills, source | Phase 6; complete goal still active |
+| 2 | Inspect and commit | Managed writer | 49 focused, 298 full; bd27c08 |
+| 3 | Inspect failure | Store and writer logs | Path aliases; adopted intent; paused-open deadline |
+| 4 | Fix fixture | Direct semaphore barrier | 57 focused, 312 full; fb7fae7 |
+| 5 | Test then implement | Headless catalogue snapshot | Missing API red; main-thread assertion red |
+| 6 | Correct and verify | Explicit async enqueue | 14 focused, 314 full; c523a26 |
+| 7 | Commit and preserve | Binding records, reports, progress | 8fb1448; original failures retained |
+
+**Decision points.** [O] Device open precedes serialization so a stuck open cannot own the
+lock. The coordinator callback receives the actual descriptor and original deadline; its
+future binding/policy checks must execute there. A semaphore caller timeout cannot cancel a
+blocked callback, so late returned bytes are rejected and record mutations must separately
+check the same deadline. Generic I/O/lookup failure retains a candidate; affirmative old
+lifetime absence is required for vanished classification.
+
+[O] Cancellation keeps a current effect inactive instead of deleting its identity. A matching
+heartbeat or same-ID save cannot revive it. Global rules stay separate from selective leases.
+Exact adopted native background intent can survive agent exit into its continuing shell,
+while observation and cue eligibility end. This distinction was tested before correction.
+Owner-only unadopted intent stays conservative until managed intake supplies adequate evidence.
+
+**Failure arcs.** [O] Worker record tests rejected their own files because Foundation used
+/private/var while the injected URL used /var. Canonical path comparison fixed eight assertions
+without weakening native/owner identity. The adopted-intent test then failed after producer
+exit; exact existing adoption plus current target validation now preserves the established color.
+
+[O] The full suite exposed a paused-open fixture consuming its real 100 ms budget while waiting
+on XCTest's main loop. Direct semaphore waiting corrected the harness; production deadline and
+output assertions were preserved. [R] Run-loop scheduling latency explained the 0.304-second
+case better than a writer regression. Failed and corrected full logs remain available.
+
+[O] The first snapshot used queue.sync. The new request-boundary test caught native execution
+on main. Explicit queue.async with semaphore result publication fixed it. [R] Serialization
+had been confused with thread selection. A full run was mistakenly started before that focused
+failure was inspected; its failure was preserved, and later full verification followed focused
+green. An empty patch also failed validation; a real targeted hunk replaced it before commit.
+
+**Verification and limits.** [O] Final 314 Swift tests pass under private roots and owned PTYs.
+Credential/whitespace checks and exact staging preceded commits. Current cmp contradicted a
+stale report about duplicate Claude hooks, so the archive includes a source correction rather
+than an unnecessary hook edit. Reports retain their original outcomes; PROGRESS records later
+integration green. No production installation, working-session repaint, native-denial bypass,
+new release build or physical recovery acceptance was performed.
+
+**Heuristics.** [O] Reused P9. Preserve failed logs and replace harness scheduling uncertainty
+before touching a real deadline. Test the required execution thread at the actual native
+request boundary. These are candidates from one slice; no new capability or model profile is
+justified. Existing execute-spec orientation already supplies the recurring state discipline.
+
+**Confidence.** [O] Changes, tests, errors and commits are observable. [R] Causal strategy
+claims and model attribution remain reconstructions. Full Phase 6 correctness is unclaimed
+until every writer, headless recovery, failure reporting and independent review is connected.
 
 ## Stubs
 
