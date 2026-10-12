@@ -720,6 +720,89 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: boundURL), bound)
     }
 
+    func testSyntheticContextValidationUnderHeldLockDoesNotPublish() throws {
+        let store = makeStore()
+        try store.publishObservation(observation())
+        try store.publishIntent(intent())
+        let observed = try Data(contentsOf: recordURL("observation"))
+        let ordinary = try Data(contentsOf: recordURL("intent"))
+        let lockURL = try store.lockURL(forTTY: tty)
+        let fd = open(lockURL.path, O_RDWR | O_NOFOLLOW)
+        guard fd >= 0 else { XCTFail("Fixture lock unavailable"); return }
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        var before = stat(); XCTAssertEqual(fstat(fd, &before), 0)
+        let files = try FileManager.default.contentsOfDirectory(atPath: organizer.path).sorted()
+        try store.validateSyntheticUnlocked(intent(color: "reset", time: 1_000),
+                                            intakeAt: 998, deadline: deadline())
+        var after = stat(); XCTAssertEqual(lstat(lockURL.path, &after), 0)
+        XCTAssertEqual(before.st_ino, after.st_ino)
+        XCTAssertEqual(try Data(contentsOf: recordURL("observation")), observed)
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), ordinary)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: organizer.path).sorted(), files)
+    }
+
+    func testSyntheticContextRejectsFrozenIdentityAndNewerObservation() throws {
+        let store = makeStore()
+        try store.publishObservation(observation())
+        for stale in [intent(delivery: "old-delivery"), intent(pid: 12), intent(device: 456),
+                      intent(path: "/dev/ttys044")] {
+            XCTAssertThrowsError(try store.validateSyntheticUnlocked(stale, intakeAt: 998, deadline: deadline())) { error in
+                XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+            }
+        }
+        try store.publishObservation(observation(time: 999))
+        XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(time: 1_000),
+            intakeAt: 998, deadline: deadline())) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("intent").path))
+    }
+
+    func testSyntheticContextRejectsMissingUnsupportedAndDeadProducer() throws {
+        let store = makeStore()
+        XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(), intakeAt: 998, deadline: deadline())) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: organizer.path))
+        try store.publishObservation(observation())
+        var unsupported = observation()
+        unsupported.provider = "unsupported-provider"
+        try JSONEncoder().encode(unsupported).write(to: recordURL("observation"))
+        XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(), intakeAt: 998, deadline: deadline())) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+        }
+        try store.publishObservation(observation())
+        for unavailable in [nil, identity(11, device: 456), identity(11, startMicroseconds: 2)] as [ProcessIdentity?] {
+            records[11] = unavailable
+            XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(), intakeAt: 998, deadline: deadline())) { error in
+                XCTAssertEqual(String(describing: error), TerminalVisualStateError.staleDelivery.description)
+            }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("intent").path))
+    }
+
+    func testSyntheticContextRejectsInvalidInputAndExpiredOriginalDeadline() throws {
+        let store = makeStore()
+        try store.publishObservation(observation())
+        let observed = try Data(contentsOf: recordURL("observation"))
+        for intake in [Double.nan, 0, 999] {
+            XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(), intakeAt: intake, deadline: deadline())) { error in
+                XCTAssertEqual(String(describing: error), TerminalVisualStateError.invalidRecord.description)
+            }
+        }
+        XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(color: "unsafe"),
+            intakeAt: 998, deadline: deadline())) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.invalidRecord.description)
+        }
+        XCTAssertThrowsError(try store.validateSyntheticUnlocked(intent(), intakeAt: 998,
+            deadline: DispatchTime.now().uptimeNanoseconds - 1)) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.deadlineExceeded.description)
+        }
+        XCTAssertEqual(try Data(contentsOf: recordURL("observation")), observed)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("intent").path))
+    }
+
     func testUnlockedIntentPreservesSyntheticAndIntakeOrdering() throws {
         let store = makeStore()
         try store.publishObservation(observation(delivery: "new-delivery", time: 999))

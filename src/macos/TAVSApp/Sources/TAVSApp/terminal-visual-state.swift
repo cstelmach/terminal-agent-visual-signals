@@ -490,6 +490,37 @@ final class TerminalVisualStateStore {
         }
     }
 
+    // Checks frozen render context under the caller's writer lock without
+    // publishing an ordinary background or changing current effect ownership.
+    func validateSyntheticUnlocked(_ record: OrdinaryBackgroundIntent, intakeAt: Double,
+                                   deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(record)
+        guard intakeAt.isFinite, intakeAt > 0, intakeAt <= record.updatedAt else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        let observation: TerminalObservation
+        do {
+            guard let latest: TerminalObservation = try read(recordURL("observation", tty: record.tty),
+                                                            deadline: deadline) else {
+                throw TerminalVisualStateError.staleDelivery
+            }
+            try validate(latest)
+            observation = latest
+        } catch TerminalVisualStateError.invalidRecord {
+            throw TerminalVisualStateError.staleDelivery
+        }
+        try checkDeadline(deadline)
+        guard observation.observedAt <= intakeAt, observation.tty == record.tty,
+              observation.deliveryID == record.deliveryID, observation.producer == record.producer,
+              observation.device == record.device else {
+            throw TerminalVisualStateError.staleDelivery
+        }
+        let live = validProducer(tty: record.tty, device: record.device, producer: record.producer)
+        try checkDeadline(deadline)
+        guard live else { throw TerminalVisualStateError.staleDelivery }
+    }
+
     func publishIntentUnlocked(_ record: OrdinaryBackgroundIntent, synthetic: Bool = false,
                                intakeAt: Double? = nil, deadline: UInt64) throws {
         try checkDeadline(deadline)
