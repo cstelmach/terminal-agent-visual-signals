@@ -44,7 +44,7 @@ struct TerminalTargetBinding: Codable, Hashable {
 }
 
 enum TerminalTargetValidation: Equatable { case valid, vanished, unavailable }
-enum TerminalEffectKind: String, Codable { case globalRestriction, selectiveBackground }
+enum TerminalEffectKind: String, Codable { case globalRestriction, selectiveBackground, preview }
 
 struct TerminalEffectRecord: Codable, Equatable {
     var schema = 1
@@ -168,11 +168,11 @@ final class TerminalVisualStateStore {
 
     // Global lock/mute policy must be recomputed separately; it is not a selective lease.
     func isSelectiveLeaseActive(_ effect: TerminalEffectRecord) -> Bool {
-        guard effect.kind == .selectiveBackground, effect.active,
+        guard effect.kind != .globalRestriction, effect.active,
               (try? validate(effect)) != nil,
-              clock.now().timeIntervalSince1970 - effect.heartbeatAt <= 6,
               lookup(effect.controller.pid)?.generation == effect.controller else { return false }
-        return true
+        let age = clock.now().timeIntervalSince1970 - effect.heartbeatAt
+        return effect.kind == .preview ? age < 2 : age <= 6
     }
 
     // These helpers require the caller's existing writer lock and original deadline.
@@ -190,12 +190,15 @@ final class TerminalVisualStateStore {
         try write(CachedTarget(target: target), to: url, deadline: deadline)
     }
 
-    func currentEffectUnlocked(_ target: TerminalTargetBinding, deadline: UInt64) throws -> TerminalEffectRecord? {
+    func currentEffectUnlocked(_ target: TerminalTargetBinding, kind: TerminalEffectKind? = nil,
+                               deadline: UInt64) throws -> TerminalEffectRecord? {
         try validate(target)
-        let record: TerminalEffectRecord? = try read(targetURL(target, filename: "effect.json"), deadline: deadline)
+        let record: TerminalEffectRecord? = try read(effectURL(target, kind: kind), deadline: deadline)
         if let record = record {
             try validate(record)
-            guard record.target == target else { throw TerminalVisualStateError.invalidRecord }
+            guard record.target == target, (record.kind == .preview) == (kind == .preview) else {
+                throw TerminalVisualStateError.invalidRecord
+            }
         }
         try checkDeadline(deadline)
         return record
@@ -204,41 +207,46 @@ final class TerminalVisualStateStore {
     func saveEffectUnlocked(_ effect: TerminalEffectRecord, deadline: UInt64) throws {
         try checkDeadline(deadline)
         try validate(effect)
-        if let current = try currentEffectUnlocked(effect.target, deadline: deadline),
+        if let current = try currentEffectUnlocked(effect.target, kind: effect.kind, deadline: deadline),
            current.effectID == effect.effectID {
-            guard current.controller == effect.controller, current.active || !effect.active else {
+            guard current.controller == effect.controller, current.active || !effect.active,
+                  effect.kind != .preview || current.heartbeatAt == effect.heartbeatAt else {
                 throw TerminalVisualStateError.staleEffect
             }
         }
         try cacheTargetUnlocked(effect.target, deadline: deadline)
         var normalized = effect
         normalized.background = Self.normalizedBackground(effect.background)!
-        try write(normalized, to: targetURL(effect.target, filename: "effect.json"), deadline: deadline)
+        try write(normalized, to: effectURL(effect.target, kind: effect.kind), deadline: deadline)
     }
 
     func matchingEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
-                                controller: ProcessGeneration, deadline: UInt64) throws -> TerminalEffectRecord? {
-        guard let effect = try currentEffectUnlocked(target, deadline: deadline), effect.active,
+                                controller: ProcessGeneration, kind: TerminalEffectKind? = nil,
+                                deadline: UInt64) throws -> TerminalEffectRecord? {
+        guard let effect = try currentEffectUnlocked(target, kind: kind, deadline: deadline), effect.active,
               effect.effectID == effectID, effect.controller == controller else { return nil }
         return effect
     }
 
     func refreshEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
-                               controller: ProcessGeneration, deadline: UInt64) throws -> Bool {
+                               controller: ProcessGeneration, kind: TerminalEffectKind? = nil,
+                               deadline: UInt64) throws -> Bool {
         guard var effect = try matchingEffectUnlocked(target, effectID: effectID,
-            controller: controller, deadline: deadline), lookup(controller.pid)?.generation == controller,
+            controller: controller, kind: kind, deadline: deadline), lookup(controller.pid)?.generation == controller,
+              effect.kind != .preview,
               validateTarget(target) == .valid else { try checkDeadline(deadline); return false }
         effect.heartbeatAt = clock.now().timeIntervalSince1970
-        try write(effect, to: targetURL(target, filename: "effect.json"), deadline: deadline)
+        try write(effect, to: effectURL(target, kind: effect.kind), deadline: deadline)
         return true
     }
 
     func cancelEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
-                              controller: ProcessGeneration, deadline: UInt64) throws -> Bool {
+                              controller: ProcessGeneration, kind: TerminalEffectKind? = nil,
+                              deadline: UInt64) throws -> Bool {
         guard var effect = try matchingEffectUnlocked(target, effectID: effectID,
-            controller: controller, deadline: deadline) else { return false }
+            controller: controller, kind: kind, deadline: deadline) else { return false }
         effect.active = false
-        try write(effect, to: targetURL(target, filename: "effect.json"), deadline: deadline)
+        try write(effect, to: effectURL(target, kind: effect.kind), deadline: deadline)
         return true
     }
 
@@ -375,7 +383,7 @@ final class TerminalVisualStateStore {
             if info.st_mode & S_IFMT == S_IFLNK {
                 enumerator.skipDescendants(); unreadable.append(url); continue
             }
-            guard ["target.json", "effect.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
+            guard ["target.json", "effect.json", "preview.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
             do {
                 if url.lastPathComponent == "target.json" {
                     guard let saved: CachedTarget = try read(url), saved.schema == 1 else {
@@ -387,12 +395,12 @@ final class TerminalVisualStateStore {
                         throw TerminalVisualStateError.invalidRecord
                     }
                     bindings.append(saved.target)
-                } else if url.lastPathComponent == "effect.json" {
+                } else if url.lastPathComponent == "effect.json" || url.lastPathComponent == "preview.json" {
                     guard let effect: TerminalEffectRecord = try read(url) else {
                         throw TerminalVisualStateError.invalidRecord
                     }
                     try validate(effect)
-                    guard targetURL(effect.target, filename: "effect.json").resolvingSymlinksInPath()
+                    guard effectURL(effect.target, kind: effect.kind).resolvingSymlinksInPath()
                         == url.resolvingSymlinksInPath() else {
                         throw TerminalVisualStateError.invalidRecord
                     }
@@ -453,6 +461,11 @@ final class TerminalVisualStateStore {
 
     private func validGeneration(_ generation: ProcessGeneration) -> Bool {
         generation.pid > 0 && generation.startSeconds > 0 && generation.startMicroseconds < 1_000_000
+    }
+
+    private func effectURL(_ target: TerminalTargetBinding, kind: TerminalEffectKind?) -> URL {
+        // Global/selective effects share the legacy slot; previews must not replace them.
+        targetURL(target, filename: kind == .preview ? "preview.json" : "effect.json")
     }
 
     private func targetURL(_ target: TerminalTargetBinding, filename: String) -> URL {

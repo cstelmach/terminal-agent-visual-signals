@@ -245,6 +245,121 @@ final class VisualRecoveryTests: XCTestCase {
         try noBytes(target)
     }
 
+    private func preview(_ target: TerminalTargetBinding, id: String = "preview") throws -> String {
+        let colors = try XCTUnwrap(TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE"))
+        var color = ""
+        _ = try SystemProcessRunner().writeManagedToDevice(path: target.tty,
+            lockURL: state.lockURL(forTTY: target.tty)) { _, deadline in
+            color = try XCTUnwrap(TerminalRenderer.previewBackground(
+                ordinary: self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline), colors: colors))
+            try self.state.saveEffectUnlocked(TerminalEffectRecord(target: target,
+                controller: self.generation(90), effectID: id, kind: .preview, background: color,
+                heartbeatAt: self.clock.now().timeIntervalSince1970), deadline: deadline)
+            return nil
+        }
+        return color
+    }
+
+    func testPreviewExpiryRestoresLatestIntentWithOnlyBackgroundBytes() throws {
+        let target = try terminal(10)
+        let color = try preview(target)
+        XCTAssertTrue(try recovery().write(.ordinary(intent(target, color: "#ABCDEF"), synthetic: false,
+            intakeAt: 1_000), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
+        clock.advance(by: 2)
+        XCTAssertTrue(try recovery().write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+    }
+
+    func testPreviewCancellationPreservesUnderlyingFocusAndIgnoresOldID() throws {
+        let target = try terminal(10)
+        try cache(target, effect: true)
+        _ = try preview(target, id: "new-preview")
+        _ = try SystemProcessRunner().writeManagedToDevice(path: target.tty,
+            lockURL: state.lockURL(forTTY: target.tty)) { _, deadline in
+            XCTAssertFalse(try self.state.cancelEffectUnlocked(target, effectID: "old-preview",
+                controller: self.generation(90), kind: .preview, deadline: deadline))
+            XCTAssertTrue(try self.state.cancelEffectUnlocked(target, effectID: "new-preview",
+                controller: self.generation(90), kind: .preview, deadline: deadline))
+            return nil
+        }
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, deadline: .max)).active)
+        XCTAssertTrue(try recovery().write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#AABBCC\u{1B}\\".utf8))
+        XCTAssertEqual(state.cachedRecords().effects.count, 2)
+    }
+
+    func testRecoveryCancelsPreviewButAllowsANewHarmlessPreviewDuringSuspension() throws {
+        let target = try terminal(10)
+        _ = try preview(target)
+        let report = recovery().recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(try read(target), reset)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        let color = try preview(target, id: "after-recovery")
+        XCTAssertTrue(try recovery().write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
+        XCTAssertEqual(restrictions.read(), .suspended)
+    }
+
+    func testPreviewWithoutOrdinaryIntentExpiresToOnlyGhosttyBackgroundReset() throws {
+        let target = try terminal(10)
+        let color = try preview(target)
+        XCTAssertTrue(try recovery().write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
+        clock.advance(by: 2)
+        XCTAssertTrue(try recovery().write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+    }
+
+    func testPreviewCannotRenewItsTwoSecondLeaseAndDeadControllerCannotOwnPaint() throws {
+        let target = try terminal(10)
+        _ = try preview(target)
+        clock.advance(by: 1)
+        _ = try SystemProcessRunner().writeManagedToDevice(path: target.tty,
+            lockURL: state.lockURL(forTTY: target.tty)) { _, deadline in
+            XCTAssertFalse(try self.state.refreshEffectUnlocked(target, effectID: "preview",
+                controller: self.generation(90), kind: .preview, deadline: deadline))
+            var renewal = try XCTUnwrap(self.state.currentEffectUnlocked(target, kind: .preview, deadline: deadline))
+            renewal.heartbeatAt = 1_001
+            XCTAssertThrowsError(try self.state.saveEffectUnlocked(renewal, deadline: deadline))
+            return nil
+        }
+        XCTAssertEqual(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).heartbeatAt, 1_000)
+        identities[90] = nil
+        XCTAssertTrue(try recovery().write(.ordinary(intent(target), synthetic: false, intakeAt: 1_001), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+    }
+
+    func testNativePreviewAndPlainFocusRecoverOnceAndCancelBothRecords() throws {
+        let plain = try terminal(10), native = nativeAlias(plain)
+        try cache(plain, effect: true)
+        _ = try preview(native)
+        let report = recovery().recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(try read(plain), reset)
+        try noBytes(plain)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(plain, deadline: .max)).active)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(native, kind: .preview, deadline: .max)).active)
+        XCTAssertTrue(state.cachedRecords().unreadable.isEmpty)
+    }
+
+    func testGlobalRuleWinsOverPreviewWithoutDestroyingItsSeparateRecord() throws {
+        let target = try terminal(10)
+        _ = try preview(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
+            to: root.appendingPathComponent("lock.state"))
+        XCTAssertTrue(try recovery().write(.currentRestriction, to: target))
+        let bytes = try read(target), text = String(decoding: bytes, as: UTF8.self)
+        XCTAssertTrue(text.contains("\u{1B}]11;#667788"))
+        XCTAssertEqual(try state.currentEffectUnlocked(target, deadline: .max)?.kind, .globalRestriction)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+    }
+
     private func read(_ target: TerminalTargetBinding) throws -> Data {
         let tty = try XCTUnwrap(ptys.first { $0.path == target.tty })
         var ready = pollfd(fd: tty.master, events: Int16(POLLIN), revents: 0)

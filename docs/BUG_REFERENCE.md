@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.13
+Version: 1.14
+
+## Preview record rewrite can extend its expiry
+
+The initial preview foundation rejected heartbeat refresh, but the generic same-ID save path
+still accepted a new timestamp. A regression reproduced the changed expiry with two failed
+assertions. Preview saves now preserve the original timestamp for that ID; a new selection uses
+a new ID. The normal six-second selective lease keeps its existing heartbeat behavior.
+Tests cover both renewal paths, expiry and controller exit, with 416 Swift tests passing.
 
 ## Failed device entry drops ordinary background intent
 

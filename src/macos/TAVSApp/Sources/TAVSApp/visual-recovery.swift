@@ -168,9 +168,13 @@ final class VisualRecovery {
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
             }
-            let leases = effects.filter { self.state.isSelectiveLeaseActive($0) }
-            let selective = !clearSelective && !self.restrictions.read().disablesRestrictions
-                && !leases.isEmpty
+            let active = effects.filter { self.state.isSelectiveLeaseActive($0) }
+            let previews = active.filter { $0.kind == .preview }
+            let restrictionsDisabled = self.restrictions.read().disablesRestrictions
+            let leases = previews.isEmpty
+                ? active.filter { $0.kind == .selectiveBackground && !restrictionsDisabled }
+                : previews
+            let selective = !clearSelective && !leases.isEmpty
             if selective, let first = leases.first {
                 guard leases.allSatisfy({ $0.effectID == first.effectID && $0.controller == first.controller
                     && $0.background == first.background }) else { throw TerminalVisualStateError.staleEffect }
@@ -346,15 +350,16 @@ final class VisualRecovery {
     }
 
     private func effectsUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> [TerminalEffectRecord] {
-        try state.equivalentBindingsUnlocked(for: target, deadline: deadline).compactMap {
-            try state.currentEffectUnlocked($0, deadline: deadline)
+        let kinds: [TerminalEffectKind?] = [nil, .preview]
+        return try state.equivalentBindingsUnlocked(for: target, deadline: deadline).flatMap { binding in
+            try kinds.compactMap { try state.currentEffectUnlocked(binding, kind: $0, deadline: deadline) }
         }
     }
 
     private func cancelEffects(_ effects: [TerminalEffectRecord], deadline: UInt64) throws {
         for effect in effects where effect.active {
             _ = try state.cancelEffectUnlocked(effect.target, effectID: effect.effectID,
-                                              controller: effect.controller, deadline: deadline)
+                controller: effect.controller, kind: effect.kind, deadline: deadline)
         }
     }
 

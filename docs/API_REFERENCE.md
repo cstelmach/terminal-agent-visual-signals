@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.0
+Version: 1.1
 
 ## Public recovery commands
 
@@ -61,6 +61,20 @@ over the latest ordinary intent. Failure or late open cannot claim paint or run 
 When publication succeeded before a device failure, later recovery retains that intended color
 or reset. If publication-lock contention consumes the whole budget, publication fails without a
 new budget or late retry. No arbitrary program-set color restoration is claimed.
+
+## Preview rendering foundation (Phase 7 in progress)
+
+`TerminalRenderer.previewBackground(ordinary:colors:)` uses normalized configured background
+and foreground colors. It returns a conservative tint or nil when no safe meaningful change
+exists. This is a configured-text contrast bound, not a guarantee for arbitrary program colors.
+
+The internal schema-1 effect kind `preview` uses a separate `preview.json` alongside `effect.json`
+for the same exact target. It expires two seconds after its original heartbeat timestamp; neither
+refresh nor a same-ID save can extend that time. Exact-ID preview cancellation preserves the
+underlying selective record. Global rules take precedence; suspension permits harmless previews.
+Emergency recovery discovers and cancels both records through the existing bounded writer.
+Controller/UI activation is still pending. Use matching current source-built components for
+acceptance; old executables do not understand the preview record.
 
 See [hard-lock reference](reference/hard-lock.md), [bug reference](BUG_REFERENCE.md) and
 [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
