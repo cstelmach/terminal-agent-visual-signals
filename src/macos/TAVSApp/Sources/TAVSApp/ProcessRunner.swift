@@ -6,9 +6,19 @@ protocol ProcessRunner: AnyObject {
     func run(executableURL: URL, arguments: [String]) throws -> Data
     func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval) throws -> Data
     func writeToDevice(path: String, data: Data) throws
+    // prepare runs under the stable lock; validate the opened fd and current policy there.
+    // Honor the original deadline before state mutations after any delay; nil skips paint.
+    func writeManagedToDevice(path: String, lockURL: URL,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
 }
 
 final class SystemProcessRunner: ProcessRunner {
+    private let openDevice: (String, Int32) -> Int32
+
+    init(openDevice: @escaping (String, Int32) -> Int32 = { Darwin.open($0, $1) }) {
+        self.openDevice = openDevice
+    }
+
     func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval = 2) throws -> Data {
         guard timeout.isFinite, timeout > 0 else { throw ProcessRunnerError.invalidTimeout }
         let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(timeout, 2) * 1_000_000_000)
@@ -106,12 +116,61 @@ final class SystemProcessRunner: ProcessRunner {
         }
     }
 
+    func writeManagedToDevice(path: String, lockURL: URL,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
+        try Self.completeDeviceWrite(path: path) { deadline in
+            let device = try self.openNonblockingDevice(path: path, deadline: deadline)
+            defer { Darwin.close(device) }
+            guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
+            let directory = lockURL.deletingLastPathComponent()
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                        attributes: [.posixPermissions: 0o700])
+            } catch { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            var info = stat()
+            guard lstat(directory.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
+                throw ProcessRunnerError.deviceIOFailed(path, EINVAL)
+            }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            var lockFD: Int32
+            repeat {
+                lockFD = Darwin.open(lockURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0o600)
+            } while lockFD < 0 && errno == EINTR && DispatchTime.now().uptimeNanoseconds < deadline
+            guard lockFD >= 0 else { throw ProcessRunnerError.deviceIOFailed(path, errno) }
+            defer { Darwin.close(lockFD) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            guard fstat(lockFD, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
+                  info.st_mode & 0o777 == 0o600 else {
+                throw ProcessRunnerError.deviceIOFailed(path, EINVAL)
+            }
+            while true {
+                try self.checkDeviceDeadline(path: path, deadline: deadline)
+                if flock(lockFD, LOCK_EX | LOCK_NB) == 0 { break }
+                let lockError = errno
+                guard lockError == EWOULDBLOCK || lockError == EAGAIN || lockError == EINTR else {
+                    throw ProcessRunnerError.deviceIOFailed(path, lockError)
+                }
+                let now = DispatchTime.now().uptimeNanoseconds
+                guard now < deadline else { throw ProcessRunnerError.deviceWriteTimedOut(path) }
+                usleep(useconds_t(min(1_000, max(1, (deadline - now) / 1_000))))
+            }
+            defer { flock(lockFD, LOCK_UN) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            let data = try prepare(device, deadline)
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            guard let data = data else { return false }
+            try self.writeToDescriptor(device, path: path, data: data, deadline: deadline)
+            return true
+        }
+    }
+
     // Some wedged macOS TTYs stall inside open even with O_NONBLOCK.
     // The semaphore publishes the worker's result only after completion;
-    // a timeout never reads it and lets the broadcaster prune that TTY.
-    static func completeDeviceWrite(path: String, operation: @escaping (UInt64) throws -> Void) throws {
+    // a timeout reports failure without reading an incomplete result.
+    static func completeDeviceWrite<T>(path: String, operation: @escaping (UInt64) throws -> T) throws -> T {
         let deadline = DispatchTime.now() + .milliseconds(100)
-        let completion = DeviceWriteCompletion()
+        let completion = DeviceWriteCompletion<T>()
         DispatchQueue.global(qos: .userInitiated).async {
             completion.result = Result { try operation(deadline.uptimeNanoseconds) }
             completion.finished.signal()
@@ -120,23 +179,39 @@ final class SystemProcessRunner: ProcessRunner {
             TAVSLog.broadcaster.error("terminal I/O timed out: \(path, privacy: .public)")
             throw ProcessRunnerError.deviceWriteTimedOut(path)
         }
-        try completion.result!.get()
+        return try completion.result!.get()
     }
 
     private func writeNonblockingToDevice(path: String, data: Data, deadline: UInt64) throws {
-        // A delayed worker must not open a device or repaint after timeout.
+        let descriptor = try openNonblockingDevice(path: path, deadline: deadline)
+        defer { Darwin.close(descriptor) }
+        try writeToDescriptor(descriptor, path: path, data: data, deadline: deadline)
+    }
+
+    private func checkDeviceDeadline(path: String, deadline: UInt64) throws {
         guard DispatchTime.now().uptimeNanoseconds < deadline else {
             throw ProcessRunnerError.deviceWriteTimedOut(path)
         }
+    }
+
+    private func openNonblockingDevice(path: String, deadline: UInt64) throws -> Int32 {
+        // A delayed worker must not open a device or repaint after timeout.
+        try checkDeviceDeadline(path: path, deadline: deadline)
         var descriptor: Int32
         repeat {
-            descriptor = Darwin.open(path, O_WRONLY | O_NONBLOCK | O_NOCTTY | O_CLOEXEC)
+            descriptor = openDevice(path, O_WRONLY | O_NONBLOCK | O_NOCTTY | O_CLOEXEC)
         } while descriptor < 0 && errno == EINTR && DispatchTime.now().uptimeNanoseconds < deadline
         guard descriptor >= 0 else {
             throw ProcessRunnerError.deviceNotWritable(path)
         }
-        defer { Darwin.close(descriptor) }
+        guard DispatchTime.now().uptimeNanoseconds < deadline else {
+            Darwin.close(descriptor)
+            throw ProcessRunnerError.deviceWriteTimedOut(path)
+        }
+        return descriptor
+    }
 
+    private func writeToDescriptor(_ descriptor: Int32, path: String, data: Data, deadline: UInt64) throws {
         // Both opening and writing a disconnected or backed-up TTY can block.
         // Bound all retries so one terminal cannot stall the scheduler.
         try data.withUnsafeBytes { buffer in
@@ -184,9 +259,9 @@ final class SystemProcessRunner: ProcessRunner {
     }
 }
 
-private final class DeviceWriteCompletion {
+private final class DeviceWriteCompletion<T> {
     let finished = DispatchSemaphore(value: 0)
-    var result: Result<Void, Error>?
+    var result: Result<T, Error>?
 }
 
 enum ProcessRunnerError: Error {

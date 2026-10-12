@@ -1,7 +1,23 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
+
+## Ordered device writer
+
+`ProcessRunner.writeManagedToDevice(path:lockURL:prepare:)` shares the existing asynchronous
+100 ms caller deadline and nonblocking partial-write loop. It opens the device before taking a
+stable private per-TTY file lock. Under that lock, `prepare` receives the actual descriptor and
+the original monotonic deadline. It must validate the target, read current policy and persist
+effects before returning bytes. Returning nil skips output; errors remain explicit failures.
+
+Late device opens close without acquiring the lock or calling policy. Late prepared bytes are
+rejected. State mutations in `prepare` must also honor the passed deadline because a blocked
+closure cannot be forcibly canceled. Busy locks and backpressured devices retain the same
+budget, and independent healthy writes can complete. The lock inode is never replaced/unlinked.
+
+This is the recovery writer foundation. Existing broadcaster and shell callers still need
+typed routing, binding validation, current policy composition and recovery result reporting.
 
 ## Persistent visual suspension
 
