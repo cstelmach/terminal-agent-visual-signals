@@ -140,6 +140,41 @@ final class SessionsModelTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
+    func testSuspensionStatusUpdatesBeforeInFlightNativeGuardAndSurvivesNativeFailure() throws {
+        let row = surface("001")
+        let restrictions = VisualRestrictionsStateStore(url: directory.appendingPathComponent("persistent/visual-restrictions.state"))
+        var calls = 0
+        var navigation = 0
+        var finish: ((Result<[GhosttySurface], Error>) -> Void)?
+        let model = SessionsModel(prioritiesURL: store, refresh: { calls += 1; finish = $0 },
+            navigate: { _, done in navigation += 1; done(.success(())) }, visualRestrictionsState: restrictions)
+        model.selection = [row.id]
+        model.refresh()
+        XCTAssertTrue(model.refreshing)
+        XCTAssertEqual(model.visualRestrictionsStatus, .active)
+        try restrictions.write(suspended: true)
+        model.refresh()
+        XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
+        XCTAssertEqual(calls, 1)
+        XCTAssertEqual(model.selection, [row.id])
+        XCTAssertTrue(model.visualCoverage.isEmpty)
+        finish?(.failure(GhosttyCatalogError.permissionDenied))
+        XCTAssertFalse(model.catalogueAvailable)
+        XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
+        try restrictions.write(suspended: false)
+        model.refresh()
+        XCTAssertEqual(model.visualRestrictionsStatus, .active)
+        XCTAssertEqual(calls, 2)
+        finish?(.failure(GhosttyCatalogError.permissionDenied))
+        try Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"false\"\n".utf8).write(to: restrictions.url)
+        model.refresh()
+        XCTAssertEqual(model.visualRestrictionsStatus, .unavailable)
+        XCTAssertEqual(model.selection, [row.id])
+        XCTAssertEqual(navigation, 0)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.path))
+        finish?(.success([]))
+    }
+
     func testFreshCataloguePublishesCorrelatedCoverageOnMainAfterBackgroundReads() throws {
         let row = surface("001")
         let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
@@ -254,10 +289,13 @@ final class SessionsModelTests: XCTestCase {
             "surfaces": [["terminalID":"fixture", "tabID":"tab", "windowID":"window", "tty":"/dev/ttys900"]]
         ]
         try JSONSerialization.data(withJSONObject: payload).write(to: fixture)
+        try VisualRestrictionsStateStore(url: directory.appendingPathComponent("home/.tavs/visual-restrictions.state"))
+            .write(suspended: true)
         let launch = try IsolatedSessionsLaunch.environment([
             "TAVS_SESSIONS_TEST_ROOT": directory.path, "TAVS_SESSIONS_TEST_FIXTURE": fixture.path
         ])
         let model = launch.model()
+        XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
         let finished = expectation(description: "Private fixture coverage published")
         let token = model.$refreshing.dropFirst().sink { if !$0 { finished.fulfill() } }
         model.refresh()

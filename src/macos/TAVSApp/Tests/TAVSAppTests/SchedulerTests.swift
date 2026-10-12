@@ -341,6 +341,83 @@ final class SchedulerLifecycleTests: XCTestCase {
         try ScheduleStore.save(config, to: scheduleURL)
     }
 
+    func testSuspensionSuppressesTransitionReplayAndTicksThenResumeRepaintsCurrentPause() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        scheduler.start()
+        XCTAssertTrue(scheduler.isMuted)
+        let calls = broadcaster.callOrder
+        let saved = try Data(contentsOf: scheduleURL)
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .suspended)
+        XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
+        XCTAssertFalse(scheduler.masterActive)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(scheduler.reason, .none)
+        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), saved)
+        clock.advance(by: 60)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        fileWatcher.simulateChange()
+        RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
+        scheduler.restoreTerminalColors()
+        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertTrue(try String(contentsOf: muteStateURL).contains("MUTED=\"false\""))
+        try restrictions.write(suspended: false)
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .active)
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+    }
+
+    func testSuspendedStartupWithExplicitPersistentStoreIgnoresOldMutedProjection() throws {
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("persistent/visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0,
+            writtenEpoch: Int64(clock.now().timeIntervalSince1970), appPID: 43), to: muteStateURL)
+        let restarted = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            visualRestrictionsState: restrictions)
+        restarted.start()
+        XCTAssertEqual(restarted.visualRestrictionsStatus, .suspended)
+        XCTAssertFalse(restarted.isMuted)
+        XCTAssertFalse(restarted.isHardLocked)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertTrue(try String(contentsOf: muteStateURL).contains("MUTED=\"false\""))
+        restarted.stop()
+        let next = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            visualRestrictionsState: restrictions)
+        next.start()
+        XCTAssertEqual(next.visualRestrictionsStatus, .suspended)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        next.stop()
+    }
+
+    func testUnknownSuspensionStateDisablesVisualsAndLegacyRestoreWithoutChangingMaster() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let path = tempDir.appendingPathComponent("visual-restrictions.state")
+        try Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"false\"\n".utf8).write(to: path)
+        scheduler.start()
+        scheduler.restoreTerminalColors()
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .unavailable)
+        XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.unavailable.message)
+        XCTAssertFalse(scheduler.masterActive)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+    }
+
     func testRestoreTerminalColorsClearsWithoutChangingStateOrReplaying() throws {
         try writeStandardConfig()
         scheduler.start()

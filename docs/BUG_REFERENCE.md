@@ -1,7 +1,33 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
+
+## Suspension readers and policy projection
+
+Treating suspension as an ordinary unmute would reset colors and replay opaque pending output,
+including old titles/alerts. The scheduler now evaluates saved rules and expiries normally,
+then disables their visual projection and skips every broadcaster path while suspended or
+unavailable. Configured master activation is separate from effective mute, so menu controls
+still edit the intended saved state. Independent physical recovery remains a later phase.
+
+The shell reader initially treated inaccessible parent directories as missing active state.
+An isolated permission test reproduced the mismatch with Swift. Both readers now distinguish
+inaccessible/non-directory/dangling parents from an absent marker beneath accessible parents.
+Canonical schema fixtures cover both shells and Swift without executing marker content.
+
+The private app initially used a marker beside its priority file rather than under its private
+HOME. A red fixture test exposed that discrepancy; explicit injection now matches
+`root/home/.tavs/visual-restrictions.state`. Suspension survives relaunch and remains visible
+even when catalogue refresh fails. Focus stays Off after explicit resumption.
+
+Mute debug logging had a fixed `/tmp/tavs-mute-trace.log` sink. A source-only red assertion
+avoided writing there, then the corrected logger was exercised in an injected private runtime.
+This preserves test isolation without changing unrelated existing diagnostic files.
+
+Verification: 288 Swift tests, 55 suspension/gate Bats cases, 55 earlier Bats regressions and
+230 audited Python cases pass. Computer Use checked the private Sessions banner, relaunch,
+unavailable state and resumption. Real menu rendering and physical recovery remain unverified.
 
 ## Organizer intake and restoration defects
 

@@ -1,7 +1,45 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.1
+Version: 1.2
+
+## Persistent visual suspension
+
+`~/.tavs/visual-restrictions.state` contains exactly this canonical text, including its final LF:
+
+```text
+SCHEMA_VERSION="1"
+SUSPENDED="true"
+```
+
+Explicit resumption writes `SUSPENDED="false"`; it does not delete saved schedules or locks.
+The shell and Swift stores classify absent state as active, valid true as suspended, and an
+existing malformed/unreadable/special marker as unavailable. Unavailable state disables
+restrictions visibly. Readers accept only the canonical schema, bound input and never source
+the marker. The standalone installed shellrc embeds the identical reader/predicate because it
+has no dependency bundle. Shared fixtures pin Bash, zsh and Swift agreement.
+
+Suspension precedes hook stage-0, stage-1, idle-worker and effective-lock checks. Ordinary
+observations/background intent continue, and shell startup still registers its TTY. New locks
+remain saved but visually inert; CLI status explains when rules are suspended or unavailable.
+Mute diagnostics now use the injected runtime directory instead of a shared fixed tmp file.
+
+The scheduler continues raw rule evaluation, lock/grant merging and expiry timers. Suspension
+overrides its visual projection and skips all broadcaster work, including ordinary unmute
+reset/replay. Menu controls use configured master activation separately from projected mute.
+Sessions reads the independent marker before an in-flight native refresh can return early.
+Production stores receive an explicit `.tavs` URL; private launch stores use `root/home/.tavs`.
+
+Headless capability/read/write verbs run before UI launch and require explicit file URLs:
+
+```bash
+TAVSApp --validate-config --visual-restrictions-capabilities
+TAVSApp --visual-restrictions-read /absolute/private/visual-restrictions.state
+TAVSApp --visual-restrictions-write /absolute/private/visual-restrictions.state true
+```
+
+This reader/projection foundation does not yet clear terminal pixels or invalidate historical
+pending output. Independent repaint and serialized device checks belong to the recovery phase.
 
 ## Organizer observation and intent records
 

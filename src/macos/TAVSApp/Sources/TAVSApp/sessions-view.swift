@@ -28,6 +28,8 @@ struct SessionsView: View {
                 Button("Refresh") { model.refresh() }.disabled(model.refreshing)
             }
             Text(model.status).font(.callout).foregroundColor(model.catalogueAvailable ? .secondary : .primary)
+            Text(model.visualRestrictionsStatus.message).font(.callout)
+                .foregroundColor(model.visualRestrictionsStatus.disablesRestrictions ? .primary : .secondary)
             if let error = model.priorityStorageError { Text(error).foregroundColor(.red) }
             Table(model.rows, selection: $model.selection) {
                 TableColumn("Terminal") { row in

@@ -112,10 +112,13 @@ struct TAVSApp: App {
     @StateObject private var sessions = SessionsModel(prioritiesURL:
         FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/surface-priorities.json"),
         visualState: TerminalVisualStateStore(runtimeDirectory: URL(fileURLWithPath:
-            ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")))
+            ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")),
+        visualRestrictionsState: VisualRestrictionsStateStore(url:
+            FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/visual-restrictions.state")))
 
     var body: some Scene {
-        MenuBarExtra("TAVS", systemImage: scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
+        MenuBarExtra("TAVS", systemImage: scheduler.visualRestrictionsStatus.disablesRestrictions
+            ? "eye.slash" : scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
             MenuContent(scheduler: scheduler)
         }
         Settings {
@@ -159,6 +162,7 @@ struct IsolatedSessionsLaunch {
     func model() -> SessionsModel {
         let url = root.appendingPathComponent("surface-priorities.json")
         let visualState = TerminalVisualStateStore(runtimeDirectory: root.appendingPathComponent("runtime"))
+        let restrictions = VisualRestrictionsStateStore(url: root.appendingPathComponent("home/.tavs/visual-restrictions.state"))
         if let fixture = fixture {
             return SessionsModel(prioritiesURL: url, refresh: { done in
                 done(Result {
@@ -166,10 +170,11 @@ struct IsolatedSessionsLaunch {
                     let instance = try JSONDecoder().decode(FixtureInstance.self, from: data).application
                     return try GhosttyCatalog.decode(data, application: instance)
                 })
-            }, navigate: { _, done in done(.success(())) }, visualState: visualState)
+            }, navigate: { _, done in done(.success(())) }, visualState: visualState,
+                visualRestrictionsState: restrictions)
         }
         return SessionsModel(prioritiesURL: url, catalog: GhosttyCatalog(allowedSurfaces: allowed),
-                             visualState: visualState)
+                             visualState: visualState, visualRestrictionsState: restrictions)
     }
 
     private struct FixtureInstance: Decodable { let application: ProcessGeneration }
@@ -214,6 +219,8 @@ extension Scheduler {
             muteStateURL: homeDir.appendingPathComponent(".tavs/mute.state"),
             scheduleURL: homeDir.appendingPathComponent(".tavs/schedule.json"),
             lockStateURL: runtimeDir.appendingPathComponent("lock.state"),
+            visualRestrictionsState: VisualRestrictionsStateStore(url:
+                homeDir.appendingPathComponent(".tavs/visual-restrictions.state")),
             runtimeWatcher: FileWatcher(),
             pauseVisualProvider: {
                 PauseVisualResolver.resolveForCurrentAppearance(userConfURL: userConfURL)

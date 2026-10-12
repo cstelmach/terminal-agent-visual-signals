@@ -91,6 +91,130 @@ final class SchedulerLockTests: XCTestCase {
         (try? String(contentsOf: muteStateURL, encoding: .utf8)) ?? ""
     }
 
+    func testSuspensionPreservesMergedHardLockGrantAndOriginalExpiryTimers() throws {
+        let now = date(hour: 9, minute: 55)
+        try writeConfig(windowHard: true, quietHard: true)
+        let manual = LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: epoch(now, offset: 7_200), unlockUntilEpoch: epoch(now, offset: 900),
+            writtenEpoch: epoch(now))
+        try LockStateWriter.write(manual, to: lockStateURL)
+        makeScheduler(at: now)
+        scheduler.start()
+        let savedLock = try Data(contentsOf: lockStateURL)
+        let savedSchedule = try Data(contentsOf: scheduleURL)
+        let calls = broadcaster.callOrder
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        scheduler.loadAndEvaluate()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
+        XCTAssertEqual(try Data(contentsOf: lockStateURL), savedLock)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), savedSchedule)
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { !$0.repeating && $0.delay == 900 })
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { !$0.repeating && $0.delay == 7_200 })
+        clock.advance(by: 901)
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.lockUntilEpoch, manual.lockUntilEpoch)
+        XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.unlockUntilEpoch, 0)
+        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), savedSchedule)
+        try restrictions.write(suspended: false)
+        scheduler.loadAndEvaluate()
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+    }
+
+    func testSuspensionOverridesSoftRuleWithManualLockAndGrantWithoutChangingDefinitions() throws {
+        try writeConfig()
+        let manual = LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: epoch(outsideWindowDate, offset: 7_200),
+            unlockUntilEpoch: epoch(outsideWindowDate, offset: 900), writtenEpoch: epoch(outsideWindowDate))
+        try LockStateWriter.write(manual, to: lockStateURL)
+        makeScheduler(at: outsideWindowDate)
+        scheduler.start()
+        XCTAssertTrue(scheduler.isMuted)
+        let saved = try Data(contentsOf: lockStateURL)
+        let calls = broadcaster.callOrder
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        scheduler.loadAndEvaluate()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
+        XCTAssertEqual(try Data(contentsOf: lockStateURL), saved)
+        XCTAssertEqual(broadcaster.callOrder, calls)
+    }
+
+    func testNewManualLockIsSavedButVisuallyInertUntilExplicitResume() throws {
+        try writeConfig()
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        makeScheduler(at: insideWindowDate)
+        scheduler.start()
+        let savedSchedule = try Data(contentsOf: scheduleURL)
+        scheduler.lockNow(seconds: 3_600)
+        let lock = try XCTUnwrap(LockStateReader.read(at: lockStateURL))
+        XCTAssertTrue(lock.locked)
+        XCTAssertEqual(lock.reason, .manual)
+        XCTAssertEqual(lock.lockUntilEpoch, epoch(insideWindowDate, offset: 3_600))
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), savedSchedule)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        try restrictions.write(suspended: false)
+        scheduler.loadAndEvaluate()
+        XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertTrue(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 1)
+    }
+
+    func testConfiguredMasterCanResumeWithoutChallengeWhileVisualLockIsSuspended() throws {
+        try writeConfig(masterActive: false)
+        let manual = LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: epoch(insideWindowDate, offset: 3_600), unlockUntilEpoch: 0,
+            writtenEpoch: epoch(insideWindowDate))
+        try LockStateWriter.write(manual, to: lockStateURL)
+        try VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+            .write(suspended: true)
+        makeScheduler(at: insideWindowDate)
+        scheduler.start()
+        XCTAssertFalse(scheduler.masterActive)
+        XCTAssertFalse(scheduler.isHardLocked)
+        scheduler.togglePause()
+        scheduler.loadAndEvaluate()
+        XCTAssertTrue(try ScheduleStore.load(from: scheduleURL).masterActive)
+        XCTAssertTrue(scheduler.masterActive)
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .suspended)
+        XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.lockUntilEpoch, manual.lockUntilEpoch)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+    }
+
+    func testManualLockAndGrantExpireDuringSuspensionWithoutScheduleOrReplay() throws {
+        let manual = LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: epoch(insideWindowDate, offset: 30), unlockUntilEpoch: epoch(insideWindowDate, offset: 15),
+            writtenEpoch: epoch(insideWindowDate))
+        try LockStateWriter.write(manual, to: lockStateURL)
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        makeScheduler(at: insideWindowDate)
+        scheduler.start()
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { !$0.repeating && $0.delay == 15 })
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { !$0.repeating && $0.delay == 30 })
+        clock.advance(by: 31)
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.locked, false)
+        XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.unlockUntilEpoch, 0)
+        try restrictions.write(suspended: false)
+        scheduler.loadAndEvaluate()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+    }
+
     // MARK: - Hard schedule projection
 
     func testHardWindowProjectsLockStateAndBroadcastsLocked() throws {

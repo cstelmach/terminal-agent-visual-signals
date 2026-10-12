@@ -166,8 +166,9 @@ final class Scheduler: ObservableObject {
     @Published private(set) var isMuted: Bool = false
     @Published private(set) var reason: MuteReason = .none
     @Published private(set) var statusText: String = "Starting…"
-    // True while the effective-lock predicate holds (spec 2.2): an unexpired
-    // hard lock without an active unlock grant. UI gates resume paths on it.
+    @Published private(set) var visualRestrictionsStatus: VisualRestrictionsStatus = .active
+    @Published private(set) var masterActive = true
+    // An enabled visual hard lock without an active grant gates UI resume paths.
     @Published private(set) var isHardLocked: Bool = false
 
     private let clock: Clock
@@ -177,6 +178,7 @@ final class Scheduler: ObservableObject {
     private let muteStateURL: URL
     private let scheduleURL: URL
     private let lockStateURL: URL
+    private let visualRestrictionsState: VisualRestrictionsStateStore
     private let runtimeWatcher: FileWatcherProtocol?
     private let calendar: Calendar
     private let pauseVisualProvider: () -> PauseVisual
@@ -206,6 +208,7 @@ final class Scheduler: ObservableObject {
         // Defaults derive lock.state next to mute.state so existing tests stay
         // hermetic; production (createDefault) passes the real runtime-dir URL.
         lockStateURL: URL? = nil,
+        visualRestrictionsState: VisualRestrictionsStateStore? = nil,
         runtimeWatcher: FileWatcherProtocol? = nil,
         calendar: Calendar = .current,
         pauseVisualProvider: @escaping () -> PauseVisual = {
@@ -224,6 +227,8 @@ final class Scheduler: ObservableObject {
         self.scheduleURL = scheduleURL
         self.lockStateURL = lockStateURL
             ?? muteStateURL.deletingLastPathComponent().appendingPathComponent("lock.state")
+        self.visualRestrictionsState = visualRestrictionsState ?? VisualRestrictionsStateStore(
+            url: muteStateURL.deletingLastPathComponent().appendingPathComponent("visual-restrictions.state"))
         self.runtimeWatcher = runtimeWatcher
         self.calendar = calendar
         self.pauseVisualProvider = pauseVisualProvider
@@ -234,7 +239,10 @@ final class Scheduler: ObservableObject {
         // reboot, /tmp/tavs-$UID is wiped and the touch-based registry is
         // empty until each terminal fires a hook. With this, the very first
         // mute transition after login already covers all live agent sessions.
-        broadcaster.discoverAndRegisterActiveAgentTTYs()
+        visualRestrictionsStatus = visualRestrictionsState.read()
+        if !visualRestrictionsStatus.disablesRestrictions {
+            broadcaster.discoverAndRegisterActiveAgentTTYs()
+        }
 
         // Seed previousMuted from the on-disk mute.state so a restart-after-crash
         // correctly detects a muted→unmuted transition. Without this, a crash
@@ -261,8 +269,9 @@ final class Scheduler: ObservableObject {
 
     // A one-time baseline reset leaves the schedule and pending signals alone.
     // Pauses and hard locks retain ownership of the terminal colours.
+    // Independent recovery handles suspended or unavailable restriction state.
     func restoreTerminalColors() {
-        guard !isMuted && !isHardLocked else { return }
+        guard !visualRestrictionsState.read().disablesRestrictions, !isMuted && !isHardLocked else { return }
         broadcaster.broadcastPausedClear()
     }
 
@@ -333,6 +342,7 @@ final class Scheduler: ObservableObject {
             TAVSLog.scheduler.error("schedule.json load failed: \(error.localizedDescription, privacy: .public)")
             config = nil
         }
+        masterActive = config?.masterActive ?? true
 
         let now = clock.now()
         guard let config = config else {
@@ -352,6 +362,8 @@ final class Scheduler: ObservableObject {
     // transitions, and arms all wake timers.
     private func finishEvaluation(result: ScheduleEvaluator.Result, transition: Date?, now: Date) {
         let nowEpoch = Int64(now.timeIntervalSince1970)
+        visualRestrictionsStatus = visualRestrictionsState.read()
+        let restrictionsDisabled = visualRestrictionsStatus.disablesRestrictions
 
         let existingLock = LockStateReader.read(at: lockStateURL)
         let scheduleHard = result.muted && result.hard
@@ -373,8 +385,8 @@ final class Scheduler: ObservableObject {
 
         // A hard lock implies mute; an active grant suspends HARD-caused mute
         // only (soft rules are never affected by grants, spec D5/D7).
-        let projectedMuted: Bool
-        let projectedReason: MuteReason
+        var projectedMuted: Bool
+        var projectedReason: MuteReason
         if result.muted && !(scheduleHard && grantActive) {
             projectedMuted = true
             projectedReason = result.reason
@@ -386,11 +398,17 @@ final class Scheduler: ObservableObject {
             projectedMuted = false
             projectedReason = .none
         }
+        if restrictionsDisabled {
+            projectedMuted = false
+            projectedReason = .none
+            lastPaintedPauseVisual = nil
+            lastPaintedWasLock = false
+        }
 
         let wasMuted = previousMuted
         previousMuted = projectedMuted
 
-        if wasMuted && !projectedMuted {
+        if !restrictionsDisabled && wasMuted && !projectedMuted {
             clearPausedVisualAndReplayPending()
         }
 
@@ -433,7 +451,7 @@ final class Scheduler: ObservableObject {
             }
         }
 
-        isHardLocked = effectiveLock
+        isHardLocked = effectiveLock && !restrictionsDisabled
         updatePublishedState(
             muted: projectedMuted,
             reason: projectedReason,
@@ -626,6 +644,11 @@ final class Scheduler: ObservableObject {
         self.isMuted = muted
         self.reason = reason
         self.nextTransitionDate = transitionDate
+
+        if visualRestrictionsStatus.disablesRestrictions {
+            self.statusText = visualRestrictionsStatus.message
+            return
+        }
 
         if effectiveLock, let lock = lock {
             let until = Date(timeIntervalSince1970: TimeInterval(lock.lockUntilEpoch))

@@ -12,6 +12,7 @@ final class SessionsModel: ObservableObject {
     @Published private(set) var surfaces: [GhosttySurface] = []
     @Published private(set) var priorities: [GhosttySurfaceID: SurfacePriority] = [:]
     @Published private(set) var visualCoverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]
+    @Published private(set) var visualRestrictionsStatus: VisualRestrictionsStatus = .active
     @Published private(set) var catalogueAvailable = false
     @Published private(set) var status = "Open Sessions to read the native catalogue."
     @Published private(set) var priorityStorageError: String?
@@ -24,6 +25,7 @@ final class SessionsModel: ObservableObject {
     private let timerScheduler: TimerScheduler
     private let clock: Clock
     private let visualState: TerminalVisualStateStore?
+    private let visualRestrictionsState: VisualRestrictionsStateStore
     private let visualQueue = DispatchQueue(label: "tavs.sessions.visual-state")
     private var isOpen = false
 
@@ -38,13 +40,18 @@ final class SessionsModel: ObservableObject {
          refresh: @escaping (@escaping (Result<[GhosttySurface], Error>) -> Void) -> Void,
          navigate: @escaping (GhosttySurface, @escaping (Result<Void, Error>) -> Void) -> Void,
          timerScheduler: TimerScheduler = SystemTimerScheduler(), clock: Clock = SystemClock(),
-         visualState: TerminalVisualStateStore? = nil) {
+         visualState: TerminalVisualStateStore? = nil,
+         visualRestrictionsState: VisualRestrictionsStateStore? = nil) {
         self.prioritiesURL = prioritiesURL
         self.readCatalogue = refresh
         self.navigate = navigate
         self.timerScheduler = timerScheduler
         self.clock = clock
         self.visualState = visualState
+        let restrictions = visualRestrictionsState ?? VisualRestrictionsStateStore(
+            url: prioritiesURL.deletingLastPathComponent().appendingPathComponent("visual-restrictions.state"))
+        self.visualRestrictionsState = restrictions
+        self.visualRestrictionsStatus = restrictions.read()
         if FileManager.default.fileExists(atPath: prioritiesURL.path) {
             do {
                 let saved = try JSONDecoder().decode(SavedPriorities.self, from: Data(contentsOf: prioritiesURL))
@@ -57,9 +64,10 @@ final class SessionsModel: ObservableObject {
     }
 
     convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = GhosttyCatalog(),
-                     visualState: TerminalVisualStateStore? = nil) {
+                     visualState: TerminalVisualStateStore? = nil,
+                     visualRestrictionsState: VisualRestrictionsStateStore? = nil) {
         self.init(prioritiesURL: prioritiesURL, refresh: catalog.refresh, navigate: catalog.goTo,
-                  visualState: visualState)
+                  visualState: visualState, visualRestrictionsState: visualRestrictionsState)
     }
 
     func priority(for id: GhosttySurfaceID) -> SurfacePriority { priorities[id] ?? .normal }
@@ -96,6 +104,7 @@ final class SessionsModel: ObservableObject {
     func closed() { isOpen = false; timerScheduler.cancelAll() }
 
     func refresh() {
+        visualRestrictionsStatus = visualRestrictionsState.read()
         guard !refreshing else { return }
         refreshing = true
         readCatalogue { [weak self] result in

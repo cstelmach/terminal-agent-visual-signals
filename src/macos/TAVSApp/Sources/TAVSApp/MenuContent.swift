@@ -12,10 +12,8 @@ struct MenuContent: View {
             Text(scheduler.statusText)
                 .foregroundColor(.secondary)
             Divider()
-            Button(scheduler.isMuted && scheduler.reason == .masterPaused
-                   ? "Resume TAVS"
-                   : "Pause TAVS") {
-                let resuming = scheduler.isMuted && scheduler.reason == .masterPaused
+            Button(scheduler.masterActive ? "Pause TAVS" : "Resume TAVS") {
+                let resuming = !scheduler.masterActive
                 if resuming && scheduler.isHardLocked {
                     // Resume is challenge-gated while hard-locked (spec D7).
                     // Passing permits the resume; it does NOT create a grant.
@@ -29,9 +27,13 @@ struct MenuContent: View {
             Button("Restore Terminal Colors") {
                 scheduler.restoreTerminalColors()
             }
-            .disabled(scheduler.isMuted || scheduler.isHardLocked)
+            .disabled(scheduler.visualRestrictionsStatus.disablesRestrictions || scheduler.isMuted || scheduler.isHardLocked)
             Button("Lock Now (1h)") {
                 scheduler.lockNow()
+            }
+            if scheduler.visualRestrictionsStatus.disablesRestrictions {
+                Text("New rules and locks are saved but remain visually inactive.")
+                    .font(.caption).foregroundColor(.secondary)
             }
             if scheduler.isHardLocked {
                 Button("Unlock…") {
