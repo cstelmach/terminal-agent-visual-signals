@@ -313,6 +313,58 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertTrue(runner.managedCallLog.isEmpty)
         try noBytes(target)
     }
+
+    func testOrdinaryBatchRegisterDoesNotChangeSuspensionOrPaint() throws {
+        let target = try terminal(10)
+        try restrictions.write(suspended: true)
+        let before = try Data(contentsOf: restrictions.url)
+        let surface = GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: "pane"),
+            windowID: "window", tabID: "tab", title: nil, directory: nil, tty: target.tty,
+            foregroundPID: 10, tabSelected: true, mappingIssue: nil)
+        let batch = recovery(native: { [surface] }).apply(.register)
+        XCTAssertTrue(batch.catalogueAvailable)
+        XCTAssertEqual(batch.items.map(\.status), [.unaffected])
+        XCTAssertEqual(try Data(contentsOf: restrictions.url), before)
+        XCTAssertEqual(state.cachedRecords().bindings.first?.nativeSurface, surface.id)
+        try noBytes(target)
+    }
+
+    func testForcedResetRejectsStaleDeliveryBeforePaletteOrTitleCanSpill() throws {
+        let target = try terminal(10)
+        try cache(target)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+            event: nil, deliveryID: "new-delivery", responseID: nil, observedAt: 1_000))
+        XCTAssertThrowsError(try recovery().write(.forcedReset(intent(target, color: "reset"),
+            intakeAt: 1_000, title: "current directory"), to: target)) { error in
+            guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Unexpected error: \(error)") }
+        }
+        try noBytes(target)
+    }
+
+    func testForcedResetUsesCurrentSyntheticDeliveryAndPreservesSelectiveBackground() throws {
+        let target = try terminal(10)
+        try cache(target, effect: true)
+        let value = intent(target, color: "reset")
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "complete",
+            event: nil, deliveryID: value.deliveryID, responseID: nil, observedAt: 1_000))
+        XCTAssertTrue(try recovery().write(.forcedReset(value, intakeAt: 1_000, title: "directory"), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]11;#AABBCC\u{1B}\\\u{1B}]0;directory\u{1B}\\".utf8))
+    }
+
+    func testScopedTargetResolutionReusesOnlyMatchingAllowedNativeBinding() throws {
+        let plain = try terminal(10)
+        let native = TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,
+            nativeSurface: GhosttySurfaceID(application: generation(80), terminalID: "pane"))
+        try cache(native)
+        let service = recovery(allowed: [try XCTUnwrap(native.nativeSurface)], native: {
+            XCTFail("A verified cached binding does not need Automation")
+            return []
+        })
+        XCTAssertEqual(try service.target(tty: plain.tty, owner: plain.ttyOwner), native)
+        XCTAssertThrowsError(try recovery(allowed: []).target(tty: plain.tty, owner: plain.ttyOwner))
+    }
 }
 
 private final class RecoveryWriteResult { var value: Result<Bool, Error>? }

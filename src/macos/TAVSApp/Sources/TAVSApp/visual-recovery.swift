@@ -2,7 +2,9 @@ import Foundation
 import Darwin
 
 enum ManagedVisualOperation {
+    case register
     case ordinary(OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
+    case forcedReset(OrdinaryBackgroundIntent, intakeAt: Double, title: String)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -33,14 +35,14 @@ final class VisualRecovery {
     private let policy: VisualRestrictionPolicy
     private let processRunner: ProcessRunner
     private let clock: Clock
-    private let controller: ProcessGeneration
+    private let controller: ProcessGeneration?
     private let allowedSurfaces: Set<GhosttySurfaceID>?
     private let nativeSnapshot: () throws -> [GhosttySurface]
     private static let reset = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
 
     init(runtimeDirectory: URL, restrictions: VisualRestrictionsStateStore,
          state: TerminalVisualStateStore, policy: VisualRestrictionPolicy,
-         processRunner: ProcessRunner, clock: Clock, controller: ProcessGeneration,
+         processRunner: ProcessRunner, clock: Clock, controller: ProcessGeneration?,
          allowedSurfaces: Set<GhosttySurfaceID>? = nil,
          nativeSnapshot: @escaping () throws -> [GhosttySurface]) {
         self.runtimeDirectory = runtimeDirectory
@@ -66,6 +68,7 @@ final class VisualRecovery {
             lockURL: state.lockURL(forTTY: target.tty)) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
             try self.state.cacheTargetUnlocked(target, deadline: deadline)
+            if case .register = operation { return nil }
             if case .emergencyReset = operation {
                 guard self.restrictions.read().disablesRestrictions else { throw VisualRecoveryError.policyChanged }
                 try self.cancelCurrentEffect(target, deadline: deadline)
@@ -73,7 +76,19 @@ final class VisualRecovery {
                 return Self.reset
             }
 
-            if case .ordinary(let intent, let synthetic, let intakeAt) = operation {
+            var publication: (OrdinaryBackgroundIntent, Bool, Double)?
+            var resetTitle: String?
+            switch operation {
+            case .ordinary(let intent, let synthetic, let intakeAt):
+                publication = (intent, synthetic, intakeAt)
+            case .forcedReset(let intent, let intakeAt, let title):
+                guard title.utf8.count <= 512, title.rangeOfCharacter(from: .controlCharacters) == nil,
+                      intent.background == "reset" else { throw TerminalVisualStateError.invalidRecord }
+                publication = (intent, true, intakeAt)
+                resetTitle = title
+            default: break
+            }
+            if let (intent, synthetic, intakeAt) = publication {
                 try self.state.publishIntentUnlocked(intent, synthetic: synthetic,
                     intakeAt: intakeAt, deadline: deadline)
                 try self.state.bindOrdinaryIntentUnlocked(intent, to: target, deadline: deadline)
@@ -81,12 +96,13 @@ final class VisualRecovery {
             let currentRule = try self.policy.current(deadline: deadline)
             if case .currentRestriction = operation, currentRule == nil { return nil }
             if let rule = currentRule {
+                guard let controller = self.controller else { throw VisualRecoveryError.targetUnavailable }
                 let visual: PauseVisual
                 switch rule {
                 case .paused(let value), .locked(let value, untilEpoch: _): visual = value
                 }
                 try self.state.saveEffectUnlocked(TerminalEffectRecord(target: target,
-                    controller: self.controller, effectID: UUID().uuidString, kind: .globalRestriction,
+                    controller: controller, effectID: UUID().uuidString, kind: .globalRestriction,
                     background: visual.backgroundColor, heartbeatAt: self.clock.now().timeIntervalSince1970),
                     deadline: deadline)
                 return Self.restrictionBytes(rule)
@@ -106,7 +122,9 @@ final class VisualRecovery {
                 : try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline) ?? "reset"
             if !selective { try self.cancelCurrentEffect(target, deadline: deadline) }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
+            if resetTitle != nil && !resetLegacy { bytes.append(Data("\u{1B}]104\u{07}".utf8)) }
             bytes.append(Self.backgroundBytes(background))
+            if let title = resetTitle { bytes.append(Data("\u{1B}]0;\(title)\u{1B}\\".utf8)) }
             return bytes
         }
     }
@@ -118,6 +136,13 @@ final class VisualRecovery {
                 items: [VisualRecoveryItem(status: .failed, reason: "Restriction state could not be saved.")])
         }
 
+        let operation: ManagedVisualOperation = resume
+            ? .reconcile(resetLegacy: true, clearSelective: true) : .emergencyReset
+        let batch = apply(operation)
+        return VisualRecoveryReport(stateSaved: true, catalogueAvailable: batch.catalogueAvailable, items: batch.items)
+    }
+
+    func apply(_ operation: ManagedVisualOperation) -> (catalogueAvailable: Bool, items: [VisualRecoveryItem]) {
         let native = NativeCompletion()
         DispatchQueue.global(qos: .userInitiated).async {
             native.result = Result { try self.nativeSnapshot() }
@@ -125,8 +150,6 @@ final class VisualRecovery {
         }
         let cached = state.cachedRecords()
         let initial = Array(Set(cached.bindings + cached.effects.map(\.target)))
-        let operation: ManagedVisualOperation = resume
-            ? .reconcile(resetLegacy: true, clearSelective: true) : .emergencyReset
         var items = fanout(initial, operation: operation)
         items += cached.unreadable.map { _ in VisualRecoveryItem(status: .failed, reason: "Cached visual record unavailable.") }
         var known = Set(initial), catalogueAvailable = false
@@ -152,7 +175,24 @@ final class VisualRecovery {
         if registry.unavailable {
             items.append(VisualRecoveryItem(status: .failed, reason: "Active terminal registry unavailable."))
         }
-        return VisualRecoveryReport(stateSaved: true, catalogueAvailable: catalogueAvailable, items: items)
+        return (catalogueAvailable, items)
+    }
+
+    func target(tty: String, owner: ProcessGeneration) throws -> TerminalTargetBinding {
+        guard let plain = state.captureTarget(tty: tty, owner: owner) else { throw VisualRecoveryError.targetUnavailable }
+        guard let allowed = allowedSurfaces else { return plain }
+        let cached = state.cachedRecords()
+        let bindings = Set(cached.bindings + cached.effects.map(\.target)).filter {
+            $0.tty == tty && $0.device == plain.device && $0.ttyOwner == plain.ttyOwner
+                && $0.nativeSurface.map { allowed.contains($0) } == true && state.validateTarget($0) == .valid
+        }
+        if bindings.count == 1 { return bindings.first! }
+        guard bindings.isEmpty else { throw VisualRecoveryError.scopeUnavailable }
+        let fresh = try nativeSnapshot().filter { $0.tty == tty && allowed.contains($0.id) }
+            .compactMap { state.captureTarget(for: $0) }
+            .filter { $0.device == plain.device && $0.ttyOwner == plain.ttyOwner }
+        guard fresh.count == 1 else { throw VisualRecoveryError.scopeUnavailable }
+        return fresh[0]
     }
 
     private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation) -> [VisualRecoveryItem] {

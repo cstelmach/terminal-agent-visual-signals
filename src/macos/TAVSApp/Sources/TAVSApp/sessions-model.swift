@@ -63,7 +63,7 @@ final class SessionsModel: ObservableObject {
         }
     }
 
-    convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = GhosttyCatalog(),
+    convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = .shared,
                      visualState: TerminalVisualStateStore? = nil,
                      visualRestrictionsState: VisualRestrictionsStateStore? = nil) {
         self.init(prioritiesURL: prioritiesURL, refresh: catalog.refresh, navigate: catalog.goTo,

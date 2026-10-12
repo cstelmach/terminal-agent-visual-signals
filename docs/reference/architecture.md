@@ -1,7 +1,20 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.7
+Version: 1.8
+
+## Ordinary managed actions
+
+`VisualRecovery.apply` runs typed batches without changing the persistent suspension marker.
+Registration caches validated bindings without repainting. Forced idle reset validates its
+synthetic delivery before producing palette/background/title bytes, and current global policy
+retains precedence. It cannot spill stale reset styling after a newer meaningful observation.
+
+Scoped target resolution uses one exact allowed cached native binding or a fresh allowed native
+snapshot; owner-only identity never broadens a dedicated scope. Missing controller generation
+fails restrictive paint explicitly while independent reset/registration remain available.
+Production Sessions and broadcasting share GhosttyCatalog's native queue. Tests construct their
+own injected catalogues and keep private scope separate.
 
 ## Typed recovery coordinator
 

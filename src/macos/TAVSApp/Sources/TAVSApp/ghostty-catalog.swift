@@ -26,6 +26,7 @@ enum GhosttyCatalogError: Error, Equatable {
 }
 
 final class GhosttyCatalog {
+    static let shared = GhosttyCatalog()
     private let processRunner: ProcessRunner
     private let application: () throws -> ProcessGeneration
     private let allowedSurfaces: Set<GhosttySurfaceID>?
