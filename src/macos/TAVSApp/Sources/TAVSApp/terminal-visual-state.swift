@@ -168,6 +168,16 @@ final class TerminalVisualStateStore {
         return .valid
     }
 
+    func isCurrentAttentionSource(_ cue: AttentionOccurrence, target: TerminalTargetBinding,
+                                  deadline: UInt64) throws -> Bool {
+        try checkDeadline(deadline)
+        guard target.nativeSurface != nil, target.tty == cue.tty, target.device == cue.device else { return false }
+        let valid = validateTarget(target) == .valid
+            && validProducer(tty: cue.tty, device: cue.device, producer: cue.producer)
+        try checkDeadline(deadline)
+        return valid
+    }
+
     // Global lock/mute policy must be recomputed separately; it is not a selective lease.
     func isSelectiveLeaseActive(_ effect: TerminalEffectRecord) -> Bool {
         guard effect.kind != .globalRestriction, effect.active,

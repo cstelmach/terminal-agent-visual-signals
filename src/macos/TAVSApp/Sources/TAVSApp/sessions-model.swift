@@ -47,6 +47,14 @@ final class SessionsModel: ObservableObject {
     var focusMode: FocusMode { focus?.mode ?? .off }
     var focusStatus: String { focus?.focusStatus ?? "Focus: Off" }
     var focusCleanupError: String? { focus?.focusCleanupError }
+    func cueCount(for id: GhosttySurfaceID) -> Int { focus?.cueSnapshot(for: id).count ?? 0 }
+    var canEnableAutomatic: Bool {
+        focus != nil && !recovering && catalogueAvailable && focusMode != .automatic
+            && !visualRestrictionsStatus.disablesRestrictions
+    }
+    private var highPriorities: Set<GhosttySurfaceID> {
+        Set(surfaces.filter { priority(for: $0.id) == .high }.map(\.id))
+    }
     func isInWorkingSet(_ id: GhosttySurfaceID) -> Bool { focus?.workingSet.contains(id) == true }
     var canFocusSelected: Bool {
         focus != nil && !recovering && catalogueAvailable && !selection.isEmpty
@@ -110,6 +118,9 @@ final class SessionsModel: ObservableObject {
             if priority == .normal { next.removeValue(forKey: id) } else { next[id] = priority }
         }
         save(next)
+        if focusMode == .automatic, priorityStorageError == nil {
+            focus?.acceptCatalogue(surfaces, high: highPriorities, coverage: visualCoverage)
+        }
     }
 
     private func save(_ next: [GhosttySurfaceID: SurfacePriority]) {
@@ -147,6 +158,11 @@ final class SessionsModel: ObservableObject {
     }
 
     func focusOff() { focus?.focusOff() }
+
+    func enableAutomatic() {
+        guard canEnableAutomatic else { return }
+        focus?.enableAutomatic(rows: surfaces, high: highPriorities, coverage: visualCoverage)
+    }
 
     func clearPreview() { focus?.clearPreview() }
 
@@ -219,7 +235,7 @@ final class SessionsModel: ObservableObject {
         selection.formIntersection(ids)
         if priorityStorageError == nil { save(priorities.filter { ids.contains($0.key) }) }
         visualCoverage = coverage
-        focus?.acceptCatalogue(rows)
+        focus?.acceptCatalogue(rows, high: highPriorities, coverage: coverage)
         refreshing = false
     }
 
@@ -236,11 +252,13 @@ final class SessionsModel: ObservableObject {
     func goTo(_ id: GhosttySurfaceID) {
         guard catalogueAvailable, navigating == nil,
               let target = surfaces.first(where: { $0.id == id }), target.mappingIssue == nil else { return }
+        let cues = focus?.cueSnapshot(for: id) ?? []
         navigating = id
         navigate(target) { [weak self] result in
             guard let self = self else { return }
             self.navigating = nil
             if case .failure(let error) = result { self.status = "Go To unavailable: \(error)" }
+            else { self.focus?.acknowledge(cues, for: id) }
         }
     }
 

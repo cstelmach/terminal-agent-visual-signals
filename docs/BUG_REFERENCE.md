@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.20
+Version: 1.21
+
+## An emphasized shell can outlive the agent that authorized Automatic focus
+
+The initial Automatic integration reused Manual's any-emphasized-binding guard. If a cue's
+producer exited during queued color lookup, another High plain shell still passed that guard
+and allowed new outside dimming. A regression kept the cue's continuing shell owner alive,
+removed its producer and reproduced a new focus record and output on an owned Normal PTY.
+Automatic now validates actual cue producers and their own bindings at the managed decision,
+using the original deadline without nested coverage locks. Zero valid sources release old effects.
+The post-lookup run/version check also prevents Focus Off during the final metadata check from
+authorizing late paint. Tests cover producer reuse, device mismatch, backgrounded retention,
+separate continuing ownership and identical deadline forwarding. Budget expiry preserves cues.
 
 ## Generic notifications are misclassified as permission requests
 

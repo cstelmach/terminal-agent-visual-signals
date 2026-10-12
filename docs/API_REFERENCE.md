@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.9
+Version: 1.10
 
 ## Public recovery commands
 
@@ -101,7 +101,28 @@ Idle, compacting, subagent and cosmetic error restoration do not imply resumptio
 coverage removes eligibility; retained acknowledged records cannot rearm. Equal-time or older
 same-producer observations do not invent an ordering. Generic Notification is diagnostic only.
 Latest-only records may miss intervening hook events; no event journal or new hook was introduced.
-Automatic controller, navigation and GUI integration remain pending; this reducer does not paint.
+The reducer supplies policy to the existing focus controller; it does not paint itself.
+
+`FocusController.enableAutomatic(rows:high:coverage:)` explicitly replaces Manual and arms
+Automatic with a pinned recovery revision. At zero cues it clears rendering while staying armed;
+a later occurrence gets a fresh render ID. Every current High row is emphasized while any cue
+remains. Changing High membership retires old effects, including a promoted row's previous dimming.
+Unavailable catalogues invalidate queued rendering and preserve cue history without renewal.
+
+Sessions supplies fresh coverage and committed priorities, keeps the existing non-Off timer,
+and snapshots a target's cues before Go To. Only verified navigation success acknowledges that
+snapshot. Failure changes no cue; later arrivals survive. Recovery and restart leave Off.
+Sessions/menu expose Automatic Focus, per-row cue counts and completion-only acknowledgement.
+
+`TerminalFocusRequest.isCurrent` receives the original writer deadline at each final guard.
+Automatic revalidates at least one actual cue producer and its captured native binding through
+`isCurrentAttentionSource`, without taking another TTY's coverage lock. Producer generation,
+controlling device and target lifetime must still match. Currency is checked again after lookup.
+If no source is valid, queued painting is rejected and exact-ID cleanup releases prior effects
+while Automatic stays armed. Deadline failure rejects output without resolving a cue.
+Persisted focus recipes contain no cue actor; later ordinary composition relies on the accepted
+lease and controller refresh/cleanup. No new cue registry or event journal was added.
+Native automatic salience and active-cue UI acceptance remain unverified; final reviews are due.
 
 ## Manual focus (Phase 8 source verified)
 

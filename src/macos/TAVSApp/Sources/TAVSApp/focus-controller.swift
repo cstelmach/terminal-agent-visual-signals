@@ -1,7 +1,7 @@
 import Foundation
 import Combine
 
-enum FocusMode { case off, manual }
+enum FocusMode: String { case off = "Off", manual = "Manual", automatic = "Automatic" }
 
 final class FocusController: ObservableObject {
     @Published private(set) var isPreviewActive = false
@@ -12,6 +12,7 @@ final class FocusController: ObservableObject {
     @Published private(set) var workingSet = Set<GhosttySurfaceID>()
     @Published private(set) var focusStatus = "Focus: Off"
     @Published private(set) var focusCleanupError: String?
+    @Published private(set) var attentionCues: [GhosttySurfaceID: Set<AttentionOccurrence>] = [:]
     private let state: TerminalVisualStateStore
     private let recovery: VisualRecovery
     private let restrictions: VisualRestrictionsStateStore
@@ -25,8 +26,12 @@ final class FocusController: ObservableObject {
     private var pendingClear: [Run] = []
     private var manual: Run?
     private var pendingFocusClear: [Run] = []
-    private var manualPending: ([GhosttySurface], Double)?
+    private var manualPending: ([GhosttySurface], Set<GhosttySurfaceID>, Double)?
     private var manualUpdating = false
+    private var attention: AttentionState?
+    private var automaticRevision: VisualRestrictionsRevision?
+    private var automaticHigh = Set<GhosttySurfaceID>()
+    private var automaticCatalogue: ([GhosttySurface], Set<GhosttySurfaceID>, Double)?
 
     init(state: TerminalVisualStateStore, recovery: VisualRecovery,
          restrictions: VisualRestrictionsStateStore, timers: TimerScheduler = SystemTimerScheduler(),
@@ -118,6 +123,8 @@ final class FocusController: ObservableObject {
         timers.cancelAll()
         isPreviewActive = false; previewed.removeAll(); previewStatus = "No preview."
         if let oldManual = oldManual { pendingFocusClear.append(oldManual) }
+        attention = nil; attentionCues.removeAll(); automaticRevision = nil
+        automaticHigh.removeAll(); automaticCatalogue = nil
         manualPending = nil; workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
     }
 
@@ -134,16 +141,64 @@ final class FocusController: ObservableObject {
         } catch { focusStatus = "Manual unavailable: suspension state cannot be verified." }
     }
 
-    func acceptCatalogue(_ rows: [GhosttySurface]) {
-        guard mode == .manual else { return }
-        workingSet.formIntersection(rows.map(\.id))
-        guard !workingSet.isEmpty else { focusOff(); return }
+    func enableAutomatic(rows: [GhosttySurface], high: Set<GhosttySurfaceID>,
+                         coverage: [GhosttySurfaceID: TerminalVisualCoverage]) {
+        guard mode != .automatic, !rows.isEmpty, restrictions.read() == .active else { return }
+        focusOff()
+        do {
+            automaticRevision = try restrictions.captureRevision()
+            automaticHigh = high.intersection(rows.map(\.id))
+            attention = AttentionState(coverage: currentCoverage(rows, coverage), high: automaticHigh,
+                enabledAt: clock.now().timeIntervalSince1970)
+            mode = .automatic; focusStatus = "Automatic armed: no unacknowledged cues."
+        } catch { focusStatus = "Automatic unavailable: suspension state cannot be verified." }
+    }
+
+    func cueSnapshot(for id: GhosttySurfaceID) -> Set<AttentionOccurrence> { attentionCues[id] ?? [] }
+
+    func acknowledge(_ captured: Set<AttentionOccurrence>, for id: GhosttySurfaceID) {
+        guard mode == .automatic else { return }
+        attention?.acknowledge(captured, for: id)
+        guard attentionCues != attention?.cues else { return }
+        attentionCues = attention?.cues ?? [:]
+        if attentionCues.isEmpty {
+            retireFocus(); focusStatus = "Automatic armed: no unacknowledged cues."
+        } else {
+            lock.lock(); manual?.version += 1; lock.unlock()
+            if manualUpdating { manualPending = automaticCatalogue }
+        }
+    }
+
+    func acceptCatalogue(_ rows: [GhosttySurface], high: Set<GhosttySurfaceID> = [],
+                         coverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]) {
+        guard mode != .off else { return }
+        let now = clock.now().timeIntervalSince1970
+        let ids: Set<GhosttySurfaceID>
+        if mode == .manual {
+            workingSet.formIntersection(rows.map(\.id))
+            guard !workingSet.isEmpty else { focusOff(); return }
+            ids = workingSet
+        } else {
+            guard let revision = automaticRevision, restrictions.read() == .active,
+                  (try? restrictions.matches(revision, deadline: .max)) == true else { focusOff(); return }
+            ids = high.intersection(rows.map(\.id))
+            attention?.update(currentCoverage(rows, coverage), high: ids)
+            attentionCues = attention?.cues ?? [:]
+            if ids != automaticHigh { retireFocus() }
+            automaticHigh = ids
+            automaticCatalogue = (rows, ids, now)
+            if attentionCues.isEmpty {
+                retireFocus(); focusStatus = "Automatic armed: no unacknowledged cues."; return
+            }
+            lock.lock()
+            if manual == nil { manual = Run(startedAt: now, revision: revision) }
+            lock.unlock()
+        }
         lock.lock(); let old = manual; let lastHeartbeat = old?.lastHeartbeat; lock.unlock()
         guard let old = old else { return }
         if restrictions.read() != .active || (try? restrictions.matches(old.revision, deadline: .max)) != true {
             focusOff(); return
         }
-        let now = clock.now().timeIntervalSince1970
         lock.lock()
         if now - (lastHeartbeat ?? now) > 6 {
             manual = Run(startedAt: now, revision: old.revision)
@@ -151,31 +206,47 @@ final class FocusController: ObservableObject {
         }
         manual?.version += 1
         lock.unlock()
-        manualPending = (rows, now)
+        manualPending = (rows, ids, now)
         updateManual()
     }
 
+    private func currentCoverage(_ rows: [GhosttySurface],
+                                 _ coverage: [GhosttySurfaceID: TerminalVisualCoverage]) -> [GhosttySurfaceID: TerminalVisualCoverage] {
+        Dictionary(uniqueKeysWithValues: rows.map { ($0.id, coverage[$0.id] ?? TerminalVisualCoverage(
+            observation: nil, intent: nil, attentionEligible: false, status: "Observation coverage unavailable.")) })
+    }
+
     func catalogueUnavailable() {
-        guard mode == .manual else { return }
+        guard mode != .off else { return }
         lock.lock(); manual?.version += 1; lock.unlock()
         manualPending = nil
-        focusStatus = "Manual unavailable: native catalogue is stale; captured set retained."
+        automaticCatalogue = nil
+        focusStatus = mode == .automatic ? "Automatic unavailable: native catalogue is stale; cues retained."
+            : "Manual unavailable: native catalogue is stale; captured set retained."
     }
 
     func focusOff() {
+        retireFocus()
+        attention = nil; attentionCues.removeAll(); automaticRevision = nil
+        automaticHigh.removeAll(); automaticCatalogue = nil
+        workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
+    }
+
+    private func retireFocus() {
         lock.lock(); let old = manual; manual = nil; lock.unlock()
-        manualPending = nil; workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
+        manualPending = nil
         var runs = pendingFocusClear; pendingFocusClear.removeAll()
         if let old = old { runs.append(old) }
         clearManual(runs)
     }
 
     private func updateManual() {
-        guard !manualUpdating, let (rows, at) = manualPending else { return }
+        guard !manualUpdating, let (rows, ids, at) = manualPending else { return }
         lock.lock(); let run = manual; let version = run?.version; lock.unlock()
         guard let run = run, let version = version else { return }
-        let ids = workingSet
-        manualPending = nil; manualUpdating = true; focusStatus = "Preparing manual focus."
+        let cues = mode == .automatic ? attentionCues : nil
+        manualPending = nil; manualUpdating = true
+        focusStatus = mode == .automatic ? "Preparing automatic focus." : "Preparing manual focus."
         queue.async { [weak self] in
             guard let self = self else { return }
             let result: Result<(Int, Int, [VisualRecoveryItem]), Error> = Result {
@@ -184,6 +255,11 @@ final class FocusController: ObservableObject {
                 }
                 guard rows.contains(where: { ids.contains($0.id) && self.state.captureTarget(for: $0) != nil }) else {
                     throw VisualRecoveryError.targetUnavailable
+                }
+                let sources = cues?.flatMap { id, values -> [(AttentionOccurrence, TerminalTargetBinding)] in
+                    guard let row = rows.first(where: { $0.id == id }), let target = self.state.captureTarget(for: row) else { return [] }
+                    guard let cue = values.first else { return [] }
+                    return [(cue, target)]
                 }
                 let outside = rows.filter { !ids.contains($0.id) }
                 guard Set(rows.map { $0.id.application }).count == 1, let instance = rows.first?.id.application else {
@@ -198,9 +274,19 @@ final class FocusController: ObservableObject {
                 self.lock.unlock()
                 guard accepted else { throw VisualRecoveryError.policyChanged }
                 let request = TerminalFocusRequest(effectID: run.id, heartbeatAt: at, colors: colors,
-                    revision: run.revision, isCurrent: { [weak self] in
+                    revision: run.revision, isCurrent: { [weak self] deadline in
                         guard let self = self else { return false }
-                        return self.matchesManual(run, version: version) && self.clock.now().timeIntervalSince1970 <= at + 6
+                        guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else { return false }
+                        if let sources = sources, let cues = cues {
+                            do {
+                                if try !sources.contains(where: { try self.state.isCurrentAttentionSource($0.0, target: $0.1, deadline: deadline) }) {
+                                    self.invalidateAutomaticSources(cues, run: run, version: version)
+                                    return false
+                                }
+                            } catch { return false }
+                        }
+                        return self.matchesManual(run, version: version)
+                            && self.clock.now().timeIntervalSince1970 <= at + 6
                     })
                 let items = self.recovery.apply(.focus(request), to: targets)
                 self.lock.lock()
@@ -220,9 +306,13 @@ final class FocusController: ObservableObject {
                     switch result {
                     case .success(let (mapped, count, items)):
                         let failures = items.filter { $0.status == .failed }.count
-                        self.focusStatus = "Manual: \(self.workingSet.count) captured; \(mapped) of \(count) outside mapped; \(failures) failed. Preview/global rules may mask dimming."
+                        let label = self.mode == .automatic ? "Automatic: \(ids.count) High emphasized"
+                            : "Manual: \(self.workingSet.count) captured"
+                        self.focusStatus = "\(label); \(mapped) of \(count) outside mapped; \(failures) failed. Preview/global rules may mask dimming."
                     case .failure:
-                        self.focusStatus = "Manual unavailable: configured colors or working binding cannot be verified."
+                        self.focusStatus = self.mode == .automatic
+                            ? "Automatic unavailable: configured colors or emphasized binding cannot be verified."
+                            : "Manual unavailable: configured colors or working binding cannot be verified."
                     }
                 }
                 self.updateManual()
@@ -233,6 +323,18 @@ final class FocusController: ObservableObject {
     private func matchesManual(_ run: Run, version: Int) -> Bool {
         lock.lock(); defer { lock.unlock() }
         return manual === run && run.version == version
+    }
+
+    private func invalidateAutomaticSources(_ cues: [GhosttySurfaceID: Set<AttentionOccurrence>],
+                                            run: Run, version: Int) {
+        lock.lock()
+        guard manual === run, run.version == version, run.invalidSourcesVersion != version else { lock.unlock(); return }
+        run.invalidSourcesVersion = version
+        lock.unlock()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, self.mode == .automatic, self.matchesManual(run, version: version) else { return }
+            for (id, values) in cues { self.acknowledge(values, for: id) }
+        }
     }
 
     private func clearManual(_ runs: [Run]) {
@@ -270,6 +372,7 @@ final class FocusController: ObservableObject {
         var targets: [TerminalTargetBinding] = []
         var colors: TerminalRenderer.Colors?
         var version = 0
+        var invalidSourcesVersion: Int?
         var lastHeartbeat: Double
         init(startedAt: Double, revision: VisualRestrictionsRevision) {
             self.startedAt = startedAt; self.revision = revision; self.lastHeartbeat = startedAt

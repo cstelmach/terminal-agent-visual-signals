@@ -7,11 +7,24 @@ final class VisualRecoveryTests: XCTestCase {
                               current: @escaping () -> Bool = { true }) throws -> TerminalFocusRequest {
         TerminalFocusRequest(effectID: id, heartbeatAt: clock.now().timeIntervalSince1970,
             colors: TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!,
-            revision: try revision ?? restrictions.captureRevision(), isCurrent: current)
+            revision: try revision ?? restrictions.captureRevision(), isCurrent: { _ in current() })
     }
 
     private func focusedBytes(_ color: String?, request: TerminalFocusRequest) throws -> Data {
         Data("\u{1B}]11;\(try XCTUnwrap(TerminalRenderer.focusBackground(ordinary: color, colors: request.colors)))\u{1B}\\".utf8)
+    }
+
+    func testFocusPredicateReceivesOneExistingWriterDeadline() throws {
+        let target = try terminal(10), lock = NSLock()
+        var deadlines: [UInt64] = []
+        let request = TerminalFocusRequest(effectID: "deadline", heartbeatAt: clock.now().timeIntervalSince1970,
+            colors: TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!,
+            revision: try restrictions.captureRevision(), isCurrent: { deadline in
+                lock.lock(); deadlines.append(deadline); lock.unlock(); return true
+            })
+        XCTAssertTrue(try recovery().write(.focus(request), to: target)); _ = try read(target)
+        XCTAssertEqual(deadlines.count, 3)
+        XCTAssertEqual(Set(deadlines).count, 1)
     }
 
     func testDynamicFocusComposesEveryOrdinaryIntentWithoutRenewingItsLease() throws {

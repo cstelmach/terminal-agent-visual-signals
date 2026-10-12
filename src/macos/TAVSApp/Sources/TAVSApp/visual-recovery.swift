@@ -14,7 +14,7 @@ struct TerminalFocusRequest {
     let heartbeatAt: Double
     let colors: TerminalRenderer.Colors
     let revision: VisualRestrictionsRevision
-    let isCurrent: () -> Bool
+    let isCurrent: (UInt64) -> Bool
 }
 
 enum ManagedVisualOperation {
@@ -233,11 +233,11 @@ final class VisualRecovery {
                 effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }
             if case .focus(let request) = operation {
-                guard request.isCurrent(), let controller = self.controller,
+                guard request.isCurrent(deadline), let controller = self.controller,
                       try self.restrictions.matches(request.revision, deadline: deadline) else { return nil }
                 guard self.restrictions.read() == .active else { return nil }
                 let rule = try self.policy.current(deadline: deadline)
-                guard request.isCurrent(), try self.restrictions.matches(request.revision, deadline: deadline),
+                guard request.isCurrent(deadline), try self.restrictions.matches(request.revision, deadline: deadline),
                       self.restrictions.read() == .active else { return nil }
                 let ordinary = try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline)
                 let color = TerminalRenderer.focusBackground(ordinary: ordinary, colors: request.colors)
@@ -245,7 +245,7 @@ final class VisualRecovery {
                 let effect = TerminalEffectRecord(target: target, controller: controller,
                     effectID: request.effectID, kind: .focus, background: color ?? "reset",
                     heartbeatAt: request.heartbeatAt, focusColors: request.colors, revision: request.revision.identity)
-                guard self.state.isSelectiveLeaseActive(effect), request.isCurrent() else { return nil }
+                guard self.state.isSelectiveLeaseActive(effect), request.isCurrent(deadline) else { return nil }
                 try self.cancelEffects(effects.filter { $0.kind == .focus
                     && ($0.effectID != effect.effectID || $0.controller != effect.controller) }, deadline: deadline)
                 try self.state.saveEffectUnlocked(effect, deadline: deadline)

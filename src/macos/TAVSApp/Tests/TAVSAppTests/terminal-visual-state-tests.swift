@@ -127,6 +127,24 @@ final class TerminalVisualStateTests: XCTestCase {
         }
     }
 
+    func testAttentionSourceRevalidatesProducerSeparatelyFromItsNativeOwner() throws {
+        records[43] = identity(43)
+        let store = makeStore(), target = try XCTUnwrap(store.captureTarget(for: surface()))
+        let cue = AttentionOccurrence(provider: "claude", producer: generation(11), tty: tty,
+            device: 123, key: "delivery:cue")
+        XCTAssertTrue(try store.isCurrentAttentionSource(cue, target: target, deadline: deadline()))
+        records[11] = identity(11, group: 20, foreground: 20)
+        XCTAssertTrue(try store.isCurrentAttentionSource(cue, target: target, deadline: deadline()))
+        records[11] = identity(11, startMicroseconds: 2)
+        XCTAssertFalse(try store.isCurrentAttentionSource(cue, target: target, deadline: deadline()))
+        records[11] = identity(11, device: 124)
+        XCTAssertFalse(try store.isCurrentAttentionSource(cue, target: target, deadline: deadline()))
+        records.removeValue(forKey: 11)
+        XCTAssertEqual(store.validateTarget(target), .valid)
+        XCTAssertFalse(try store.isCurrentAttentionSource(cue, target: target, deadline: deadline()))
+        XCTAssertThrowsError(try store.isCurrentAttentionSource(cue, target: target, deadline: 0))
+    }
+
     func testRetainedDeliverySurvivesBackgroundingButNewDeliveryNeedsCurrentCorrelation() throws {
         let store = makeStore()
         try store.publishObservation(observation())
