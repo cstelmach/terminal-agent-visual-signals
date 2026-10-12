@@ -33,6 +33,9 @@ struct SessionsView: View {
             Text(model.visualRestrictionsStatus.message).font(.callout)
                 .foregroundColor(model.visualRestrictionsStatus.disablesRestrictions ? .primary : .secondary)
             HStack {
+                Button("Focus Selected") { model.focusSelected() }.disabled(!model.canFocusSelected)
+                Button("Focus Off") { model.focusOff() }
+                    .disabled(model.focusMode == .off && model.focusCleanupError == nil)
                 Button("Restore Visibility") { model.restoreVisibility() }
                 if model.visualRestrictionsStatus.disablesRestrictions {
                     Button("Re-enable Visual Restrictions") { model.restoreVisibility(resume: true) }
@@ -42,6 +45,8 @@ struct SessionsView: View {
             .disabled(model.recovering)
             if let status = model.recoveryStatus { Text(status).font(.callout) }
             Text(model.previewStatus).font(.caption).foregroundColor(.secondary)
+            Text(model.focusStatus).font(.caption).foregroundColor(.secondary)
+            if let error = model.focusCleanupError { Text(error).font(.callout).foregroundColor(.red) }
             if let error = model.previewCleanupError { Text(error).font(.callout).foregroundColor(.red) }
             if let error = model.priorityStorageError { Text(error).foregroundColor(.red) }
             Table(model.rows, selection: $model.selection) {
@@ -50,10 +55,11 @@ struct SessionsView: View {
                         Text(row.title ?? "Title unavailable").lineLimit(1)
                         Text(row.tty ?? row.id.terminalID).font(.system(.caption, design: .monospaced))
                         if row.mappingIssue != nil { Text("Mapping unavailable").font(.caption) }
+                        if model.isInWorkingSet(row.id) { Text("Working set").font(.caption).foregroundColor(.secondary) }
                         if row.tabSelected == false { Text("Hidden tab").font(.caption).foregroundColor(.secondary) }
                     }
                     .help("Window \(row.windowID), tab \(row.tabID), terminal \(row.id.terminalID)")
-                    .accessibilityLabel("\(row.title ?? "Terminal"), \(row.tty ?? row.id.terminalID)")
+                    .accessibilityLabel("\(row.title ?? "Terminal"), \(row.tty ?? row.id.terminalID)\(model.isInWorkingSet(row.id) ? ", working set" : "")")
                 }
                 .width(min: 220, ideal: 280)
                 TableColumn("Directory") { row in
@@ -105,7 +111,7 @@ struct SessionsView: View {
             HStack {
                 Text("\(model.selection.count) selected")
                 Spacer()
-                Text("Focus: Off")
+                Text(model.focusMode == .manual ? "Focus: Manual" : "Focus: Off")
                 if let date = model.refreshedAt { Text("Catalogue refreshed \(date, style: .relative) ago") }
             }
             .font(.caption).foregroundColor(.secondary)

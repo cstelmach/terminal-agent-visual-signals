@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -35,12 +35,23 @@ four dedicated tests are retired; scheduler suspension tests and independent rec
 Physical Ghostty acceptance is still blocked. Fixture checks do not establish real terminal
 highlighting or navigation, and no production deployment has occurred.
 
-## Later phases
+## Phase 8 source verified; native acceptance pending
 
 Phase 8 now has a tested transform and dynamic writer for current/reset intent, visible neutral
 changes and configured-text contrast bounds. Separate focus records survive pause/preview;
 ordinary writes do not renew ownership, and old recovery revisions cannot rearm a lease.
-Preview pins remain retained through pending cleanup. Captured working sets, mode polling and
-manual controls remain pending. The future controller must keep the same pin lifetime and
-handle expiry with a new paint ID. Automatic focus follows manual integration and acceptance.
+Captured native IDs now stay independent of browsing and priority edits. New surfaces remain
+outside the set; confirmed last-member closure ends Manual. One Sessions refresh timer remains
+active while the window is open or Manual is active. Missing coverage invalidates queued updates
+without dropping logical membership; no verified working binding means no outside paint.
+Manual runs retain revision pins through cleanup and replace expired IDs, including after an
+unmapped target returns. Focus Off clears only manual styling; recovery and restart leave Off.
+Sessions/menu controls and working-set labels are connected. The private fixture verified
+captured membership while browsing, but current Computer Use attachment attempts time out.
+Physical dimming/readability, recovery controls in Manual and window close/reopen acceptance
+remain unverified. The installed app has not been changed.
+
+## Later phases
+
+Automatic focus follows this manual source checkpoint, with native acceptance still required.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.

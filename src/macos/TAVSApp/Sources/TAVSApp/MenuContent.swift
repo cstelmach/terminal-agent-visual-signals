@@ -10,6 +10,11 @@ struct MenuContent: View {
                 .font(.headline)
             Divider()
             OpenSessionsButton()
+            Text(sessions.focusStatus).font(.caption)
+            Button("Focus Selected") { sessions.focusSelected() }.disabled(!sessions.canFocusSelected)
+            Button("Focus Off") { sessions.focusOff() }
+                .disabled(sessions.focusMode == .off && sessions.focusCleanupError == nil)
+            if let error = sessions.focusCleanupError { Text(error).font(.caption) }
             Text(scheduler.statusText)
                 .foregroundColor(.secondary)
             Divider()
