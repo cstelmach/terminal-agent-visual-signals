@@ -2,10 +2,10 @@
 type: spec
 spec-id: tavs-priority-discovery_2026-10-04
 title: "TAVS: Ghostty organizer and reversible focus"
-status: draft
-phase:
+status: in-progress
+phase: 1
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-12
 author: Codex
 ---
 

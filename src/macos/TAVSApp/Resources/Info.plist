@@ -26,5 +26,7 @@
 	<true/>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>TAVS reads Ghostty terminal surfaces and navigates to a terminal only when you choose Go To.</string>
 </dict>
 </plist>

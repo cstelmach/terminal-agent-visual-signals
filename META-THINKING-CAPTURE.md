@@ -27,9 +27,9 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
-| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05 |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-05 |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08 |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12 |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -513,6 +513,80 @@ not private reasoning or native session bodies.
 | Request sign-off | Concrete full-goal strategy | Operator approval; no timeout inference |
 | Save | GOAL.md and progress/capture | Approved artifact; activation remains separate |
 | Verify and commit | Exact document scope | Product source and phase states preserved |
+
+## 2026-10-12 · model-unverified · tavs-native-catalogue-phase-one
+
+meta:
+  model: gpt-6 family self-report; exact executor variant unavailable [R]
+  model_source: API environment self-report; no native transcript extraction
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible work and tool reports [R]
+  reviewer: Codex CLI configured gpt-5.6-sol/high; server version unattested
+
+**Framing [R].** A native goal continuation activated the previously saved nine-phase
+objective. Orientation found Phase 1 first and all later phases Not Started. The caller kept
+the full objective active while implementing the bounded native-catalogue foundation. Root
+hard-lock state was excluded, SPEC changes were tracking-only, and GUI/live native acceptance
+remained the next phase. P9 recurred through this state ownership check. Existing files were
+backed up before edits; an owned scratch build held tests and complete failure traces.
+
+**Strategy [R].** The baseline established 203 passing Swift tests. New tests then failed on
+missing implementations before process, request and catalogue code was added. Existing
+ProcessRunner/mocks and Foundation/Darwin/ScriptingBridge were reused, with no new dependency
+or generic adapter layer. A focused explorer checked public SDK process fields, nullable
+AppKit behavior and generated Ghostty selectors. Kernel PID/start seconds/microseconds became
+the identity key; titles/directories remained metadata. Native requests run off the main thread
+through a serial queue with one coalesced refresh, taking IDs as JSON data.
+
+**Decision points [R].** Bundle-addressed requests could retarget a restarted application.
+Public PID-bound ScriptingBridge and exact objectWithID lookup supplied a smaller verified
+alternative to guessed JXA numeric constructors or handwritten AppleEvent dispatch. The
+adapter checks TTY uniqueness and existing focus before navigation, then confirms focus and
+generation. Process eligibility uses current controlling device and foreground group, rather
+than ancestry alone. The new subprocess path drains both pipes and bounds collected stdout;
+the older 100 ms device-write code stays identical. P7 recurred through local capability probes.
+
+**Failure arc F1 [R], test API inference.** The first green build rejected throwing functions
+where asynchronous completion callbacks were nonthrowing. The correction asserted Result
+cases directly in callbacks, preserving failure assertions instead of weakening the test.
+Subsequent full runs passed. The original missing-symbol red trace and this compile trace
+remain separate evidence, not a claim of runtime behavior.
+
+**Failure arc F2 [R], native nullable representation.** The independent canonical Codex pass
+completed with CONCERN 7/10, identifying adapter permission/null-proxy coverage and a vanished
+target classified as generic failure. Source and SBElementArray documentation confirmed both.
+New regressions reproduced two failed null assertions with zero focus calls. A Foundation-only
+JXA probe found real Objective-C nil truthy with isNil() true, so the proposed bare null check
+was insufficient. A small helper handles JavaScript null and ObjC nil, normalizes absent values
+and returns targetUnavailable before access. P8 recurred through verification before adoption.
+
+**Verification [O/R].** Final full Swift tests passed 224/224, including 21 new tests, with
+release build, plist lint and compile-only native-script checks passing. Owned process tests
+covered dual-pipe saturation, failure, timeout, reaping and bounded output. Fixtures covered
+duplicate names, hierarchy movement, reuse, ambiguity, off-main coalescing and confirmed focus.
+The original device writer was compared byte-for-byte with its backup. No Ghostty AppleEvent,
+personal terminal paint, install, shell suite, settings change or agent interruption occurred.
+Actual Automation, native bridge/Space behavior and visible UI remain unverified Phase 2 work.
+
+**Limits and economy [R].** The research/design discussion and review wait made this slice
+slow; the useful results are the implemented primitives and reproducible tests, not the amount
+of process text. No second full review or metadata-only ceremony commit was added. The actual
+feature commit is reported in the checkpoint and resolvable from ordinary Git history; an
+artifact cannot embed its own eventual commit hash. The full goal is not marked complete.
+P7/P9 now reach three occurrences across research/planning/execution, but their rules already
+live in the existing workflows. Prefer reusing those instructions over another overlapping
+skill. Exact executor attribution is unknown, so Model Profiles gain no variant-specific claim.
+
+| Move [R] | Object | Observable result |
+|---|---|---|
+| Orient and back up | Current state and eight planned paths | Phase 1 selected; private scratch roots |
+| Baseline/red | Existing suite and new contracts | 203 passing; new APIs absent |
+| Probe and implement | SDK/native metadata and existing runner | PID/ID binding, bounded serial requests |
+| Review and falsify | Real independent CLI and public headers | Two confirmed findings, two red assertions |
+| Correct and verify | Nil handling and scoped suites | 224 passing; release/script/plist checks |
+| Record and commit | Source/tests and phase state | Phase 1 complete; eight remain |
 
 ## Stubs
 

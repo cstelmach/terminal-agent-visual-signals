@@ -4,10 +4,85 @@ import Darwin
 protocol ProcessRunner: AnyObject {
     @discardableResult
     func run(executableURL: URL, arguments: [String]) throws -> Data
+    func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval) throws -> Data
     func writeToDevice(path: String, data: Data) throws
 }
 
 final class SystemProcessRunner: ProcessRunner {
+    func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval = 2) throws -> Data {
+        guard timeout.isFinite, timeout > 0 else { throw ProcessRunnerError.invalidTimeout }
+        let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(timeout, 2) * 1_000_000_000)
+        let process = Process()
+        process.executableURL = executableURL
+        process.arguments = arguments
+        let pipes = [Pipe(), Pipe()]
+        process.standardOutput = pipes[0]
+        process.standardError = pipes[1]
+        var launched = false
+        defer {
+            if launched {
+                if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+                process.waitUntilExit()
+            }
+            for pipe in pipes {
+                try? pipe.fileHandleForReading.close()
+                try? pipe.fileHandleForWriting.close()
+            }
+        }
+        try process.run()
+        launched = true
+        var descriptors = pipes.map { pollfd(fd: $0.fileHandleForReading.fileDescriptor, events: Int16(POLLIN), revents: 0) }
+        for descriptor in descriptors {
+            let flags = fcntl(descriptor.fd, F_GETFL)
+            guard flags >= 0, fcntl(descriptor.fd, F_SETFL, flags | O_NONBLOCK) == 0 else {
+                throw ProcessRunnerError.processIOFailed(errno)
+            }
+        }
+        var output = Data()
+        while process.isRunning || descriptors.contains(where: { $0.fd >= 0 }) {
+            let now = DispatchTime.now().uptimeNanoseconds
+            guard now < deadline else { throw ProcessRunnerError.processTimedOut }
+            let remaining = Int32(min(20, (deadline - now + 999_999) / 1_000_000))
+            let ready = poll(&descriptors, nfds_t(descriptors.count), remaining)
+            if ready < 0 {
+                if errno == EINTR { continue }
+                throw ProcessRunnerError.processIOFailed(errno)
+            }
+            for index in descriptors.indices where descriptors[index].fd >= 0 && descriptors[index].revents != 0 {
+                try drainProcessPipe(&descriptors[index], output: &output,
+                                     collectingOutput: index == 0, deadline: deadline)
+            }
+        }
+        guard process.terminationStatus == 0 else {
+            throw ProcessRunnerError.processExited(process.terminationStatus)
+        }
+        return output
+    }
+
+    private func drainProcessPipe(_ descriptor: inout pollfd, output: inout Data,
+                                  collectingOutput: Bool, deadline: UInt64) throws {
+        var buffer = [UInt8](repeating: 0, count: 8192)
+        while true {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                throw ProcessRunnerError.processTimedOut
+            }
+            let count = read(descriptor.fd, &buffer, buffer.count)
+            if count == 0 { descriptor.fd = -1; return }
+            if count < 0 {
+                if errno == EINTR { continue }
+                if errno == EAGAIN { return }
+                throw ProcessRunnerError.processIOFailed(errno)
+            }
+            if collectingOutput {
+                // shortcut: stdout is capped at 1 MiB, raise only for a measured larger catalogue.
+                guard output.count + count <= 1_048_576 else {
+                    throw ProcessRunnerError.processOutputTooLarge
+                }
+                output.append(contentsOf: buffer.prefix(count))
+            }
+        }
+    }
+
     @discardableResult
     func run(executableURL: URL, arguments: [String]) throws -> Data {
         let process = Process()
@@ -115,6 +190,11 @@ private final class DeviceWriteCompletion {
 }
 
 enum ProcessRunnerError: Error {
+    case invalidTimeout
+    case processTimedOut
+    case processExited(Int32)
+    case processIOFailed(Int32)
+    case processOutputTooLarge
     case deviceNotWritable(String)
     case deviceIOFailed(String, Int32)
     case deviceWriteTimedOut(String)
