@@ -39,6 +39,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 enum TAVSAppMain {
     static func main() {
+        if ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"]
+            .contains(where: { ProcessInfo.processInfo.environment[$0] != nil }) {
+            do {
+                _ = try IsolatedSessionsLaunch.environment()
+                IsolatedSessionsApp.main()
+            } catch {
+                fputs("Invalid isolated Sessions launch.\n", stderr)
+                exit(1)
+            }
+            return
+        }
         let args = CommandLine.arguments
         if args.count >= 3, args[1] == "--validate-config" {
             let path = args[2]
@@ -96,6 +107,8 @@ enum TAVSAppMain {
 struct TAVSApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var scheduler = Scheduler.createDefault()
+    @StateObject private var sessions = SessionsModel(prioritiesURL:
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/surface-priorities.json"))
 
     var body: some Scene {
         MenuBarExtra("TAVS", systemImage: scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
@@ -104,6 +117,85 @@ struct TAVSApp: App {
         Settings {
             PreferencesView(scheduler: scheduler)
         }
+        Window("Sessions", id: "sessions") {
+            SessionsView(model: sessions)
+        }
+        .defaultSize(width: 1100, height: 500)
+    }
+}
+
+struct IsolatedSessionsLaunch {
+    let root: URL
+    let fixture: URL?
+    let allowed: Set<GhosttySurfaceID>?
+
+    static func environment(_ values: [String: String] = ProcessInfo.processInfo.environment) throws -> Self {
+        guard let path = values["TAVS_SESSIONS_TEST_ROOT"], path.hasPrefix("/") else {
+            throw CocoaError(.fileReadInvalidFileName)
+        }
+        let root = URL(fileURLWithPath: path).resolvingSymlinksInPath()
+        let temporary = FileManager.default.temporaryDirectory.resolvingSymlinksInPath().path + "/"
+        let systemTemporary = URL(fileURLWithPath: "/tmp").resolvingSymlinksInPath().path + "/"
+        guard root.path.hasPrefix(temporary) || root.path.hasPrefix(systemTemporary) else {
+            throw CocoaError(.fileReadInvalidFileName)
+        }
+        if let file = values["TAVS_SESSIONS_TEST_FIXTURE"] {
+            let url = URL(fileURLWithPath: file).resolvingSymlinksInPath()
+            guard url.path.hasPrefix(root.path + "/"), FileManager.default.isReadableFile(atPath: url.path) else {
+                throw CocoaError(.fileReadInvalidFileName)
+            }
+            return Self(root: root, fixture: url, allowed: nil)
+        }
+        guard let json = values["TAVS_SESSIONS_TEST_TARGETS"],
+              let ids = try? JSONDecoder().decode([GhosttySurfaceID].self, from: Data(json.utf8)),
+              !ids.isEmpty else { throw CocoaError(.fileReadCorruptFile) }
+        return Self(root: root, fixture: nil, allowed: Set(ids))
+    }
+
+    func model() -> SessionsModel {
+        let url = root.appendingPathComponent("surface-priorities.json")
+        if let fixture = fixture {
+            return SessionsModel(prioritiesURL: url, refresh: { done in
+                done(Result {
+                    let data = try Data(contentsOf: fixture)
+                    let instance = try JSONDecoder().decode(FixtureInstance.self, from: data).application
+                    return try GhosttyCatalog.decode(data, application: instance)
+                })
+            }, navigate: { _, done in done(.success(())) })
+        }
+        return SessionsModel(prioritiesURL: url, catalog: GhosttyCatalog(allowedSurfaces: allowed))
+    }
+
+    private struct FixtureInstance: Decodable { let application: ProcessGeneration }
+}
+
+private final class IsolatedSessionsDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) { NSApp.setActivationPolicy(.accessory) }
+}
+
+private struct IsolatedSessionsApp: App {
+    @NSApplicationDelegateAdaptor(IsolatedSessionsDelegate.self) var delegate
+    @StateObject private var sessions: SessionsModel
+    private let modeLabel: String
+
+    init() {
+        let launch = try! IsolatedSessionsLaunch.environment()
+        _sessions = StateObject(wrappedValue: launch.model())
+        modeLabel = launch.fixture == nil ? "Dedicated native catalogue" : "Fixture catalogue; Go To is simulated"
+    }
+
+    var body: some Scene {
+        MenuBarExtra("TAVS Sessions Test", systemImage: "list.bullet.rectangle") {
+            OpenSessionsButton()
+            Button("Quit Sessions Test") { NSApplication.shared.terminate(nil) }
+        }
+        Window("TAVS Sessions Test", id: "sessions") {
+            VStack(alignment: .leading) {
+                Text(modeLabel).font(.caption).padding(.horizontal)
+                SessionsView(model: sessions)
+            }
+        }
+        .defaultSize(width: 1100, height: 500)
     }
 }
 

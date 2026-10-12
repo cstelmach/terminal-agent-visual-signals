@@ -28,7 +28,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12 |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices) |
 | P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
@@ -587,6 +587,85 @@ skill. Exact executor attribution is unknown, so Model Profiles gain no variant-
 | Review and falsify | Real independent CLI and public headers | Two confirmed findings, two red assertions |
 | Correct and verify | Nil handling and scoped suites | 224 passing; release/script/plist checks |
 | Record and commit | Source/tests and phase state | Phase 1 complete; eight remain |
+
+## 2026-10-12 · model-unverified · tavs-sessions-priority-checkpoint
+
+meta:
+  model: GPT-6 family self-report; exact served variant unobserved
+  model_source: self-reported, reconstructed [R]
+  interface: codex-desktop
+  thinking: user requested ultrathink; runtime setting unverified
+  session: 01a10879
+  trace: observed actions in this conversation; no external action-trace extraction
+  reviewers: Codex CLI configured gpt-5.6-sol/high; served model unobserved
+
+**Framing [O].** The active goal requested all nine implementation slices, with one phase per
+iteration and dedicated live acceptance. Phase 1 was committed at 338c1c2. This slice implemented
+Sessions and surface priorities while keeping the phase incomplete until its required visible
+and native checks pass. The source checkpoint is useful work, but it is not evidence that
+navigation reaches an actual pane or that a retained SwiftUI window stops its refresh timer.
+
+**Strategy [O/R].** Existing native identities, timers, runner and test doubles were reused.
+The model and view were kept separate, with a native Table and Codable priority storage. [R]
+The chosen separation limits UI responsibilities without adding an adapter framework. A
+read-only explorer examined startup isolation while implementation stayed with the parent.
+The independent reviewer received the changed source/tests and no explorer report, preserving
+an independent first assessment. Its findings were then checked against source by both agents.
+
+**Action trace [O]**
+
+| # | Move | Object | Evidence |
+|---|------|--------|----------|
+| 1 | Orient and back up | SPEC/PLAN/PROGRESS/GOAL, 338c1c2 | Owned scratch and clean baseline |
+| 2 | Test first | Sessions model | Missing implementation produced the red run |
+| 3 | Implement | Model, Table, menu and scene | No preview or focus painting |
+| 4 | Isolate | Separate test App branch and exact scope | Production scheduler never constructed |
+| 5 | Verify | Swift tests/build and invalid launches | 236/236, release pass, two exit-1 checks |
+| 6 | Computer Use | Ghostty, then the separate fixture app | Safety denial, then locked Mac |
+| 7 | Independent review | Canonical Codex CLI | Successful run; original CONCERN 7/10 |
+| 8 | Adjudicate | Empty catalogue finding | Upstream disabled-scripting source falsified closure |
+| 9 | Checkpoint | Progress and capture | Live acceptance remains explicitly blocked |
+
+**Decision points [O].** First, the test app uses a separate App construction path. Merely
+injecting a private registry would still construct the scheduler, discover personal TTYs and
+register the staged bundle at login. Second, the native test catalogue receives exact surface
+IDs rather than a title or TTY-only filter. Third, a fixture banner states that Go To is
+simulated. Fourth, empty native rows are treated as unavailable rather than confirmed closure,
+because disabled scripting can return that shape without a request error.
+
+**Failure arc F1 [O], environment restriction.** Ghostty Computer Use was denied for safety.
+The reaction was to stop native GUI actions and continue source/tests plus a separate fixture
+app. Selecting that app then failed because the Mac was locked. The operator was asked to
+unlock. No alternate screen, AppleScript UI route or renamed Ghostty app was used. The residue
+is a blocked acceptance checklist, not a success inferred from byte writes or fake navigation.
+
+**Failure arc F2 [O/R], output budgeting.** One batch of large document reads exceeded the
+aggregate tool output limit even though individual commands were capped. The next reads used
+smaller targeted chunks. [R] The general correction is to budget the aggregate result, not
+just each subprocess. An overbroad capture-header read also crossed into a historical entry;
+that entry was not used, and subsequent capture reads used heading boundaries.
+
+**Review arc [O].** The original finding assumed that successful empty rows mean all targets
+closed. A model reproduction established retention, but could not establish native closure.
+Fresh official Ghostty source showed the disabled-scripting empty-collection path; the reviewer
+independently fetched the same source and dismissed the inference. The original score remains
+recorded. No revised provider approval or installed-build equivalence is claimed.
+
+**Verification and confidence [O/R].** Twelve new tests and the full 236-test suite passed;
+release, compile-only script, bundle validation and fail-closed launches passed. GUI resize,
+multiselection, actual close lifecycle, TCC, native navigation and Spaces remain unverified.
+P8 recurred; no new workflow is proposed because source verification is already instructed.
+Tool results and edits are observations; causal strategy explanations and model identity are
+reconstructions. The whole master goal remains incomplete.
+
+**Continuation [O], 10:19.** After the operator unlocked the Mac, the staged app timed out and exited 1.
+  A Foundation-only probe showed `/tmp` remained `/tmp`, contradicting the root guard's
+  `/private/tmp` assumption. A regression reproduced Cocoa error 258; comparing resolved
+  temporary roots fixed it. The test's directory-URL slash assertion was corrected to compare
+  paths; the full suite passed 237/237. The corrected fixture process stays running, but
+  Computer Use cannot select its menu-only UI. Asked the operator to open its Sessions window.
+
+---
 
 ## Stubs
 

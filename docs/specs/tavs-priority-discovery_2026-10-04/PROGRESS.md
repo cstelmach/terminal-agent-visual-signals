@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 09:09 CEST
-**Version:** 1.3
+**Last Updated:** 2026-10-12 10:19 CEST
+**Version:** 1.5
 
 ## Session Metadata
 
@@ -22,8 +22,8 @@
 
 | Phase | Status | Started | Completed | Commit | Tests | Duration | Notes |
 |---|---|---|---|---|---|---|---|
-| 1: Native catalogue and exact navigation | DONE | 2026-10-12 07:59 | 2026-10-12 09:09 | Phase 1 feature commit | 224/224 | 70 min | SPEC 1a foundation |
-| 2: Sessions window and retained priorities | Not Started | | | | | | SPEC 1a |
+| 1: Native catalogue and exact navigation | DONE | 2026-10-12 07:59 | 2026-10-12 09:09 | 338c1c2 | 224/224 | 70 min | SPEC 1a foundation |
+| 2: Sessions window and retained priorities | Blocked | 2026-10-12 09:25 | | Checkpoint by title below | 237/237 | | Source verified; live acceptance pending |
 | 3: Isolate shell and hook tests | Not Started | | | | | | Before shell suites |
 | 4: Observations and ordinary background intent | Not Started | | | | | | Record-only |
 | 5: Persistent suspension and policy readers | Not Started | | | | | | SPEC 1b |
@@ -33,11 +33,91 @@
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 1. Eight implementation phases remain incomplete.
-Resolve the Phase 1 commit from `git log --grep='feat(phase-1): Add exact Ghostty catalogue'`;
-the checkpoint reports its actual hash without a separate self-referencing state commit.
+SPEC tracking is `in-progress`, phase 2. Eight implementation phases remain incomplete.
+Phase 2 has tested source but cannot be marked DONE before required live acceptance.
+Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
+The checkpoint reports its hash without a separate self-referencing state commit.
 
 ## Log
+
+### Phase 2 launch recovery: 2026-10-12 10:19 CEST
+
+The operator reported the Mac unlocked. Computer Use could not bind the fixture app. Process
+metadata and logs distinguished early app exit from a blocked UI: launchd reported exit 1.
+A Foundation-only probe reproduced root `/tmp/...` rather than `/private/tmp/...`, making the
+literal test-root guard reject our valid isolated directory. The new regression failed with
+Cocoa error 258 before correction. The guard now compares the resolved system temporary root
+instead of assuming its spelling. This preserves personal-root and escaping-fixture rejection.
+Prevention: `testIsolatedLaunchAcceptsTheSystemTemporaryAlias` covers the `/tmp` path used by
+the staged bundle. No production schedule, registry or preferences are involved in this fix.
+
+The first corrected run failed only on the new test's URL trailing-slash equality. It now
+compares resolved paths; final full Swift suite passed 237/237 in 2.192 seconds. Release rebuild
+passed in 5.64 seconds. Prior failure logs/binary were retained and the owned test bundle was
+updated and re-signed. Logs: `red-tmp-alias.log`, `green-tmp-alias.log`, `final-tmp-alias.log`,
+`release-tmp-alias.log`, `test-root-diagnostic.log`, and `staged-launch.log` in Phase 2 scratch.
+
+The corrected isolated process stays running; installed TAVS PID 8198 was not changed. CUA
+still timed out selecting the app without a window. Its bundle-ID and SystemUIServer attempts
+also timed out. Finder actions used only the owned test directory and app; a new Finder tab
+preserved prior tabs. Asked the operator to open the test menu's Sessions window so CUA can
+bind it. No alternative UI automation was used. GUI/native acceptance remains pending.
+
+The independent review predates this two-line temporary-root fix and its regression. The saved
+report is historical source review, not a new approval of the revised target. Bug description,
+cause, fix and prevention are recorded here; `docs/BUG_REFERENCE.md` does not yet exist.
+
+### Phase 2 source checkpoint: 2026-10-12 10:02 CEST, live acceptance BLOCKED
+
+Implemented the resizable Sessions scene and menu action, multiselection, explicit per-row Go To,
+High/Normal/Low priorities and stable native-order sorting. Rows show title, exact TTY/native ID,
+directory and explicit missing observations. Focus is Off; selection has no navigation or paint.
+Priorities are atomically saved under the supplied URL and retained through TAVS restart for
+valid native keys. Failed/ambiguously empty refreshes retain last-known data and disable actions.
+Trusted nonempty catalogues reconcile missing bindings. The model owns its two-second timer.
+
+Added an isolated Sessions-only app branch with explicit private storage and exact target scope.
+It constructs no production scheduler, preference view, login-registration delegate or discovery.
+Incomplete test environment rejects before UI startup. Fixture mode labels navigation as simulated;
+native test mode filters metadata and rejects out-of-scope navigation. The production catalogue
+remains unrestricted. No real app installation, personal settings change or session shutdown occurred.
+
+Verification: 12 new tests, including store restart, generation changes, moves, selection/navigation,
+failure retention, malformed/write-failed storage, timer ownership and isolated launch/target scope.
+The initial red run failed on missing SessionsModel. Final full Swift run passed 236/236 in
+2.283 seconds; release build passed in 7.69 seconds. Compile-only native script, staged plist and
+code-sign validation passed. Two invalid-environment binary launches exited 1 before UI startup.
+Logs, build and the fixture test bundle are in `/tmp/tavs-phase2-20261012T092559/`.
+
+Independent Codex review completed successfully with the configured Sol/high route. Its original
+CONCERN 7/10 finding assumed successful empty rows confirmed closure. Source verification falsified
+that assumption: upstream Ghostty returns empty collections when scripting is disabled. The model
+already reports unavailable coverage and disables navigation/edits. Finding dismissed, original
+score retained. The wrapper's source evaluation is 8/10, Low risk, with no confirmed defects;
+no revised provider approval is claimed. Installed-build equivalence is unproven.
+Full outcome/disposition: [Phase 2 review](reviews/PHASE2-CODEX-REVIEW.md).
+
+Live checks are unverified. `cua.getApp("Ghostty")` was denied for safety. Selecting the separate
+fixture bundle then failed because the Mac is locked and automatic unlock could not complete.
+The operator was asked to unlock; no response or alternative screen/control route was used.
+The test bundle has fake rows and simulated navigation, so it cannot prove native pane/Space focus.
+Window resizing, GUI multiselection, window-close timer lifecycle, Automation permission, exact
+native pane navigation, hidden/minimized windows and other Spaces still require acceptance.
+
+Next input: manually unlock the Mac for fixture UI checks, then obtain supported Ghostty tool access
+or direct operator observations on dedicated native targets. Do not retry unchanged access failures,
+paint working terminals or substitute title matching. Phase 2 stays Blocked; the master goal is
+incomplete. The sequential plan's dependent phases have not started. Preserve this tested source
+checkpoint and resume acceptance from here rather than rebuilding the feature.
+
+### Phase 2 started: 2026-10-12 09:25 CEST
+
+Re-read current state at clean 338c1c2 and selected Sessions/priorities. Backups and scratch
+work live in `/tmp/tavs-phase2-20261012T092559/`. Tests will precede model/UI implementation.
+Computer Use `cua.getApp("Ghostty")` was denied for safety by the tool. No workaround will be
+used; actual native pane/Spaces acceptance is unverified. Independent model/unit and a staged
+Sessions-only fixture app remain useful work. The isolated app must omit production scheduler,
+discovery, settings and login registration, not merely substitute a temporary registry.
 
 ### Phase 1: Native catalogue and exact navigation COMPLETE, 2026-10-12 09:09 CEST
 
@@ -136,6 +216,15 @@ Do not run shell regression suites before the isolation phase. If interrupted, r
 and PLAN.md, then select the next incomplete phase through execute-spec.
 
 ## Divergence Checks
+
+### Phase 2
+
+- Seven planned source/test paths changed. The additional report is ordinary review documentation.
+- The isolated launch branch is required by PLAN step 5; changing only HOME/registry would still
+  construct the scheduler and register a temporary app at login. No adapter framework was added.
+- SPEC changes are tracking frontmatter only; PLAN and the root hard-lock state remain untouched.
+- Unit/build verification permits a source checkpoint, not a DONE phase or live acceptance claim.
+  Recovery and previews remain future work; no OSC is added in this slice.
 
 ### Phase 1
 

@@ -28,15 +28,18 @@ enum GhosttyCatalogError: Error, Equatable {
 final class GhosttyCatalog {
     private let processRunner: ProcessRunner
     private let application: () throws -> ProcessGeneration
+    private let allowedSurfaces: Set<GhosttySurfaceID>?
     private let queue = DispatchQueue(label: "tavs.ghostty-native")
     private let lock = NSLock()
     private var refreshing = false
     private var pending: [(Result<[GhosttySurface], Error>) -> Void] = []
 
     init(processRunner: ProcessRunner = SystemProcessRunner(),
-         application: @escaping () throws -> ProcessGeneration = currentApplication) {
+         application: @escaping () throws -> ProcessGeneration = currentApplication,
+         allowedSurfaces: Set<GhosttySurfaceID>? = nil) {
         self.processRunner = processRunner
         self.application = application
+        self.allowedSurfaces = allowedSurfaces
     }
 
     static func currentApplication() throws -> ProcessGeneration {
@@ -78,6 +81,9 @@ final class GhosttyCatalog {
                 guard target.mappingIssue == nil, let tty = target.tty else {
                     throw GhosttyCatalogError.targetUnavailable
                 }
+                guard self.allowedSurfaces?.contains(target.id) != false else {
+                    throw GhosttyCatalogError.targetUnavailable
+                }
                 guard try self.application() == target.id.application else {
                     throw GhosttyCatalogError.staleApplication
                 }
@@ -95,13 +101,17 @@ final class GhosttyCatalog {
     }
 
     private func request(_ values: [String: Any], instance: ProcessGeneration) throws -> Reply {
+        var values = values
+        if let allowed = allowedSurfaces {
+            values["allowedIDs"] = allowed.filter { $0.application == instance }.map(\.terminalID)
+        }
         let json = try JSONSerialization.data(withJSONObject: values)
         let data = try processRunner.runBounded(
             executableURL: URL(fileURLWithPath: "/usr/bin/osascript"),
             arguments: ["-l", "JavaScript", "-e", Self.script, String(decoding: json, as: UTF8.self)], timeout: 2
         )
         guard try application() == instance else { throw GhosttyCatalogError.staleApplication }
-        let surfaces = try Self.decode(data, application: instance)
+        let surfaces = try Self.decode(data, application: instance).filter { allowedSurfaces?.contains($0.id) != false }
         let focused = try JSONDecoder().decode(Payload.self, from: data).focused
         return Reply(surfaces: surfaces, focused: focused)
     }
@@ -177,7 +187,7 @@ final class GhosttyCatalog {
                 return null;
             }
         }
-        function snapshot(app) {
+        function snapshot(app, allowedIDs) {
             var result = [], windows = read(app, 'windows');
             if (!windows || !isFinite(Number(windows.count))) throw {};
             for (var i = 0; i < Number(windows.count); i++) {
@@ -188,6 +198,7 @@ final class GhosttyCatalog {
                     if (!terminals || !isFinite(Number(terminals.count))) throw {};
                     for (var k = 0; k < Number(terminals.count); k++) {
                         var id = scalar(terminals.objectAtIndex(k), 'id');
+                        if (allowedIDs && allowedIDs.indexOf(id) === -1) continue;
                         var terminal = read(app, 'terminals').objectWithID(id);
                         result.push({terminalID: id, windowID: scalar(window, 'id'), tabID: scalar(tab, 'id'),
                             title: optional(terminal, 'name'), directory: optional(terminal, 'workingDirectory'),
@@ -209,7 +220,7 @@ final class GhosttyCatalog {
             var app = $.SBApplication.applicationWithProcessIdentifier(request.pid);
             if (missing(app) || !app.isRunning) return failure('applicationUnavailable');
             app.timeout = 120;
-            var rows = snapshot(app);
+            var rows = snapshot(app, request.allowedIDs);
             if (request.action === 'focus') {
                 var matches = rows.filter(function(row){return row.tty === request.tty;});
                 if (matches.length !== 1 || matches[0].terminalID !== request.terminalID)

@@ -54,6 +54,28 @@ final class GhosttyCatalogTests: XCTestCase {
         }
     }
 
+    func testDedicatedScopeFiltersRowsAndRejectsOtherNavigationBeforeNativeWork() throws {
+        let runner = MockProcessRunner()
+        let a = try GhosttyCatalog.decode(reply([row("a")]), application: app)[0]
+        let b = try GhosttyCatalog.decode(reply([row("b", tty: "/dev/ttys002")]), application: app)[0]
+        runner.boundedResults = [.success(try reply([row("a"),row("b",tty: "/dev/ttys002")]))]
+        let catalog = GhosttyCatalog(processRunner: runner, application: { self.app }, allowedSurfaces: [a.id])
+        let listed = expectation(description: "only dedicated rows")
+        catalog.refresh { result in
+            if case .success(let rows) = result { XCTAssertEqual(rows.map(\.id), [a.id]) }
+            else { XCTFail("Scoped catalogue failed") }
+            listed.fulfill()
+        }
+        wait(for: [listed], timeout: 2)
+        let blocked = expectation(description: "foreign target")
+        catalog.goTo(b) { result in
+            if case .success = result { XCTFail("Out-of-scope target navigated") }
+            XCTAssertEqual(runner.runCallLog.count, 1)
+            blocked.fulfill()
+        }
+        wait(for: [blocked], timeout: 2)
+    }
+
     func testRefreshCoalescesToOnePendingRequestAndRunsAwayFromMainThread() throws {
         let runner = MockProcessRunner()
         let data = try reply([row("a")])

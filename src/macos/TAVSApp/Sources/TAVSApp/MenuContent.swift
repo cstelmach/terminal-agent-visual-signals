@@ -8,6 +8,7 @@ struct MenuContent: View {
             Text("TAVS — Terminal Agent Visual Signals")
                 .font(.headline)
             Divider()
+            OpenSessionsButton()
             Text(scheduler.statusText)
                 .foregroundColor(.secondary)
             Divider()
