@@ -11,6 +11,7 @@ final class SessionsModel: ObservableObject {
     @Published var selection = Set<GhosttySurfaceID>()
     @Published private(set) var surfaces: [GhosttySurface] = []
     @Published private(set) var priorities: [GhosttySurfaceID: SurfacePriority] = [:]
+    @Published private(set) var visualCoverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]
     @Published private(set) var catalogueAvailable = false
     @Published private(set) var status = "Open Sessions to read the native catalogue."
     @Published private(set) var priorityStorageError: String?
@@ -22,6 +23,8 @@ final class SessionsModel: ObservableObject {
     private let navigate: (GhosttySurface, @escaping (Result<Void, Error>) -> Void) -> Void
     private let timerScheduler: TimerScheduler
     private let clock: Clock
+    private let visualState: TerminalVisualStateStore?
+    private let visualQueue = DispatchQueue(label: "tavs.sessions.visual-state")
     private var isOpen = false
 
     var rows: [GhosttySurface] {
@@ -34,12 +37,14 @@ final class SessionsModel: ObservableObject {
     init(prioritiesURL: URL,
          refresh: @escaping (@escaping (Result<[GhosttySurface], Error>) -> Void) -> Void,
          navigate: @escaping (GhosttySurface, @escaping (Result<Void, Error>) -> Void) -> Void,
-         timerScheduler: TimerScheduler = SystemTimerScheduler(), clock: Clock = SystemClock()) {
+         timerScheduler: TimerScheduler = SystemTimerScheduler(), clock: Clock = SystemClock(),
+         visualState: TerminalVisualStateStore? = nil) {
         self.prioritiesURL = prioritiesURL
         self.readCatalogue = refresh
         self.navigate = navigate
         self.timerScheduler = timerScheduler
         self.clock = clock
+        self.visualState = visualState
         if FileManager.default.fileExists(atPath: prioritiesURL.path) {
             do {
                 let saved = try JSONDecoder().decode(SavedPriorities.self, from: Data(contentsOf: prioritiesURL))
@@ -51,8 +56,10 @@ final class SessionsModel: ObservableObject {
         }
     }
 
-    convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = GhosttyCatalog()) {
-        self.init(prioritiesURL: prioritiesURL, refresh: catalog.refresh, navigate: catalog.goTo)
+    convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = GhosttyCatalog(),
+                     visualState: TerminalVisualStateStore? = nil) {
+        self.init(prioritiesURL: prioritiesURL, refresh: catalog.refresh, navigate: catalog.goTo,
+                  visualState: visualState)
     }
 
     func priority(for id: GhosttySurfaceID) -> SurfacePriority { priorities[id] ?? .normal }
@@ -93,24 +100,46 @@ final class SessionsModel: ObservableObject {
         refreshing = true
         readCatalogue { [weak self] result in
             guard let self = self else { return }
-            self.refreshing = false
             switch result {
             case .success(let rows) where !rows.isEmpty:
-                self.surfaces = rows
-                self.catalogueAvailable = true
-                self.refreshedAt = self.clock.now()
-                self.status = "\(rows.count) native terminal surfaces"
-                let ids = Set(rows.map(\.id))
-                self.selection.formIntersection(ids)
-                if self.priorityStorageError == nil { self.save(self.priorities.filter { ids.contains($0.key) }) }
+                if let visualState = self.visualState {
+                    self.visualQueue.async { [weak self] in
+                        var coverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]
+                        for row in rows { coverage[row.id] = visualState.coverage(for: row) }
+                        let result = coverage
+                        DispatchQueue.main.async { self?.acceptCatalogue(rows, coverage: result) }
+                    }
+                } else { self.acceptCatalogue(rows, coverage: [:]) }
             case .success:
                 self.catalogueAvailable = false
                 self.status = "No surfaces reported. Native access may be unavailable; retained priorities are preserved."
+                self.markCoverageStale()
             case .failure(let error):
                 self.catalogueAvailable = false
                 self.status = "Native catalogue unavailable: \(error). Last-known rows are retained."
+                self.markCoverageStale()
             }
         }
+    }
+
+    private func acceptCatalogue(_ rows: [GhosttySurface], coverage: [GhosttySurfaceID: TerminalVisualCoverage]) {
+        surfaces = rows
+        catalogueAvailable = true
+        refreshedAt = clock.now()
+        status = "\(rows.count) native terminal surfaces"
+        let ids = Set(rows.map(\.id))
+        selection.formIntersection(ids)
+        if priorityStorageError == nil { save(priorities.filter { ids.contains($0.key) }) }
+        visualCoverage = coverage
+        refreshing = false
+    }
+
+    private func markCoverageStale() {
+        visualCoverage = visualCoverage.mapValues {
+            TerminalVisualCoverage(observation: $0.observation, intent: $0.intent, attentionEligible: false,
+                                   status: "Last-known coverage; native catalogue unavailable.")
+        }
+        refreshing = false
     }
 
     func goTo(_ id: GhosttySurfaceID) {

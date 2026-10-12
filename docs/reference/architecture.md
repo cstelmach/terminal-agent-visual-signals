@@ -1,5 +1,54 @@
 # Architecture
 
+Last Updated: 2026-10-12 (Europe/Vienna)
+Version: 1.1
+
+## Organizer observation and intent records
+
+The Swift companion provides headless metadata intake and separate per-TTY records. Before
+using these verbs, shell adapters query the established validation entry point:
+
+```bash
+TAVSApp --validate-config --organizer-capabilities
+# Supported output: tavs-organizer-schema=1
+```
+
+An unsupported helper leaves metadata coverage unavailable; basic fixed-state signaling
+continues. Tests must select their source-built executable with `TAVS_TEST_HELPER_BIN`.
+
+`organizer-intake.swift` decodes at most 1 MiB of JSON and exports only existing permission,
+transcript-path, session/thread-ID and directory fields plus an opaque metadata context.
+It rejects control characters in session/thread IDs. The context carries a local delivery
+ID, intake time, supported event/response ID and kernel producer generation/device. Bodies
+never reach core debug logs. Native version binaries can match the resolved provider command;
+generic interpreters do not establish agent identity.
+
+`terminal-visual-state.swift` stores schema-1 observation and ordinary-intent JSON beneath
+`TAVS_RUNTIME_DIR/organizer`, defaulting to `/tmp/tavs-UID/organizer`. Whole-path Base64URL
+keys avoid TTY basename collisions. Files are atomically replaced under per-TTY locks with
+a 100 ms acquisition limit; reads reject oversized, malformed and special-file inputs.
+Fresh legitimate publications can replace malformed regular latest files. Synthetic updates
+cannot repair corruption or supersede a newer intake. Native adoption bindings remain strict.
+
+`send_osc_bg` records normalized color/reset intent before mute routing. Idle gradients and
+delayed error restoration retain their originating context and never publish observations.
+The helper compares frozen intake time as well as render time, so a late ordinary write
+cannot replace intent belonging to a newer observation. This does not yet serialize device
+painting with preview/recovery ownership; that belongs to the later recovery phase.
+
+Sessions reads/adopts records off the UI thread after a successful nonempty native catalogue
+refresh. Adoption requires the exact native surface, producer generation, controlling device
+and foreground family. Persisted adoption can retain a continuing producer's known delivery
+after it backgrounds. Exited, reused, unbound and ambiguous producers cannot authorize cues.
+Failed refreshes retain displayed observations but disable attention eligibility. Completion
+appears as `Response ended`; Codex observations explicitly show completion-only coverage.
+
+The isolated Dock app injects its runtime beneath the private launch root and omits the
+scheduler and personal preferences. Fixture navigation remains explicitly simulated.
+
+See the [organizer SPEC](../specs/tavs-priority-discovery_2026-10-04/SPEC.md) for recovery,
+preview and focus phases, and [Codex intake](../../src/agents/codex/README.md) for notify argv.
+
 ## Overview
 
 TAVS - Terminal Agent Visual Signals provides terminal state indicators for multiple AI CLI tools through a unified core system with platform-specific adapters.

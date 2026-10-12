@@ -1,7 +1,34 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.1
+Version: 1.2
+
+## Organizer intake and restoration defects
+
+The old Codex notify command let Bash consume appended JSON as `$0`. Direct argv now supplies
+the adapter's second argument, with root TOML placement and escaping verified in private files.
+Existing multiline notify arrays are refused before mutation instead of being partly replaced.
+
+Core debug logging previously retained full hook JSON, free-form arguments, stdin, titles,
+directories and process arguments. Intake now discards bodies and debug sinks retain fixed
+metadata only. Decoded session/thread identifiers reject terminal and line control characters
+before they reach title composition or identity state. A complete pending-byte capture exposed
+the regression; a regular-file capture contained only the final bell and missed prior writes.
+
+Late background rendering could overwrite a newer intent by using its newer render timestamp.
+Publication now compares frozen intake time under the same per-TTY lock. Idle and delayed
+error rendering preserve observation bytes and delivery identity. Standalone background writers
+inspect their own process before ancestors and can retain intent without inventing an event.
+
+Independent review confirmed that Claude's native installer resolves `claude` to a version
+filename. Verification now recognizes resolved provider command paths while rejecting generic
+interpreters and retaining generation/device/foreground checks. Damaged regular latest records
+can be replaced by fresh legitimate publications; synthetic writes and corrupt native adoption
+bindings remain fail-closed. Special-file replacements remain refused.
+
+Verification: 273 Swift tests, 55 isolated Bats cases and 230 audited Python cases pass.
+Computer Use confirmed coverage labels and failed-refresh retention in the private fixture app.
+Real provider hooks, Ghostty rendering and later recovery/focus ownership remain unverified.
 
 ## Test fixtures escape their intended private roots
 

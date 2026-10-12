@@ -109,7 +109,9 @@ struct TAVSApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var scheduler = Scheduler.createDefault()
     @StateObject private var sessions = SessionsModel(prioritiesURL:
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/surface-priorities.json"))
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".tavs/surface-priorities.json"),
+        visualState: TerminalVisualStateStore(runtimeDirectory: URL(fileURLWithPath:
+            ProcessInfo.processInfo.environment["TAVS_RUNTIME_DIR"] ?? "/tmp/tavs-\(getuid())")))
 
     var body: some Scene {
         MenuBarExtra("TAVS", systemImage: scheduler.isMuted ? "pause.circle.fill" : "circle.hexagongrid.fill") {
@@ -155,6 +157,7 @@ struct IsolatedSessionsLaunch {
 
     func model() -> SessionsModel {
         let url = root.appendingPathComponent("surface-priorities.json")
+        let visualState = TerminalVisualStateStore(runtimeDirectory: root.appendingPathComponent("runtime"))
         if let fixture = fixture {
             return SessionsModel(prioritiesURL: url, refresh: { done in
                 done(Result {
@@ -162,9 +165,10 @@ struct IsolatedSessionsLaunch {
                     let instance = try JSONDecoder().decode(FixtureInstance.self, from: data).application
                     return try GhosttyCatalog.decode(data, application: instance)
                 })
-            }, navigate: { _, done in done(.success(())) })
+            }, navigate: { _, done in done(.success(())) }, visualState: visualState)
         }
-        return SessionsModel(prioritiesURL: url, catalog: GhosttyCatalog(allowedSurfaces: allowed))
+        return SessionsModel(prioritiesURL: url, catalog: GhosttyCatalog(allowedSurfaces: allowed),
+                             visualState: visualState)
     }
 
     private struct FixtureInstance: Decodable { let application: ProcessGeneration }

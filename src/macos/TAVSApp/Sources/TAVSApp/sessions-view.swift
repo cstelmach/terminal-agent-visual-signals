@@ -57,10 +57,26 @@ struct SessionsView: View {
                     .disabled(!model.catalogueAvailable || model.priorityStorageError != nil)
                 }
                 .width(100)
-                TableColumn("Observations") { _ in
+                TableColumn("Observations") { row in
+                    let coverage = model.visualCoverage[row.id]
                     VStack(alignment: .leading) {
-                        Text("No agent observation")
-                        Text("Not observed").font(.caption).foregroundColor(.secondary)
+                        if let observation = coverage?.observation {
+                            let provider = observation.provider.capitalized
+                            let state = observation.state == "complete" ? "Response ended"
+                                : observation.state.replacingOccurrences(of: "_", with: " ").capitalized
+                            Text("\(observation.verifiedAgent ? provider : "Unverified \(provider)") · \(state)")
+                                .lineLimit(2)
+                            Text("Observed \(Date(timeIntervalSince1970: observation.observedAt), style: .relative) ago")
+                                .font(.caption).foregroundColor(.secondary)
+                            if observation.provider == "codex" {
+                                Text("Completion-only coverage").font(.caption).foregroundColor(.secondary)
+                            }
+                        } else {
+                            Text("No agent observation")
+                            Text("Not observed").font(.caption).foregroundColor(.secondary)
+                        }
+                        Text(coverage?.status ?? "Observation coverage unavailable.")
+                            .font(.caption).foregroundColor(.secondary).lineLimit(2)
                     }
                 }
                 .width(min: 160, ideal: 180)

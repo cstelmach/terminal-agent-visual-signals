@@ -1,4 +1,5 @@
 import XCTest
+import Combine
 @testable import TAVSApp
 
 final class SessionsModelTests: XCTestCase {
@@ -139,6 +140,102 @@ final class SessionsModelTests: XCTestCase {
         XCTAssertEqual(calls, 0)
     }
 
+    func testFreshCataloguePublishesCorrelatedCoverageOnMainAfterBackgroundReads() throws {
+        let row = surface("001")
+        let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
+        let producer = ProcessGeneration(pid: 44, startSeconds: 1, startMicroseconds: 1)
+        let lookup: (Int32) -> ProcessIdentity? = { pid in
+            XCTAssertFalse(Thread.isMainThread)
+            let generation = pid == 43 ? self.instance : producer
+            return ProcessIdentity(generation: generation, parentPID: 1, group: 43,
+                                   device: 123, foregroundGroup: 43)
+        }
+        let visual = TerminalVisualStateStore(runtimeDirectory: directory.appendingPathComponent("runtime"),
+                                              clock: clock, lookup: lookup, device: { _ in 123 })
+        let observation = TerminalObservation(tty: row.tty!, device: 123, producer: producer,
+            provider: "claude", verifiedAgent: true, state: "complete", event: "Stop",
+            deliveryID: "delivery-44", responseID: nil, observedAt: 998)
+        try visual.publishObservation(observation)
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(.success([row])) },
+            navigate: { _, done in done(.success(())) }, clock: clock, visualState: visual)
+        let finished = expectation(description: "Main coverage publication finished")
+        let token = model.$refreshing.dropFirst().sink { refreshing in
+            if !refreshing { XCTAssertTrue(Thread.isMainThread); finished.fulfill() }
+        }
+        model.refresh()
+        XCTAssertTrue(model.refreshing)
+        XCTAssertTrue(model.visualCoverage.isEmpty)
+        wait(for: [finished], timeout: 2)
+        withExtendedLifetime(token) {}
+        XCTAssertFalse(model.refreshing)
+        XCTAssertEqual(model.visualCoverage[row.id]?.observation, observation)
+        XCTAssertTrue(model.visualCoverage[row.id]?.attentionEligible == true)
+    }
+
+    func testCatalogueFailureRetainsDisplayButDisablesAttentionAndDoesNotAdoptNewProducer() throws {
+        let row = surface("001")
+        let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
+        let producer = ProcessGeneration(pid: 44, startSeconds: 1, startMicroseconds: 1)
+        let other = ProcessGeneration(pid: 45, startSeconds: 1, startMicroseconds: 1)
+        let identities = [instance, producer, other].map {
+            ProcessIdentity(generation: $0, parentPID: 1, group: 43, device: 123, foregroundGroup: 43)
+        }
+        let runtime = directory.appendingPathComponent("runtime")
+        let visual = TerminalVisualStateStore(runtimeDirectory: runtime, clock: clock,
+            lookup: { pid in identities.first { $0.generation.pid == pid } }, device: { _ in 123 })
+        var observation = TerminalObservation(tty: row.tty!, device: 123, producer: producer,
+            provider: "claude", verifiedAgent: true, state: "permission", event: "PermissionRequest",
+            deliveryID: "permission-44", responseID: nil, observedAt: 998)
+        try visual.publishObservation(observation)
+        var response: Result<[GhosttySurface], Error> = .success([row])
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(response) },
+            navigate: { _, done in done(.success(())) }, clock: clock, visualState: visual)
+        let finished = expectation(description: "Initial coverage publication finished")
+        let token = model.$refreshing.dropFirst().sink { refreshing in
+            if !refreshing { finished.fulfill() }
+        }
+        model.refresh()
+        wait(for: [finished], timeout: 2)
+        token.cancel()
+        XCTAssertTrue(model.visualCoverage[row.id]?.attentionEligible == true)
+        observation.producer = other
+        observation.deliveryID = "new-permission-45"
+        observation.observedAt = 999
+        try visual.publishObservation(observation)
+        response = .failure(GhosttyCatalogError.permissionDenied)
+        model.refresh()
+        XCTAssertFalse(model.refreshing)
+        XCTAssertFalse(model.catalogueAvailable)
+        XCTAssertEqual(model.visualCoverage[row.id]?.observation?.deliveryID, "permission-44")
+        XCTAssertFalse(model.visualCoverage[row.id]?.attentionEligible == true)
+        XCTAssertTrue(model.visualCoverage[row.id]?.status.lowercased().contains("last-known") == true)
+        let files = try FileManager.default.contentsOfDirectory(atPath: runtime.appendingPathComponent("organizer").path)
+        XCTAssertEqual(files.filter { $0.hasPrefix("adoption-") }.count, 1)
+    }
+
+    func testFailedAndEmptyCatalogueDoNotReadOrAdoptRecords() throws {
+        let row = surface("001")
+        let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
+        var inspected = 0
+        let runtime = directory.appendingPathComponent("runtime")
+        let visual = TerminalVisualStateStore(runtimeDirectory: runtime, clock: clock,
+            lookup: { _ in inspected += 1; return nil }, device: { _ in 123 })
+        try visual.publishObservation(TerminalObservation(tty: row.tty!, device: 123, producer: instance,
+            provider: "claude", verifiedAgent: true, state: "complete", event: "Stop",
+            deliveryID: "unadopted-43", responseID: nil, observedAt: 998))
+        for response in [Result<[GhosttySurface], Error>.failure(GhosttyCatalogError.permissionDenied), .success([])] {
+            let model = SessionsModel(prioritiesURL: store, refresh: { $0(response) },
+                navigate: { _, done in done(.success(())) }, clock: clock, visualState: visual)
+            model.refresh()
+            XCTAssertFalse(model.refreshing)
+            XCTAssertFalse(model.catalogueAvailable)
+            XCTAssertTrue(model.visualCoverage.isEmpty)
+            XCTAssertEqual(inspected, 0)
+        }
+        let files = try FileManager.default.contentsOfDirectory(atPath: runtime.appendingPathComponent("organizer").path)
+        XCTAssertFalse(files.contains { $0.hasPrefix("adoption-") })
+    }
+
     func testIsolatedLaunchRejectsIncompletePersonalAndEscapingRoots() throws {
         XCTAssertThrowsError(try IsolatedSessionsLaunch.environment([:]))
         XCTAssertThrowsError(try IsolatedSessionsLaunch.environment(["TAVS_SESSIONS_TEST_ROOT": "/Users/cs/.tavs"]))
@@ -160,7 +257,12 @@ final class SessionsModelTests: XCTestCase {
         let launch = try IsolatedSessionsLaunch.environment([
             "TAVS_SESSIONS_TEST_ROOT": directory.path, "TAVS_SESSIONS_TEST_FIXTURE": fixture.path
         ])
-        let model = launch.model(); model.refresh()
+        let model = launch.model()
+        let finished = expectation(description: "Private fixture coverage published")
+        let token = model.$refreshing.dropFirst().sink { if !$0 { finished.fulfill() } }
+        model.refresh()
+        wait(for: [finished], timeout: 2)
+        withExtendedLifetime(token) {}
         let id = try XCTUnwrap(model.rows.first?.id)
         model.setPriority(.high, for: [id])
         XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("surface-priorities.json").path))
