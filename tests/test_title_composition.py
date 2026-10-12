@@ -32,7 +32,7 @@ class TestTitleComposition:
         Args:
             agent: Agent type for face selection (default: "unknown" for fallback faces)
 
-        Returns the title portion of the OSC sequence.
+        Returns the title value from a captured current typed render.
         """
         if tty_file is None:
             import tempfile
@@ -51,6 +51,10 @@ class TestTitleComposition:
         cmd = f'''
             source src/core/theme-config-loader.sh
             source src/core/terminal-osc-sequences.sh
+            _tavs_render_flush() {{
+                _tavs_render_payload > "$TTY_DEVICE"
+                _TAVS_RENDER_ACTIVE=0 _TAVS_RENDER_PENDING=0
+            }}
             # Override config variables after sourcing (defaults would overwrite env)
             export ENABLE_ANTHROPOMORPHISING="{enable}"
             export FACE_POSITION="{position}"
@@ -58,17 +62,16 @@ class TestTitleComposition:
         '''
 
         result = run_bash(cmd, env=env)
+        assert result.returncode == 0, result.stderr
 
         # Read the output file
         try:
-            with open(tty_file, 'r') as f:
-                content = f.read()
-            # Extract title from OSC sequence: \033]0;TITLE\033\\
-            if ']0;' in content and '\033\\' in content:
-                start = content.index(']0;') + 3
-                end = content.index('\033\\', start)
-                return content[start:end]
-            return content
+            with open(tty_file, 'rb') as f:
+                fields = f.read().split(b'\0')
+            assert len(fields) == 24 and fields[-1] == b''
+            assert fields[18] == b'1' and fields[0] == b''
+            assert all(b'\x1b' not in field for field in fields)
+            return fields[19].decode('utf-8')
         finally:
             try:
                 os.unlink(tty_file)
@@ -232,6 +235,7 @@ class TestGetShortCwd:
         result = run_bash(
             '''
             source src/core/terminal-osc-sequences.sh
+            export HOME="$(cd "$HOME" && pwd)"
             cd ~
             get_short_cwd
             '''

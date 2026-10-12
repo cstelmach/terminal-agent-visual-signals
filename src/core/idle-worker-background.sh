@@ -13,26 +13,21 @@
 # Backgrounds and forced resets use native validation; muted signals are discarded.
 # ==============================================================================
 
-# Helper: Send OSC 4 palette in idle worker via emit_osc
-# Uses shared _build_osc_palette_seq from terminal-osc-sequences.sh
+# Helper: Queue palette values for the current managed render.
 _idle_send_palette() {
     local mode="$1"
 
     type should_enable_palette_theming &>/dev/null || return 0
     should_enable_palette_theming || return 0
 
-    type _build_osc_palette_seq &>/dev/null || return 0
-
-    local seq
-    seq=$(_build_osc_palette_seq "$mode")
-    [[ -n "$seq" ]] && emit_osc "%b" "$seq"
+    send_osc_palette "$mode"
 }
 
-# Helper: Reset OSC 4 palette in idle worker via emit_osc
+# Helper: Queue a palette reset in the current managed render.
 _idle_reset_palette() {
     type should_enable_palette_theming &>/dev/null || return 0
     should_enable_palette_theming || return 0
-    emit_osc "\033]104\033\\"
+    send_osc_palette_reset
 }
 
 # Calculate current stage from elapsed seconds
@@ -139,7 +134,7 @@ unified_timer_worker() {
 
         # State Transition
         if [[ $current_stage -ne $last_applied_stage ]]; then
-            last_applied_stage=$current_stage
+            _tavs_render_begin
 
             if [[ $current_stage -eq 0 ]]; then
                 write_session_state "complete" "$my_pid"
@@ -150,12 +145,9 @@ unified_timer_worker() {
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_status_icon="${UNIFIED_STAGE_STATUS_ICONS[$current_stage]}"
 
-            # Validate the synthetic delivery before any palette or title output.
+            # Native flush validates the whole synthetic render under the writer lock.
             if should_send_bg_color; then
-                send_osc_bg "$stage_color" || return 0
-                [[ "${_TAVS_MANAGED_STALE:-0}" == 1 ]] && return 0
-            else
-                _tavs_managed_check_context || return 0
+                send_osc_bg "$stage_color"
             fi
 
             if [[ "$stage_color" == "reset" ]]; then
@@ -177,9 +169,13 @@ unified_timer_worker() {
 
                 local title
                 title=$(compose_title "$title_state" "$SHORT_CWD")
-                emit_osc "\033]0;%s\033\\" "$title"
+                _tavs_render_queue title "$title"
             fi
 
+            local render_result=0
+            _tavs_render_flush || render_result=$?
+            [[ "$render_result" == 3 ]] && return 0
+            [[ "$render_result" == 0 ]] && last_applied_stage=$current_stage
         fi
     done
 }

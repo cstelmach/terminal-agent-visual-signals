@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # ==============================================================================
 # Integration test: idle worker mute suppression (SPEC T1.6)
-# Verifies the worker routes OSC through emit_osc and respects mute state.
+# Verifies the worker queues one current render and respects mute state.
 # ==============================================================================
 
 REPO_ROOT=""
@@ -26,12 +26,16 @@ case "$1" in
         else printf 'tavs-organizer-schema=1\n'; fi ;;
     --organizer-context) printf 'fixture-context\n' ;;
     --organizer-observe|--managed-check-context) exit 0 ;;
-    --managed-background)
+    --managed-render)
         [[ "$4" == "$TAVS_TEST_ROOT/"* && "$5" == fixture-context ]] || exit 1
-        printf '%s\n' "$6" > "$TAVS_RUNTIME_DIR/fixture-background"
+        fields=()
+        while IFS= read -r -d '' value; do fields+=("$value"); done
+        [[ "${#fields[@]}" == 23 ]] || exit 1
+        printf '%s\n' "${fields[0]}" > "$TAVS_RUNTIME_DIR/fixture-background"
         source "$IDLE_TEST_CORE/mute-gate.sh"
-        _tavs_check_mute_state && exit 0
-        printf '\033]11;%s\033\\' "$6" > "$4" ;;
+        if _tavs_check_mute_state; then printf 'restricted\n'; exit 0; fi
+        printf '\033]11;%s\033\\' "${fields[0]}" > "$4"
+        printf 'rendered\n' ;;
     --managed-forced-reset) exit 0 ;;
     *) exit 1 ;;
 esac
@@ -101,10 +105,11 @@ SCRIPT
     [[ "$XDG_RUNTIME_DIR" == "$TEST_HOME/"* ]]
 }
 
-@test "idle worker uses emit_osc (not direct fd writes)" {
+@test "idle worker has no raw OSC or direct fd writes" {
     local fd3_count
     fd3_count=$(grep -c '>&3' "$REPO_ROOT/src/core/idle-worker-background.sh" || true)
     [ "$fd3_count" -eq 0 ]
+    ! grep -q 'emit_osc' "$REPO_ROOT/src/core/idle-worker-background.sh"
 }
 
 @test "idle worker calls _tavs_check_mute_state" {

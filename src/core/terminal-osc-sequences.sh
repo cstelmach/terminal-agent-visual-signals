@@ -35,7 +35,7 @@ send_bell_if_enabled() {
         subagent)    [[ "$BELL_ON_SUBAGENT" == "true" ]] && should_bell=true ;;
         tool_error)  [[ "$BELL_ON_TOOL_ERROR" == "true" ]] && should_bell=true ;;
     esac
-    [[ "$should_bell" == "true" ]] && emit_osc "\007"
+    [[ "$should_bell" == "true" ]] && _tavs_render_queue bell
 }
 
 # === TTY RESOLUTION ===
@@ -78,14 +78,6 @@ if [[ -n "${TTY_DEVICE:-}" ]]; then
     TTY_SAFE="${TTY_DEVICE//\//_}"
 fi
 
-# Nonbackground signals are suppressed without retaining historical bytes.
-emit_osc() {
-    local fmt="$1"; shift
-    [[ "${_TAVS_MANAGED_STALE:-0}" == 1 ]] && return 0
-    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == 1 ]] && return 0
-    printf "$fmt" "$@" > "$TTY_DEVICE"
-}
-
 # === OSC COMMANDS ===
 
 # Send OSC 11 (background color)
@@ -93,7 +85,7 @@ send_osc_bg() {
     local color="$1"
     [[ -z "$TTY_DEVICE" ]] && return
     local result=0
-    _tavs_managed_background "$color" || result=$?
+    _tavs_render_queue background "$color" || result=$?
     [[ "$result" == 3 ]] && return 0
     return "$result"
 }
@@ -103,59 +95,29 @@ send_osc_bg() {
 # This affects applications that use palette indices (256-color mode).
 # Note: TrueColor (24-bit RGB) applications bypass the palette entirely.
 
-# Convert hex color (#RRGGBB) to X11 format (rgb:RR/GG/BB)
-_hex_to_x11() {
-    local hex="${1#\#}"
-    printf "rgb:%s/%s/%s" "${hex:0:2}" "${hex:2:2}" "${hex:4:2}"
-}
-
-# Build OSC 4 palette sequence string (shared logic for trigger and idle-worker)
-# Usage: _build_osc_palette_seq "dark" or "light"
-# Returns: OSC 4 escape sequence via stdout, or empty if no colors defined
-# Caller is responsible for writing to the appropriate output (TTY_DEVICE or fd)
-_build_osc_palette_seq() {
-    local mode="$1"
-
-    # Convert mode to uppercase (Bash 3.2 compatible - avoid ${var^^})
-    local mode_upper
-    mode_upper=$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')
-
-    # Build palette sequence for all 16 colors
-    local seq="\033]4"
-    local var_name color x11_color
-    local has_colors=false
-
-    for i in {0..15}; do
-        var_name="PALETTE_${mode_upper}_${i}"
-        color="${!var_name}"
-        if [[ -n "$color" ]]; then
-            x11_color=$(_hex_to_x11 "$color")
-            seq+=";${i};${x11_color}"
-            has_colors=true
-        fi
-    done
-    seq+="\033\\"
-
-    # Only return if we have at least one color defined
-    [[ "$has_colors" == "true" ]] && printf "%s" "$seq"
-}
-
-# Send OSC 4 palette batch (all 16 ANSI colors atomically)
+# Queue typed palette colors for one managed render.
 # Usage: send_osc_palette "dark" or send_osc_palette "light"
 # Palette colors are read from PALETTE_DARK_0..15 or PALETTE_LIGHT_0..15
 send_osc_palette() {
     local mode="$1"
     [[ -z "$TTY_DEVICE" ]] && return
 
-    local seq
-    seq=$(_build_osc_palette_seq "$mode")
-    [[ -n "$seq" ]] && emit_osc "%b" "$seq"
+    local mode_upper var_name color i has_colors=0
+    local colors=()
+    mode_upper=$(printf '%s' "$mode" | tr '[:lower:]' '[:upper:]')
+    for ((i=0; i<16; i++)); do
+        var_name="PALETTE_${mode_upper}_${i}"
+        color="${!var_name}"
+        colors[i]="$color"
+        [[ -n "$color" ]] && has_colors=1
+    done
+    [[ "$has_colors" == 1 ]] && _tavs_render_queue palette set "${colors[@]}"
 }
 
 # Reset palette to terminal defaults (OSC 104)
 send_osc_palette_reset() {
     [[ -z "$TTY_DEVICE" ]] && return
-    emit_osc "\033]104\033\\"
+    _tavs_render_queue palette reset
 }
 
 send_osc_title() {
@@ -236,7 +198,7 @@ send_osc_title() {
         fi
     fi
 
-    emit_osc "\033]0;%s\033\\" "$title"
+    _tavs_render_queue title "$title"
 }
 
 # === UTILS ===

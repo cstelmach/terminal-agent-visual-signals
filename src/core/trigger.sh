@@ -106,11 +106,7 @@ esac
 [[ "$_observation_state" != replay ]] && _tavs_organizer_begin "$_observation_state"
 unset _observation_state
 
-if [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]]; then
-    _tavs_managed_check_context || exit 0
-fi
-
-# Helper: Apply ordinary palette signals after managed delivery validation.
+# Helper: Queue ordinary palette values in the current managed render.
 _apply_palette_if_enabled() {
     should_enable_palette_theming || return 0
     local mode
@@ -201,6 +197,7 @@ fi
 
 # Main Logic
 STATE="${1:-}"
+_tavs_render_begin
 
 case "$STATE" in
     processing)
@@ -266,6 +263,7 @@ case "$STATE" in
 
         send_bell_if_enabled "$STATE"
 
+        _tavs_render_flush || true
         # Start Idle Timer (redirect fds to prevent parent blocking)
         ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
         disown 2>/dev/null || true
@@ -284,6 +282,7 @@ case "$STATE" in
                 # Use new title system with user override detection
                 should_send_title "idle" && set_tavs_title "idle_1"
                 set_state_background_image "idle"
+                _tavs_render_flush || true
                 ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
                 disown 2>/dev/null || true
             fi
@@ -409,6 +408,7 @@ case "$STATE" in
         send_bell_if_enabled "tool_error"
         record_state "tool_error"
 
+        _tavs_render_flush || true
         # Auto-return to previous state after 1.5 seconds
         # Use background process to avoid blocking the hook
         (
@@ -429,4 +429,5 @@ case "$STATE" in
         ;;
 esac
 
+_tavs_render_flush || true
 exit 0

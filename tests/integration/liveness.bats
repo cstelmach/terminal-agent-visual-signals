@@ -27,11 +27,15 @@ case "$1" in
         else printf 'tavs-organizer-schema=1\n'; fi ;;
     --organizer-context) printf 'fixture-context\n' ;;
     --organizer-observe) exit 0 ;;
-    --managed-background)
+    --managed-render)
         [[ "$4" == "$TAVS_TEST_ROOT/"* ]] || exit 1
+        fields=()
+        while IFS= read -r -d '' value; do fields+=("$value"); done
+        [[ "${#fields[@]}" == 23 ]] || exit 1
         source "$LIVENESS_CORE/mute-gate.sh"
-        _tavs_check_mute_state && exit 0
-        printf '\033]11;%s\033\\' "$6" > "$4" ;;
+        if _tavs_check_mute_state; then printf 'restricted\n'; exit 0; fi
+        printf '\033]11;%s\033\\' "${fields[0]}" > "$4"
+        printf 'rendered\n' ;;
     *) exit 1 ;;
 esac
 HELPER

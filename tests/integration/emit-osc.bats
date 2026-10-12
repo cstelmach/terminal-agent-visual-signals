@@ -1,8 +1,7 @@
 #!/usr/bin/env bats
 # ==============================================================================
-# Integration test: emit_osc muted vs unmuted byte comparison
-# Verifies that when muted, bytes go to pending cache and TTY gets 0 bytes.
-# When unmuted, bytes go to TTY as before.
+# Integration test: one current typed render, with no historical OSC cache.
+# Safe fixture helpers capture regular files without weakening native fd validation.
 # ==============================================================================
 
 REPO_ROOT=""
@@ -10,17 +9,42 @@ TEST_HOME=""
 RUNTIME_DIR=""
 
 setup() {
+    [[ -n "${TAVS_TEST_ROOT:-}" ]] || return 1
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    TEST_HOME=$(mktemp -d)
-    # Isolated runtime dir: the live /tmp/tavs-$UID may carry a real hard
-    # lock (lock.state), which would suppress the "unmuted" cases here.
+    TEST_HOME=$(mktemp -d "$TAVS_TEST_ROOT/render-fixture.XXXXXX")
     RUNTIME_DIR="$TEST_HOME/runtime"
-    export TAVS_RUNTIME_DIR="$RUNTIME_DIR"
-    mkdir -p "$TEST_HOME/.tavs" "$RUNTIME_DIR"
-}
-
-teardown() {
-    rm -rf "$TEST_HOME"
+    export HOME="$TEST_HOME" CFFIXED_USER_HOME="$TEST_HOME" ZDOTDIR="$TEST_HOME"
+    export TAVS_RUNTIME_DIR="$RUNTIME_DIR" TAVS_TMP_DIR="$TEST_HOME/state"
+    export _TAVS_TMP_DIR="$TAVS_TMP_DIR" TTY_DEVICE="$TEST_HOME/tty"
+    export TAVS_TEST_HELPER_BIN="$TEST_HOME/helper" RENDER_TEST_CORE="$REPO_ROOT/src/core"
+    export RENDER_TEST_CALLS="$TEST_HOME/calls" RENDER_TEST_FIELDS="$TEST_HOME/fields"
+    mkdir -p "$TEST_HOME/.tavs" "$RUNTIME_DIR" "$TAVS_TMP_DIR"
+    : > "$TTY_DEVICE"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+case "$1" in
+    --validate-config)
+        if [[ "$2" == --managed-output-capabilities ]]; then printf 'tavs-managed-output-schema=1\n'
+        else printf 'tavs-organizer-schema=1\n'; fi ;;
+    --organizer-context) printf 'fixture-context\n' ;;
+    --organizer-observe) exit 0 ;;
+    --managed-render)
+        [[ "$4" == "$TAVS_TEST_ROOT/"* && "$5" == fixture-context ]] || exit 1
+        fields=()
+        while IFS= read -r -d '' value; do fields+=("$value"); done
+        [[ "${#fields[@]}" == 23 ]] || exit 1
+        printf 'render\n' >> "$RENDER_TEST_CALLS"
+        printf '%s\0' "${fields[@]}" > "$RENDER_TEST_FIELDS"
+        source "$RENDER_TEST_CORE/mute-gate.sh"
+        if _tavs_check_mute_state; then printf 'restricted\n'; exit 0; fi
+        if [[ "${fields[0]}" == reset ]]; then printf '\033]111\033\\' > "$4"
+        elif [[ -n "${fields[0]}" ]]; then printf '\033]11;%s\033\\' "${fields[0]}" > "$4"; fi
+        if [[ "${fields[18]}" == 1 ]]; then printf '\033]0;%s\033\\' "${fields[19]}" >> "$4"; fi
+        printf 'rendered\n' ;;
+    *) exit 1 ;;
+esac
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
 }
 
 _create_mute_state() {
@@ -32,7 +56,7 @@ _create_mute_state() {
     now=$(date +%s)
     cat > "$home/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
 APP_PID="$parent_pid"
@@ -40,96 +64,53 @@ SCHEMA_VERSION="1"
 EOF
 }
 
-@test "processing: unmuted sends bytes to TTY" {
-    local tty_file
-    tty_file=$(mktemp)
-    # No mute.state = unmuted
-    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$tty_file" \
-        bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
-    local bytes
-    bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    rm -f "$tty_file"
-    [ "$bytes" -gt 0 ]
+@test "processing: one managed render reaches the private fixture TTY" {
+    run bash "$REPO_ROOT/src/core/trigger.sh" processing
+    [ "$status" -eq 0 ]
+    [ -s "$TTY_DEVICE" ]
+    [ "$(wc -l < "$RENDER_TEST_CALLS" | tr -d ' ')" -eq 1 ]
 }
 
-@test "processing: muted sends 0 bytes to TTY" {
+@test "processing: current fixture mute suppresses ordinary bytes" {
     _create_mute_state "$TEST_HOME"
-    local tty_file
-    tty_file=$(mktemp)
-    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" PATH="$PATH" \
-        bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
-    local bytes
-    bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    rm -f "$tty_file"
-    [ "$bytes" -eq 0 ]
+    run bash "$REPO_ROOT/src/core/trigger.sh" processing
+    [ "$status" -eq 0 ]
+    [ ! -s "$TTY_DEVICE" ]
+    [ -s "$RENDER_TEST_FIELDS" ]
 }
 
-@test "processing: muted creates pending cache with captured bytes" {
+@test "processing: muted render cannot create an opaque pending cache" {
     _create_mute_state "$TEST_HOME"
-    local tty_file
-    tty_file=$(mktemp)
-    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" PATH="$PATH" \
-        bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
-    local tty_safe="${tty_file//\//_}"
-    local cache="$RUNTIME_DIR/pending/${tty_safe}.osc"
-    [ -f "$cache" ]
-    local cache_bytes
-    cache_bytes=$(wc -c < "$cache" | tr -d ' ')
-    [ "$cache_bytes" -gt 0 ]
-    rm -f "$tty_file" "$cache" "$RUNTIME_DIR/active-ttys/$tty_safe"
+    run bash "$REPO_ROOT/src/core/trigger.sh" processing
+    [ "$status" -eq 0 ]
+    [ -z "$(find "$RUNTIME_DIR/pending" -type f -print)" ]
+    [ "$(wc -l < "$RENDER_TEST_CALLS" | tr -d ' ')" -eq 1 ]
 }
 
-@test "reset: muted sends 0 bytes to TTY and creates pending cache" {
+@test "reset: muted current render has no raw output or pending history" {
     _create_mute_state "$TEST_HOME"
-    local tty_file
-    tty_file=$(mktemp)
-    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" PATH="$PATH" \
-        bash "$REPO_ROOT/src/core/trigger.sh" reset 2>/dev/null
-    local bytes
-    bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    local tty_safe="${tty_file//\//_}"
-    local cache="$RUNTIME_DIR/pending/${tty_safe}.osc"
-    [ "$bytes" -eq 0 ]
-    [ -f "$cache" ]
-    rm -f "$tty_file" "$cache" "$RUNTIME_DIR/active-ttys/$tty_safe"
+    run bash "$REPO_ROOT/src/core/trigger.sh" reset
+    [ "$status" -eq 0 ]
+    [ ! -s "$TTY_DEVICE" ]
+    [ -z "$(find "$RUNTIME_DIR/pending" -type f -print)" ]
 }
 
-@test "active-tty registered on every dispatch (muted and unmuted)" {
-    local tty_file
-    tty_file=$(mktemp)
-    # Unmuted dispatch
-    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$tty_file" \
-        bash "$REPO_ROOT/src/core/trigger.sh" reset 2>/dev/null
-    local tty_safe="${tty_file//\//_}"
-    [ -f "$RUNTIME_DIR/active-ttys/$tty_safe" ]
-    rm -f "$tty_file" "$RUNTIME_DIR/active-ttys/$tty_safe"
+@test "active-tty remains a candidate on managed dispatch" {
+    run bash "$REPO_ROOT/src/core/trigger.sh" reset
+    [ "$status" -eq 0 ]
+    [ -f "$RUNTIME_DIR/active-ttys/${TTY_DEVICE//\//_}" ]
 }
 
-@test "muted bytes match unmuted bytes for same state" {
-    # Capture unmuted bytes
-    local unmuted_tty
-    unmuted_tty=$(mktemp)
-    env -i HOME="$TEST_HOME" PATH="$PATH" TAVS_RUNTIME_DIR="$RUNTIME_DIR" TTY_DEVICE="$unmuted_tty" \
-        bash "$REPO_ROOT/src/core/trigger.sh" compacting 2>/dev/null
-
-    # Capture muted bytes (should be in pending cache)
+@test "muted invocation retains current typed request without retaining OSC bytes" {
     _create_mute_state "$TEST_HOME"
-    local muted_tty
-    muted_tty=$(mktemp)
-    TTY_DEVICE="$muted_tty" HOME="$TEST_HOME" PATH="$PATH" \
-        bash "$REPO_ROOT/src/core/trigger.sh" compacting 2>/dev/null
-    local tty_safe="${muted_tty//\//_}"
-    local cache="$RUNTIME_DIR/pending/${tty_safe}.osc"
-
-    # Compare: pending cache bytes should match unmuted TTY bytes
-    [ -f "$cache" ]
-    local unmuted_bytes muted_bytes
-    unmuted_bytes=$(wc -c < "$unmuted_tty" | tr -d ' ')
-    muted_bytes=$(wc -c < "$cache" | tr -d ' ')
-    # Allow for slight variation due to compose_title randomness (faces)
-    # but the core OSC sequences should be present
-    [ "$muted_bytes" -gt 0 ]
-    [ "$unmuted_bytes" -gt 0 ]
-
-    rm -f "$unmuted_tty" "$muted_tty" "$cache" "$RUNTIME_DIR/active-ttys/$tty_safe"
+    run bash "$REPO_ROOT/src/core/trigger.sh" compacting
+    [ "$status" -eq 0 ]
+    [ ! -s "$TTY_DEVICE" ]
+    python3 - "$RENDER_TEST_FIELDS" <<'CHECK'
+import sys
+parts=open(sys.argv[1],'rb').read().split(b'\0')
+assert len(parts)==24 and parts[-1]==b'' and parts[0].startswith(b'#')
+assert all(b'\x1b' not in part and b'\x07' not in part for part in parts[:-1])
+CHECK
+    [ -z "$(find "$RUNTIME_DIR/pending" -type f -print)" ]
 }

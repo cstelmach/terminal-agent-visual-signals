@@ -522,15 +522,15 @@ set_tavs_title() {
     local full_title
     full_title=$(compose_title "$state" "$base_title")
 
-    # Send to terminal via emit_osc (handles mute suppression)
-    if emit_osc "\033]0;%s\033\\" "$full_title" 2>/dev/null; then
-        TITLE_LAST_SET="$full_title"
-        save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
+    # Last-set state changes only after the managed writer confirms delivery.
+    if _tavs_render_queue title "$full_title" 1 2>/dev/null; then
         type debug_log_title_trace &>/dev/null && \
-            debug_log_title_trace "$state" "$full_title" "write=ok"
+            debug_log_title_trace "$state" "$full_title" "request=queued"
+        return 0
     else
         type debug_log_title_trace &>/dev/null && \
             debug_log_title_trace "$state" "$full_title" "write=FAILED tty=$TTY_DEVICE writable=$(test -w "$TTY_DEVICE" && echo y || echo n)"
+        return 1
     fi
 }
 
@@ -565,11 +565,12 @@ reset_tavs_title() {
     local base_title
     base_title=$(get_base_title)
 
-    # Send to terminal via emit_osc (handles mute suppression)
-    if emit_osc "\033]0;%s\033\\" "$base_title" 2>/dev/null; then
-        TITLE_LAST_SET="$base_title"
-        save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
-    fi
+    _tavs_render_queue title "$base_title" 1
+}
+
+_tavs_render_title_delivered() {
+    TITLE_LAST_SET="$_TAVS_RENDER_TITLE"
+    save_title_state "$TITLE_USER_BASE" "$TITLE_LAST_SET" "$TITLE_LOCKED" "$SESSION_ID"
 }
 
 # Lock title (prevent TAVS from changing it)

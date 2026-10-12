@@ -4,7 +4,7 @@ Tests for src/core/idle-worker-background.sh - Idle timer and progression.
 Verifies:
 - Idle worker syntax is valid
 - Idle face keys are generated correctly
-- Worker uses >&3 file descriptor pattern
+- Worker queues current typed rendering under the managed writer
 """
 
 import pytest
@@ -67,8 +67,8 @@ class TestIdleFaceKeyGeneration:
         assert "idle_" in result.stdout
 
 
-class TestIdleWorkerEmitOscPattern:
-    """Test that idle worker writes OSC bytes through emit_osc."""
+class TestIdleWorkerManagedRender:
+    """Test that idle worker queues typed values for one managed flush."""
 
     def test_routes_color_writes_through_background_intent_helper(self):
         """Color writes retain intent before reaching the mute-aware OSC writer."""
@@ -79,16 +79,18 @@ class TestIdleWorkerEmitOscPattern:
         assert result.returncode == 0
         assert "send_osc_bg" in result.stdout
 
-    def test_uses_emit_osc_for_title_writes(self):
-        """Title writes should use the mute-aware emit_osc choke point."""
+    def test_queues_title_for_managed_flush(self):
+        """Title writes share the background transaction rather than a raw write."""
         result = run_bash(
-            'grep -E \'emit_osc "\\\\033\\]0;\' src/core/idle-worker-background.sh'
+            'rg \'_tavs_render_queue title\' src/core/idle-worker-background.sh'
         )
 
-        assert result.returncode == 0, "Title writes should use emit_osc"
+        assert result.returncode == 0, "Title should enter the managed render"
+        result = run_bash('rg emit_osc src/core/idle-worker-background.sh')
+        assert result.returncode == 1
 
-    def test_sets_tty_for_emit_osc(self):
-        """Worker should set TTY_DEVICE before calling emit_osc."""
+    def test_sets_tty_for_managed_render(self):
+        """Worker should bind the requested TTY before collecting styles."""
         result = run_bash(
             'grep -E \'TTY_DEVICE="\\$tty_device"\' src/core/idle-worker-background.sh'
         )

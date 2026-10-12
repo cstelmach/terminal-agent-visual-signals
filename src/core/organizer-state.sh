@@ -93,28 +93,6 @@ _tavs_managed_context() {
     [[ -n "$TAVS_ORGANIZER_CONTEXT" ]]
 }
 
-_tavs_managed_background() {
-    _TAVS_MANAGED_STALE=0
-    if ! _tavs_managed_helper; then
-        printf 'tavs: managed output helper unavailable or unsupported\n' >&2
-        [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] && _TAVS_MANAGED_STALE=1
-        return 1
-    fi
-    local result=0
-    _tavs_managed_context || result=$?
-    if [[ "$result" == 0 ]]; then
-        # Actual output retains the dedicated native scope; only capability queries clear it.
-        "$_TAVS_MANAGED_HELPER" --managed-background "$HOME/.tavs/visual-restrictions.state" \
-            "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" "$TTY_DEVICE" "$TAVS_ORGANIZER_CONTEXT" \
-            "$1" "${TAVS_ORGANIZER_SYNTHETIC:-0}" >/dev/null || result=$?
-    fi
-    if [[ "$result" != 0 ]]; then
-        [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] && _TAVS_MANAGED_STALE=1
-        printf 'tavs: managed background unavailable\n' >&2
-    fi
-    return "$result"
-}
-
 _tavs_managed_forced_reset() {
     _tavs_managed_helper && _tavs_managed_context || return 1
     "$_TAVS_MANAGED_HELPER" --managed-forced-reset "$HOME/.tavs/visual-restrictions.state" \
@@ -140,4 +118,78 @@ _tavs_managed_reconcile() {
     _tavs_managed_helper || return 1
     "$_TAVS_MANAGED_HELPER" --managed-reconcile "$HOME/.tavs/visual-restrictions.state" \
         "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" "$1" "$$" >/dev/null
+}
+
+_tavs_render_begin() {
+    _TAVS_RENDER_ACTIVE=1 _TAVS_RENDER_PENDING=0
+    _TAVS_RENDER_BG="" _TAVS_RENDER_PALETTE="" _TAVS_RENDER_TITLE=""
+    _TAVS_RENDER_TITLE_FLAG=0 _TAVS_RENDER_TITLE_SAVE=0
+    _TAVS_RENDER_IMAGE="" _TAVS_RENDER_IMAGE_PATH="" _TAVS_RENDER_BELL=0
+    _TAVS_RENDER_COLORS=()
+    local i
+    for ((i=0; i<16; i++)); do _TAVS_RENDER_COLORS[i]=""; done
+}
+
+_tavs_render_queue() {
+    [[ "$1" == bell && "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] && return 0
+    local own_batch=0 i
+    if [[ "${_TAVS_RENDER_ACTIVE:-0}" != 1 ]]; then
+        _tavs_render_begin
+        own_batch=1
+    fi
+    case "$1" in
+        background) _TAVS_RENDER_BG="$2" ;;
+        palette)
+            _TAVS_RENDER_PALETTE="$2"
+            shift 2
+            _TAVS_RENDER_COLORS=("$@")
+            for ((i=${#_TAVS_RENDER_COLORS[@]}; i<16; i++)); do _TAVS_RENDER_COLORS[i]=""; done ;;
+        title)
+            _TAVS_RENDER_TITLE_FLAG=1 _TAVS_RENDER_TITLE="$2"
+            _TAVS_RENDER_TITLE_SAVE="${3:-0}" ;;
+        image) _TAVS_RENDER_IMAGE="$2" _TAVS_RENDER_IMAGE_PATH="${3:-}" ;;
+        bell) _TAVS_RENDER_BELL=1 ;;
+        *) return 1 ;;
+    esac
+    _TAVS_RENDER_PENDING=1
+    if [[ "$own_batch" == 1 ]]; then _tavs_render_flush; fi
+}
+
+_tavs_render_payload() {
+    printf '%s\0' "$_TAVS_RENDER_BG" "$_TAVS_RENDER_PALETTE" "${_TAVS_RENDER_COLORS[@]}" \
+        "$_TAVS_RENDER_TITLE_FLAG" "$_TAVS_RENDER_TITLE" "$_TAVS_RENDER_IMAGE" \
+        "$_TAVS_RENDER_IMAGE_PATH" "$_TAVS_RENDER_BELL"
+}
+
+_tavs_render_flush() {
+    _TAVS_RENDER_ACTIVE=0 _TAVS_MANAGED_STALE=0
+    [[ "${_TAVS_RENDER_PENDING:-0}" == 1 ]] || return 0
+    local result=0 outcome=""
+    if _tavs_managed_helper; then
+        _tavs_managed_context || result=$?
+    else
+        _TAVS_MANAGED_HELPER_CHECKED=0
+        result=1
+    fi
+    if [[ "$result" == 0 ]]; then
+        outcome=$(_tavs_render_payload | "$_TAVS_MANAGED_HELPER" --managed-render \
+            "$HOME/.tavs/visual-restrictions.state" "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" \
+            "$TTY_DEVICE" "$TAVS_ORGANIZER_CONTEXT" "${TAVS_ORGANIZER_SYNTHETIC:-0}") || result=$?
+    fi
+    _TAVS_RENDER_PENDING=0
+    if [[ "$result" == 0 ]]; then
+        case "$outcome" in
+            rendered)
+                if [[ "$_TAVS_RENDER_TITLE_SAVE" == 1 ]]; then
+                    _tavs_render_title_delivered
+                fi ;;
+            restricted|unaffected) ;;
+            *) result=1 ;;
+        esac
+    fi
+    if [[ "$result" != 0 ]]; then
+        [[ "$result" == 3 ]] && _TAVS_MANAGED_STALE=1
+        printf 'tavs: current render unavailable\n' >&2
+    fi
+    return "$result"
 }

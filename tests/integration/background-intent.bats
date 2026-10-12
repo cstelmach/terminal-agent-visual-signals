@@ -42,7 +42,10 @@ PY
 set -e
 source "$1/src/core/terminal-osc-sequences.sh"
 capture="$2"
-_tavs_managed_background() { printf '%s\n' "$1" >> "$capture"; }
+_tavs_render_flush() {
+    printf '%s\n' "$_TAVS_RENDER_BG" >> "$capture"
+    _TAVS_RENDER_ACTIVE=0 _TAVS_RENDER_PENDING=0
+}
 _TAVS_SUPPRESS_OUTPUT=1
 _TAVS_PENDING_BUFFER="$capture.pending"
 send_osc_bg '#112233'
@@ -58,7 +61,7 @@ SCRIPT
     cat > "$CASE_DIR/check.sh" <<'SCRIPT'
 set -e
 source "$1/src/core/terminal-osc-sequences.sh"
-_tavs_managed_background() { _TAVS_MANAGED_STALE=1; return 3; }
+_tavs_render_flush() { _TAVS_MANAGED_STALE=1; return 3; }
 send_osc_bg '#445566'
 test ! -s "$TTY_DEVICE"
 SCRIPT
@@ -378,4 +381,74 @@ SH
     ' _ "$REPO_ROOT" "$CASE_DIR"
     [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
     [ -z "$output" ]
+}
+
+@test "owned PTY fresh hard rule replaces the complete queued ordinary style batch" {
+    : > "$CASE_DIR/image.png"
+    run _owned_pty bash -c '
+        set -e
+        export TAVS_AGENT=claude
+        source "$1/src/core/terminal-osc-sequences.sh"
+        source "$1/src/core/backgrounds.sh"
+        _tavs_organizer_begin processing
+        _TAVS_SUPPRESS_OUTPUT=0
+        _tavs_render_begin
+        PALETTE_DARK_0="#010203"
+        send_osc_palette dark
+        send_osc_bg "#112233"
+        _tavs_render_queue title OLD_STYLE_TITLE
+        _set_bg_image_iterm2 "$2/image.png"
+        BELL_ON_PERMISSION=true
+        send_bell_if_enabled permission
+        cat > "$TAVS_RUNTIME_DIR/lock.state" <<STATE
+LOCKED="true"
+LOCK_UNTIL_EPOCH="$(( $(date +%s) + 300 ))"
+UNLOCK_UNTIL_EPOCH="0"
+WRITTEN_EPOCH="$(date +%s)"
+LOCK_BG="#334455"
+LOCK_FG="#EEEEEE"
+SCHEMA_VERSION="1"
+STATE
+        _tavs_render_flush
+        python3 - "$TAVS_RUNTIME_DIR/organizer" <<'"'"'PY'"'"'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1]);intent=json.loads(next(root.glob("intent-*.json")).read_text())
+assert intent["background"]=="#112233"
+PY
+    ' _ "$REPO_ROOT" "$CASE_DIR"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+    python3 - "$output" "$CASE_DIR/image.png" <<'PY'
+import base64,re,sys
+output=sys.argv[1]
+assert ']11;#334455' in output and 'locked until' in output
+assert 'OLD_STYLE_TITLE' not in output and '#112233' not in output and '\x1b]4;' not in output
+assert base64.b64encode(sys.argv[2].encode()).decode() not in output
+without_osc=re.sub(r'\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)','',output)
+assert '\x07' not in without_osc
+PY
+}
+
+@test "owned PTY superseded synthetic batch emits no style or intent" {
+    run _owned_pty bash -c '
+        set -e
+        export TAVS_AGENT=claude
+        source "$1/src/core/terminal-osc-sequences.sh"
+        _tavs_organizer_begin complete
+        old_context="$TAVS_ORGANIZER_CONTEXT"
+        _tavs_render_begin
+        send_osc_bg "#445566"
+        send_osc_palette_reset
+        _tavs_render_queue title OLD_SYNTHETIC_TITLE
+        _tavs_organizer_begin permission
+        export TAVS_ORGANIZER_CONTEXT="$old_context" TAVS_ORGANIZER_SYNTHETIC=1
+        result=0
+        _tavs_render_flush || result=$?
+        test "$result" = 3
+        python3 - "$TAVS_RUNTIME_DIR/organizer" <<'"'"'PY'"'"'
+import pathlib,sys
+assert not list(pathlib.Path(sys.argv[1]).glob("intent-*.json"))
+PY
+    ' _ "$REPO_ROOT"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+    [[ "$output" != *$'\033]'* && "$output" != *OLD_SYNTHETIC_TITLE* ]]
 }

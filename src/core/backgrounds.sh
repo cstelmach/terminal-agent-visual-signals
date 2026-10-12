@@ -70,22 +70,12 @@ _set_bg_image_iterm2() {
         return 1
     fi
 
-    # Base64 encode the path (iTerm2 requires this)
-    local encoded_path
-    encoded_path=$(printf "%s" "$image_path" | base64 | tr -d '\n')
-
-    # Send OSC 1337 sequence via emit_osc (handles mute suppression)
-    emit_osc '\033]1337;SetBackgroundImageFile=%s\007' "$encoded_path"
-
-    return 0
+    _tavs_render_queue image iterm2-set "$image_path"
 }
 
 # Clear background image in iTerm2
 _clear_bg_image_iterm2() {
-    # Send empty value to clear via emit_osc (handles mute suppression)
-    emit_osc '\033]1337;SetBackgroundImageFile=\007'
-
-    return 0
+    _tavs_render_queue image iterm2-clear
 }
 
 # ==============================================================================

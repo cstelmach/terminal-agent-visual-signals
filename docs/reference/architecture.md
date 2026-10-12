@@ -1,7 +1,20 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.13
+Version: 1.14
+
+## Current-invocation render transaction
+
+Hooks collect typed values locally and flush once before a timer or delayed callback starts.
+Each idle tick begins a new batch. Headless `--managed-render` validates finite input, exact
+target and frozen context, then selects the current restriction or complete ordinary styling
+inside the existing device lock/deadline. Only background requests publish intent. Palette
+precedes composed background; title/image and a fresh ordinary bell follow in the same write.
+
+The helper returns `rendered`, `restricted` or `unaffected`. Shell title-last-set tracking changes
+only after confirmed ordinary delivery. Synthetic stale status 3 ends a worker; other failures
+retry the same stage, whose applied index changes only after success. No style history is saved.
+The existing optional Kitty image subprocess is outside this Ghostty release's transaction.
 
 ## Finite render payload
 
@@ -155,9 +168,8 @@ rejected. State mutations in `prepare` must also honor the passed deadline becau
 closure cannot be forcibly canceled. Busy locks and backpressured devices retain the same
 budget, and independent healthy writes can complete. The lock inode is never replaced/unlinked.
 
-Broadcaster and managed background/reset callers use this writer. Ordinary palette/title/image
-output still needs a single typed render transaction; its current direct-write gap is tracked
-as Codex R2 in the dated Phase 6 package.
+Broadcaster and complete current-invocation render/reset callers use this writer. Ordinary
+palette/title/image/bell output shares the current policy transaction, closing Codex R2.
 
 ## Persistent visual suspension
 
