@@ -20,6 +20,8 @@ struct MuteStateData {
     // shell readers parse known keys only, so SCHEMA_VERSION stays 1.
     var pauseBg: String = ""
     var pauseFg: String = ""
+    var hardCaused: Bool = false
+    var requestedMuted: Bool? = nil
 
     func serialize() -> String {
         var lines: [String] = []
@@ -31,6 +33,8 @@ struct MuteStateData {
         lines.append("PAUSE_BG=\"\(pauseBg)\"")
         lines.append("PAUSE_FG=\"\(pauseFg)\"")
         lines.append("SCHEMA_VERSION=\"1\"")
+        lines.append("MUTE_LEVEL=\"\(hardCaused ? "hard" : "soft")\"")
+        lines.append("REQUESTED_MUTED=\"\((requestedMuted ?? muted) ? "true" : "false")\"")
         return lines.joined(separator: "\n") + "\n"
     }
 }

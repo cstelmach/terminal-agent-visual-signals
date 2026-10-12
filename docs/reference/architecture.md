@@ -1,7 +1,25 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.4
+Version: 1.5
+
+## Current global policy
+
+`VisualRestrictionPolicy.current(deadline:)` runs inside managed output preparation, reusing
+the original deadline. It reads suspension first and again before returning. Lock/mute files
+are bounded to 8 KiB and opened as regular files without following symlinks. Unsafe/unreadable
+files report fixed availability errors; malformed rule data cannot enable a restriction.
+
+Finite effective hard locks precede soft liveness/heartbeat checks. A grant releases hard
+causes and preserves an independent soft cause. Soft validity checks refresh time after PID
+liveness. Color composition uses the persisted resolved fields and existing PauseVisual
+normalization, without configuration reload or AppKit inside the writer.
+
+Mute schema 1 adds `MUTE_LEVEL="hard|soft"` and `REQUESTED_MUTED="true|false"` after its existing
+fields. The requested flag preserves current rule intent while effective MUTED is false under
+suspension. Unknown requested flags cannot enable paint; missing fields retain legacy behavior.
+The scheduler must populate these fields and preserve the requested rule's finite expiry/colors
+so independent resumption does not await a GUI tick. Typed writer routing remains in progress.
 
 ## Recovery target and effect records
 

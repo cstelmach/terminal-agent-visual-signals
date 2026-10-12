@@ -74,7 +74,7 @@ final class MuteStateTests: XCTestCase {
     func testSerializeLineOrder() {
         let state = MuteStateData(muted: true, reason: .quietPeriod, untilEpoch: 100, writtenEpoch: 200, appPID: 300)
         let lines = state.serialize().split(separator: "\n", omittingEmptySubsequences: true)
-        XCTAssertEqual(lines.count, 8)
+        XCTAssertEqual(lines.count, 10)
         XCTAssertTrue(lines[0].hasPrefix("MUTED="))
         XCTAssertTrue(lines[1].hasPrefix("REASON="))
         XCTAssertTrue(lines[2].hasPrefix("UNTIL_EPOCH="))
@@ -83,6 +83,28 @@ final class MuteStateTests: XCTestCase {
         XCTAssertTrue(lines[5].hasPrefix("PAUSE_BG="))
         XCTAssertTrue(lines[6].hasPrefix("PAUSE_FG="))
         XCTAssertTrue(lines[7].hasPrefix("SCHEMA_VERSION="))
+        XCTAssertEqual(lines[8], "MUTE_LEVEL=\"soft\"")
+        XCTAssertEqual(lines[9], "REQUESTED_MUTED=\"true\"")
+    }
+
+    func testSerializeDistinguishesHardCauseWithoutChangingSchema() {
+        var state = MuteStateData(muted: true, reason: .quietPeriod, untilEpoch: 100,
+                                  writtenEpoch: 200, appPID: 43)
+        XCTAssertFalse(state.hardCaused)
+        XCTAssertTrue(state.serialize().contains("MUTE_LEVEL=\"soft\""))
+        state.hardCaused = true
+        XCTAssertTrue(state.serialize().contains("MUTE_LEVEL=\"hard\""))
+        XCTAssertTrue(state.serialize().contains("SCHEMA_VERSION=\"1\""))
+    }
+
+    func testSerializeRequestedProjectionPreservesEffectiveMutedFlag() {
+        var state = MuteStateData(muted: false, reason: .quietPeriod, untilEpoch: 100,
+                                  writtenEpoch: 200, appPID: 43)
+        XCTAssertTrue(state.serialize().contains("REQUESTED_MUTED=\"false\""))
+        state.requestedMuted = true
+        XCTAssertTrue(state.serialize().contains("MUTED=\"false\"\n"))
+        XCTAssertTrue(state.serialize().contains("REQUESTED_MUTED=\"true\""))
+        XCTAssertTrue(state.serialize().contains("SCHEMA_VERSION=\"1\""))
     }
 
     func testSerializePauseVisualFields() {
@@ -150,8 +172,8 @@ final class MuteStateTests: XCTestCase {
             DispatchQueue.global().async {
                 if let content = try? String(contentsOf: path, encoding: .utf8) {
                     let lines = content.split(separator: "\n", omittingEmptySubsequences: true)
-                    // 8 lines = full schema-1 serialization incl. PAUSE_BG/PAUSE_FG.
-                    XCTAssertTrue(lines.count == 8 || lines.isEmpty,
+                    // Schema 1 retains its old fields and adds the explicit mute cause.
+                    XCTAssertTrue(lines.count == 10 || lines.isEmpty,
                                   "Partial read detected: \(lines.count) lines")
                 }
                 expectation.fulfill()
