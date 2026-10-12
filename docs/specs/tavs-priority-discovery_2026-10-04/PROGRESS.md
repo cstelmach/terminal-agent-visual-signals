@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 20:57 CEST
-**Version:** 2.9
+**Last Updated:** 2026-10-12 21:18 CEST
+**Version:** 3.0
 
 ## Session Metadata
 
@@ -28,12 +28,12 @@
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
-| 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
+| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | 6ea096e, ad5d0ca | 416 Swift; 61 Bats | | Rendering foundation; UI/acceptance pending |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 6. Four implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 7. Four implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -791,3 +791,42 @@ Phase 6 DoD is satisfied for source and owned PTYs without the menu event loop. 
 Blocked on physical Ghostty/UI acceptance. No install, sync, real preferences/schedules or existing
 process shutdown occurred. Goal remains active and incomplete. Next iteration: Phase 7 safe
 two-second previews and recovery controls, using this writer foundation; PLAN and SPEC body fixed.
+
+
+### Phase 7 preview foundation: 2026-10-12 21:18 CEST
+
+Previous goal turn was progress: Phase 6 source/PTY recovery completed. Source was clean at
+1aed4a7. Phase 7 remains In Progress; source rendering precedes controller/UI activation.
+Two read-only explorations are saved as phase7-preview-lifecycle-research.md and
+phase7-packaging-research.md. No build or live/native operations were delegated.
+
+6ea096e reuses existing hex/luminance/contrast math for a conservative preview tint, guided by
+current ordinary intent or configured defaults. Invalid/unsafe/negligible results are unavailable.
+Configured normal-text contrast stays at 4.5:1 or the existing lower baseline. Four pure tests
+cover light/dark, current intent/reset, unsafe baseline and invalid input; no program-color claim.
+
+ad5d0ca adds a separate preview.json slot within exact target records. Preview leases expire at
+two seconds; foreground/palette/title/cursor are untouched by these background effects. Ordinary
+updates retain intent beneath the cue. Expiry/clear reveals latest intent, OSC111 for plain shells
+or an underlying selective lease. Suspension permits previews, global rules win and recovery
+cancels both slots once across aliases. Seven owned-PTY cases cover those paths and owner exit.
+
+Missing-API red Dhy8yw preceded focused106 green JPQH9q and full416 green ZXLvOU. A targeted
+renewal regression then found same-ID saves could change the original heartbeat (ZplMaF, two
+assertions). Save now preserves preview timestamps, and refresh cannot extend preview ownership.
+Final full416 PYYaKP passes in 4.366s without warnings; release5XFpXO passes in 9.54s.
+Current release-helper Bats61 xSV7r5 passes (background12, managed22, idle6, emit6, liveness7,
+CLI recovery8). Full isolated logs are retained. Scratch/backups:
+`/tmp/tavs-phase7-preview-foundation-20261012/`; shared owned Swift scratch remains Phase 6's build.
+
+Scope: six connected Swift source/test paths, including three existing shared writer paths from
+Phase 6 required for preview lifetime/composition; API/bug/roadmap docs track this foundation.
+No new product decision, generic parser, dependency, timer framework or recovery protocol.
+
+Next: bounded configuration resolution; exact-ID controller start/clear and a separate selection
+expiry timer; Sessions/menu recovery wiring; exact copied-file sync and fixture tests. Resolve and
+regress an initial preview queued across independent recovery before enabling it: an in-memory
+ID alone cannot observe headless cancellation of an effect not yet saved. Existing refresh/normal
+release already use safe typed composition; do not reintroduce pending replay. No actual Ghostty,
+installed-app change or real settings/schedules/process shutdown occurred. All physical cases
+remain unverified. Goal active; Phases 8/9 not started. PLAN and SPEC body remain fixed.

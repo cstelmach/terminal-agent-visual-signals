@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 9 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1331,6 +1331,81 @@ then test both successful retention and unavoidable failure. A candidate rule is
 semantic persistence from physical delivery without granting either operation a fresh timeout.
 No new skill or control mechanism is proposed. Tool results and diffs are [O]; motivation and
 model identity are [R]. The capture records observable decisions, not hidden computation.
+
+## 2026-10-12 · gpt-6 (self-reported) · preview-rendering-foundation
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported [R]; no native message.model evidence
+  interface: codex-desktop
+  thinking: unknown; user requested ultrathink
+  session: 01a10879
+  trace: observed visible tool calls; motives reconstructed
+
+**Framing [O]**: The goal continuation began from committed Phase 6 recovery, not the old
+Phase 1 locator in the objective. The dated progress table selected Phase 7. This slice implements
+rendering and persisted preview ownership before selection/controller activation. Physical native
+acceptance is still open. The interpretation preserves the full nine-phase goal and all product
+requirements; the partial source checkpoint is explicitly In Progress.
+
+**Strategy [O/R]**: Two read-only explorers investigated lifecycle and packaging independently,
+while the parent read the current writer and color math. Existing managed serialization already
+provides descriptor validation, current policy, intent binding and healthy-target recovery. The
+chosen extension adds a preview slot beside the existing effect slot rather than a second writer
+or timer framework. The reason for this separation is reconstructed from the requirement that
+preview clearing leave an underlying focus effect intact [R]. Pure tint composition reuses the
+existing normalized hex and luminance calculations; it refuses invalid or unsafe results [O].
+
+**Action trace [O]**:
+
+| # | Move | Object | Evidence |
+|---|------|--------|----------|
+| 1 | Reorient | SPEC/PLAN/PROGRESS/Git | Phase 7, clean baseline |
+| 2 | Delegate read-only | Lifecycle and packaging | Two saved reports |
+| 3 | Add tests first | Tint and preview leases | Missing-interface red |
+| 4 | Implement | Shared math and separate slot | Focused 106/full 416 green |
+| 5 | Probe renewal | Generic same-ID save | Two assertions failed |
+| 6 | Correct/verify | Fixed timestamp | Full 416 and release pass |
+| 7 | Verify callers | Current helper shell/CLI | 61 Bats pass |
+| 8 | Commit/archive | Two features, finished log | Exact reconstruction |
+
+**Decision points [O]**: Preview expiry uses the original two-second timestamp and cannot renew
+through either heartbeat refresh or a same-ID save. Long selective leases retain their existing
+six-second heartbeat behavior. Global policy remains first; suspension allows a harmless preview.
+Recovery enumerates both records and cancels them with matching ID/controller/slot. Color distance
+is an engineering rejection of negligible changes, not evidence of native visibility. Configured
+foreground/background guide contrast; no running-program color query or input interception exists.
+
+**Failure arcs**:
+
+- F1, interface absence [O]: Tests failed on the missing renderer and preview kind/arguments.
+  The parent implemented only the connected shared primitives, then ran focused and full tests.
+  This red established missing contracts, not physical acceptance. Residue: controller and GUI
+  activation are still withheld until their own lifecycle checks are implemented.
+- F2, incomplete expiry invariant [O]: The first implementation prevented refresh renewal but
+  generic save still accepted a new timestamp. The targeted test showed the record changing from
+  1000 to 1001. The correction rejects timestamp changes for the same preview ID while preserving
+  ordinary lease heartbeats. Full 416 passed afterward. The interpretation is a shared mutation
+  boundary error [R]; fixing that boundary covers more than one caller [O].
+- F3, cancelled-work ordering [O/R]: Exploration identified an initial preview queued across
+  independent headless recovery. An in-memory controller token cannot observe cancellation of a
+  record that is not saved yet [R]. No controller start path was enabled this slice. The report
+  and progress retain this as a required design/test case, not a claimed solved race [O].
+
+**Verification [O]**: Eleven new tests cover configured contrast, intent/reset, unsafe input,
+preview expiry, exact-ID clear, underlying focus, suspension/recovery, aliases, controller exit
+and global precedence. Full Swift passed 416 in 4.366 seconds; release build passed in 9.54 seconds.
+The current release helper passed 61 selected Bats checks. No Python rerun was needed because
+only Swift internals changed. No install, real settings, native automation or UI verification ran.
+The finished Phase 4 log moved unchanged; byte reconstruction preserves pending and historical
+progress while retaining blocked Phase 2 and full Phase 5/6 records.
+
+**Heuristics and confidence**: P9 recurs: state and Git select the next bounded work, not an old
+objective locator. Candidate: a finite lease needs an immutable origin across every mutation API,
+not only its obvious refresh method. No new skill promotion or process mechanism is proposed.
+Tool results and source changes are [O]; causal interpretation and model identity are [R]. The
+next slice must supply bounded configuration resolution, controller/UI wiring, copy tests and
+native acceptance before Phase 7 can be completed.
 
 ## Stubs
 
