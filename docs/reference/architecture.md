@@ -1,7 +1,29 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.6
+Version: 1.7
+
+## Typed recovery coordinator
+
+`VisualRecovery` composes current policy and latest intent through the managed writer. Its
+callback revalidates the opened device and binding, publishes/binds ordinary intent under the
+same lock, and persists global effects before paint. Live selective backgrounds override
+ordinary intent; expiry/clear restores the latest bound intent using background-only output.
+
+`recover` saves suspension or explicit resumption first. Cached targets fan out independently
+while native discovery runs off main. Available native rows add exact targets; registry names
+remain hints. Confirmed vanished bindings and failed/unverified candidates are reported
+separately, with failures retained. Catalogue unavailability is explicit and does not defeat
+successful cached restoration. It alone is not evidence of a failed live target.
+
+Emergency reset cancels current ownership and removes the exact obsolete pending file without
+reading or replaying it, then sends OSC 104/110/111. Resume clears selective ownership and
+composes only the current rule/intent. Dedicated scopes reject cached owner-only candidates
+that lack an allowed native identity. No navigation, terminal input or process control occurs.
+
+This coordinator passes owned-PTY tests, including queued recovery ordering and healthy repaint
+before blocked discovery finishes. Production broadcaster/shell/startup/headless routing and
+the public managed capability are still unfinished; preview/focus release remains gated.
 
 ## Intent publication inside managed output
 
@@ -31,8 +53,9 @@ normalization, without configuration reload or AppKit inside the writer.
 Mute schema 1 adds `MUTE_LEVEL="hard|soft"` and `REQUESTED_MUTED="true|false"` after its existing
 fields. The requested flag preserves current rule intent while effective MUTED is false under
 suspension. Unknown requested flags cannot enable paint; missing fields retain legacy behavior.
-The scheduler must populate these fields and preserve the requested rule's finite expiry/colors
-so independent resumption does not await a GUI tick. Typed writer routing remains in progress.
+The scheduler preserves these fields, requested finite expiry and resolved colors. It writes
+both projections before visual reconciliation so fresh checks see the new rule. Typed writer
+routing remains in progress.
 
 ## Recovery target and effect records
 

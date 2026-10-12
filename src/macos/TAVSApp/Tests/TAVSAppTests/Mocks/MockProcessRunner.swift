@@ -6,7 +6,7 @@ final class MockProcessRunner: ProcessRunner {
     var runCallLog: [(URL, [String])] = []
     var boundedResults: [Result<Data, Error>] = []
     var boundedHandler: ((URL, [String], TimeInterval) throws -> Data)?
-    var managedHandler: ((String, URL, (Int32, UInt64) throws -> Data?) throws -> Bool)?
+    var managedHandler: ((String, URL, @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
     private let lock = NSLock()
     private var _writtenDevices: [(String, Data)] = []
     private var _managedCallLog: [(String, URL)] = []
