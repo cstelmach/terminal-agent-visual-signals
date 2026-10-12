@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 23:05 CEST
-**Version:** 3.3
+**Last Updated:** 2026-10-12 23:34 CEST
+**Version:** 3.4
 
 ## Session Metadata
 
@@ -29,11 +29,11 @@
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
-| 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
+| 8: Manual captured working set | In Progress | 2026-10-12 23:17 | | 3ed6136 | 442 Swift | | Renderer foundation; writer/controller/UI pending |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 7. Four implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 8. Four implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -48,6 +48,8 @@ Checkpoints report hashes without separate self-referencing state commits.
 - [PROGRESS_appendix_phase-4.md](PROGRESS_appendix_phase-4.md): completed Phase 4 record/intake source log.
 
 - [PROGRESS_appendix_planning-and-goal-preparation.md](PROGRESS_appendix_planning-and-goal-preparation.md): finished initial planning and goal preparation.
+
+- [PROGRESS_appendix_phase-7-renderer-foundation.md](PROGRESS_appendix_phase-7-renderer-foundation.md): completed renderer/controller foundations.
 
 ## Log
 
@@ -730,94 +732,13 @@ process shutdown occurred. Goal remains active and incomplete. Next iteration: P
 two-second previews and recovery controls, using this writer foundation; PLAN and SPEC body fixed.
 
 
-### Phase 7 preview foundation: 2026-10-12 21:18 CEST
+### Phase 7 renderer foundation
 
-Previous goal turn was progress: Phase 6 source/PTY recovery completed. Source was clean at
-1aed4a7. Phase 7 remains In Progress; source rendering precedes controller/UI activation.
-Two read-only explorations are saved as phase7-preview-lifecycle-research.md and
-phase7-packaging-research.md. No build or live/native operations were delegated.
+> Completed renderer checkpoint. [Detailed log](PROGRESS_appendix_phase-7-renderer-foundation.md).
 
-6ea096e reuses existing hex/luminance/contrast math for a conservative preview tint, guided by
-current ordinary intent or configured defaults. Invalid/unsafe/negligible results are unavailable.
-Configured normal-text contrast stays at 4.5:1 or the existing lower baseline. Four pure tests
-cover light/dark, current intent/reset, unsafe baseline and invalid input; no program-color claim.
+### Phase 7 controller/configuration foundation
 
-ad5d0ca adds a separate preview.json slot within exact target records. Preview leases expire at
-two seconds; foreground/palette/title/cursor are untouched by these background effects. Ordinary
-updates retain intent beneath the cue. Expiry/clear reveals latest intent, OSC111 for plain shells
-or an underlying selective lease. Suspension permits previews, global rules win and recovery
-cancels both slots once across aliases. Seven owned-PTY cases cover those paths and owner exit.
-
-Missing-API red Dhy8yw preceded focused106 green JPQH9q and full416 green ZXLvOU. A targeted
-renewal regression then found same-ID saves could change the original heartbeat (ZplMaF, two
-assertions). Save now preserves preview timestamps, and refresh cannot extend preview ownership.
-Final full416 PYYaKP passes in 4.366s without warnings; release5XFpXO passes in 9.54s.
-Current release-helper Bats61 xSV7r5 passes (background12, managed22, idle6, emit6, liveness7,
-CLI recovery8). Full isolated logs are retained. Scratch/backups:
-`/tmp/tavs-phase7-preview-foundation-20261012/`; shared owned Swift scratch remains Phase 6's build.
-
-Scope: six connected Swift source/test paths, including three existing shared writer paths from
-Phase 6 required for preview lifetime/composition; API/bug/roadmap docs track this foundation.
-No new product decision, generic parser, dependency, timer framework or recovery protocol.
-
-Next: bounded configuration resolution; exact-ID controller start/clear and a separate selection
-expiry timer; Sessions/menu recovery wiring; exact copied-file sync and fixture tests. Resolve and
-regress an initial preview queued across independent recovery before enabling it: an in-memory
-ID alone cannot observe headless cancellation of an effect not yet saved. Existing refresh/normal
-release already use safe typed composition; do not reintroduce pending replay. No actual Ghostty,
-installed-app change or real settings/schedules/process shutdown occurred. All physical cases
-remain unverified. Goal active; Phases 8/9 not started. PLAN and SPEC body remain fixed.
-
-
-### Phase 7 controller and configuration: 2026-10-12 22:19 CEST
-
-Previous turn was progress; resumed clean f27d65d. Phase 7 remains In Progress. No native or
-Ghostty runtime call was made. Two read-only follow-ups examined existing marker ordering and
-installed manuals; native primary-source research closed the canonical-output and appearance gap.
-Wiki recall returned unrelated passages (proceed). AGY stopped before provider because mandatory
-fingerprinting conflicted with project rules; no retry, verdict or substitute AGY claim was made.
-
-6ad445a adds start/clear operations and a pinned read-only marker revision. Cache the validated
-target before in-lock comparison, preserving recovery discovery ordering and the original100ms.
-Same-value recovery/resume replacements reject queued starts; stale clear cannot reapply ordinary
-color after emergency reset. No new schema, counter, marker or polling protocol. Missing-API red
-EeVWRO preceded implementation. Focused51 ZBRrkE caught a fixture reading bytes for a target
-cached only after recovery; reading actual restored report items fixed it. Focused59 vkRHZl passed.
-
-7c66769 adds one two-second selection expiry, exact current-ID guards, separate start/clear queues,
-retryable cleanup and cancellation for recovery without painting. The skeleton was drafted before
-its controller tests, a test-order deviation; tests then exposed a real multiselection failure.
-Y7XFZg failed three assertions; pre-creating only the shared targets directory made EETWo0 pass.
-7af78be fixes the common-parent creation race and preserves directory/deadline checks. A stress
-case covers 32 targets in four fresh roots; no fake pre-created directory remains in the fixture.
-Focused123 jqKiLg passed. The policy-race fixture's misspelled enum case failed compilation in
-YdbNlw; current-source masterPaused corrected it, without production semantics changes.
-
-a19a087 validates existing config before canonical color parsing. Missing nonempty config uses
-explicit defaults to avoid Ghostty's default-template branch. Duplicate/missing/bad output and
-unresolved dual-theme appearance fail explicitly. Upstream +show-config has no appearance flag
-and can omit diagnostics; +validate-config is required. Config deletion during query and optional
-file reads remain native limitations. No config input parser, copied config or OSC query was added.
-Renderer missing-API red YyaNSR preceded seven-test green JFEYuB. Installed runtime remains untested.
-
-Final full435 qr2sDR passes in 4.926s without warnings; release xHie4A passes in 15.74s. Earlier
-full430 eWsOn6 and full434 BuURVw also passed. Broadened Bats73 YrbhdG found two obsolete parity
-fixtures: regular-file output and an unused private lock-flag assertion. Fixed in 2a78209
-by using an owned PTY and keeping observable suppression/definition/intent assertions.
-Focused parity6 aU1cpi and final connected73 0wjoLC pass with the current release helper;
-preprocessing/source syntax oFTeG3 and diff checks pass. No new Python scope warranted a rerun.
-
-Reports: phase7-recovery-order-research.md, phase7-installed-config-research.md,
-phase7-native-color-gap-research.md and phase7-agy-color-research-failed.md. Backups:
-`/tmp/tavs-phase7-preview-controller-20261012/`; isolated failures/full logs retained.
-Scope: ten Swift source/test paths plus one connected parity fixture and API/bug/roadmap docs;
-shared state/recovery helpers are necessary Phase 7 extensions. PLAN and SPEC body unchanged.
-Next: connect Sessions selection/Clear/Escape/close and GUI recovery; use a PID-bound executable
-and explicit private configuration paths, then exact sync copies and signed fixture acceptance.
-Before a fixture GUI recovery action, verify its headless factory cannot enumerate real Ghostty.
-No install, sync, real settings/schedules, existing process shutdown or physical acceptance.
-Goal stays active. Phase 2 remains Blocked; Phases 8/9 not started.
-
+> Completed controller checkpoint. [Detailed log](PROGRESS_appendix_phase-7-renderer-foundation.md).
 
 ### Phase 7 GUI preview/recovery checkpoint: 2026-10-12 22:50 CEST
 
@@ -898,3 +819,40 @@ The prior staged fixture remains available; production app, schedules and sessio
 **Next:** Phase 8 manual captured working set may proceed from this verified source foundation.
 Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected state/controller
 callers before tests. One phase per next goal iteration; the master goal remains active.
+
+
+### Phase 8 renderer foundation: 2026-10-12 23:34 CEST
+
+Continued from clean `efcb6cd`, skipping only the explicitly Blocked native acceptance in
+Phases 2/7. This slice covers the pure Phase 8 renderer, not an active manual controller.
+`3ed6136` adds focusBackground: linear-light desaturation plus bounded neutral luminance
+adjustment. Candidates require RGB distance 24, luminance change at most 0.08 and configured
+normal-text contrast at least 4.5, or no worsening below that baseline. Invalid/unsafe cases
+are unavailable. Shared current/reset background resolution preserves existing preview behavior.
+PauseVisual.linearized became module-visible for reuse; this is the sole connected extra file.
+
+Three new tests cover neutral dark/light/black/white, saturated current intent, invalid colors
+and low-contrast extremes. Red `NO2q4J` failed on missing focusBackground. Focused `u9Gnlq`
+passed 10/10; full `UpDPzH` passed 442/442 in 7.330 seconds without warnings. Final focused
+`baLTjz` rechecked normalization assertions. Release `tCKZ1J` passed in 10.13 seconds. All runs
+used tests/run-isolated.sh and the owned Phase 6 scratch build. No shell source changed.
+
+Read-only source reports are preserved as phase8-writer-contract-research.md and
+phase8-manual-lifecycle-research.md. Verified the important seams in source: current global and
+fixed selective leases share effect.json; composition reuses the stored color; strict effect
+JSON rejects new keys; $objectWillChange precedes mode publication. A manual recipe needs a
+separate recoverable slot, fresh-intent composition, guarded renewal and exact-ID clear.
+An already persisted lease also needs to reject old recovery revisions after partial cancel
+and resume. Request-only guards cannot prove that. Preserve the pinned revision lifetime;
+do not serialize descriptors or add another token file/service. No guard design is implemented
+or claimed complete in this pure-renderer slice.
+
+**Next:** add owned-PTY writer/record tests before enabling manual focus. Cover dynamic intent,
+three-slot precedence, aliases, metadata validation, partial recovery/resume, queued renewal,
+expired/canceled IDs and independent clear. Reuse current 100 ms writer and marker revision.
+Then extend the same controller with captured IDs and keep Sessions' existing refresh timer
+alive while window open OR Manual, observing the actual new $mode value. Catalogue failure
+retains logical IDs and authorizes no new dimming; require a verified working binding before
+painting outside targets. Preserve preview independence and end Manual on confirmed last closure.
+Manual UI, lease/controller implementation and physical native acceptance remain pending.
+The goal stays active. Do not start Phase 9 or claim real salience/readability from color math.

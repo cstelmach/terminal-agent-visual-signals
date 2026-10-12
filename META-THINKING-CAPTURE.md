@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 12 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 13 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1620,3 +1620,74 @@ generated value is inspected. P9 already belongs to execute-spec; no new workflo
 
 **Confidence:** Source, tests, commands, state changes and failure messages are observed.
 Claims about why reuse reduced complexity are reconstructed design arguments.
+
+
+## 2026-10-12 · gpt-6 (self-reported) · manual-dimming-renderer-foundation
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed commands, diffs and source; motivations reconstructed
+
+**Framing [O]:** Continued from the committed packaging checkpoint. The dated progress table
+kept Phases 2 and 7 blocked on physical acceptance, with Phase 8 next. The selected work was a
+manual-focus foundation, not automatic attention behavior. The private test runner and source
+helper remained the verification boundary; no Ghostty request, desktop action or real setting
+mutation was attempted. SPEC body and PLAN stayed fixed, with only the SPEC tracking phase changed.
+
+**Strategy [O/R]:** Read current renderer, record decoder, writer and controller contracts.
+Two existing Explore agents investigated distinct writer and lifecycle questions. Parent source
+reads checked their consequential findings. The pure color transform could be implemented and
+tested independently of the still-missing ownership/controller path. [R] Separating those
+concerns reduced the chance of presenting manual activation before recovery ordering was sound.
+No other writer, service, token file or adapter was introduced.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient | SPEC/PLAN/PROGRESS/GOAL | Phase 8 selected; P9 applied |
+| Parallel Explore | Writer and captured-set lifecycle | Reports retained in dated package |
+| Source check | Fixed color, shared slot, strict decoder, mode notification | Implementation seams identified |
+| Red tests | Manual color function | Missing focusBackground compilation failure |
+| Implement | Existing renderer/luminance helper | Linear-light desaturation and neutral bounds |
+| Verify | Focused/full Swift and release | 10 focused, 442 full, release passed |
+| Preserve | Completed older information blocks | Round trip checked; live blockers retained |
+
+**Decision points [O/R]:** Used linear-light channel mixing so desaturation preserves luminance
+before a bounded neutral shift. Reused the existing linearization method by making it module-
+visible, and shared current/reset resolution between preview and manual transforms. Required
+visible RGB distance and a contrast floor, returning nil for invalid or unsafe results. [R]
+This supplies an explicit unavailable state instead of inventing foreground changes or claiming
+arbitrary ANSI/TrueColor readability. The transform is not yet a controller or a physical test.
+
+**Failure and discovery arcs [O/R]:** The red test exposed the missing method, then the focused
+suite passed after implementation. Source investigation showed that global pause and fixed
+selective effects share effect.json, so simply renewing that slot would lose the manual recipe
+on pause. Composition also uses cached background verbatim, preventing fresh-intent dimming.
+The strict decoder rejects unknown keys. A request-only recovery revision cannot invalidate an
+already persisted lease after partial cancellation followed by resume. These are verified source
+boundaries for the next tests; no fix for them is claimed in this slice. Another progress-size
+assertion stopped before updating the parent file when one archived block was insufficient.
+A second finished information block was preserved, and the reverse substitution reproduced the
+entire earlier text. The authority file finished at 858 lines without losing blocked cases.
+
+**Heuristics and verification [O]:** Treat an explorer recommendation as a proposed implementation
+until checked in the actual writer. Keep logical working IDs, preview, paint ownership and
+catalogue availability separate. Observe the new published mode value rather than rereading it
+from objectWillChange. Before painting outside terminals, require a verified working binding.
+Tests cover dark/light/black/white neutral changes, saturated ordinary colors, reset handling,
+malformed inputs and impossible low-contrast extremes. The full suite retained all old preview
+behavior. The release build passed, but no live effect, palette, cursor, foreground or title
+change occurred. Current manual writer/controller/UI and physical acceptance remain incomplete.
+
+**Pattern candidates [R]:** Verify whether a global rule replaces stored selective authority
+before assuming release can restore it. Test persisted stale authority after partial recovery,
+not only queued callback cancellation. P9 already belongs to execute-spec; no new workflow is
+proposed. The next slice should turn these source findings into owned-terminal regressions.
+
+**Confidence:** Code, commands, tests and inspected contract gaps are observed. The reason for
+choosing a bounded renderer-first slice is reconstructed; it is not a completion claim.
