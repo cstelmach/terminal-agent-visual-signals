@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 20:39 CEST
-**Version:** 2.8
+**Last Updated:** 2026-10-12 20:57 CEST
+**Version:** 2.9
 
 ## Session Metadata
 
@@ -27,13 +27,13 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 390 Swift; 53 selected Bats; 230 audited + 58 scoped Python | | Aliases/render/retry fixed; intent retention pending |
+| 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 6. Five implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 6. Four implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -846,3 +846,43 @@ phase6-render-shell-report.md and phase6-intent-retention-design.md. No source i
 physical native acceptance remains unverified. Next: finish/test R4 foundation and root wiring,
 then record all review dispositions before Phase 7. No new product decision, hook, adapter,
 stronger lock, generic OSC parser or control plane was added.
+
+
+### Phase 6 COMPLETE: 2026-10-12 20:57 CEST
+
+818fe5e adds deadline-bound pre-open publication and exact lifetime binding; 0704512 wires
+ordinary color/reset and full renders. The metadata lock is released before device open.
+Preparation repeats stale validation under the output lock. Style-only requests publish no
+background. Malformed forced-reset titles fail before publication. Failed delivery remains failure.
+Full-budget publication-lock contention cannot retain intent and receives no second budget.
+
+Foundation missing-API red ME0UfZ preceded 83/83 focused green 94ycmO. Parent behavioral red
+E5EXgN had seven assertions across three tests. Wiring yielded focused121 green jCKqYd.
+Added a newer-intake-during-open race. Full405 WQ84I6 caught only the fixture's future timestamp;
+advancing its clock fixed it. Final full405 smUB0P passes in 4.334 seconds without warnings.
+Release build e4etSg passes in 10.29 seconds. Logs remain in the isolated runner directories;
+backups/builds are in `/tmp/tavs-phase6-routing-20261012T165000/`.
+
+Current release-helper verification: 100/100 Bats RqPiYw (background12, managed22, idle6,
+emit6, liveness7, CLI recovery8, mute-gate20, shellrc19), including actual scoped public CLI
+recovery/resumption and owned-PTY whole-render races. Audited Python230 WKHXsg passes in 10.86s.
+These suites use private roots and explicit helper paths. No actual Ghostty automation occurred.
+
+Review disposition: Codex R1 suspended cleanup fixed cd17388, R2 coupled styling fixed
+fcb684a/666c950, R3 duplicate aliases fixed 65f52c1. Degraded Claude R1 alias intent and R2 proven
+ended owner fixed 65f52c1, R3 transient idle retry fixed 666c950, R4 intent retention fixed above.
+Each finding was source-verified before correction and has targeted regressions. Historical review
+verdicts are preserved, not relabeled as approval of later source. AGY supplied no verdict before
+provider execution; its recorded technical limitation was not retried or bypassed.
+
+The five-file worker report is saved as phase6-intent-retention-report.md; its handoff boundary
+claims foundation83 only. This parent entry records final combined results. API_REFERENCE.md
+now documents public recovery and finite typed output. BUG_REFERENCE.md records cause/fix/tests;
+hard-lock reference reflects review limitations. Source, documentation and credential checks pass.
+Scope: seven connected Swift source/test paths for retention plus three API/bug/reference docs;
+all implement Phase 6 ordering and review fixes. No schema, raw output history or new hooks.
+
+Phase 6 DoD is satisfied for source and owned PTYs without the menu event loop. Phase 2 remains
+Blocked on physical Ghostty/UI acceptance. No install, sync, real preferences/schedules or existing
+process shutdown occurred. Goal remains active and incomplete. Next iteration: Phase 7 safe
+two-second previews and recovery controls, using this writer foundation; PLAN and SPEC body fixed.

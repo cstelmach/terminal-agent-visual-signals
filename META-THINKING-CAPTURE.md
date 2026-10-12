@@ -28,7 +28,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
 | P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
@@ -1258,6 +1258,79 @@ history. The previous review stub is folded here; old session entries remain byt
 to separating native aliases, continuing owners and producers. Outcomes above are [O] from visible
 tool results; causal strategy claims are [R]. Exact served model attribution remains unobserved.
 No new skill or model profile is proposed. This is a verified checkpoint, not goal completion.
+
+## 2026-10-12 · gpt-6 (self-reported) · intent-retention-and-recovery
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported [R]; environment only, no native message.model evidence
+  interface: codex-desktop
+  thinking: unknown; user requested ultrathink
+  session: 01a10879
+  trace: observed visible tool calls; causal interpretation reconstructed
+
+**Framing [O]**: Continued the active nine-phase goal from the dated package and current Git
+state. Phase 6 had one remaining review correction: intended background colors were lost when
+opening a device failed before preparation. Phase 2 still lacked physical native acceptance.
+The resumed worker owned five foundation paths and the shared build slot; the parent owned
+recovery integration. The old goal's Phase 1 locator was treated as historical, not current state.
+
+**Strategy [O/R]**: Used the established record store and device writer. Saving after a timed-out
+write could start a second budget; attempting publication with an expired deadline could save
+nothing. The chosen design publishes semantic intent before device open under the original
+100 ms deadline, releases the record lock, then revalidates before painting. This preserves the
+open-before-output-lock contract. The claim is deliberately bounded: device failure after saved
+publication retains intent; publication-lock exhaustion itself still fails without retention [O].
+The reason for choosing this order over deferred retries is reconstructed from those contracts [R].
+
+**Action trace [O]**:
+
+| # | Move | Object | Evidence |
+|---|------|--------|----------|
+| 1 | Reorient | Goal, skills, progress, Git | Phase 6 active; owned dirty paths |
+| 2 | Coordinate | Foundation worker/build slot | 83 focused green; released |
+| 3 | Run red | Recovery behavior | Three tests, seven expected assertions |
+| 4 | Wire | Prepublication and typed resets | Focused 121 green |
+| 5 | Test race | New intake during open | Clock fixture failed, corrected |
+| 6 | Verify | Full Swift/release/Bats/Python | 405/100/230 pass |
+| 7 | Commit | Foundation and recovery | 818fe5e, 0704512 |
+| 8 | Consolidate | Finished Phase 3 history | Exact byte reconstruction |
+
+**Decision points [O]**: Kept pre-open publication and output preparation separate instead of
+holding the output lock during a potentially wedged open. Reused the existing stale publisher
+inside preparation so a newer intake arriving during open wins. Moved forced-reset title
+validation before publication because invalid output must not mutate retained intent. Used the
+four-argument mock forwarding seam only where required; unrelated nil-callback callers retain
+the small existing interface. Source corrections are recorded separately from historical review
+verdicts, including the degraded Claude path and unavailable AGY provider.
+
+**Failure arcs**:
+
+- F1, fixture chronology [O]: The new race reported an invalid organizer record. The parent
+  inspected the exact failing assertions and validation code instead of weakening validation.
+  The observation time was 1001 while its virtual clock stayed at 1000. Advancing the fixture
+  clock allowed the intended stale-delivery rejection. Full 405 then passed. Residue: future
+  observations remain rejected; the earlier failed full-run log is retained.
+- F2, verification scope [O]: A documentation line-length check rejected a pre-existing long
+  hard-lock table row. The check was narrowed to newly added lines, preserving unrelated text.
+  No commit occurred on that failed check. A separate commit-body formatting mistake was
+  corrected immediately on the last owned commit using a text file with actual newlines.
+- F3, preserved formatting [O]: An unchanged moved log ended with blank lines. Appending a
+  return link resolved the diff check without trimming the preserved block or breaking the
+  round-trip assertion. The pending completion entry was retained in scratch during the move.
+
+**Verification [O]**: Full Swift passed 405 tests in 4.334 seconds; release build passed.
+The current release helper passed 100 selected Bats checks, including scoped public recovery,
+resumption and owned-PTY render races. Audited Python passed 230. Source-confirmed independent
+review findings have source/test dispositions. No installation, real settings changes, actual
+Ghostty automation or physical acceptance occurred. Publication-lock failure remains a real
+reported limit, not a successful paint. Phase 6 source/PTY DoD is complete; the master goal is not.
+
+**Heuristics and confidence**: P8 recurs: validate a review remedy against the original deadline,
+then test both successful retention and unavoidable failure. A candidate rule is to distinguish
+semantic persistence from physical delivery without granting either operation a fresh timeout.
+No new skill or control mechanism is proposed. Tool results and diffs are [O]; motivation and
+model identity are [R]. The capture records observable decisions, not hidden computation.
 
 ## Stubs
 
