@@ -98,7 +98,13 @@ It reduces chroma in linear light, then tries bounded neutral adjustments for vi
 background changes. Candidates need total RGB distance of 24 and luminance change at most 0.08.
 Configured-text contrast stays at least 4.5:1, or does not worsen a lower baseline. Invalid or
 unsafe inputs return nil. Current/reset intent handling is shared with the preview renderer.
-This function is not yet connected to renewable focus ownership or GUI activation.
+The managed writer now composes this transform from current ordinary intent on every paint.
+Only a guarded controller request advances the six-second heartbeat. Global pause and preview
+retain precedence without replacing the dynamic record; clearing or expiry recomposes fresh
+intent. Alias agreement compares inputs, revision, run and controller, not last computed color.
+Exact-ID clear cancels metadata before device open and emits no stale repaint after replacement.
+Stored revision mismatch cannot revive a lease after partial recovery and explicit resumption.
+Manual working-set/controller integration and GUI activation remain pending.
 
 ## Preview rendering foundation (Phase 7 source verified)
 

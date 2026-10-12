@@ -3,6 +3,188 @@ import Darwin
 @testable import TAVSApp
 
 final class VisualRecoveryTests: XCTestCase {
+    private func focusRequest(_ id: String = "manual", revision: VisualRestrictionsRevision? = nil,
+                              current: @escaping () -> Bool = { true }) throws -> TerminalFocusRequest {
+        TerminalFocusRequest(effectID: id, heartbeatAt: clock.now().timeIntervalSince1970,
+            colors: TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!,
+            revision: try revision ?? restrictions.captureRevision(), isCurrent: current)
+    }
+
+    private func focusedBytes(_ color: String?, request: TerminalFocusRequest) throws -> Data {
+        Data("\u{1B}]11;\(try XCTUnwrap(TerminalRenderer.focusBackground(ordinary: color, colors: request.colors)))\u{1B}\\".utf8)
+    }
+
+    func testDynamicFocusComposesEveryOrdinaryIntentWithoutRenewingItsLease() throws {
+        let target = try terminal(10), value = try focusRequest()
+        XCTAssertTrue(try recovery().write(.focus(value), to: target))
+        XCTAssertEqual(try read(target), try focusedBytes(nil, request: value))
+        for color in ["#123456", "#AA2200"] {
+            clock.advance(by: 1)
+            XCTAssertTrue(try recovery().write(.ordinary(intent(target, color: color), synthetic: false,
+                intakeAt: clock.now().timeIntervalSince1970), to: target))
+            XCTAssertEqual(try read(target), try focusedBytes(color, request: value))
+        }
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.heartbeatAt, 1_000)
+        clock.advance(by: 5)
+        XCTAssertTrue(try recovery().write(.ordinary(intent(target, color: "#ABCDEF"), synthetic: false,
+            intakeAt: 1_007), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+    }
+
+    func testFocusRenewalAndExactClearPreserveASeparatePreview() throws {
+        let target = try terminal(10), first = try focusRequest()
+        _ = try recovery().write(.focus(first), to: target); _ = try read(target)
+        clock.advance(by: 2)
+        let renewed = try focusRequest(revision: first.revision)
+        _ = try recovery().write(.focus(renewed), to: target); _ = try read(target)
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.heartbeatAt, 1_002)
+        let previewColor = try preview(target)
+        XCTAssertTrue(try recovery().write(.clearFocus(effectID: first.effectID, revision: first.revision), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(previewColor)\u{1B}\\".utf8))
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        XCTAssertThrowsError(try recovery().write(.focus(renewed), to: target))
+    }
+
+    func testGlobalPauseAndPreviewReleaseRecomposeDynamicFocus() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        _ = try preview(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
+            to: root.appendingPathComponent("lock.state"))
+        _ = try recovery().write(.currentRestriction, to: target); _ = try read(target)
+        XCTAssertEqual(state.cachedRecords().effects.count, 3)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        clock.advance(by: 2)
+        try LockStateWriter.write(LockStateData(locked: false, reason: .manual, lockUntilEpoch: 0,
+            unlockUntilEpoch: 0, writtenEpoch: 1_002), to: root.appendingPathComponent("lock.state"))
+        _ = try recovery().write(.ordinary(intent(target, color: "#123456"), synthetic: false, intakeAt: 1_002), to: target)
+        var expected = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8)
+        expected.append(try focusedBytes("#123456", request: value))
+        XCTAssertEqual(try read(target), expected)
+    }
+
+    func testFailedRecoveryAndResumeCannotRevivePersistedFocus() throws {
+        let target = try terminal(10)
+        try restrictions.write(suspended: false)
+        let value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        let failed = MockProcessRunner()
+        failed.managedBeforeOpenHandler = { _, _, _, _ in throw ProcessRunnerError.processTimedOut }
+        XCTAssertTrue(recovery(runner: failed).recover().hasFailures)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try restrictions.write(suspended: false)
+        _ = try recovery().write(.ordinary(intent(target, color: "#ABCDEF"), synthetic: false, intakeAt: 1_000), to: target)
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        XCTAssertFalse(try recovery().write(.focus(value), to: target))
+        try noBytes(target)
+    }
+
+    func testFocusClearCancelsMetadataBeforeADeviceFailure() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        let failed = MockProcessRunner()
+        failed.managedBeforeOpenHandler = { _, _, before, _ in
+            try before?(DispatchTime.now().uptimeNanoseconds + 100_000_000)
+            throw ProcessRunnerError.processTimedOut
+        }
+        XCTAssertThrowsError(try recovery(runner: failed).write(.clearFocus(effectID: value.effectID,
+            revision: value.revision), to: target))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        _ = try recovery().write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target)
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+    }
+
+    func testMaskedFocusCachesItsRecipeAndReportsNoDimming() throws {
+        let target = try terminal(10), value = try focusRequest()
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788"), to: root.appendingPathComponent("lock.state"))
+        XCTAssertFalse(try recovery().write(.focus(value), to: target))
+        XCTAssertNotNil(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        try noBytes(target)
+        try restrictions.write(suspended: true)
+        XCTAssertFalse(try recovery().write(.focus(value), to: target))
+        try noBytes(target)
+    }
+
+    func testChangedRevisionAndCanceledRunCannotQueueNewFocus() throws {
+        let target = try terminal(10)
+        let canceled = try focusRequest(current: { false })
+        XCTAssertFalse(try recovery().write(.focus(canceled), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        try restrictions.write(suspended: false)
+        let value = try focusRequest()
+        try restrictions.write(suspended: false)
+        XCTAssertFalse(try recovery().write(.focus(value), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        try noBytes(target)
+    }
+
+    func testOldFocusClearCannotCancelANewerRunAndPlainAliasUsesNativeRecipe() throws {
+        let plain = try terminal(10), native = nativeAlias(plain)
+        let first = try focusRequest(), next = try focusRequest("next")
+        _ = try recovery().write(.focus(first), to: native); _ = try read(plain)
+        _ = try recovery().write(.focus(next), to: native); _ = try read(plain)
+        XCTAssertFalse(try recovery().write(.clearFocus(effectID: first.effectID, revision: first.revision), to: native))
+        try noBytes(plain)
+        XCTAssertEqual(try state.currentEffectUnlocked(native, kind: .focus, deadline: .max)?.effectID, "next")
+        _ = try recovery().write(.ordinary(intent(plain, color: "#AA2200"), synthetic: false, intakeAt: 1_000), to: plain)
+        XCTAssertEqual(try read(plain), try focusedBytes("#AA2200", request: next))
+        let report = recovery().recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.filter { $0.status == .restored }.count, 1)
+        XCTAssertEqual(try read(plain), reset)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max)).active)
+    }
+
+    func testStyleOnlyRenderUsesFreshFocusButKeepsOrdinaryPaletteTitleAndBell() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        let style = try render(background: nil)
+        XCTAssertEqual(try recovery().render(style, intent: intent(target, color: "reset"), synthetic: false,
+            intakeAt: 1_000, to: target), .rendered)
+        var expected = style.beforeBackground
+        expected.append(try focusedBytes(nil, request: value))
+        expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+    }
+
+    func testFocusAliasAgreementUsesRecipeInsteadOfOldComputedBackground() throws {
+        let plain = try terminal(10), native = nativeAlias(plain), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: native); _ = try read(plain)
+        var alias = try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max))
+        alias.target = plain; alias.background = "#AABBCC"
+        try state.saveEffectUnlocked(alias, deadline: .max)
+        _ = try recovery().write(.ordinary(intent(plain, color: "#AA2200"), synthetic: false, intakeAt: 1_000), to: plain)
+        XCTAssertEqual(try read(plain), try focusedBytes("#AA2200", request: value))
+        alias = try XCTUnwrap(state.currentEffectUnlocked(plain, kind: .focus, deadline: .max))
+        alias.effectID = "conflict"
+        alias.focusColors = TerminalRenderer.Colors(background: "#FFFFFF", foreground: "#000000")
+        try state.saveEffectUnlocked(alias, deadline: .max)
+        XCTAssertThrowsError(try recovery().write(.ordinary(intent(plain), synthetic: false, intakeAt: 1_000), to: plain))
+        try noBytes(plain)
+    }
+
+    func testFocusBlockedDuringPolicyLookupCannotPublishALease() throws {
+        let target = try terminal(10), value = try focusRequest()
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0,
+            writtenEpoch: 1_000, appPID: 80, requestedMuted: true), to: root.appendingPathComponent("home/mute.state"))
+        let policy = VisualRestrictionPolicy(restrictions: restrictions,
+            muteURL: root.appendingPathComponent("home/mute.state"), lockURL: root.appendingPathComponent("lock.state"),
+            clock: clock, pidAlive: { _ in
+                do { try self.restrictions.write(suspended: true) } catch { XCTFail("Marker write failed") }
+                return false
+            })
+        let service = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: policy, processRunner: SystemProcessRunner(), clock: clock,
+            controller: generation(90), nativeSnapshot: { [] })
+        XCTAssertFalse(try service.write(.focus(value), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        try noBytes(target)
+    }
+
     private var root: URL!
     private var restrictions: VisualRestrictionsStateStore!
     private var state: TerminalVisualStateStore!

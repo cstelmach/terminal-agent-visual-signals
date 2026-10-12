@@ -9,6 +9,14 @@ struct TerminalPreviewRequest {
     let isCurrent: () -> Bool
 }
 
+struct TerminalFocusRequest {
+    let effectID: String
+    let heartbeatAt: Double
+    let colors: TerminalRenderer.Colors
+    let revision: VisualRestrictionsRevision
+    let isCurrent: () -> Bool
+}
+
 enum ManagedVisualOperation {
     case register
     case ordinary(OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
@@ -17,6 +25,8 @@ enum ManagedVisualOperation {
     case render(TerminalRender, OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case preview(TerminalPreviewRequest)
     case clearPreview(effectID: String, revision: VisualRestrictionsRevision)
+    case focus(TerminalFocusRequest)
+    case clearFocus(effectID: String, revision: VisualRestrictionsRevision)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -39,7 +49,7 @@ struct VisualRecoveryReport: Codable {
 }
 
 enum VisualRecoveryError: Error {
-    case vanished, targetUnavailable, scopeUnavailable, policyChanged, previewBlocked, previewUnavailable
+    case vanished, targetUnavailable, scopeUnavailable, policyChanged, previewBlocked, previewUnavailable, focusUnavailable
 }
 enum TerminalRenderResult: String { case rendered, restricted, unaffected }
 enum HeadlessRecoveryError: Error { case helperUnavailable, invalidReport }
@@ -140,13 +150,31 @@ final class VisualRecovery {
             }
         default: break
         }
-        let beforeOpen: ((UInt64) throws -> Void)?
+        var beforeOpen: ((UInt64) throws -> Void)?
         if let (intent, synthetic, intakeAt) = publication {
             beforeOpen = { deadline in
                 try self.state.publishIntent(intent, to: target, synthetic: synthetic,
                     intakeAt: intakeAt, deadline: deadline)
             }
         } else { beforeOpen = nil }
+        let clear: (String, VisualRestrictionsRevision, TerminalEffectKind)?
+        switch operation {
+        case .clearFocus(let id, let revision): clear = (id, revision, .focus)
+        case .clearPreview(let id, let revision): clear = (id, revision, .preview)
+        default: clear = nil
+        }
+        if let (id, revision, kind) = clear {
+            beforeOpen = { deadline in
+                try self.state.withLock(target.tty, deadline: deadline) {
+                    try self.requireValid(target)
+                    let matches = try self.effectsUnlocked(for: target, deadline: deadline).filter {
+                        $0.kind == kind && $0.effectID == id && $0.controller == self.controller
+                            && ($0.revision == revision.identity || ($0.kind == .preview && $0.revision == nil))
+                    }
+                    try self.cancelEffects(matches, deadline: deadline)
+                }
+            }
+        }
         return try processRunner.writeManagedToDevice(path: target.tty,
             lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
@@ -180,7 +208,8 @@ final class VisualRecovery {
             if case .preview(let request) = operation {
                 guard request.isCurrent(), let controller = self.controller else { return nil }
                 var effect = TerminalEffectRecord(target: target, controller: controller,
-                    effectID: request.effectID, kind: .preview, background: "reset", heartbeatAt: request.startedAt)
+                    effectID: request.effectID, kind: .preview, background: "reset", heartbeatAt: request.startedAt,
+                    revision: request.revision.identity)
                 guard self.state.isSelectiveLeaseActive(effect),
                       try self.restrictions.matches(request.revision, deadline: deadline) else { return nil }
                 guard self.restrictions.read() != .unavailable else { throw VisualRecoveryError.policyChanged }
@@ -203,6 +232,31 @@ final class VisualRecovery {
                 try self.cancelEffects(matches, deadline: deadline)
                 effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }
+            if case .focus(let request) = operation {
+                guard request.isCurrent(), let controller = self.controller,
+                      try self.restrictions.matches(request.revision, deadline: deadline) else { return nil }
+                guard self.restrictions.read() == .active else { return nil }
+                let rule = try self.policy.current(deadline: deadline)
+                guard request.isCurrent(), try self.restrictions.matches(request.revision, deadline: deadline),
+                      self.restrictions.read() == .active else { return nil }
+                let ordinary = try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline)
+                let color = TerminalRenderer.focusBackground(ordinary: ordinary, colors: request.colors)
+                if rule == nil && color == nil { throw VisualRecoveryError.focusUnavailable }
+                let effect = TerminalEffectRecord(target: target, controller: controller,
+                    effectID: request.effectID, kind: .focus, background: color ?? "reset",
+                    heartbeatAt: request.heartbeatAt, focusColors: request.colors, revision: request.revision.identity)
+                guard self.state.isSelectiveLeaseActive(effect), request.isCurrent() else { return nil }
+                try self.cancelEffects(effects.filter { $0.kind == .focus
+                    && ($0.effectID != effect.effectID || $0.controller != effect.controller) }, deadline: deadline)
+                try self.state.saveEffectUnlocked(effect, deadline: deadline)
+                if rule != nil { return nil }
+                effects = try self.effectsUnlocked(for: target, deadline: deadline)
+            }
+            if case .clearFocus(let id, let revision) = operation {
+                guard effects.contains(where: { $0.kind == .focus && $0.effectID == id
+                    && $0.controller == self.controller && $0.revision == revision.identity }),
+                    try self.restrictions.matches(revision, deadline: deadline) else { return nil }
+            }
 
             if let (intent, synthetic, intakeAt) = publication {
                 try self.state.publishIntentUnlocked(intent, synthetic: synthetic,
@@ -215,6 +269,7 @@ final class VisualRecovery {
             if case .reconcile(_, let clear) = operation { clearSelective = clear }
             if clearSelective { try self.cancelEffects(effects, deadline: deadline) }
             if let rule = currentRule {
+                if case .clearFocus = operation { return nil }
                 guard let controller = self.controller else { throw VisualRecoveryError.targetUnavailable }
                 let visual: PauseVisual
                 switch rule {
@@ -233,23 +288,45 @@ final class VisualRecovery {
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
             }
-            let active = effects.filter { self.state.isSelectiveLeaseActive($0) }
+            var active: [TerminalEffectRecord] = []
+            for effect in effects where self.state.isSelectiveLeaseActive(effect) {
+                if let revision = effect.revision {
+                    do { if try !self.restrictions.matches(revision, deadline: deadline) { continue } }
+                    catch VisualRestrictionsStateError.storageUnavailable { continue }
+                }
+                active.append(effect)
+            }
             let previews = active.filter { $0.kind == .preview }
             let restrictionsDisabled = self.restrictions.read().disablesRestrictions
+            let focused = active.filter { $0.kind == .focus && !restrictionsDisabled }
             let leases = previews.isEmpty
-                ? active.filter { $0.kind == .selectiveBackground && !restrictionsDisabled }
+                ? (focused.isEmpty ? active.filter { $0.kind == .selectiveBackground && !restrictionsDisabled } : focused)
                 : previews
             let selective = !clearSelective && !leases.isEmpty
             if selective, let first = leases.first {
                 guard leases.allSatisfy({ $0.effectID == first.effectID && $0.controller == first.controller
-                    && $0.background == first.background }) else { throw TerminalVisualStateError.staleEffect }
+                    && $0.revision == first.revision && $0.focusColors == first.focusColors
+                    && (first.kind == .focus || $0.background == first.background) }) else {
+                    throw TerminalVisualStateError.staleEffect
+                }
             }
             let needsBackground = render == nil || render?.background != nil || selective
                 || resetLegacy || effects.contains(where: { $0.active })
-            let background = needsBackground ? (selective ? leases[0].background
+            var background = needsBackground ? (selective ? leases[0].background
                 : try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline) ?? "reset") : nil
+            if selective, let first = leases.first, first.kind == .focus {
+                guard let colors = first.focusColors, let dim = TerminalRenderer.focusBackground(
+                    ordinary: try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline), colors: colors) else {
+                    throw VisualRecoveryError.focusUnavailable
+                }
+                background = dim
+                for var effect in leases where effect.background != dim {
+                    effect.background = dim
+                    try self.state.saveEffectUnlocked(effect, deadline: deadline)
+                }
+            }
             if !clearSelective {
-                try self.cancelEffects(selective ? effects.filter { !self.state.isSelectiveLeaseActive($0) } : effects,
+                try self.cancelEffects(selective ? effects.filter { !active.contains($0) } : effects,
                                        deadline: deadline)
             }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
@@ -408,6 +485,9 @@ final class VisualRecovery {
             catch VisualRecoveryError.previewUnavailable {
                 status = .failed; reason = "Preview unavailable: no safe configured-color tint."
             }
+            catch VisualRecoveryError.focusUnavailable {
+                status = .failed; reason = "Focus unavailable: no safe configured-color dimming."
+            }
             catch { status = .failed; reason = "Managed restoration unavailable." }
             lock.lock()
             items.append(VisualRecoveryItem(target: target, tty: target.tty, status: status, reason: reason))
@@ -425,7 +505,7 @@ final class VisualRecovery {
     }
 
     private func effectsUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> [TerminalEffectRecord] {
-        let kinds: [TerminalEffectKind?] = [nil, .preview]
+        let kinds: [TerminalEffectKind?] = [nil, .preview, .focus]
         return try state.equivalentBindingsUnlocked(for: target, deadline: deadline).flatMap { binding in
             try kinds.compactMap { try state.currentEffectUnlocked(binding, kind: $0, deadline: deadline) }
         }
