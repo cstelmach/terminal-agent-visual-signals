@@ -144,4 +144,50 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertFalse(recovery.recover().hasFailures)
         XCTAssertEqual(try read(0), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8))
     }
+
+    func testSessionsSelectionRefreshAndCloseUseSeparateTimerOwners() throws {
+        let row = try surface(10), previewTimers = MockTimerScheduler(), catalogueTimers = MockTimerScheduler()
+        let focus = controller(previewTimers)
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([row])) }, navigate: { _, _ in XCTFail("Selection must not navigate") },
+            timerScheduler: catalogueTimers, visualRestrictionsState: restrictions, focus: focus)
+        model.opened(); model.selection = [row.id]
+        awaitPaint(focus, count: 1); _ = try read(0)
+        let cancellations = previewTimers.cancelAllCallCount
+        model.refresh(); model.setPriority(.high, for: [row.id])
+        XCTAssertEqual(previewTimers.cancelAllCallCount, cancellations)
+        XCTAssertEqual(catalogueTimers.scheduledTimers.count, 1)
+        model.clearPreview(); XCTAssertEqual(model.selection, [row.id])
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertEqual(catalogueTimers.scheduledTimers.count, 1)
+        model.closed(); XCTAssertTrue(catalogueTimers.scheduledTimers.isEmpty)
+        XCTAssertTrue(previewTimers.scheduledTimers.isEmpty)
+    }
+
+    func testSessionsRecoveryCancelsWithoutPaintingAndPreservesPartialReport() throws {
+        let row = try surface(10), focus = controller(MockTimerScheduler())
+        var completion: ((Result<VisualRecoveryReport, Error>) -> Void)?
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([row])) }, navigate: { _, _ in XCTFail("Recovery must not navigate") },
+            visualRestrictionsState: restrictions, focus: focus, recover: { resume, done in
+                XCTAssertFalse(resume)
+                completion = done
+            })
+        model.opened(); model.selection = [row.id]; awaitPaint(focus, count: 1); _ = try read(0)
+        model.restoreVisibility()
+        XCTAssertTrue(model.recovering)
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertEqual(model.selection, [row.id])
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        let done = expectation(description: "Recovery report displayed")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in done.fulfill() }.store(in: &subscriptions)
+        try restrictions.write(suspended: true)
+        completion?(.success(VisualRecoveryReport(stateSaved: true, catalogueAvailable: false,
+            items: [VisualRecoveryItem(status: .restored), VisualRecoveryItem(status: .failed, reason: "Unavailable target.")])))
+        wait(for: [done], timeout: 1)
+        XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
+        XCTAssertTrue(try XCTUnwrap(model.recoveryStatus).contains("1 failed"))
+        XCTAssertTrue(try XCTUnwrap(model.recoveryStatus).contains("Native catalogue unavailable"))
+    }
 }

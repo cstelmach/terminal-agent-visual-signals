@@ -8,7 +8,12 @@ enum SurfacePriority: String, Codable, CaseIterable, Identifiable {
 }
 
 final class SessionsModel: ObservableObject {
-    @Published var selection = Set<GhosttySurfaceID>()
+    @Published var selection = Set<GhosttySurfaceID>() {
+        didSet {
+            guard selection != oldValue, isOpen, catalogueAvailable, !recovering else { return }
+            focus?.preview(surfaces.filter { selection.contains($0.id) })
+        }
+    }
     @Published private(set) var surfaces: [GhosttySurface] = []
     @Published private(set) var priorities: [GhosttySurfaceID: SurfacePriority] = [:]
     @Published private(set) var visualCoverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]
@@ -19,6 +24,8 @@ final class SessionsModel: ObservableObject {
     @Published private(set) var refreshing = false
     @Published private(set) var navigating: GhosttySurfaceID?
     @Published private(set) var refreshedAt: Date?
+    @Published private(set) var recovering = false
+    @Published private(set) var recoveryStatus: String?
     private let prioritiesURL: URL
     private let readCatalogue: (@escaping (Result<[GhosttySurface], Error>) -> Void) -> Void
     private let navigate: (GhosttySurface, @escaping (Result<Void, Error>) -> Void) -> Void
@@ -26,8 +33,15 @@ final class SessionsModel: ObservableObject {
     private let clock: Clock
     private let visualState: TerminalVisualStateStore?
     private let visualRestrictionsState: VisualRestrictionsStateStore
+    private let focus: FocusController?
+    private let recoverAction: ((Bool, @escaping (Result<VisualRecoveryReport, Error>) -> Void) -> Void)?
+    private var focusObservation: AnyCancellable?
     private let visualQueue = DispatchQueue(label: "tavs.sessions.visual-state")
     private var isOpen = false
+
+    var previewStatus: String { focus?.previewStatus ?? "Preview unavailable." }
+    var previewActive: Bool { focus?.isPreviewActive ?? false }
+    var previewCleanupError: String? { focus?.cleanupError }
 
     var rows: [GhosttySurface] {
         surfaces.enumerated().sorted {
@@ -41,17 +55,21 @@ final class SessionsModel: ObservableObject {
          navigate: @escaping (GhosttySurface, @escaping (Result<Void, Error>) -> Void) -> Void,
          timerScheduler: TimerScheduler = SystemTimerScheduler(), clock: Clock = SystemClock(),
          visualState: TerminalVisualStateStore? = nil,
-         visualRestrictionsState: VisualRestrictionsStateStore? = nil) {
+         visualRestrictionsState: VisualRestrictionsStateStore? = nil, focus: FocusController? = nil,
+         recover: ((Bool, @escaping (Result<VisualRecoveryReport, Error>) -> Void) -> Void)? = nil) {
         self.prioritiesURL = prioritiesURL
         self.readCatalogue = refresh
         self.navigate = navigate
         self.timerScheduler = timerScheduler
         self.clock = clock
         self.visualState = visualState
+        self.focus = focus
+        self.recoverAction = recover
         let restrictions = visualRestrictionsState ?? VisualRestrictionsStateStore(
             url: prioritiesURL.deletingLastPathComponent().appendingPathComponent("visual-restrictions.state"))
         self.visualRestrictionsState = restrictions
         self.visualRestrictionsStatus = restrictions.read()
+        self.focusObservation = focus?.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
         if FileManager.default.fileExists(atPath: prioritiesURL.path) {
             do {
                 let saved = try JSONDecoder().decode(SavedPriorities.self, from: Data(contentsOf: prioritiesURL))
@@ -65,9 +83,10 @@ final class SessionsModel: ObservableObject {
 
     convenience init(prioritiesURL: URL, catalog: GhosttyCatalog = .shared,
                      visualState: TerminalVisualStateStore? = nil,
-                     visualRestrictionsState: VisualRestrictionsStateStore? = nil) {
+                     visualRestrictionsState: VisualRestrictionsStateStore? = nil, focus: FocusController? = nil,
+                     recover: ((Bool, @escaping (Result<VisualRecoveryReport, Error>) -> Void) -> Void)? = nil) {
         self.init(prioritiesURL: prioritiesURL, refresh: catalog.refresh, navigate: catalog.goTo,
-                  visualState: visualState, visualRestrictionsState: visualRestrictionsState)
+                  visualState: visualState, visualRestrictionsState: visualRestrictionsState, focus: focus, recover: recover)
     }
 
     func priority(for id: GhosttySurfaceID) -> SurfacePriority { priorities[id] ?? .normal }
@@ -101,7 +120,40 @@ final class SessionsModel: ObservableObject {
         timerScheduler.scheduleRepeating(interval: 2, on: .main) { [weak self] in self?.refresh() }
     }
 
-    func closed() { isOpen = false; timerScheduler.cancelAll() }
+    func closed() { isOpen = false; timerScheduler.cancelAll(); clearPreview() }
+
+    func clearPreview() { focus?.clearPreview() }
+
+    func restoreVisibility(resume: Bool = false) {
+        guard !recovering else { return }
+        focus?.cancelForRecovery()
+        recovering = true
+        recoveryStatus = resume ? "Re-enabling saved visual rules; focus remains Off." : "Restoring visibility."
+        guard let action = recoverAction else {
+            do { try visualRestrictionsState.write(suspended: !resume) }
+            catch { finishRecovery(.failure(error)); return }
+            finishRecovery(.failure(HeadlessRecoveryError.helperUnavailable))
+            return
+        }
+        action(resume) { [weak self] result in
+            DispatchQueue.main.async { self?.finishRecovery(result) }
+        }
+    }
+
+    private func finishRecovery(_ result: Result<VisualRecoveryReport, Error>) {
+        visualRestrictionsStatus = visualRestrictionsState.read()
+        switch result {
+        case .success(let report):
+            let counts = Dictionary(grouping: report.items, by: \.status).mapValues(\.count)
+            recoveryStatus = "\(counts[.restored, default: 0]) restored, \(counts[.vanished, default: 0]) vanished, "
+                + "\(counts[.unaffected, default: 0]) unaffected, \(counts[.failed, default: 0]) failed."
+            if !report.catalogueAvailable { recoveryStatus! += " Native catalogue unavailable; only known targets checked." }
+            if let reason = report.items.first(where: { $0.status == .failed })?.reason { recoveryStatus! += " \(reason)" }
+        case .failure:
+            recoveryStatus = "Recovery incomplete: helper unavailable or failed. \(visualRestrictionsStatus.message)"
+        }
+        recovering = false
+    }
 
     func refresh() {
         visualRestrictionsStatus = visualRestrictionsState.read()
@@ -144,6 +196,7 @@ final class SessionsModel: ObservableObject {
     }
 
     private func markCoverageStale() {
+        clearPreview()
         visualCoverage = visualCoverage.mapValues {
             TerminalVisualCoverage(observation: $0.observation, intent: $0.intent, attentionEligible: false,
                                    status: "Last-known coverage; native catalogue unavailable.")
