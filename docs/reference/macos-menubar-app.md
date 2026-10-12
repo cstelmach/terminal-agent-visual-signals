@@ -1,7 +1,7 @@
 # macOS Menu Bar Companion App
 
 **Version:** 3.0.0
-**Last Updated:** 2026-10-03
+**Last Updated:** 2026-10-12
 **Requires:** macOS 13+ (Ventura or later)
 
 The TAVS menu bar app adds two capabilities that shell hooks alone cannot provide:
@@ -88,21 +88,33 @@ schedule are preserved since they live in `~/.tavs/`.
 
 ## Menu Bar Tour
 
+The organizer/recovery controls below describe current development source. The signed fixture
+app has been checked; this source has not been deployed to the installed application.
+
 Click the menu bar icon to see:
 
 | Item | Description |
 |------|-------------|
 | **Status line** | "Active — next mute in 23 min", "Muted until 20:00", "Paused", "Locked until 18:00", or "Unlocked until 15:30 (grant)" |
 | **Pause/Resume** | Toggle master pause. Overrides schedule. While a hard lock is active, Resume requires the unlock challenge. |
-| **Restore Terminal Colors** | Reset colors once while TAVS is active. |
+| **Open Sessions** | Open the resizable organizer, priorities and preview controls. |
+| **Restore Visibility** | Save suspension and recover, including during pauses/locks. |
+| **Re-enable Visual Restrictions** | Resume saved rules, including schedules/locks. |
 | **Lock Now (1h)** | Engage a manual hard lock for one hour (never gated; repeated clicks keep the later end time). See [Hard Lock](hard-lock.md). |
 | **Unlock…** | Shown while hard-locked: challenge, then a time-boxed unlock grant (15m/1h/4h/rest of day). |
 | **Open Preferences…** | Opens the three-tab settings window (⌘,) |
 | **Quit TAVS** | Stops the app. Shells resume normal painting within 2 minutes; an active hard lock KEEPS holding until its end time. |
 
-Restore Terminal Colors resets the configured palette, default foreground, and background.
-It preserves titles, preferences, and pending signals. The next agent signal can repaint the
-background. The action is disabled during pauses and hard locks.
+Restore Visibility resets legacy palette/foreground restrictions and restores current background
+intent or terminal defaults. It preserves titles, preferences, schedules and sessions. Suspension
+survives relaunch and prevents recurring rules or historical alerts from defeating recovery.
+The controls show partial failures; unavailable native coverage is explicit. Focus remains Off
+after recovery, resumption and relaunch. The CLI provides the same independent `tavs recover`.
+
+Changed row selection previews exact mapped terminals for two seconds. Clear Preview, Escape and
+window close cancel the preview. Priority edits and catalogue refresh do not restart it. Go To
+is separate and deliberately activates one surface. Applications painting their own cells may
+obscure background cues; physical Ghostty acceptance remains pending.
 
 ### Icon States
 
@@ -388,7 +400,7 @@ An uninterruptible kernel call can leave its worker blocked until macOS releases
 device. The app's scheduler continues; this does not repair the kernel device itself.
 
 Install the repaired app and relaunch TAVS. Startup recovery clears the persisted pause
-when the schedule is active. Use Restore Terminal Colors for a one-time baseline reset.
+when the schedule is active. Use Restore Visibility to suspend restrictions and restore colors.
 `tavs config reset` changes preferences and does not repaint terminal colors.
 
 ### Terminals stay muted after app crash

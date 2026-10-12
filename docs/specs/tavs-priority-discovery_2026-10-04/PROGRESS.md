@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 22:19 CEST
-**Version:** 3.1
+**Last Updated:** 2026-10-12 22:50 CEST
+**Version:** 3.2
 
 ## Session Metadata
 
@@ -28,7 +28,7 @@
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
-| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | Feature hashes below | 435 Swift; 73 Bats | | Controller/config source verified; UI/copy/live pending |
+| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | Feature hashes below | 443 Swift; 20 recovery Bats this slice | | GUI fixture verified; copy/native pending |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
@@ -46,6 +46,8 @@ Checkpoints report hashes without separate self-referencing state commits.
 - [PROGRESS_appendix_phase-3.md](PROGRESS_appendix_phase-3.md): completed Phase 3 isolation logs.
 
 - [PROGRESS_appendix_phase-4.md](PROGRESS_appendix_phase-4.md): completed Phase 4 record/intake source log.
+
+- [PROGRESS_appendix_planning-and-goal-preparation.md](PROGRESS_appendix_planning-and-goal-preparation.md): finished initial planning and goal preparation.
 
 ## Log
 
@@ -187,41 +189,10 @@ discovery, settings and login registration, not merely substitute a temporary re
 > Detailed log: [PROGRESS_appendix_phase-1.md](PROGRESS_appendix_phase-1.md)
 > Native catalogue and navigation source completed; physical acceptance remains Phase 2 work.
 
-### Goal preparation: 2026-10-08 07:14 CEST
+### Finished planning and goal preparation
 
-Created [GOAL.md](GOAL.md) after operator sign-off, "Looks good. Continue." The approved strategy
-covers all nine phases with one execute-spec phase per goal iteration, automatic continuation
-after verified checkpoints, targeted reviews after phases 1/6 and available final triple review.
-Existing tests/commit/docs requirements and separate deployment authorization remain binding.
-
-The exact copyable prompt passed the goal validator at 3560 characters. Source ownership,
-all nine Not Started states, the GOAL refresher and unchanged SPEC/PLAN were checked. This
-iteration saved the goal artifact only; no native goal activation, product edit, test suite,
-app/device operation or real settings change occurred. Mode remains Manual until activation.
-Next action: activate the Copyable /goal block in GOAL.md, which starts with plan Phase 1.
-
-### Planning: 2026-10-07 22:46 CEST
-
-Read SPEC v1.1 and execute-spec's orientation/planning references. No PLAN/PROGRESS existed in
-this package, so selected PLANNING mode. There was no state collision or archive operation.
-Created a nine-phase plan mapping the three agreed product phases to bounded implementation
-slices, preserving D01-D18. Root PLAN/PROGRESS and SPEC content/frontmatter were not changed.
-
-Two read-only exploration reports traced current native app and shell/test flows. Verified
-the consequential findings in source: distinct timer instances are needed; recovery must retain
-failed live targets and order every writer; shell test roots include HOME/runtime/tmp/XDG/TTY;
-two Bats fixtures leak into live runtime; Codex notify needs metadata forwarding; copied paths
-and old loaded workers must be tested before previews ship. Reused PauseVisual color math is
-already present. Detailed consequences and concrete source/test scopes are in PLAN.md.
-
-Verification for this iteration is document validation: phase/dependency consistency, required
-sections, concrete paths, SPEC unchanged, safe exact staging and append-only capture preservation.
-No build/test suite, hook, native request, OSC, install, schedule/config mutation or app/agent
-termination was performed. Native/bundle and visible acceptance remain future phase work.
-
-**Next:** Phase 1: Native catalogue and exact navigation. Start with its tests and current source.
-Do not run shell regression suites before the isolation phase. If interrupted, read this file
-and PLAN.md, then select the next incomplete phase through execute-spec.
+> Detailed log: [PROGRESS_appendix_planning-and-goal-preparation.md](PROGRESS_appendix_planning-and-goal-preparation.md)
+> Approved goal preparation and initial plan are complete; current phase state remains above.
 
 ## Divergence Checks
 
@@ -880,3 +851,43 @@ and explicit private configuration paths, then exact sync copies and signed fixt
 Before a fixture GUI recovery action, verify its headless factory cannot enumerate real Ghostty.
 No install, sync, real settings/schedules, existing process shutdown or physical acceptance.
 Goal stays active. Phase 2 remains Blocked; Phases 8/9 not started.
+
+
+### Phase 7 GUI preview/recovery checkpoint: 2026-10-12 22:50 CEST
+
+Reoriented from `67b89f1` and continued only Phase 7. Feature commits are `42c6849`
+(bounded partial process reports), `473bd0d` (current-bundle headless client), `4352517`
+(selection/clear/recovery model) and `0bcc176` (shared GUI factory and controls). Recovery uses
+one serialized background queue, current Bundle executable, exact private roots and fixture IDs.
+Capabilities retain two seconds; recovery allows ten seconds. Device callers still use 100 ms.
+
+Selection changes start previews only in an open available catalogue. Refresh/priority edits
+leave selection previews alone; Clear Preview, Escape, window close and stale coverage cancel.
+Recovery cancels in-memory preview work without an ordinary repaint, saves the marker before
+scope decoding/helper probing, and keeps partial JSON on exit 1. Failed helpers cannot undo
+saved suspension. Model feedback survives refresh and flags unavailable native coverage.
+Fixture preview colors are explicitly unavailable; they cannot query the real Ghostty app.
+
+Preserved red logs for missing output/client/model APIs: `aWUa66`, `TPY6z2`, `c162EX` under
+isolated runner roots. The new factory/scope test run `nCGKpp` failed on missing createDefault
+before wiring; focused `ER4JHG` passed 105 tests. Final full Swift `GWACY7` passed 443/443
+in 7.740 seconds with no warnings; release `imNxPL` passed in 16.34 seconds. Recovery/suspension
+Bats `HvRYSG` passed 20/20. All used tests/run-isolated.sh and the owned Phase 6 scratch build.
+
+Fresh ad-hoc signed bundle: `/tmp/tavs-phase7-gui-20261012/staged/TAVS Preview Acceptance.app`.
+Only its private fixture state was mutated. CUA verified three distinct duplicate rows, missing
+observations, suspended/active recovery controls, accurate three-target partial failure, explicit
+unavailable preview and Escape clearing while selection remained. A High edit hit capture error
+-3811 after input; fresh AX and the private priority file confirmed success, without re-clicking.
+Quit/relaunch through the same owned bundle retained High and suspension, with Focus Off.
+The relaunched owned PID is 26990; launch/relaunch logs and state remain in that scratch root.
+No real Ghostty action, production install/sync, login registration, schedule edit or real-process
+termination occurred. Physical color/timing/navigation/Spaces cases remain unverified.
+
+ProcessRunner, managed-output visibility and the safe fixture factory are connected changes beyond
+Phase 7's named primary files. Reused the existing runner, marker, catalogue decoder and JSON;
+no new service, dependency or recovery protocol. API, bug, roadmap and companion docs are current.
+
+**Next:** finish Phase 7 exact-copy packaging and fake-install coverage. Read cmd-sync and its
+connected CLI/adapters before tests. Keep required native acceptance Blocked in Phase 2. Do not
+start Phase 8 or treat fixture controls as physical terminal evidence. The master goal stays active.

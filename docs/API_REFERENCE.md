@@ -84,8 +84,8 @@ for the same exact target. It expires two seconds after its original heartbeat t
 refresh nor a same-ID save can extend that time. Exact-ID preview cancellation preserves the
 underlying selective record. Global rules take precedence; suspension permits harmless previews.
 Emergency recovery discovers and cancels both records through the existing bounded writer.
-Controller/UI activation is still pending. Use matching current source-built components for
-acceptance; old executables do not understand the preview record.
+Controller and GUI wiring are source-tested and checked in an isolated fixture. Use matching
+source-built components for acceptance; old executables do not understand the preview record.
 
 `TerminalPreviewRequest` captures the explicit selection's original time, colors and suspension
 file revision. The revision holds a read-only descriptor until requests leave scope, preventing

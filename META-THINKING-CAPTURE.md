@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 10 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 11 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1483,3 +1483,70 @@ proposed. Tool/source results are [O]; motives, sufficiency arguments and model 
 
 <!-- Mid-task micro-captures (observe action). Folded into the next full
      entry, then deleted. -->
+
+
+## 2026-10-12 · gpt-6 (self-reported) · sessions-preview-recovery-controls
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool calls and diffs; explanations reconstructed
+
+**Framing [O]:** Continued the active goal from the dated package and current dirty source.
+The bounded objective was Phase 7 GUI integration. Phase 2 still lacked physical Ghostty
+acceptance, while manual and automatic focus were later phases. The already authorized fixture
+app was sufficient for controls and persistence. It could not establish real highlighting.
+The tool's earlier Ghostty denial remained binding, so no substitute native automation ran.
+
+**Strategy [O/R]:** Reused the existing preview controller, marker, headless JSON interface and
+nonblocking process engine. A read-only explorer report identified the exit-1 JSON and fixture
+scope seams. Source reads confirmed both before wiring. [R] Extending the runner result avoided
+another subprocess implementation and made the existing caller deadline easier to preserve.
+The normal catalogue wrapper retained two seconds; the separate recovery caller allowed ten.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient/read | SPEC-owned progress, goal, source and explorer report | Phase 7 only; P9 applied |
+| Red/green | Output API, client, model and fixture scope | Missing API failures preserved |
+| Integrate | Shared model, menu and Sessions controls | Separate preview/catalogue timers |
+| Verify | Isolated Swift and release build | 443 tests; no warnings; signed bundle |
+| Computer Use | Fresh private fixture app | Recovery, High edit, Escape and relaunch |
+| Recheck | Capture error after priority click | Read current state instead of repeating input |
+| Regression | Isolated recovery/suspension Bats | 20 tests passed |
+
+**Decision points [O/R]:** The GUI uses its own bundle executable, with no installed-helper
+substitution. Explicit scope is derived from the full fixture only when absent; a narrower
+operator allowlist is retained. Recovery persists before fixture decoding, so a malformed fixture
+cannot prevent suspension. Browsing selection is never a recovery allowlist. Fixture preview
+colors remain unavailable, avoiding any real Ghostty query or invented physical evidence.
+Both recovery actions share one model and serialized queue. [R] That kept their ordering and
+feedback in the existing owner rather than adding a recovery job service.
+
+**Failure arcs [O/R]:** The first post-wiring test build reported missing createDefault.
+The shared factory and scope methods were then implemented, and focused/full suites passed.
+This was an incomplete integration boundary, not a native runtime failure. A separate capture
+failure (-3811) followed the High menu click. The next actions read the private priority file
+and refreshed AX state. Both showed High, so the click was not repeated. Relaunch then retained
+High and saved suspension. [R] Treating an ambiguous tool failure as an unknown action outcome
+prevented an unnecessary second state mutation.
+
+**Heuristics and verification [O]:** Cancel in-memory previews before recovery without enqueueing
+an ordinary repaint. Preserve stdout on partial failure and display native coverage uncertainty.
+Test process bounds separately from the original 100 ms device bound. Keep recovery feedback
+separate from catalogue refresh. The fixture showed three unavailable targets accurately;
+these were not successful real-terminal recoveries. Ghostty pane navigation, actual preview
+timing/color, Spaces and light/dark program content remain unverified. Packaging copy coverage
+is next, not complete. No production installation, schedule change, login registration or real
+session termination occurred.
+
+**Pattern candidates [R]:** Inspect current state after an action reports a capture failure;
+the input may already have succeeded. No new skill or model profile is proposed from one arc.
+P9 is already covered by execute-spec, so an additional process workflow is unnecessary.
+
+**Confidence:** Commands, source edits, test results and UI states are observed. Reasons for
+choosing reuse and the inferred benefit of avoiding a repeated click are reconstructed.
