@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 16:32 CEST
-**Version:** 2.5
+**Last Updated:** 2026-10-12 19:12 CEST
+**Version:** 2.6
 
 ## Session Metadata
 
@@ -27,7 +27,7 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 353 Swift; 8 CLI stub | | Coordinator verified; production routes unfinished |
+| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 364 Swift; 86 Bats; 230 Python | | Production routes verified; independent reviews running |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
@@ -760,3 +760,77 @@ paths and use only owned PTY/scoped fixtures. Add actual helper/CLI tests before
 tavs-managed-output-schema=1. Resume and relaunch must clear selective ownership and leave mode
 Off. Required AGY/Codex recovery reviews follow complete routing. Phase 2 native acceptance and
 Phases 7-9 remain open; the full goal remains active.
+
+### Phase 6 production routes verified: 2026-10-12 19:12 CEST
+
+Phase 6 remains In Progress until independent review findings are verified and resolved. Phase 2
+still lacks physical native acceptance; phases 7-9 have not started. The native goal stays active.
+
+**Delivered.** Typed ordinary/registration/forced-reset operations (`f0cbc45`) now serve the shell
+bridge. Mutation-free synthetic validation (`0ede632`) checks current delivery under the existing
+writer lock, including background-disabled styling. Startup and cached-target corrections
+(`be25dd8`) preserve unaffected shells and reject ambiguous/reused bindings. Headless entry
+(`70400c2`) dispatches before UI/login, authenticates callers, retains explicit dedicated scopes,
+persists suspension before discovery and reports partial failures. Broadcaster (`4bd7ce2`) uses
+coalesced current-policy operations off main, clears only prior effects on relaunch and retains
+failed candidates. Shell routing (`8970a77`) connects backgrounds, startup, forced idle resets
+and debug reconciliation. Historical pending output is discarded; age alone cannot prune owners.
+
+**Confirmed defects.** Startup register followed by unrestricted reconcile reset untouched
+shells; focused prior-effect clearing fixes this. Canceled global effects still need foreground
+cleanup if the original repaint failed. Legacy shell suppression accepted missing PID/heartbeat
+and future heartbeat, contrary to managed policy; the shared reader now rejects them while
+preserving legacy absent-schema behavior. Parent found one incorrect synthetic guard requiring
+producer generation to equal the continuing shell owner's generation. The agent-child regression
+failed before correction (`cktEMs`), then passed with independent producer/target checks in
+`2ee25f7`. Actual nested Bash processes also prove distinct producer/owner metadata and successful
+validation without output, intent, binding or effect mutation.
+
+**Verification.** Every run used tests/run-isolated.sh, explicit source-built helper and private
+roots. Logs share `/var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.<id>/command.log`.
+
+- Expected missing entry/API compile reds: gWja28 and kuyDvs. First integrated run mhaH36 found
+  URL representation and simulated-future timestamp fixture errors. Only fixtures changed.
+- Connected focused89 passed dN0urz. Initial full363 passed kILG2B with no warnings.
+- Producer/owner correction: focused38 qtrw97 and full **364/364** nzPxDC, zero failures/warnings,
+  3.956 seconds XCTest. Full count includes replacement of obsolete broadcaster replay/pruning
+  contracts; the six original device-writer cases remain, as detailed in its report.
+- Final **86/86 Bats** GJcrSl: background-intent10, managed16, mute-gate20, idle-worker-mute6,
+  liveness7, shellrc19 and public recover stub8. Actual-helper cases include startup/current
+  paint, forced reset, typed debug reconciliation and public recover/resume with marker-first
+  persistence, current rule restoration and no historical title/standalone alert replay.
+- Audited **230/230 Python** KbVIgI, 13.96 seconds. Existing unsafe worker/root exclusions remain.
+- Debug build XZJOkR and release build rSkegw pass; release builds in 17.72 seconds, no warnings.
+  Release public recovery HplRgE and distinct nested-producer lCZUuu each pass an owned-PTY case.
+- Separate Bash syntax on six changed shell files, zsh shellrc, diff checks and staged credential
+  scans pass. `.env` remains ignored. Existing cross-module ShellCheck notices were retained.
+
+Preserved fixture failures include wrong context provider, missing observation, interactive
+foreground mismatch and same-group fallback. Static scoped catalogues require job control off;
+they do not prove Ghostty's actual foreground mapping. The separate unscoped nested-producer case
+uses real owned Bash job control without native discovery. A suspected absent-schema mismatch
+was falsified by its passing regression before any source edit. Do not weaken producer, scope,
+foreground or original-deadline checks to make those fixtures pass.
+
+**Reviews.** Codex (`/root/review_phase6_codex`) and Claude (`/root/review_phase6_claude`) are still
+running one independent read-only call each, with no tests/native interactions or cross-reading.
+Their snapshots can precede `2ee25f7`; verify findings against current source before any fix.
+AGY did not invoke its provider: its developer-level reviewer contract required a repository
+fingerprint prohibited by the project's No Bureaucracy Theater instructions. The archived
+failure report is not a code verdict. No retry or host-model replacement was presented as AGY.
+
+**Docs and scope.** Architecture, hard-lock recovery reference and BUG_REFERENCE describe the
+new behavior. Worker reports survive in this package as phase6-broadcaster-routing-report.md,
+phase6-synthetic-validation-report.md, phase6-headless-managed-report.md and
+phase6-shell-routing-report.md; phase6-agy-review-failed.md preserves the technical failure.
+Store/core/entry/broadcaster changes were split into separate verified feature commits. The six
+shell callers and their connected fixtures form one atomic all-writer migration; splitting it
+would leave raw or stale output paths in a transitional commit. The extra small headless module,
+decoder access modifier and connected fixture repairs are necessary integration scope, not new
+product features. No dependency, adapter, stronger lock or generic OSC parser was added.
+
+**Next.** Collect the two reviewer reports, inspect concrete findings in source, resolve material
+issues and record Phase 6's review outcome before starting Phase 7. Do not rerun passed suites
+without a new change, failure or unresolved concern. No source has been deployed into the working
+app. Physical Ghostty pixels, native job-control mapping, Spaces/minimized-window behavior and
+real provider events remain unverified; the prior Computer Use denial must not be bypassed.

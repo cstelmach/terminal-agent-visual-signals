@@ -32,6 +32,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
+| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing |
+
 ---
 
 # Model Profiles
@@ -1109,6 +1111,77 @@ from this one slice.
 **Confidence.** [O] Source changes, checks and outcomes are observable. [R] Strategy explanations
 and model attribution are reconstructions. Coordinator unit evidence does not prove the full
 recovery command works until production/headless/shell routes and native acceptance are complete.
+
+## 2026-10-12 · gpt-6 (self-reported) · managed-routing-checkpoint
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: Codex desktop API
+  thinking: unknown
+  session: 01a10879
+  trace: reconstructed from visible tool results
+
+**Framing.** [O] Dated PROGRESS identified Phase 6 as unfinished, despite the active nine-phase
+master goal. Root resumed typed output routing and independent recovery. Current source,
+state, relevant memory constraints and worker reports were consulted. [R] Keeping the slice
+inside Phase 6 reduced the chance of releasing previews before recovery was connected. No real
+installation, preferences, native Automation or personal session shutdown was needed.
+
+**Strategy.** [O] Bounded workers handled broadcasting, headless entry and shell routes. A small
+store task supplied validation-only synthetic checks. Ownership and one shared Swift build slot
+were explicit. Missing APIs were captured together before implementation. Parent retained
+recovery composition, source verification and atomic commits. [R] Existing typed actions and
+the bounded writer supplied enough structure without a new parser or control service.
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Read/search | Dated state, source, skills and memory | Resume Phase 6 |
+| 2 | Coordinate | Workers and shared build | Missing-API red before source landing |
+| 3 | Review/fix | Startup and cached recovery | Preserve unaffected shells |
+| 4 | Test/debug | Entry and recovery fixtures | URL representation and virtual time |
+| 5 | Reproduce/fix | Producer versus continuing owner | Agent-child red, small guard correction |
+| 6 | Exercise | Owned PTYs and public CLI | Recovery/resume and actual child ancestry |
+| 7 | Verify/commit | Tests, release, docs and source | Exact paths and credential checks |
+| 8 | Delegate | Independent reviews | AGY failure; Codex/Claude pending |
+
+**Decision points.** [O] Startup registration initially flowed into unrestricted reconciliation,
+resetting newly discovered shells despite passing tests. Reconciliation was restricted to cached
+effect targets. Inactive global effects still receive foreground cleanup because cancellation
+can precede a failed paint. [O] Background-disabled idle states required validation before later
+palette/title output. A mutation-free action reused the existing lock and original deadline.
+
+**Failure arcs.** [O] The first integrated run produced sixteen URL assertions and one future-time
+rejection. Source inspection showed equivalent directory paths with different URL representations
+and an observation ahead of VirtualClock. Only fixtures changed. [O] Parent then added an incorrect
+checkSynthetic equality: an agent producer can differ from its continuing shell owner. A child-agent
+regression failed with Invalid organizer record, then passed after removing only that equality.
+TTY/device, live producer and latest delivery checks remained. A real nested Bash PTY case also
+proved distinct generations, successful validation and no output or state mutation.
+
+[O] Static catalogue fixtures failed when interactive job control moved the foreground group.
+Scoped fixtures used job control off and valid observations. A separate unscoped child case used
+actual Bash job control. Neither proves Ghostty's physical mapping. [O] A suspected absent-schema
+mismatch was falsified by a passing regression before any source edit; initialization already
+retained the legacy default. [R] Reading the initializer before inferring behavior from its guard
+would avoid that detour. [O] The capture append assertion also mistook the empty Stubs section's
+instruction comment for unfinished captures. It failed before writing; the comment was inspected
+and preserved without consulting the historical log.
+
+**Verification and limits.** [O] Evidence is 364 Swift, 86 isolated Bats and 230 audited Python
+cases, separate Bash/zsh syntax, a release build and two release owned-PTY checks. Failure logs
+remain, reports are archived and commits separate connected features. AGY issued no verdict:
+its developer contract required fingerprints prohibited by the project. Codex and Claude reviews
+are pending; no substitute approval was claimed. Physical Ghostty pixels, real provider events
+and native job-control acceptance remain unverified.
+
+**Heuristic.** [R] Separate producer identity from continuing target ownership before adding
+identity guards. P9 applies: dated SPEC-owned state determines continuation. No model profile
+or skill promotion is justified by this single producer/owner failure arc.
+
+**Confidence.** Commands, source differences and outcomes are [O] from visible tool results;
+strategy motives are [R]. Exact served model attribution and transcript extraction were unavailable.
+This entry records a source checkpoint, not master-goal completion.
 
 ## Stubs
 
