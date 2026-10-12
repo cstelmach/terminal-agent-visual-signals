@@ -1,0 +1,147 @@
+import XCTest
+import Combine
+import Darwin
+@testable import TAVSApp
+
+final class FocusControllerTests: XCTestCase {
+    private var root: URL!
+    private var clock: VirtualClock!
+    private var state: TerminalVisualStateStore!
+    private var restrictions: VisualRestrictionsStateStore!
+    private var recovery: VisualRecovery!
+    private var identities: [Int32: ProcessIdentity] = [:]
+    private var ptys: [(master: Int32, slave: Int32, path: String)] = []
+    private var subscriptions = Set<AnyCancellable>()
+    private func generation(_ pid: Int32) -> ProcessGeneration {
+        ProcessGeneration(pid: pid, startSeconds: 100, startMicroseconds: 1)
+    }
+
+    override func setUpWithError() throws {
+        root = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["TAVS_TEST_ROOT"]))
+            .appendingPathComponent("controller-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
+        for pid: Int32 in [80, 90] {
+            identities[pid] = ProcessIdentity(generation: generation(pid), parentPID: 1,
+                group: UInt32(pid), device: UInt32.max, foregroundGroup: UInt32(pid))
+        }
+        state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock, lookup: { self.identities[$0] })
+        restrictions = VisualRestrictionsStateStore(url: root.appendingPathComponent("visual-restrictions.state"))
+        recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
+                lockURL: root.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: SystemProcessRunner(), clock: clock, controller: generation(90), nativeSnapshot: { [] })
+    }
+
+    override func tearDownWithError() throws {
+        subscriptions.removeAll()
+        for tty in ptys { close(tty.master); close(tty.slave) }
+        ptys.removeAll()
+        try FileManager.default.removeItem(at: root)
+    }
+
+    private func surface(_ pid: Int32) throws -> GhosttySurface {
+        var master: Int32 = -1, slave: Int32 = -1
+        var name = [CChar](repeating: 0, count: 1_024)
+        guard openpty(&master, &slave, &name, nil, nil) == 0 else { throw POSIXError(.EIO) }
+        var attributes = termios(); tcgetattr(slave, &attributes); cfmakeraw(&attributes)
+        tcsetattr(slave, TCSANOW, &attributes)
+        let path = String(cString: name), device = try XCTUnwrap(ProcessIdentity.deviceNumber(path))
+        ptys.append((master, slave, path))
+        identities[pid] = ProcessIdentity(generation: generation(pid), parentPID: 1,
+            group: UInt32(pid), device: device, foregroundGroup: UInt32(pid))
+        return GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: String(pid)),
+            windowID: "window", tabID: "tab", title: "same", directory: "/same", tty: path,
+            foregroundPID: pid, tabSelected: true, mappingIssue: nil)
+    }
+
+    private func controller(_ timers: MockTimerScheduler, queue: DispatchQueue = DispatchQueue(label: "test.preview"),
+                            colors: ((ProcessGeneration) throws -> TerminalRenderer.Colors)? = nil) -> FocusController {
+        FocusController(state: state, recovery: recovery, restrictions: restrictions, timers: timers,
+            clock: clock, queue: queue, colors: colors ?? { _ in
+                TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+            })
+    }
+
+    private func awaitPaint(_ controller: FocusController, count: Int) {
+        let ready = expectation(description: "Selected targets painted")
+        controller.$previewed.first { $0.count == count }.sink { _ in ready.fulfill() }.store(in: &subscriptions)
+        wait(for: [ready], timeout: 1)
+    }
+
+    private func read(_ index: Int) throws -> Data {
+        var descriptor = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
+        guard poll(&descriptor, 1, 1_000) == 1 else { throw POSIXError(.ETIMEDOUT) }
+        var bytes = [UInt8](repeating: 0, count: 4_096)
+        let count = Darwin.read(ptys[index].master, &bytes, bytes.count)
+        guard count > 0 else { throw POSIXError(.EIO) }
+        return Data(bytes.prefix(count))
+    }
+
+    func testMultiselectionUsesOneExpiryAndClearOnlyResetsBackground() throws {
+        let rows = [try surface(10), try surface(20)], timers = MockTimerScheduler(), focus = controller(timers)
+        focus.preview(rows); awaitPaint(focus, count: 2)
+        XCTAssertEqual(timers.scheduledTimers.count, 1)
+        XCTAssertEqual(timers.scheduledTimers.first?.delay, 2)
+        XCTAssertFalse(try XCTUnwrap(timers.scheduledTimers.first).repeating)
+        for index in 0..<2 { XCTAssertTrue(String(decoding: try read(index), as: UTF8.self).hasPrefix("\u{1B}]11;")) }
+        focus.clearPreview()
+        XCTAssertFalse(focus.isPreviewActive)
+        for index in 0..<2 { XCTAssertEqual(try read(index), Data("\u{1B}]111\u{1B}\\".utf8)) }
+    }
+
+    func testExpiryRestoresIntentChangedDuringPreview() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), focus = controller(timers)
+        focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        let target = try XCTUnwrap(state.captureTarget(for: row))
+        clock.advance(by: 1)
+        try recovery.write(.ordinary(OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, deliveryID: "new", updatedAt: 1_001, background: "#ABCDEF"),
+            synthetic: false, intakeAt: 1_001), to: target)
+        _ = try read(0)
+        clock.advance(by: 1); timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertEqual(try read(0), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+    }
+
+    func testOldTimerCannotClearRestartedPreview() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), focus = controller(timers)
+        focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        let oldHandler = try XCTUnwrap(timers.scheduledTimers.first?.handler)
+        clock.advance(by: 1); focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        oldHandler()
+        XCTAssertTrue(focus.isPreviewActive)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.clearPreview(); _ = try read(0)
+    }
+
+    func testClearDuringBlockedColorLookupPreventsEveryQueuedPaint() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), queue = DispatchQueue(label: "blocked.preview")
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let focus = controller(timers, queue: queue, colors: { _ in
+            entered.signal(); release.wait()
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer { release.signal() }
+        focus.preview([row]); XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus.clearPreview(); release.signal()
+        let done = expectation(description: "Canceled lookup worker returned")
+        queue.async { done.fulfill() }; wait(for: [done], timeout: 1)
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testRecoveryCancellationDoesNotRepaintBeforeIndependentReset() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), focus = controller(timers)
+        focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        focus.cancelForRecovery()
+        XCTAssertFalse(focus.isPreviewActive)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        XCTAssertFalse(recovery.recover().hasFailures)
+        XCTAssertEqual(try read(0), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8))
+    }
+}

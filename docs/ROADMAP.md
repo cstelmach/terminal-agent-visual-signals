@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.0
+Version: 1.1
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -23,8 +23,11 @@ contrast of 4.5:1 or the existing lower baseline. Unsafe or negligible results a
 Configured colors guide styling; they do not describe arbitrary running-program colors.
 
 Preview ownership uses a separate two-second record so clearing it preserves an underlying
-selective lease. Recovery cancels both. The controller, configuration resolver, selection timers,
-GUI recovery controls, copied-install coverage and visible acceptance remain to be implemented.
+selective lease. Recovery cancels both. The controller now has one selection expiry timer and
+independent cleanup, with stale callback rejection and retained failures. Color resolution is
+bounded and validates configuration before parsing canonical output. Unsupported dual-theme
+appearance is explicit. Selection/GUI recovery wiring, copied-install coverage and visible
+acceptance remain pending.
 
 ## Later phases
 
