@@ -260,6 +260,118 @@ final class VisualRecoveryTests: XCTestCase {
         return color
     }
 
+    private func request(id: String = "queued-preview", isCurrent: @escaping () -> Bool = { true }) throws -> TerminalPreviewRequest {
+        TerminalPreviewRequest(effectID: id, startedAt: clock.now().timeIntervalSince1970,
+            colors: try XCTUnwrap(TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")),
+            revision: try restrictions.captureRevision(), isCurrent: isCurrent)
+    }
+
+    func testInitialPreviewQueuedBeforeRecoveryCannotPaintButNewExplicitPreviewCan() throws {
+        let target = try terminal(10), old = try request()
+        XCTAssertTrue(recovery().recover().stateSaved)
+        XCTAssertFalse(try recovery().write(.preview(old), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        try noBytes(target)
+        let fresh = try request(id: "fresh")
+        XCTAssertTrue(try recovery().write(.preview(fresh), to: target))
+        let expected = try XCTUnwrap(TerminalRenderer.previewBackground(ordinary: nil, colors: fresh.colors))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(expected)\u{1B}\\".utf8))
+        XCTAssertEqual(restrictions.read(), .suspended)
+    }
+
+    func testPreviewOpenCompletingAfterMarkerReplacementCannotPublishOrPaint() throws {
+        let target = try terminal(10), value = try request()
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            do { try self.restrictions.write(suspended: true) }
+            catch { XCTFail("Marker replacement failed"); errno = EIO; return -1 }
+            return Darwin.open(path, flags)
+        })
+        XCTAssertFalse(try recovery(runner: runner).write(.preview(value), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        try noBytes(target)
+    }
+
+    func testGlobalRuleBlocksInitialPreviewWithAnExplicitReason() throws {
+        let target = try terminal(10), value = try request()
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
+            to: root.appendingPathComponent("lock.state"))
+        let items = recovery().apply(.preview(value), to: [target])
+        XCTAssertEqual(items.first?.status, .failed)
+        XCTAssertEqual(items.first?.reason, "Preview unavailable while a pause or lock owns the visual.")
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        try noBytes(target)
+    }
+
+    func testMarkerChangeDuringPolicyCheckRejectsPreviewAfterCachingTarget() throws {
+        let target = try terminal(10), value = try request()
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0,
+            writtenEpoch: 1_000, appPID: 80, pauseBg: "#123456", pauseFg: "#EEEEEE", requestedMuted: true),
+            to: root.appendingPathComponent("home/mute.state"))
+        let policy = VisualRestrictionPolicy(restrictions: restrictions,
+            muteURL: root.appendingPathComponent("home/mute.state"), lockURL: root.appendingPathComponent("lock.state"),
+            clock: clock, pidAlive: { _ in
+                XCTAssertTrue(self.state.cachedRecords().bindings.contains(target))
+                do { try self.restrictions.write(suspended: true) }
+                catch { XCTFail("Marker replacement failed") }
+                return false
+            })
+        let service = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: policy, processRunner: SystemProcessRunner(), clock: clock, controller: generation(90), nativeSnapshot: { [] })
+        XCTAssertFalse(try service.write(.preview(value), to: target))
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        try noBytes(target)
+    }
+
+    func testRepeatedRecoveryAndResumeRejectQueuedStartsEvenWhenBooleanIsUnchanged() throws {
+        let target = try terminal(10)
+        for suspended in [true, false] {
+            try restrictions.write(suspended: suspended)
+            let old = try request()
+            let report = recovery().recover(resume: !suspended)
+            XCTAssertTrue(report.stateSaved)
+            if report.items.contains(where: { $0.status == .restored }) { _ = try read(target) }
+            XCTAssertEqual(restrictions.read(), suspended ? .suspended : .active)
+            XCTAssertFalse(try recovery().write(.preview(old), to: target))
+            try noBytes(target)
+            XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        }
+    }
+
+    func testCanceledStartAndOldClearCannotReplaceOrClearNewPreview() throws {
+        let target = try terminal(10)
+        let old = try request(id: "old"), fresh = try request(id: "fresh")
+        XCTAssertTrue(try recovery().write(.preview(fresh), to: target)); _ = try read(target)
+        XCTAssertFalse(try recovery().write(.preview(try request(id: "canceled", isCurrent: { false })), to: target))
+        XCTAssertFalse(try recovery().write(.clearPreview(effectID: old.effectID, revision: old.revision), to: target))
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.effectID, "fresh")
+        try noBytes(target)
+    }
+
+    func testClearAfterRecoveryDoesNotReapplyOrdinaryIntent() throws {
+        let target = try terminal(10), value = try request()
+        try recovery().write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        XCTAssertTrue(try recovery().write(.preview(value), to: target)); _ = try read(target)
+        XCTAssertFalse(recovery().recover().hasFailures); XCTAssertEqual(try read(target), reset)
+        XCTAssertFalse(try recovery().write(.clearPreview(effectID: value.effectID, revision: value.revision), to: target))
+        try noBytes(target)
+    }
+
+    func testClearRestoresLatestIntentAndCanceledRecordRemainsRetryable() throws {
+        let target = try terminal(10), value = try request()
+        XCTAssertTrue(try recovery().write(.preview(value), to: target)); _ = try read(target)
+        clock.advance(by: 1)
+        try recovery().write(.ordinary(intent(target, color: "#ABCDEF"), synthetic: false, intakeAt: 1_001), to: target)
+        _ = try read(target)
+        let failing = recovery(runner: SystemProcessRunner(openDevice: { _, _ in errno = EIO; return -1 }))
+        XCTAssertThrowsError(try failing.write(.clearPreview(effectID: value.effectID, revision: value.revision), to: target))
+        XCTAssertTrue(try recovery().write(.clearPreview(effectID: value.effectID, revision: value.revision), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        XCTAssertTrue(try recovery().write(.clearPreview(effectID: value.effectID, revision: value.revision), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+    }
+
     func testPreviewExpiryRestoresLatestIntentWithOnlyBackgroundBytes() throws {
         let target = try terminal(10)
         let color = try preview(target)

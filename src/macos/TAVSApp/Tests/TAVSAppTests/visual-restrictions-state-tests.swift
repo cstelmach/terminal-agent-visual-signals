@@ -42,6 +42,38 @@ final class VisualRestrictionsStateTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.path), [url.lastPathComponent])
     }
 
+    func testRevisionDistinguishesMissingAndRepeatedSameValueRecoveryWrites() throws {
+        let store = VisualRestrictionsStateStore(url: url)
+        let missing = try store.captureRevision()
+        XCTAssertTrue(try store.matches(missing, deadline: .max))
+        try store.write(suspended: true)
+        XCTAssertFalse(try store.matches(missing, deadline: .max))
+        let original = try store.captureRevision()
+        for _ in 0..<20 {
+            try store.write(suspended: true)
+            XCTAssertFalse(try store.matches(original, deadline: .max))
+        }
+        let fresh = try store.captureRevision()
+        XCTAssertTrue(try store.matches(fresh, deadline: .max))
+        try store.write(suspended: false)
+        XCTAssertFalse(try store.matches(fresh, deadline: .max))
+        XCTAssertThrowsError(try store.matches(original, deadline: DispatchTime.now().uptimeNanoseconds - 1))
+    }
+
+    func testRevisionRejectsWrongStoreAndMalformedOrSpecialMarkers() throws {
+        let store = VisualRestrictionsStateStore(url: url), missing = try store.captureRevision()
+        let other = VisualRestrictionsStateStore(url: directory.appendingPathComponent("other"))
+        XCTAssertThrowsError(try other.matches(missing, deadline: .max))
+        try Data("invalid".utf8).write(to: url)
+        XCTAssertThrowsError(try store.captureRevision())
+        let link = directory.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: url)
+        XCTAssertThrowsError(try VisualRestrictionsStateStore(url: link).captureRevision())
+        let fifo = directory.appendingPathComponent("fifo")
+        XCTAssertEqual(mkfifo(fifo.path, 0o600), 0)
+        XCTAssertThrowsError(try VisualRestrictionsStateStore(url: fifo).captureRevision())
+    }
+
     func testSpecialAndUnreadableFilesDisableRestrictionsWithoutBlocking() throws {
         let link = directory.appendingPathComponent("link")
         try Data("SCHEMA_VERSION=\"1\"\nSUSPENDED=\"false\"\n".utf8).write(to: url)

@@ -15,12 +15,64 @@ enum VisualRestrictionsStatus: String {
     }
 }
 
-enum VisualRestrictionsStateError: Error { case storageUnavailable }
+enum VisualRestrictionsStateError: Error { case storageUnavailable, deadlineExceeded }
+
+final class VisualRestrictionsRevision {
+    fileprivate let url: URL
+    fileprivate let descriptor: Int32
+    fileprivate let device: dev_t
+    fileprivate let inode: ino_t
+
+    fileprivate init(url: URL, descriptor: Int32 = -1, device: dev_t = 0, inode: ino_t = 0) {
+        self.url = url; self.descriptor = descriptor; self.device = device; self.inode = inode
+    }
+
+    deinit { if descriptor >= 0 { close(descriptor) } }
+}
 
 final class VisualRestrictionsStateStore {
     let url: URL
 
     init(url: URL) { self.url = url }
+
+    func captureRevision() throws -> VisualRestrictionsRevision {
+        guard url.isFileURL, read() != .unavailable else { throw VisualRestrictionsStateError.storageUnavailable }
+        var info = stat()
+        if lstat(url.path, &info) != 0 {
+            guard errno == ENOENT else { throw VisualRestrictionsStateError.storageUnavailable }
+            return VisualRestrictionsRevision(url: url)
+        }
+        guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
+        let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard fd >= 0 else { throw VisualRestrictionsStateError.storageUnavailable }
+        var current = stat()
+        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG,
+              current.st_dev == info.st_dev, current.st_ino == info.st_ino else {
+            close(fd); throw VisualRestrictionsStateError.storageUnavailable
+        }
+        // Holding the old file prevents inode reuse across repeated atomic recovery writes.
+        return VisualRestrictionsRevision(url: url, descriptor: fd, device: current.st_dev, inode: current.st_ino)
+    }
+
+    func matches(_ revision: VisualRestrictionsRevision, deadline: UInt64) throws -> Bool {
+        guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
+        guard url == revision.url else { throw VisualRestrictionsStateError.storageUnavailable }
+        return try withExtendedLifetime(revision) {
+            var info = stat()
+            let result: Bool
+            if lstat(url.path, &info) != 0 {
+                guard errno == ENOENT, missingStatus() != .unavailable else {
+                    throw VisualRestrictionsStateError.storageUnavailable
+                }
+                result = revision.descriptor < 0
+            } else {
+                guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
+                result = revision.descriptor >= 0 && revision.device == info.st_dev && revision.inode == info.st_ino
+            }
+            guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
+            return result
+        }
+    }
 
     func read() -> VisualRestrictionsStatus {
         guard url.isFileURL else { return .unavailable }

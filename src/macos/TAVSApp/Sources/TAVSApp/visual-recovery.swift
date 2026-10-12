@@ -1,12 +1,22 @@
 import Foundation
 import Darwin
 
+struct TerminalPreviewRequest {
+    let effectID: String
+    let startedAt: Double
+    let colors: TerminalRenderer.Colors
+    let revision: VisualRestrictionsRevision
+    let isCurrent: () -> Bool
+}
+
 enum ManagedVisualOperation {
     case register
     case ordinary(OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case forcedReset(OrdinaryBackgroundIntent, intakeAt: Double, title: String)
     case checkSynthetic(OrdinaryBackgroundIntent, intakeAt: Double)
     case render(TerminalRender, OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
+    case preview(TerminalPreviewRequest)
+    case clearPreview(effectID: String, revision: VisualRestrictionsRevision)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -28,7 +38,9 @@ struct VisualRecoveryReport: Codable {
     var hasFailures: Bool { !stateSaved || items.contains { $0.status == .failed } }
 }
 
-enum VisualRecoveryError: Error { case vanished, targetUnavailable, scopeUnavailable, policyChanged }
+enum VisualRecoveryError: Error {
+    case vanished, targetUnavailable, scopeUnavailable, policyChanged, previewBlocked, previewUnavailable
+}
 enum TerminalRenderResult: String { case rendered, restricted, unaffected }
 
 final class VisualRecovery {
@@ -131,12 +143,39 @@ final class VisualRecovery {
                 _ = try self.state.equivalentBindingsUnlocked(for: target, deadline: deadline)
                 return nil
             }
-            let effects = try self.effectsUnlocked(for: target, deadline: deadline)
+            var effects = try self.effectsUnlocked(for: target, deadline: deadline)
             if case .emergencyReset = operation {
                 guard self.restrictions.read().disablesRestrictions else { throw VisualRecoveryError.policyChanged }
                 try self.cancelEffects(effects, deadline: deadline)
                 try self.invalidatePending(target, deadline: deadline)
                 return Self.reset
+            }
+
+            if case .preview(let request) = operation {
+                guard request.isCurrent(), let controller = self.controller else { return nil }
+                var effect = TerminalEffectRecord(target: target, controller: controller,
+                    effectID: request.effectID, kind: .preview, background: "reset", heartbeatAt: request.startedAt)
+                guard self.state.isSelectiveLeaseActive(effect),
+                      try self.restrictions.matches(request.revision, deadline: deadline) else { return nil }
+                guard self.restrictions.read() != .unavailable else { throw VisualRecoveryError.policyChanged }
+                guard try self.policy.current(deadline: deadline) == nil else { throw VisualRecoveryError.previewBlocked }
+                guard request.isCurrent(), try self.restrictions.matches(request.revision, deadline: deadline) else { return nil }
+                let ordinary = try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline)
+                guard let color = TerminalRenderer.previewBackground(ordinary: ordinary, colors: request.colors) else {
+                    throw VisualRecoveryError.previewUnavailable
+                }
+                effect.background = color
+                try self.cancelEffects(effects.filter { $0.kind == .preview
+                    && ($0.effectID != effect.effectID || $0.controller != effect.controller) }, deadline: deadline)
+                try self.state.saveEffectUnlocked(effect, deadline: deadline)
+                return Self.backgroundBytes(color)
+            }
+            if case .clearPreview(let id, let revision) = operation {
+                guard try self.restrictions.matches(revision, deadline: deadline) else { return nil }
+                let matches = effects.filter { $0.kind == .preview && $0.effectID == id && $0.controller == self.controller }
+                guard !matches.isEmpty else { return nil }
+                try self.cancelEffects(matches, deadline: deadline)
+                effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }
 
             if let (intent, synthetic, intakeAt) = publication {
@@ -264,6 +303,10 @@ final class VisualRecovery {
         return (catalogueAvailable, items)
     }
 
+    func apply(_ operation: ManagedVisualOperation, to targets: [TerminalTargetBinding]) -> [VisualRecoveryItem] {
+        fanout(targets, operation: operation)
+    }
+
     func target(tty: String, owner: ProcessGeneration) throws -> TerminalTargetBinding {
         guard let plain = state.captureTarget(tty: tty, owner: owner) else { throw VisualRecoveryError.targetUnavailable }
         let cached = state.cachedRecords()
@@ -333,6 +376,12 @@ final class VisualRecovery {
                 status = try self.write(operation, to: target) ? .restored : .unaffected
             }
             catch VisualRecoveryError.vanished { status = .vanished }
+            catch VisualRecoveryError.previewBlocked {
+                status = .failed; reason = "Preview unavailable while a pause or lock owns the visual."
+            }
+            catch VisualRecoveryError.previewUnavailable {
+                status = .failed; reason = "Preview unavailable: no safe configured-color tint."
+            }
             catch { status = .failed; reason = "Managed restoration unavailable." }
             lock.lock()
             items.append(VisualRecoveryItem(target: target, tty: target.tty, status: status, reason: reason))
