@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12 |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices) |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices) |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -728,6 +728,73 @@ Resizing, GUI persistence and real native navigation were not checked. P6 recurr
 skill or automation is proposed. Tool outcomes and edits are observed; strategy causality
 and exact model attribution remain reconstructed. This closes the opening/debug request,
 not the full nine-phase implementation goal.
+
+---
+
+## 2026-10-12 · model-unverified · tavs-private-test-roots
+
+meta:
+  model: GPT-6 family self-report; exact served variant unobserved
+  model_source: self-reported, reconstructed [R]
+  interface: codex-desktop
+  thinking: user requested methodical ultrathink; runtime setting unverified
+  session: 01a10879
+  trace: observed actions in this conversation
+
+**Framing [O].** The operator resumed the full implementation goal and granted continuation.
+Current source was clean at 90883bf. Phase 2 still lacked native acceptance, while Phase 3
+contained test-only isolation work. Execute-spec E1 allows skipping a Blocked phase. This
+corrected the earlier overbroad stop: the isolation runner consumes no live native result.
+The missing acceptance remained explicit, and neither SPEC prose nor the plan was rewritten.
+
+**Strategy [O/R].** A read-only explorer audited Python helpers/callers while the parent read
+three shell fixtures and connected core helpers. [R] Separating those questions reduced
+duplicate exploration. A small environment wrapper reused existing Bats, pytest and Swift
+commands. No sandbox or new testing framework was introduced. Private roots and fake TTYs
+were supplied before shell source could run; partial Python environments then retained them.
+
+**Action trace [O]**
+
+| # | Move | Object | Outcome |
+|---|------|--------|---------|
+| 1 | Orient/back up | SPEC package and owned fixture paths | Clean baseline, private scratch |
+| 2 | Delegate/read | Python audit and shell fixtures | Confirmed path and worker hazards |
+| 3 | Red checks | Missing runner, idle paths, startup file | Failures without live-default writes |
+| 4 | Implement | Runner and common Python environment helper | Private roots retained |
+| 5 | Repair fixtures | Mute/idle/priority | Owned cleanup and exact color checks |
+| 6 | Verify | Affected shell and audited Python cases | 33 and 230 pass |
+| 7 | Verify | Fresh isolated Swift build/suite, syntax/lint | 237 pass; applicable checks pass |
+| 8 | Persist | Audit, bugs, progress and capture | Phase 3 done; native acceptance pending |
+
+**Decision points [O].** An env-i child alone did not protect the wrapper's own Bash startup:
+a controlled BASH_ENV script ran first. Direct execution with Bash -p prevented that path.
+The Python helper filled only missing isolation keys rather than restoring all ambient
+feature flags, preserving terminal-detection tests. Legacy title sources required the private
+internal temporary-root mirror. Existing completion tests with unsafe worker cleanup were
+excluded rather than run with guessed protection.
+
+**Failure arcs [O/R].** The first Python probe selected a Python executable without pytest.
+Its complete nested traceback identified the interpreter mismatch. The probe was moved to the
+installed pytest command, without installing a dependency. The first integrated shell run
+found that the default-path test's mkdir assertion depended on whether the real directory
+already existed. Stubbing identity and mkdir made the check controlled and prevented writes.
+Exact priority-color assertions also failed: the final processing hook was still inside the
+existing permission grace period. The fixture waits through 400 ms and pins both colors.
+[R] These outcomes support treating old tests as hypotheses about behavior, not authority.
+
+**Verification boundaries [O].** All 33 repaired Bats cases, 230 audited Python cases and
+237 Swift cases passed. The full Python/Bats suites remain unrun. Spinner's fixed HOME,
+pre-source title DB overrides and detached completion-worker cleanup remain named follow-ups.
+No real-home scheduling E2E, install, native navigation or working-terminal paint occurred.
+ShellCheck's existing dynamic-source/Bats modelling notices were separated from new findings;
+new quoting findings were corrected. Each Bats file also passed preprocessing and Bash syntax.
+
+**Heuristics and confidence [O/R].** P9 recurred. Keep independent implementation moving while
+missing live evidence blocks only dependent work; preserve the acceptance requirement itself.
+Verify actual bytes where a size-only assertion can hide the wrong state. No new skill is
+proposed because the current workflow already supplies orientation and blocked-phase rules.
+Action/results are observed; causal interpretations and model attribution are reconstructed.
+This completes the isolation slice, not the master goal.
 
 ---
 

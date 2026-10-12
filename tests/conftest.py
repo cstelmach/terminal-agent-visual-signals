@@ -16,6 +16,23 @@ import pytest
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent
 
+ISOLATION_KEYS = (
+    'PATH', 'HOME', 'TMPDIR', 'CFFIXED_USER_HOME', 'ZDOTDIR',
+    'TAVS_RUNTIME_DIR', 'TAVS_TMP_DIR', 'XDG_RUNTIME_DIR', 'XDG_CACHE_HOME',
+    'TTY_DEVICE', 'TAVS_TEST_ROOT', 'TAVS_TEST_HELPER_BIN',
+)
+
+
+def _subprocess_env(overrides=None):
+    if not os.environ.get('TAVS_TEST_ROOT'):
+        raise RuntimeError('Run these tests through tests/run-isolated.sh.')
+    env = os.environ.copy() if overrides is None else overrides.copy()
+    for key in ISOLATION_KEYS:
+        if key in os.environ:
+            env.setdefault(key, os.environ[key])
+    env['_TAVS_TMP_DIR'] = env['TAVS_TMP_DIR']
+    return env
+
 
 @pytest.fixture
 def project_root():
@@ -44,7 +61,7 @@ def temp_tty_file():
 @pytest.fixture
 def bash_env():
     """Return base environment for bash subprocess calls."""
-    env = os.environ.copy()
+    env = _subprocess_env()
     # Ensure we're using a clean environment
     env['SHELL'] = '/bin/bash'
     return env
@@ -53,19 +70,19 @@ def bash_env():
 @pytest.fixture
 def zsh_env():
     """Return base environment for zsh subprocess calls."""
-    env = os.environ.copy()
+    env = _subprocess_env()
     env['SHELL'] = '/bin/zsh'
     return env
 
 
 @pytest.fixture
 def clean_env():
-    """Return minimal environment without TAVS variables for testing defaults."""
-    return {
+    """Keep private paths while omitting feature and terminal-detection overrides."""
+    return _subprocess_env({
         'PATH': os.environ.get('PATH', '/usr/bin:/bin'),
         'HOME': os.environ.get('HOME', '/tmp'),
         'SHELL': '/bin/bash',
-    }
+    })
 
 
 def run_bash(command: str, env: dict = None, cwd: Path = None, timeout: float = 5.0) -> subprocess.CompletedProcess:
@@ -81,8 +98,7 @@ def run_bash(command: str, env: dict = None, cwd: Path = None, timeout: float = 
     Returns:
         CompletedProcess with stdout, stderr, returncode
     """
-    if env is None:
-        env = os.environ.copy()
+    env = _subprocess_env(env)
     if cwd is None:
         cwd = PROJECT_ROOT
 
@@ -113,8 +129,7 @@ def run_zsh(command: str, env: dict = None, cwd: Path = None, timeout: float = 5
     Returns:
         CompletedProcess with stdout, stderr, returncode
     """
-    if env is None:
-        env = os.environ.copy()
+    env = _subprocess_env(env)
     if cwd is None:
         cwd = PROJECT_ROOT
 

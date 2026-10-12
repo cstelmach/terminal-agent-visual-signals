@@ -11,15 +11,18 @@ RUNTIME_DIR=""
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     TEST_HOME=$(mktemp -d)
-    RUNTIME_DIR="/tmp/tavs-$(id -u)"
-    mkdir -p "$TEST_HOME/.tavs"
+    RUNTIME_DIR="$TEST_HOME/runtime"
+    export TAVS_RUNTIME_DIR="$RUNTIME_DIR"
+    export TAVS_TMP_DIR="$TEST_HOME/state"
+    export XDG_RUNTIME_DIR="$TEST_HOME/xdg"
+    mkdir -p "$TEST_HOME/.tavs" "$TAVS_TMP_DIR" "$XDG_RUNTIME_DIR"
 }
 
 teardown() {
-    rm -rf "$TEST_HOME"
     # Clean up worker processes and temp files
     [[ -n "${_WORKER_PID:-}" ]] && kill "$_WORKER_PID" 2>/dev/null || true
-    wait "$_WORKER_PID" 2>/dev/null || true
+    [[ -n "${_WORKER_PID:-}" ]] && wait "$_WORKER_PID" 2>/dev/null || true
+    rm -rf "$TEST_HOME"
 }
 
 _create_mute_state() {
@@ -71,6 +74,12 @@ SCRIPT
     chmod +x "$script_path"
 }
 
+@test "idle worker fixture paths stay beneath its private home" {
+    [[ "$RUNTIME_DIR" == "$TEST_HOME/"* ]]
+    [[ "$TAVS_TMP_DIR" == "$TEST_HOME/"* ]]
+    [[ "$XDG_RUNTIME_DIR" == "$TEST_HOME/"* ]]
+}
+
 @test "idle worker uses emit_osc (not direct fd writes)" {
     local fd3_count
     fd3_count=$(grep -c '>&3' "$REPO_ROOT/src/core/idle-worker-background.sh" || true)
@@ -89,10 +98,10 @@ SCRIPT
 @test "idle worker muted: TTY gets no bytes during muted tick" {
     _create_mute_state "$TEST_HOME"
     local tty_file
-    tty_file=$(mktemp)
+    tty_file=$(mktemp "$TEST_HOME/tty.XXXXXX")
 
     local worker_script
-    worker_script=$(mktemp)
+    worker_script=$(mktemp "$TEST_HOME/worker.XXXXXX")
     _write_worker_script "$worker_script"
 
     # Run worker in background, wait for at least 2 ticks, then kill
@@ -103,6 +112,7 @@ SCRIPT
 
     kill "$_WORKER_PID" 2>/dev/null || true
     wait "$_WORKER_PID" 2>/dev/null || true
+    unset _WORKER_PID
 
     local bytes
     bytes=$(wc -c < "$tty_file" | tr -d ' ')
@@ -114,10 +124,10 @@ SCRIPT
 @test "idle worker muted: pending cache contains captured bytes" {
     _create_mute_state "$TEST_HOME"
     local tty_file
-    tty_file=$(mktemp)
+    tty_file=$(mktemp "$TEST_HOME/tty.XXXXXX")
 
     local worker_script
-    worker_script=$(mktemp)
+    worker_script=$(mktemp "$TEST_HOME/worker.XXXXXX")
     _write_worker_script "$worker_script"
 
     bash "$worker_script" "$TEST_HOME" "$tty_file" "$REPO_ROOT/src/core" 2>/dev/null &
@@ -128,6 +138,7 @@ SCRIPT
 
     kill "$_WORKER_PID" 2>/dev/null || true
     wait "$_WORKER_PID" 2>/dev/null || true
+    unset _WORKER_PID
 
     local tty_safe="${tty_file//\//_}"
     local cache="$RUNTIME_DIR/pending/${tty_safe}.osc"

@@ -25,12 +25,13 @@ teardown() {
 
 # --- Runtime Dir ---
 
-@test "runtime dir is created with correct permissions" {
+@test "default runtime path is observed without creating the live directory" {
     unset TAVS_RUNTIME_DIR
+    id() { printf '%s\n' "${TEST_RUNTIME##*/}"; }
+    mkdir() { printf '%s\n' "$*" >> "$TEST_HOME/mkdir-calls"; }
     _tavs_resolve_runtime_dir
-    [ -d "$TAVS_RUNTIME_DIR" ]
-    [ -d "$TAVS_RUNTIME_DIR/pending" ]
-    [ -d "$TAVS_RUNTIME_DIR/active-ttys" ]
+    [ "$TAVS_RUNTIME_DIR" = "/tmp/tavs-$(id -u)" ]
+    [ -s "$TEST_HOME/mkdir-calls" ]
 }
 
 @test "runtime dir respects TAVS_RUNTIME_DIR if already set" {
