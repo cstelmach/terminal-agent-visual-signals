@@ -217,6 +217,39 @@ final class SchedulerLockTests: XCTestCase {
 
     // MARK: - Hard schedule projection
 
+    func testRequestedProjectionRetainsHardAndSoftCausesDuringSuspension() throws {
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        for hard in [true, false] {
+            try writeConfig(windowHard: hard)
+            makeScheduler(at: outsideWindowDate)
+            scheduler.start()
+            XCTAssertFalse(scheduler.isMuted)
+            XCTAssertTrue(muteStateContents().contains("MUTED=\"false\""))
+            XCTAssertTrue(muteStateContents().contains("REQUESTED_MUTED=\"true\""))
+            XCTAssertTrue(muteStateContents().contains("MUTE_LEVEL=\"\(hard ? "hard" : "soft")\""))
+            XCTAssertTrue(muteStateContents().contains("UNTIL_EPOCH=\"\(epoch(outsideWindowDate, offset: 11 * 3600))\""))
+            XCTAssertTrue(muteStateContents().contains("PAUSE_BG=\"#3A3A3A\""))
+            scheduler.stop()
+        }
+    }
+
+    func testUnmutedProjectionIsSavedBeforeVisualReconciliation() throws {
+        try writeConfig()
+        makeScheduler(at: outsideWindowDate)
+        scheduler.start()
+        var cleared = false
+        broadcaster.onPausedClear = { [unowned self] in
+            cleared = true
+            XCTAssertTrue(self.muteStateContents().contains("MUTED=\"false\""))
+            XCTAssertTrue(self.muteStateContents().contains("REQUESTED_MUTED=\"false\""))
+        }
+        clock.set(to: outsideWindowDate.addingTimeInterval(11 * 3600))
+        scheduler.loadAndEvaluate()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertTrue(cleared)
+    }
+
     func testHardWindowProjectsLockStateAndBroadcastsLocked() throws {
         try writeConfig(windowHard: true)
         makeScheduler(at: outsideWindowDate)

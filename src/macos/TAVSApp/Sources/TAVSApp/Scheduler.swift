@@ -398,6 +398,9 @@ final class Scheduler: ObservableObject {
             projectedMuted = false
             projectedReason = .none
         }
+        let requestedMuted = projectedMuted
+        let requestedReason = projectedReason
+        let hardCaused = scheduleHard || projectedReason == .hardLock
         if restrictionsDisabled {
             projectedMuted = false
             projectedReason = .none
@@ -408,15 +411,11 @@ final class Scheduler: ObservableObject {
         let wasMuted = previousMuted
         previousMuted = projectedMuted
 
-        if !restrictionsDisabled && wasMuted && !projectedMuted {
-            clearPausedVisualAndReplayPending()
-        }
-
         writeLockStateIfChanged(mergedLock, existing: existingLock)
 
         let untilEpoch: Int64
-        if projectedMuted {
-            if projectedReason == .hardLock {
+        if requestedMuted {
+            if requestedReason == .hardLock {
                 untilEpoch = mergedLock.lockUntilEpoch
             } else if let t = transition {
                 untilEpoch = Int64(t.timeIntervalSince1970)
@@ -427,18 +426,13 @@ final class Scheduler: ObservableObject {
             untilEpoch = 0
         }
 
-        writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch)
+        writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
+                       hardCaused: hardCaused, requestedMuted: requestedMuted)
 
-        // Note on the race window between broadcast()'s drain above and
-        // writeMuteState(): a hook firing in this gap reads MUTED=true from
-        // disk and buffers its OSC bytes into pending/. We deliberately do
-        // NOT delete those bytes — they reflect the hook's *current* intent,
-        // not stale state. Earlier code called `broadcaster.clearPending()`
-        // here, which silently dropped the byte and made the user miss a
-        // visual response. Race-window captures are now picked up on the
-        // next mute→unmute cycle, or overwritten by the next hook from the
-        // same TTY. Reordering broadcast/writeMuteState would trade this
-        // missed-paint for a stale-over-correct flicker, which is worse.
+        // Managed reconciliation must read the new rule projection, not the pause it clears.
+        if !restrictionsDisabled && wasMuted && !projectedMuted {
+            clearPausedVisualAndReplayPending()
+        }
 
         if !wasMuted && projectedMuted {
             paintMuted(visual: visual, effectiveLock: effectiveLock, lockUntil: mergedLock.lockUntilEpoch)
@@ -598,7 +592,8 @@ final class Scheduler: ObservableObject {
         }
     }
 
-    private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64) {
+    private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64,
+                                hardCaused: Bool, requestedMuted: Bool) {
         let dir = muteStateURL.deletingLastPathComponent()
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -610,9 +605,8 @@ final class Scheduler: ObservableObject {
             }
         }
 
-        // Resolve the pause visual only while muted so the shell integration
-        // can self-paint soft pauses; unmuted state carries no colors.
-        let visual: PauseVisual? = muted ? pauseVisualProvider() : nil
+        // Keep the requested rule's resolved colors for independent resumption.
+        let visual: PauseVisual? = requestedMuted ? pauseVisualProvider() : nil
         let state = MuteStateData(
             muted: muted,
             reason: reason,
@@ -620,7 +614,9 @@ final class Scheduler: ObservableObject {
             writtenEpoch: Int64(clock.now().timeIntervalSince1970),
             appPID: ProcessInfo.processInfo.processIdentifier,
             pauseBg: visual?.backgroundColor ?? "",
-            pauseFg: visual?.foregroundColor ?? ""
+            pauseFg: visual?.foregroundColor ?? "",
+            hardCaused: hardCaused,
+            requestedMuted: requestedMuted
         )
         do {
             try MuteStateWriter.write(state, to: muteStateURL)

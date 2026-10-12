@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
+
+## Suspension loses the rule needed for independent resume
+
+The scheduler's suspension override writes effective MUTED=false. A current-rule reader then
+cannot distinguish that override from an inactive soft rule. Schema 1 now retains requested
+mute and hard/soft cause fields, with the requested rule's finite expiry and resolved colors.
+The persistent marker still disables all restrictions before those fields are considered.
+
+The old unmute path also cleared visuals before writing the new projection. Managed output
+would read the old rule and could repaint it. The scheduler now saves both projections before
+requesting reconciliation. Two regression cases exposed five assertions, then an expiry check
+caught two more. All 47 related and 353 full isolated Swift tests pass. Production routing and
+physical recovery remain unfinished.
 
 ## Headless catalogue needs an off-main completion
 

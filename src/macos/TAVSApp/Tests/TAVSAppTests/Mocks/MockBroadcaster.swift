@@ -10,6 +10,7 @@ final class MockBroadcaster: BroadcasterProtocol {
     private(set) var callOrder: [String] = []
     private(set) var lastPausedVisual: PauseVisual?
     private(set) var lastLockedUntilText: String?
+    var onPausedClear: (() -> Void)?
     var lastPausedBackgroundColor: String? {
         lastPausedVisual?.backgroundColor
     }
@@ -35,6 +36,7 @@ final class MockBroadcaster: BroadcasterProtocol {
     func broadcastPausedClear() {
         broadcastPausedClearCallCount += 1
         callOrder.append("broadcastPausedClear")
+        onPausedClear?()
     }
 
     func discoverAndRegisterActiveAgentTTYs() {
