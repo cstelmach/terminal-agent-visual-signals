@@ -32,8 +32,36 @@ struct TerminalVisualCoverage: Equatable {
     let status: String
 }
 
+struct TerminalTargetBinding: Codable, Hashable {
+    let tty: String
+    let device: UInt32
+    let ttyOwner: ProcessGeneration
+    let nativeSurface: GhosttySurfaceID?
+}
+
+enum TerminalTargetValidation: Equatable { case valid, vanished, unavailable }
+enum TerminalEffectKind: String, Codable { case globalRestriction, selectiveBackground }
+
+struct TerminalEffectRecord: Codable, Equatable {
+    var schema = 1
+    var target: TerminalTargetBinding
+    var controller: ProcessGeneration
+    var effectID: String
+    var kind: TerminalEffectKind
+    var background: String
+    var heartbeatAt: Double
+    var active = true
+}
+
+struct TerminalCachedVisualRecords {
+    let bindings: [TerminalTargetBinding]
+    let effects: [TerminalEffectRecord]
+    let unreadable: [URL]
+}
+
 enum TerminalVisualStateError: Error, CustomStringConvertible {
     case invalidRecord, storageUnavailable, lockUnavailable, staleDelivery, staleObservation, staleIntent
+    case targetUnavailable, staleEffect, deadlineExceeded
 
     var description: String {
         switch self {
@@ -43,6 +71,9 @@ enum TerminalVisualStateError: Error, CustomStringConvertible {
         case .staleDelivery: return "Stale organizer delivery."
         case .staleObservation: return "Stale organizer observation."
         case .staleIntent: return "Stale organizer intent."
+        case .targetUnavailable: return "Organizer target unavailable."
+        case .staleEffect: return "Stale organizer effect."
+        case .deadlineExceeded: return "Organizer deadline exceeded."
         }
     }
 }
@@ -52,6 +83,9 @@ final class TerminalVisualStateStore {
     private let clock: Clock
     private let lookup: (Int32) -> ProcessIdentity?
     private let device: (String) -> UInt32?
+    private let deviceMissing: (String) -> Bool
+    private let processMissing: (Int32) -> Bool
+    private let descriptorDevice: (Int32) -> UInt32?
     private static let sizeLimit = 8_192
     private static let states: Set<String> = [
         "processing", "permission", "complete", "idle", "compacting", "reset", "subagent", "tool_error"
@@ -64,11 +98,322 @@ final class TerminalVisualStateStore {
 
     init(runtimeDirectory: URL, clock: Clock = SystemClock(),
          lookup: @escaping (Int32) -> ProcessIdentity? = ProcessIdentity.inspect,
-         device: @escaping (String) -> UInt32? = ProcessIdentity.deviceNumber) {
+         device: @escaping (String) -> UInt32? = ProcessIdentity.deviceNumber,
+         deviceMissing: @escaping (String) -> Bool = TerminalVisualStateStore.knownDeviceMissing,
+         processMissing: @escaping (Int32) -> Bool = TerminalVisualStateStore.knownProcessMissing,
+         descriptorDevice: @escaping (Int32) -> UInt32? = TerminalVisualStateStore.characterDevice) {
         directory = runtimeDirectory.appendingPathComponent("organizer", isDirectory: true)
         self.clock = clock
         self.lookup = lookup
         self.device = device
+        self.deviceMissing = deviceMissing
+        self.processMissing = processMissing
+        self.descriptorDevice = descriptorDevice
+    }
+
+    func lockURL(forTTY tty: String) throws -> URL {
+        guard directory.isFileURL, tty.hasPrefix("/"), tty.utf8.count <= 128,
+              !tty.split(separator: "/").contains(where: { $0 == "." || $0 == ".." }),
+              tty.rangeOfCharacter(from: .controlCharacters) == nil else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        return directory.appendingPathComponent("writer-\(key(tty)).lock")
+    }
+
+    func captureTarget(for surface: GhosttySurface) -> TerminalTargetBinding? {
+        guard surface.mappingIssue == nil, let tty = surface.tty, Self.concreteTTY(tty),
+              let number = device(tty), let pid = surface.foregroundPID, let foreground = lookup(pid),
+              ProcessIdentity.foregroundFamilyContains(producer: foreground.generation,
+                foreground: foreground.generation, device: number, lookup: lookup),
+              let owner = continuingOwner(foreground.generation, device: number) else { return nil }
+        let binding = TerminalTargetBinding(tty: tty, device: number, ttyOwner: owner, nativeSurface: surface.id)
+        return validateTarget(binding) == .valid ? binding : nil
+    }
+
+    func captureTarget(tty: String, owner: ProcessGeneration) -> TerminalTargetBinding? {
+        guard Self.concreteTTY(tty), let number = device(tty),
+              let continuing = continuingOwner(owner, device: number) else { return nil }
+        let binding = TerminalTargetBinding(tty: tty, device: number, ttyOwner: continuing, nativeSurface: nil)
+        return validateTarget(binding) == .valid ? binding : nil
+    }
+
+    func validateTarget(_ target: TerminalTargetBinding, descriptor: Int32? = nil,
+                        native: GhosttySurface? = nil, confirmedNativeAbsent: Bool = false) -> TerminalTargetValidation {
+        do { try validate(target) } catch { return .unavailable }
+        if confirmedNativeAbsent { return target.nativeSurface == nil ? .unavailable : .vanished }
+        if let number = device(target.tty) {
+            if number != target.device { return .vanished }
+        } else { return deviceMissing(target.tty) ? .vanished : .unavailable }
+        if let surface = target.nativeSurface {
+            if let application = lookup(surface.application.pid) {
+                if application.generation != surface.application { return .vanished }
+            } else { return processMissing(surface.application.pid) ? .vanished : .unavailable }
+            if let native = native,
+               native.mappingIssue != nil || native.id != surface || native.tty != target.tty {
+                return .unavailable
+            }
+        }
+        guard let owner = lookup(target.ttyOwner.pid), owner.generation == target.ttyOwner,
+              owner.device == target.device else { return .unavailable }
+        if let descriptor = descriptor, descriptorDevice(descriptor) != target.device { return .unavailable }
+        return .valid
+    }
+
+    // Global lock/mute policy must be recomputed separately; it is not a selective lease.
+    func isSelectiveLeaseActive(_ effect: TerminalEffectRecord) -> Bool {
+        guard effect.kind == .selectiveBackground, effect.active,
+              (try? validate(effect)) != nil,
+              clock.now().timeIntervalSince1970 - effect.heartbeatAt <= 6,
+              lookup(effect.controller.pid)?.generation == effect.controller else { return false }
+        return true
+    }
+
+    // These helpers require the caller's existing writer lock and original deadline.
+    func cacheTargetUnlocked(_ target: TerminalTargetBinding, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(target)
+        guard validateTarget(target) == .valid else { throw TerminalVisualStateError.targetUnavailable }
+        try checkDeadline(deadline)
+        let url = targetURL(target, filename: "target.json")
+        if let saved: CachedTarget = try read(url, deadline: deadline) {
+            guard saved.schema == 1, saved.target == target else { throw TerminalVisualStateError.invalidRecord }
+            return
+        }
+        try prepareTargetDirectory(url.deletingLastPathComponent(), deadline: deadline)
+        try write(CachedTarget(target: target), to: url, deadline: deadline)
+    }
+
+    func currentEffectUnlocked(_ target: TerminalTargetBinding, deadline: UInt64) throws -> TerminalEffectRecord? {
+        try validate(target)
+        let record: TerminalEffectRecord? = try read(targetURL(target, filename: "effect.json"), deadline: deadline)
+        if let record = record {
+            try validate(record)
+            guard record.target == target else { throw TerminalVisualStateError.invalidRecord }
+        }
+        try checkDeadline(deadline)
+        return record
+    }
+
+    func saveEffectUnlocked(_ effect: TerminalEffectRecord, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(effect)
+        if let current = try currentEffectUnlocked(effect.target, deadline: deadline),
+           current.effectID == effect.effectID {
+            guard current.controller == effect.controller, current.active || !effect.active else {
+                throw TerminalVisualStateError.staleEffect
+            }
+        }
+        try cacheTargetUnlocked(effect.target, deadline: deadline)
+        var normalized = effect
+        normalized.background = Self.normalizedBackground(effect.background)!
+        try write(normalized, to: targetURL(effect.target, filename: "effect.json"), deadline: deadline)
+    }
+
+    func matchingEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
+                                controller: ProcessGeneration, deadline: UInt64) throws -> TerminalEffectRecord? {
+        guard let effect = try currentEffectUnlocked(target, deadline: deadline), effect.active,
+              effect.effectID == effectID, effect.controller == controller else { return nil }
+        return effect
+    }
+
+    func refreshEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
+                               controller: ProcessGeneration, deadline: UInt64) throws -> Bool {
+        guard var effect = try matchingEffectUnlocked(target, effectID: effectID,
+            controller: controller, deadline: deadline), lookup(controller.pid)?.generation == controller,
+              validateTarget(target) == .valid else { try checkDeadline(deadline); return false }
+        effect.heartbeatAt = clock.now().timeIntervalSince1970
+        try write(effect, to: targetURL(target, filename: "effect.json"), deadline: deadline)
+        return true
+    }
+
+    func cancelEffectUnlocked(_ target: TerminalTargetBinding, effectID: String,
+                              controller: ProcessGeneration, deadline: UInt64) throws -> Bool {
+        guard var effect = try matchingEffectUnlocked(target, effectID: effectID,
+            controller: controller, deadline: deadline) else { return false }
+        effect.active = false
+        try write(effect, to: targetURL(target, filename: "effect.json"), deadline: deadline)
+        return true
+    }
+
+    func ordinaryBackgroundUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> String? {
+        try checkDeadline(deadline)
+        guard validateTarget(target) == .valid else { try checkDeadline(deadline); return nil }
+        guard let intent: OrdinaryBackgroundIntent = try read(recordURL("intent", tty: target.tty), deadline: deadline)
+        else { return nil }
+        try validate(intent)
+        guard intent.tty == target.tty, intent.device == target.device, let producer = intent.producer else {
+            try checkDeadline(deadline); return nil
+        }
+        if let surface = target.nativeSurface {
+            let url = adoptionURL(tty: target.tty, producer: producer)
+            guard let binding: Adoption = try read(url, deadline: deadline), binding.schema == 1,
+                  binding.surface == surface, binding.tty == target.tty, binding.device == target.device,
+                  binding.producer == producer,
+                  binding.intentDeliveryID == intent.deliveryID || binding.observationDeliveryID == intent.deliveryID
+            else { return nil }
+        } else if !validProducer(tty: target.tty, device: target.device, producer: producer)
+            || continuingOwner(producer, device: target.device) != target.ttyOwner {
+            try checkDeadline(deadline); return nil
+        }
+        try checkDeadline(deadline)
+        return Self.normalizedBackground(intent.background)
+    }
+
+    func cachedRecords() -> TerminalCachedVisualRecords {
+        let root = directory.appendingPathComponent("targets", isDirectory: true)
+        var info = stat()
+        if lstat(root.path, &info) != 0 {
+            return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: errno == ENOENT ? [] : [root])
+        }
+        guard info.st_mode & S_IFMT == S_IFDIR else {
+            return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root])
+        }
+        var bindings: [TerminalTargetBinding] = [], effects: [TerminalEffectRecord] = [], unreadable: [URL] = []
+        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles], errorHandler: { url, _ in unreadable.append(url); return true })
+        guard let enumerator = enumerator else {
+            return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root])
+        }
+        for case let url as URL in enumerator {
+            guard lstat(url.path, &info) == 0 else { unreadable.append(url); continue }
+            if info.st_mode & S_IFMT == S_IFLNK {
+                enumerator.skipDescendants(); unreadable.append(url); continue
+            }
+            guard ["target.json", "effect.json"].contains(url.lastPathComponent) else { continue }
+            do {
+                if url.lastPathComponent == "target.json" {
+                    guard let saved: CachedTarget = try read(url), saved.schema == 1 else {
+                        throw TerminalVisualStateError.invalidRecord
+                    }
+                    try validate(saved.target)
+                    guard targetURL(saved.target, filename: "target.json").resolvingSymlinksInPath()
+                        == url.resolvingSymlinksInPath() else {
+                        throw TerminalVisualStateError.invalidRecord
+                    }
+                    bindings.append(saved.target)
+                } else {
+                    guard let effect: TerminalEffectRecord = try read(url) else {
+                        throw TerminalVisualStateError.invalidRecord
+                    }
+                    try validate(effect)
+                    guard targetURL(effect.target, filename: "effect.json").resolvingSymlinksInPath()
+                        == url.resolvingSymlinksInPath() else {
+                        throw TerminalVisualStateError.invalidRecord
+                    }
+                    effects.append(effect)
+                }
+            } catch { unreadable.append(url) }
+        }
+        return TerminalCachedVisualRecords(bindings: bindings, effects: effects, unreadable: unreadable)
+    }
+
+    fileprivate struct CachedTarget: Codable {
+        var schema = 1
+        let target: TerminalTargetBinding
+    }
+
+    private func continuingOwner(_ seed: ProcessGeneration, device: UInt32) -> ProcessGeneration? {
+        guard var owner = lookup(seed.pid), owner.generation == seed, owner.device == device else { return nil }
+        var visited: Set<Int32> = [seed.pid]
+        for _ in 0..<16 {
+            if owner.parentPID <= 1 { break }
+            guard owner.parentPID <= UInt32(Int32.max), !visited.contains(Int32(owner.parentPID)),
+                  let parent = lookup(Int32(owner.parentPID)) else { return nil }
+            if parent.device != device { break }
+            visited.insert(parent.generation.pid)
+            owner = parent
+        }
+        guard lookup(owner.generation.pid)?.generation == owner.generation else { return nil }
+        return owner.generation
+    }
+
+    private func validate(_ target: TerminalTargetBinding) throws {
+        guard Self.concreteTTY(target.tty), target.tty.utf8.count <= 128, target.device != UInt32.max,
+              validGeneration(target.ttyOwner) else { throw TerminalVisualStateError.invalidRecord }
+        if let native = target.nativeSurface {
+            guard validGeneration(native.application), !native.terminalID.isEmpty, native.terminalID.utf8.count <= 128,
+                  native.terminalID.rangeOfCharacter(from: .controlCharacters) == nil else {
+                throw TerminalVisualStateError.invalidRecord
+            }
+        }
+    }
+
+    private func validate(_ effect: TerminalEffectRecord) throws {
+        try validate(effect.target)
+        guard effect.schema == 1, validGeneration(effect.controller), Self.validID(effect.effectID),
+              Self.normalizedBackground(effect.background) != nil, effect.heartbeatAt.isFinite,
+              effect.heartbeatAt > 0, effect.heartbeatAt <= clock.now().timeIntervalSince1970 else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+    }
+
+    private func validGeneration(_ generation: ProcessGeneration) -> Bool {
+        generation.pid > 0 && generation.startSeconds > 0 && generation.startMicroseconds < 1_000_000
+    }
+
+    private func targetURL(_ target: TerminalTargetBinding, filename: String) -> URL {
+        let owner = target.ttyOwner
+        var result = directory.appendingPathComponent("targets").appendingPathComponent(key(target.tty))
+            .appendingPathComponent("\(owner.pid)-\(owner.startSeconds)-\(owner.startMicroseconds)")
+        if let native = target.nativeSurface {
+            let app = native.application
+            result = result.appendingPathComponent("\(app.pid)-\(app.startSeconds)-\(app.startMicroseconds)")
+                .appendingPathComponent(key(native.terminalID))
+        } else { result = result.appendingPathComponent("plain") }
+        return result.appendingPathComponent(filename)
+    }
+
+    private func adoptionURL(tty: String, producer: ProcessGeneration) -> URL {
+        directory.appendingPathComponent("adoption-\(key(tty))-\(producer.pid)-\(producer.startSeconds)-\(producer.startMicroseconds).json")
+    }
+
+    private func prepareTargetDirectory(_ url: URL, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                    attributes: [.posixPermissions: 0o700])
+        } catch { throw TerminalVisualStateError.storageUnavailable }
+        try checkDeadline(deadline)
+        var current = directory, info = stat()
+        guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
+            throw TerminalVisualStateError.storageUnavailable
+        }
+        for component in url.pathComponents.dropFirst(directory.pathComponents.count) {
+            current.appendPathComponent(component)
+            try checkDeadline(deadline)
+            if lstat(current.path, &info) != 0 {
+                guard errno == ENOENT else { throw TerminalVisualStateError.storageUnavailable }
+                do {
+                    try FileManager.default.createDirectory(at: current, withIntermediateDirectories: false,
+                                                            attributes: [.posixPermissions: 0o700])
+                } catch { throw TerminalVisualStateError.storageUnavailable }
+            }
+            guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
+                throw TerminalVisualStateError.storageUnavailable
+            }
+        }
+        try checkDeadline(deadline)
+    }
+
+    private static func knownDeviceMissing(_ path: String) -> Bool {
+        var info = stat()
+        return lstat(path, &info) != 0 && (errno == ENOENT || errno == ENXIO)
+    }
+
+    private static func knownProcessMissing(_ pid: Int32) -> Bool {
+        pid > 0 && kill(pid, 0) != 0 && errno == ESRCH
+    }
+
+    private static func characterDevice(_ descriptor: Int32) -> UInt32? {
+        var info = stat()
+        guard fstat(descriptor, &info) == 0, info.st_mode & S_IFMT == S_IFCHR else { return nil }
+        return UInt32(bitPattern: info.st_rdev)
+    }
+
+    private func checkDeadline(_ deadline: UInt64?) throws {
+        if let deadline = deadline, DispatchTime.now().uptimeNanoseconds >= deadline {
+            throw TerminalVisualStateError.deadlineExceeded
+        }
     }
 
     func publishObservation(_ record: TerminalObservation) throws {
@@ -193,8 +538,7 @@ final class TerminalVisualStateStore {
                        observation: Bool, surface: GhosttySurface) throws -> Bool {
         guard let device = device, let producer = producer,
               validProducer(tty: tty, device: device, producer: producer) else { return false }
-        let filename = "adoption-\(key(tty))-\(producer.pid)-\(producer.startSeconds)-\(producer.startMicroseconds).json"
-        let url = directory.appendingPathComponent(filename)
+        let url = adoptionURL(tty: tty, producer: producer)
         var binding: Adoption
         if let saved: Adoption = try read(url) {
             guard saved.schema == 1, saved.tty == tty, saved.device == device,
@@ -320,7 +664,7 @@ final class TerminalVisualStateStore {
         guard lstat(directory.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
             throw TerminalVisualStateError.storageUnavailable
         }
-        let url = directory.appendingPathComponent("writer-\(key(tty)).lock")
+        let url = try lockURL(forTTY: tty)
         let fd = open(url.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard fd >= 0 else { throw TerminalVisualStateError.storageUnavailable }
         defer { close(fd) }
@@ -341,10 +685,11 @@ final class TerminalVisualStateStore {
         return try body()
     }
 
-    private func read<T: Decodable>(_ url: URL) throws -> T? {
+    private func read<T: Decodable>(_ url: URL, deadline: UInt64? = nil) throws -> T? {
+        try checkDeadline(deadline)
         var before = stat()
         if lstat(url.path, &before) != 0 {
-            if errno == ENOENT { return nil }
+            if errno == ENOENT { try checkDeadline(deadline); return nil }
             throw TerminalVisualStateError.storageUnavailable
         }
         guard before.st_mode & S_IFMT == S_IFREG, before.st_size >= 0,
@@ -352,6 +697,7 @@ final class TerminalVisualStateStore {
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { throw TerminalVisualStateError.storageUnavailable }
         defer { close(fd) }
+        try checkDeadline(deadline)
         var current = stat()
         guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG,
               current.st_ino == before.st_ino, current.st_dev == before.st_dev,
@@ -370,7 +716,13 @@ final class TerminalVisualStateStore {
             data.append(contentsOf: buffer.prefix(count))
         }
         guard data.count <= Self.sizeLimit else { throw TerminalVisualStateError.invalidRecord }
-        do { return try JSONDecoder().decode(T.self, from: data) }
+        try checkDeadline(deadline)
+        do {
+            let result = try JSONDecoder().decode(T.self, from: data)
+            try checkDeadline(deadline)
+            return result
+        }
+        catch TerminalVisualStateError.deadlineExceeded { throw TerminalVisualStateError.deadlineExceeded }
         catch { throw TerminalVisualStateError.invalidRecord }
     }
 
@@ -389,24 +741,30 @@ final class TerminalVisualStateStore {
         }
     }
 
-    private func write<T: Encodable>(_ record: T, to url: URL) throws {
+    private func write<T: Encodable>(_ record: T, to url: URL, deadline: UInt64? = nil) throws {
         do {
+            try checkDeadline(deadline)
             let data = try JSONEncoder().encode(record)
             guard data.count <= Self.sizeLimit else { throw TerminalVisualStateError.invalidRecord }
-            let temporary = directory.appendingPathComponent(".record-\(UUID().uuidString).tmp")
+            try checkDeadline(deadline)
+            let temporary = url.deletingLastPathComponent().appendingPathComponent(".record-\(UUID().uuidString).tmp")
             let fd = open(temporary.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
             guard fd >= 0 else { throw TerminalVisualStateError.storageUnavailable }
             defer { close(fd); unlink(temporary.path) }
+            try checkDeadline(deadline)
             try data.withUnsafeBytes { bytes in
                 var offset = 0
                 while offset < bytes.count {
+                    try checkDeadline(deadline)
                     let written = Darwin.write(fd, bytes.baseAddress!.advanced(by: offset), bytes.count - offset)
                     if written < 0, errno == EINTR { continue }
                     guard written > 0 else { throw TerminalVisualStateError.storageUnavailable }
                     offset += written
                 }
             }
+            try checkDeadline(deadline)
             guard rename(temporary.path, url.path) == 0 else { throw TerminalVisualStateError.storageUnavailable }
+            try checkDeadline(deadline)
         } catch let error as TerminalVisualStateError { throw error }
         catch { throw TerminalVisualStateError.storageUnavailable }
     }
@@ -485,5 +843,56 @@ extension TerminalVisualStateStore.Adoption {
         surface = try GhosttySurfaceID(from: surfaceDecoder)
         observationDeliveryID = try c.decodeIfPresent(String.self, forKey: .observationDeliveryID)
         intentDeliveryID = try c.decodeIfPresent(String.self, forKey: .intentDeliveryID)
+    }
+}
+
+private func decodeVisualSurface(_ decoder: Decoder) throws -> GhosttySurfaceID {
+    try requireVisualKeys(decoder, ["application", "terminalID"])
+    let container = try decoder.container(keyedBy: VisualRecordKey.self)
+    guard try decodeVisualProducer(container, VisualRecordKey(stringValue: "application")!) != nil else {
+        throw TerminalVisualStateError.invalidRecord
+    }
+    return try GhosttySurfaceID(from: decoder)
+}
+
+extension TerminalTargetBinding {
+    init(from decoder: Decoder) throws {
+        try requireVisualKeys(decoder, ["tty", "device", "ttyOwner", "nativeSurface"])
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        tty = try c.decode(String.self, forKey: .tty)
+        device = try c.decode(UInt32.self, forKey: .device)
+        guard let owner = try decodeVisualProducer(c, .ttyOwner) else { throw TerminalVisualStateError.invalidRecord }
+        ttyOwner = owner
+        if c.contains(.nativeSurface), try !c.decodeNil(forKey: .nativeSurface) {
+            nativeSurface = try decodeVisualSurface(c.superDecoder(forKey: .nativeSurface))
+        } else { nativeSurface = nil }
+    }
+}
+
+extension TerminalEffectRecord {
+    init(from decoder: Decoder) throws {
+        try requireVisualKeys(decoder, ["schema", "target", "controller", "effectID", "kind", "background", "heartbeatAt", "active"])
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schema = try c.decode(Int.self, forKey: .schema)
+        target = try c.decode(TerminalTargetBinding.self, forKey: .target)
+        guard let generation = try decodeVisualProducer(c, .controller),
+              let decodedKind = TerminalEffectKind(rawValue: try c.decode(String.self, forKey: .kind)) else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        controller = generation
+        kind = decodedKind
+        effectID = try c.decode(String.self, forKey: .effectID)
+        background = try c.decode(String.self, forKey: .background)
+        heartbeatAt = try c.decode(Double.self, forKey: .heartbeatAt)
+        active = try c.decode(Bool.self, forKey: .active)
+    }
+}
+
+extension TerminalVisualStateStore.CachedTarget {
+    init(from decoder: Decoder) throws {
+        try requireVisualKeys(decoder, ["schema", "target"])
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        schema = try c.decode(Int.self, forKey: .schema)
+        target = try c.decode(TerminalTargetBinding.self, forKey: .target)
     }
 }

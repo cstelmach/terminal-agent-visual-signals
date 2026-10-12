@@ -6,6 +6,9 @@ final class TerminalVisualStateTests: XCTestCase {
     private var root: URL!
     private var records: [Int32: ProcessIdentity] = [:]
     private var devices: [String: UInt32] = [:]
+    private var missingDevices = Set<String>()
+    private var missingProcesses = Set<Int32>()
+    private var descriptorDevices: [Int32: UInt32] = [:]
     private var clock: VirtualClock!
     private let tty = "/dev/ttys043"
 
@@ -15,6 +18,9 @@ final class TerminalVisualStateTests: XCTestCase {
         clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000))
         records = [10: identity(10), 11: identity(11)]
         devices = [tty: 123]
+        missingDevices = []
+        missingProcesses = []
+        descriptorDevices = [44: 123]
     }
 
     func testExactAdoptionPersistsAcrossStoreRestart() throws {
@@ -424,11 +430,274 @@ final class TerminalVisualStateTests: XCTestCase {
         }
     }
 
+    func testCachedPlainShellBindingAndEffectPersistWithoutAgentObservations() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        XCTAssertNil(binding.nativeSurface)
+        records[90] = identity(90)
+        try store.cacheTargetUnlocked(binding, deadline: deadline())
+        try store.saveEffectUnlocked(effect(binding), deadline: deadline())
+        let cached = makeStore().cachedRecords()
+        XCTAssertEqual(cached.bindings, [binding])
+        XCTAssertEqual(cached.effects.first?.target, binding)
+        XCTAssertTrue(cached.unreadable.isEmpty)
+        XCTAssertEqual(store.validateTarget(binding), .valid)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("observation").path))
+    }
+
+    func testFreshNativeBindingUsesContinuingParentAndRetainsBackgroundedOwner() throws {
+        records[10] = ProcessIdentity(generation: generation(10), parentPID: 11, group: 10,
+                                      device: 123, foregroundGroup: 10)
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(for: surface()))
+        XCTAssertEqual(binding.ttyOwner, generation(11))
+        XCTAssertEqual(binding.nativeSurface, surface().id)
+        records[11] = identity(11, group: 20, foreground: 30)
+        XCTAssertEqual(store.validateTarget(binding, descriptor: 44), .valid)
+        var ambiguous = surface(); ambiguous.mappingIssue = .ambiguousTTY
+        XCTAssertNil(store.captureTarget(for: ambiguous))
+    }
+
+    func testCachedOwnerUncertaintyNeverProvesPaneClosure() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[11] = nil
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        missingProcesses.insert(11)
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        records[11] = identity(11, startMicroseconds: 2)
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        records[11] = identity(11, device: 456)
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        records[11] = identity(11)
+        devices[tty] = nil
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        missingDevices.insert(tty)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+        missingDevices = []
+        devices[tty] = 456
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+    }
+
+    func testNativeAndApplicationReuseNeverRetargetsOldRequest() throws {
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(for: surface()))
+        XCTAssertEqual(store.validateTarget(binding, native: surface(terminal: "replacement")), .unavailable)
+        XCTAssertEqual(store.validateTarget(binding, confirmedNativeAbsent: true), .vanished)
+        records[43] = identity(43, device: UInt32.max, startMicroseconds: 2)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+        records[43] = nil
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        missingProcesses.insert(43)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+    }
+
+    func testDescriptorCharacterDeviceAndNumberAreRequired() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        XCTAssertEqual(store.validateTarget(binding, descriptor: 44), .valid)
+        descriptorDevices[44] = 456
+        XCTAssertEqual(store.validateTarget(binding, descriptor: 44), .unavailable)
+        descriptorDevices[44] = nil
+        XCTAssertEqual(store.validateTarget(binding, descriptor: 44), .unavailable)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let regular = root.appendingPathComponent("regular-device-test")
+        try Data().write(to: regular)
+        let fd = open(regular.path, O_RDONLY | O_NOFOLLOW)
+        XCTAssertGreaterThanOrEqual(fd, 0)
+        defer { close(fd) }
+        let actualDescriptor = TerminalVisualStateStore(runtimeDirectory: root, clock: clock,
+            lookup: { self.records[$0] }, device: { self.devices[$0] },
+            deviceMissing: { _ in false }, processMissing: { _ in false })
+        XCTAssertEqual(actualDescriptor.validateTarget(binding, descriptor: fd), .unavailable)
+    }
+
+    func testUnresolvedBindingsOnSameTTYRemainSeparateCurrentRecords() throws {
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let first = try XCTUnwrap(store.captureTarget(for: surface()))
+        let second = try XCTUnwrap(store.captureTarget(for: surface(terminal: "replacement")))
+        records[90] = identity(90)
+        try store.saveEffectUnlocked(effect(first), deadline: deadline())
+        try store.saveEffectUnlocked(effect(second, id: "replacement-effect"), deadline: deadline())
+        let cached = store.cachedRecords()
+        XCTAssertEqual(Set(cached.bindings), [first, second])
+        XCTAssertEqual(Set(cached.effects.map(\.target)), [first, second])
+    }
+
+    func testCanceledEffectCannotBeRecreatedByHeartbeatOrSameIDSave() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        let original = effect(binding)
+        try store.saveEffectUnlocked(original, deadline: deadline())
+        XCTAssertTrue(try store.cancelEffectUnlocked(binding, effectID: original.effectID,
+                                                   controller: original.controller, deadline: deadline()))
+        XCTAssertFalse(try store.refreshEffectUnlocked(binding, effectID: original.effectID,
+                                                      controller: original.controller, deadline: deadline()))
+        XCTAssertThrowsError(try store.saveEffectUnlocked(original, deadline: deadline()))
+        XCTAssertNil(try store.matchingEffectUnlocked(binding, effectID: original.effectID,
+                                                     controller: original.controller, deadline: deadline()))
+        XCTAssertFalse(try XCTUnwrap(store.currentEffectUnlocked(binding, deadline: deadline())).active)
+        XCTAssertEqual(store.cachedRecords().bindings, [binding])
+        try store.saveEffectUnlocked(effect(binding, id: "deliberate-new-effect"), deadline: deadline())
+        XCTAssertTrue(try XCTUnwrap(store.currentEffectUnlocked(binding, deadline: deadline())).active)
+    }
+
+    func testStrictEffectIDAndControllerMatchingPreservesNewEffect() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        try store.saveEffectUnlocked(effect(binding, id: "new-effect"), deadline: deadline())
+        XCTAssertFalse(try store.cancelEffectUnlocked(binding, effectID: "old-effect",
+                                                     controller: generation(90), deadline: deadline()))
+        XCTAssertFalse(try store.refreshEffectUnlocked(binding, effectID: "new-effect",
+            controller: generation(90, microseconds: 2), deadline: deadline()))
+        XCTAssertEqual(try store.currentEffectUnlocked(binding, deadline: deadline())?.effectID, "new-effect")
+        XCTAssertTrue(try store.refreshEffectUnlocked(binding, effectID: "new-effect",
+                                                      controller: generation(90), deadline: deadline()))
+    }
+
+    func testSelectiveLeaseHasSixSecondBoundaryAndGlobalPolicyIsIndependent() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        let record = effect(binding)
+        XCTAssertTrue(store.isSelectiveLeaseActive(record))
+        clock.advance(by: 2)
+        XCTAssertTrue(store.isSelectiveLeaseActive(record))
+        clock.advance(by: 4)
+        XCTAssertTrue(store.isSelectiveLeaseActive(record))
+        clock.advance(by: 0.001)
+        XCTAssertFalse(store.isSelectiveLeaseActive(record))
+        clock.set(to: Date(timeIntervalSince1970: 1_000))
+        records[90] = identity(90, startMicroseconds: 2)
+        XCTAssertFalse(store.isSelectiveLeaseActive(record))
+        var global = record; global.kind = .globalRestriction
+        XCTAssertFalse(store.isSelectiveLeaseActive(global))
+        try store.saveEffectUnlocked(global, deadline: deadline())
+        XCTAssertEqual(try store.currentEffectUnlocked(binding, deadline: deadline())?.kind, .globalRestriction)
+    }
+
+    func testUnlockedHelpersUseOneHeldStableLockAndPreserveObservationIntent() throws {
+        let store = makeStore()
+        try store.publishObservation(observation())
+        try store.publishIntent(intent())
+        let observed = try Data(contentsOf: recordURL("observation"))
+        let intended = try Data(contentsOf: recordURL("intent"))
+        let url = try store.lockURL(forTTY: tty)
+        XCTAssertEqual(url.lastPathComponent, "writer-\(key(tty)).lock")
+        let fd = open(url.path, O_RDWR | O_NOFOLLOW)
+        XCTAssertGreaterThanOrEqual(fd, 0)
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        var before = stat(); XCTAssertEqual(fstat(fd, &before), 0)
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        let budget = deadline()
+        try store.cacheTargetUnlocked(binding, deadline: budget)
+        try store.saveEffectUnlocked(effect(binding), deadline: budget)
+        XCTAssertNotNil(try store.matchingEffectUnlocked(binding, effectID: "effect-43",
+                                                        controller: generation(90), deadline: budget))
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: binding, deadline: budget), "#123ABC")
+        XCTAssertTrue(try store.refreshEffectUnlocked(binding, effectID: "effect-43",
+                                                      controller: generation(90), deadline: budget))
+        XCTAssertTrue(try store.cancelEffectUnlocked(binding, effectID: "effect-43",
+                                                     controller: generation(90), deadline: budget))
+        var after = stat(); XCTAssertEqual(lstat(url.path, &after), 0)
+        XCTAssertEqual(before.st_ino, after.st_ino)
+        XCTAssertEqual(observed, try Data(contentsOf: recordURL("observation")))
+        XCTAssertEqual(intended, try Data(contentsOf: recordURL("intent")))
+    }
+
+    func testExpiredOriginalDeadlineCannotMutateCurrentEffect() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        try store.saveEffectUnlocked(effect(binding), deadline: deadline())
+        let before = try XCTUnwrap(store.currentEffectUnlocked(binding, deadline: deadline()))
+        let expired = DispatchTime.now().uptimeNanoseconds - 1
+        XCTAssertThrowsError(try store.saveEffectUnlocked(effect(binding, id: "late"), deadline: expired))
+        XCTAssertThrowsError(try store.cancelEffectUnlocked(binding, effectID: "effect-43",
+                                                           controller: generation(90), deadline: expired))
+        XCTAssertThrowsError(try store.refreshEffectUnlocked(binding, effectID: "effect-43",
+                                                            controller: generation(90), deadline: expired))
+        XCTAssertEqual(try store.currentEffectUnlocked(binding, deadline: deadline()), before)
+    }
+
+    func testEffectMetadataRejectsUnknownPayloadsFutureTimesAndColors() throws {
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        records[90] = identity(90)
+        var bad = effect(binding); bad.heartbeatAt = 1_001
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+        bad = effect(binding); bad.background = "\u{1B}]11;BODY_SENTINEL\u{7}"
+        XCTAssertThrowsError(try store.saveEffectUnlocked(bad, deadline: deadline()))
+        try store.saveEffectUnlocked(effect(binding), deadline: deadline())
+        let files = try XCTUnwrap(FileManager.default.enumerator(at: organizer.appendingPathComponent("targets"),
+            includingPropertiesForKeys: nil)).allObjects.compactMap { $0 as? URL }
+        let effectFile = try XCTUnwrap(files.first { $0.lastPathComponent == "effect.json" })
+        var payload = try JSONSerialization.jsonObject(with: Data(contentsOf: effectFile)) as! [String: Any]
+        payload["payload"] = "BODY_SENTINEL"
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        XCTAssertThrowsError(try JSONDecoder().decode(TerminalEffectRecord.self, from: data)) { error in
+            XCTAssertFalse(String(describing: error).contains("BODY_SENTINEL"))
+        }
+        try data.write(to: effectFile)
+        let cached = store.cachedRecords()
+        XCTAssertEqual(cached.bindings, [binding])
+        XCTAssertTrue(cached.effects.isEmpty)
+        XCTAssertEqual(cached.unreadable, [effectFile])
+    }
+
+    func testEmptyRegistryAndMissingTypedRecordsCannotAuthorizeTarget() throws {
+        let registry = root.appendingPathComponent("active-ttys")
+        try FileManager.default.createDirectory(at: registry, withIntermediateDirectories: true)
+        try Data().write(to: registry.appendingPathComponent("_dev_ttys043"))
+        let store = makeStore()
+        XCTAssertTrue(store.cachedRecords().bindings.isEmpty)
+        XCTAssertTrue(store.cachedRecords().effects.isEmpty)
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: binding, deadline: deadline()))
+    }
+
+    func testAdoptedNativeIntentSurvivesAgentExitOnContinuingShellWithoutCueOrRetargeting() throws {
+        records[43] = identity(43, device: UInt32.max)
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                      device: 123, foregroundGroup: 10)
+        let store = makeStore()
+        let row = surface(foreground: 12)
+        try store.publishObservation(observation(pid: 12))
+        try store.publishIntent(intent(pid: 12))
+        XCTAssertNotNil(store.coverage(for: row).observation)
+        let binding = try XCTUnwrap(store.captureTarget(for: row))
+        XCTAssertEqual(binding.ttyOwner, generation(11))
+        try store.cacheTargetUnlocked(binding, deadline: deadline())
+        records[12] = nil
+        XCTAssertEqual(store.validateTarget(binding), .valid)
+        XCTAssertNil(store.coverage(for: surface(foreground: 11)).observation)
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: binding, deadline: deadline()), "#123ABC")
+        let replacement = try XCTUnwrap(store.captureTarget(for: surface(terminal: "replacement", foreground: 11)))
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+    }
+
+    private func deadline() -> UInt64 { DispatchTime.now().uptimeNanoseconds + 100_000_000 }
+
+    private func effect(_ binding: TerminalTargetBinding, id: String = "effect-43") -> TerminalEffectRecord {
+        TerminalEffectRecord(target: binding, controller: generation(90), effectID: id,
+            kind: .selectiveBackground, background: "#123abc", heartbeatAt: 1_000)
+    }
+
     private var organizer: URL { root.appendingPathComponent("organizer") }
 
     private func makeStore(directory: URL? = nil) -> TerminalVisualStateStore {
         TerminalVisualStateStore(runtimeDirectory: directory ?? root, clock: clock,
-                                 lookup: { self.records[$0] }, device: { self.devices[$0] })
+            lookup: { self.records[$0] }, device: { self.devices[$0] },
+            deviceMissing: { self.missingDevices.contains($0) },
+            processMissing: { self.missingProcesses.contains($0) },
+            descriptorDevice: { self.descriptorDevices[$0] })
     }
 
     private func generation(_ pid: Int32, start: UInt64 = 100,

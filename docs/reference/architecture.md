@@ -1,7 +1,29 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.3
+Version: 1.4
+
+## Recovery target and effect records
+
+`TerminalVisualStateStore` caches a concrete TTY/device, continuing owner process generation
+and optional exact Ghostty surface identity. Native capture requires fresh foreground evidence;
+cached restoration can validate the continuing owner without Automation. Device/owner lookup
+uncertainty remains unavailable. Only affirmative device or native-lifetime absence/replacement
+establishes that the original target vanished. Opened descriptors must match the character device.
+
+One current effect per binding retains controller generation, effect ID, kind, background,
+heartbeat and active state. Unresolved old bindings remain separate candidates. Cancellation
+retains the record but prevents the same ID or a heartbeat from reactivating it. Selective
+ownership lasts at most six seconds with a live matching controller; current global rules
+must still be evaluated separately. No OSC, titles or agent bodies enter these records.
+
+The `*Unlocked` methods require the existing writer lock and original deadline. They do not
+reacquire it or start a new timeout. Latest intent for an exact adopted native target can survive
+producer exit into its continuing shell; observation and attention coverage still end on exit.
+Unadopted owner-only intent requires a verified live producer or explicit default reset.
+
+These records and the ordered writer are foundations. Discovery, renderer/CLI routing, recovery
+fanout and retry reporting remain in progress.
 
 ## Ordered device writer
 
