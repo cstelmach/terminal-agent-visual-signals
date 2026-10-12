@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 14 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 7 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 15 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1765,3 +1765,74 @@ polling, expiry re-entry and controls remain necessary work before manual activa
 
 **Confidence:** Source edits, regression outcomes and tool sequence are observed. Explanations
 for selecting existing mechanisms are reconstructed design arguments, not introspective facts.
+
+
+## 2026-10-13 · gpt-6 · tavs-manual-captured-set
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; runtime setting unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tools; motives reconstructed
+
+**Framing.** [O] Continued the active nine-phase goal from Phase 8's tested dynamic writer.
+The captured set, catalogue polling and manual controls were still absent. The approved scope
+allowed implementation and private fixtures; actual Ghostty access remained denied. Passing
+owned-PTY tests therefore could not complete native acceptance. Source and physical status were
+kept separate in the dated package rather than reopening settled product decisions.
+
+**Strategy.** [O] Reused the preview controller, serialized queue, revision pins, dynamic writer
+and Sessions timer. A manual run owns a fixed native-ID set and a latest accepted catalogue.
+Version checks invalidate older work; logical membership survives unavailable catalogues.
+[R] Reusing these existing seams kept the change smaller than a second focus service or timer.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient | SPEC, PLAN, PROGRESS and current source | Phase 8 only; prior live blocks retained |
+| Red/green | Controller/model tests and owned PTYs | Captured set, closure, recovery and timer verified |
+| Read-only follow-up | Controller heartbeat and queues | One demonstrated remapping defect |
+| Regression | Unmapped lease expiry | Fresh-ID fix; blocked/coalesced work also exercised |
+| CUA | Private signed Sessions fixture | Membership observed; later attachment timeouts |
+| Verify/commit | Full Swift, selected Bats, release | 466 Swift, 43 Bats; two feature commits |
+
+**Decision points.** [O] Captured membership stays separate from browsing and priority changes.
+A failed or empty catalogue retains that membership but authorizes no new paint. At least one
+working binding must be verified before outside styling. Heartbeat advances only when every
+outside row maps and no delivery fails. Expired ownership gets a fresh ID; retired cleanup
+follows replacement and retains its pin. These are implementations of the agreed safety rules.
+
+**Failure arcs.**
+
+- F1 [O]: An early rollover test read the old clear before replacement output. Cleanup was
+  deferred until replacement processing completed. Exact old-ID clearing still cannot cancel
+  the new run. [R] This avoided making the test accept transient reset as replacement evidence.
+- F2 [O]: The follow-up found unmapped outside rows could falsely refresh the common heartbeat.
+  A regression reproduced reuse of an expired ID. The all-mapped condition fixed it without
+  adding per-target timers or another registry. P8 applies.
+- F3 [O]: Full-suite teardown hit Cocoa error 513 while cleanup still recreated its directory.
+  The test now waits for cleanup completion before retiring its owned root. Production semantics
+  stayed intact; the final full suite passed.
+- F4 [O]: Closing the single-window fixture ended its process. A test menu and WindowGroup
+  experiments stayed alive but CUA attachment timed out. Added fixture lifecycle changes were
+  retired; later simple-fixture attachment also timed out. Close/reopen and remaining GUI cases
+  stayed unverified. [R] Process liveness alone was insufficient to explain the UI failure.
+
+**Verification.** [O] Final isolated Swift passed 466 tests in 7.593 seconds; release built in
+10.23 seconds; 43 selected shell regressions passed. A blocked lookup receiving queued catalogue
+updates and then failure emitted no paint. Credential-pattern, whitespace and ignored-.env
+checks passed. Only exact owned staging PIDs were restarted. No native query, real installation,
+schedule edit or user session shutdown occurred.
+
+**Heuristics and candidates.** [O] P9 kept the dated execution state authoritative. Finished
+Phase 7 fixture text moved unchanged into its existing appendix with a verified round trip.
+[R] A useful candidate is to distinguish unavailable catalogue rows from successful deliveries
+when deciding whether an aggregate lease is fresh. No new skill was created; the existing
+execution and review workflows already cover the demonstrated patterns.
+
+**Confidence.** Outcomes above are observed source/tool evidence. Reasons marked [R] are
+reconstructions. Physical Ghostty dimming, ANSI/TrueColor readability, Space navigation, Manual
+recovery controls and closed-window GUI behavior remain unverified.

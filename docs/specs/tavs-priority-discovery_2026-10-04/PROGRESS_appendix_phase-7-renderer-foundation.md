@@ -97,3 +97,47 @@ Goal stays active. Phase 2 remains Blocked; Phases 8/9 not started.
 
 
 > Current execution: [PROGRESS.md](PROGRESS.md).
+
+
+### Phase 7 GUI preview/recovery checkpoint: 2026-10-12 22:50 CEST
+
+Reoriented from `67b89f1` and continued only Phase 7. Feature commits are `42c6849`
+(bounded partial process reports), `473bd0d` (current-bundle headless client), `4352517`
+(selection/clear/recovery model) and `0bcc176` (shared GUI factory and controls). Recovery uses
+one serialized background queue, current Bundle executable, exact private roots and fixture IDs.
+Capabilities retain two seconds; recovery allows ten seconds. Device callers still use 100 ms.
+
+Selection changes start previews only in an open available catalogue. Refresh/priority edits
+leave selection previews alone; Clear Preview, Escape, window close and stale coverage cancel.
+Recovery cancels in-memory preview work without an ordinary repaint, saves the marker before
+scope decoding/helper probing, and keeps partial JSON on exit 1. Failed helpers cannot undo
+saved suspension. Model feedback survives refresh and flags unavailable native coverage.
+Fixture preview colors are explicitly unavailable; they cannot query the real Ghostty app.
+
+Preserved red logs for missing output/client/model APIs: `aWUa66`, `TPY6z2`, `c162EX` under
+isolated runner roots. The new factory/scope test run `nCGKpp` failed on missing createDefault
+before wiring; focused `ER4JHG` passed 105 tests. Final full Swift `GWACY7` passed 443/443
+in 7.740 seconds with no warnings; release `imNxPL` passed in 16.34 seconds. Recovery/suspension
+Bats `HvRYSG` passed 20/20. All used tests/run-isolated.sh and the owned Phase 6 scratch build.
+
+Fresh ad-hoc signed bundle: `/tmp/tavs-phase7-gui-20261012/staged/TAVS Preview Acceptance.app`.
+Only its private fixture state was mutated. CUA verified three distinct duplicate rows, missing
+observations, suspended/active recovery controls, accurate three-target partial failure, explicit
+unavailable preview and Escape clearing while selection remained. A High edit hit capture error
+-3811 after input; fresh AX and the private priority file confirmed success, without re-clicking.
+Quit/relaunch through the same owned bundle retained High and suspension, with Focus Off.
+The relaunched owned PID is 26990; launch/relaunch logs and state remain in that scratch root.
+No real Ghostty action, production install/sync, login registration, schedule edit or real-process
+termination occurred. Physical color/timing/navigation/Spaces cases remain unverified.
+
+ProcessRunner, managed-output visibility and the safe fixture factory are connected changes beyond
+Phase 7's named primary files. Reused the existing runner, marker, catalogue decoder and JSON;
+no new service, dependency or recovery protocol. API, bug, roadmap and companion docs are current.
+
+**Next:** finish Phase 7 exact-copy packaging and fake-install coverage. Read cmd-sync and its
+connected CLI/adapters before tests. Keep required native acceptance Blocked in Phase 2. Do not
+start Phase 8 or treat fixture controls as physical terminal evidence. The master goal stays active.
+
+
+
+> Current execution: [PROGRESS.md](PROGRESS.md).
