@@ -37,6 +37,10 @@ struct TerminalTargetBinding: Codable, Hashable {
     let device: UInt32
     let ttyOwner: ProcessGeneration
     let nativeSurface: GhosttySurfaceID?
+
+    var physicalTarget: TerminalTargetBinding {
+        TerminalTargetBinding(tty: tty, device: device, ttyOwner: ttyOwner, nativeSurface: nil)
+    }
 }
 
 enum TerminalTargetValidation: Equatable { case valid, vanished, unavailable }
@@ -140,6 +144,9 @@ final class TerminalVisualStateStore {
     func validateTarget(_ target: TerminalTargetBinding, descriptor: Int32? = nil,
                         native: GhosttySurface? = nil, confirmedNativeAbsent: Bool = false) -> TerminalTargetValidation {
         do { try validate(target) } catch { return .unavailable }
+        let owner = lookup(target.ttyOwner.pid)
+        if let owner = owner, owner.generation != target.ttyOwner { return .vanished }
+        if owner == nil && processMissing(target.ttyOwner.pid) { return .vanished }
         if confirmedNativeAbsent { return target.nativeSurface == nil ? .unavailable : .vanished }
         if let number = device(target.tty) {
             if number != target.device { return .vanished }
@@ -153,8 +160,8 @@ final class TerminalVisualStateStore {
                 return .unavailable
             }
         }
-        guard let owner = lookup(target.ttyOwner.pid), owner.generation == target.ttyOwner,
-              owner.device == target.device else { return .unavailable }
+        guard let owner = owner else { return .unavailable }
+        guard owner.device == target.device else { return .unavailable }
         if let descriptor = descriptor, descriptorDevice(descriptor) != target.device { return .unavailable }
         return .valid
     }
@@ -235,19 +242,72 @@ final class TerminalVisualStateStore {
         return true
     }
 
+    // Reads only this verified TTY-owner lifetime under the caller's held lock.
+    // A plain binding and one native binding may share state; live native ambiguity cannot.
+    func equivalentBindingsUnlocked(for target: TerminalTargetBinding,
+                                    deadline: UInt64) throws -> [TerminalTargetBinding] {
+        try checkDeadline(deadline)
+        let validation = validateTarget(target)
+        try checkDeadline(deadline)
+        guard validation == .valid else { throw TerminalVisualStateError.targetUnavailable }
+        let root = targetURL(target.physicalTarget, filename: "target.json")
+            .deletingLastPathComponent().deletingLastPathComponent()
+        var info = stat()
+        if lstat(root.path, &info) != 0 {
+            let absent = errno == ENOENT
+            try checkDeadline(deadline)
+            if absent { return [target] }
+            throw TerminalVisualStateError.storageUnavailable
+        }
+        guard info.st_mode & S_IFMT == S_IFDIR else { throw TerminalVisualStateError.storageUnavailable }
+        var unavailable = false
+        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles], errorHandler: { _, _ in unavailable = true; return false })
+        try checkDeadline(deadline)
+        guard let enumerator = enumerator else { throw TerminalVisualStateError.storageUnavailable }
+        var aliases: Set<TerminalTargetBinding> = [target]
+        for case let url as URL in enumerator {
+            try checkDeadline(deadline)
+            guard lstat(url.path, &info) == 0, info.st_mode & S_IFMT != S_IFLNK else {
+                throw TerminalVisualStateError.storageUnavailable
+            }
+            if url.lastPathComponent != "target.json" { continue }
+            guard let saved: CachedTarget = try read(url, deadline: deadline), saved.schema == 1,
+                  saved.target.physicalTarget == target.physicalTarget,
+                  targetURL(saved.target, filename: "target.json").resolvingSymlinksInPath()
+                    == url.resolvingSymlinksInPath() else { throw TerminalVisualStateError.invalidRecord }
+            try validate(saved.target)
+            let status = validateTarget(saved.target)
+            try checkDeadline(deadline)
+            if status == .unavailable { throw TerminalVisualStateError.targetUnavailable }
+            if status == .valid { aliases.insert(saved.target) }
+        }
+        try checkDeadline(deadline)
+        guard !unavailable else { throw TerminalVisualStateError.storageUnavailable }
+        guard Set(aliases.compactMap(\.nativeSurface)).count <= 1 else {
+            throw TerminalVisualStateError.targetUnavailable
+        }
+        return Array(aliases)
+    }
+
     func ordinaryBackgroundUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> String? {
         try checkDeadline(deadline)
         guard validateTarget(target) == .valid else { try checkDeadline(deadline); return nil }
         let latest: OrdinaryBackgroundIntent? = try read(recordURL("intent", tty: target.tty), deadline: deadline)
-        let bound = try boundIntent(for: target, deadline: deadline)
+        let aliases = try equivalentBindingsUnlocked(for: target, deadline: deadline)
+        let bound = try aliases.compactMap { try boundIntent(for: $0, deadline: deadline) }
         guard let intent = latest else { return nil }
         try validate(intent)
         guard intent.tty == target.tty, intent.device == target.device, let producer = intent.producer else {
             try checkDeadline(deadline); return nil
         }
-        if intent == bound {
+        if bound.contains(intent) {
             try checkDeadline(deadline)
             return Self.normalizedBackground(intent.background)
+        }
+        guard validProducer(tty: target.tty, device: target.device, producer: producer),
+              continuingOwner(producer, device: target.device) == target.ttyOwner else {
+            try checkDeadline(deadline); return nil
         }
         if let surface = target.nativeSurface {
             let url = adoptionURL(tty: target.tty, producer: producer)
@@ -256,9 +316,6 @@ final class TerminalVisualStateStore {
                   binding.producer == producer,
                   binding.intentDeliveryID == intent.deliveryID || binding.observationDeliveryID == intent.deliveryID
             else { return nil }
-        } else if !validProducer(tty: target.tty, device: target.device, producer: producer)
-            || continuingOwner(producer, device: target.device) != target.ttyOwner {
-            try checkDeadline(deadline); return nil
         }
         try checkDeadline(deadline)
         return Self.normalizedBackground(intent.background)
@@ -592,6 +649,12 @@ final class TerminalVisualStateStore {
                         if record.tty == tty, try adopt(tty: tty, device: record.device, producer: record.producer,
                             delivery: record.deliveryID, observation: false, surface: surface) {
                             record.background = Self.normalizedBackground(record.background)!
+                            if let target = captureTarget(for: surface), let producer = record.producer,
+                               continuingOwner(producer, device: target.device) == target.ttyOwner,
+                               try boundIntent(for: target) != record {
+                                // Consumer adoption is metadata publication, not a device write.
+                                try bindOrdinaryIntentUnlocked(record, to: target, deadline: .max)
+                            }
                             intent = record
                         } else { invalid = true }
                     }

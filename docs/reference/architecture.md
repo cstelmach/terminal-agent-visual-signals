@@ -1,7 +1,20 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.11
+Version: 1.12
+
+## Physical lifetime and native aliases
+
+Plain and native bindings share intent/effects only when TTY, device and continuing-owner
+generation match. Managed preparation reads equivalent cached aliases under the existing lock
+and deadline; multiple live native IDs or unknown alias metadata fail visibly. Ordinary hooks
+reuse a unique valid native binding, so native selective leases compose over their new intent.
+
+Recovery groups by physical lifetime, cancels equivalent effects and writes/reports once.
+A later native snapshot can register an alias without repeating a successful reset. Proven
+owner-generation end is vanished; missing inspection alone is unavailable. Records are retained.
+Live adoption snapshots owner-bound intent for producer-exit restoration. Legacy unbound
+adoption cannot transfer an old color to a changed owner with the same native ID/device.
 
 ## Shell output routing
 

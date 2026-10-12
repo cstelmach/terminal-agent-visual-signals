@@ -76,10 +76,14 @@ final class VisualRecovery {
                 return nil
             }
             try self.state.cacheTargetUnlocked(target, deadline: deadline)
-            if case .register = operation { return nil }
+            if case .register = operation {
+                _ = try self.state.equivalentBindingsUnlocked(for: target, deadline: deadline)
+                return nil
+            }
+            let effects = try self.effectsUnlocked(for: target, deadline: deadline)
             if case .emergencyReset = operation {
                 guard self.restrictions.read().disablesRestrictions else { throw VisualRecoveryError.policyChanged }
-                try self.cancelCurrentEffect(target, deadline: deadline)
+                try self.cancelEffects(effects, deadline: deadline)
                 try self.invalidatePending(target, deadline: deadline)
                 return Self.reset
             }
@@ -103,6 +107,9 @@ final class VisualRecovery {
             }
             let currentRule = try self.policy.current(deadline: deadline)
             if case .currentRestriction = operation, currentRule == nil { return nil }
+            var clearSelective = false
+            if case .reconcile(_, let clear) = operation { clearSelective = clear }
+            if clearSelective { try self.cancelEffects(effects, deadline: deadline) }
             if let rule = currentRule {
                 guard let controller = self.controller else { throw VisualRecoveryError.targetUnavailable }
                 let visual: PauseVisual
@@ -116,19 +123,25 @@ final class VisualRecovery {
                 return Self.restrictionBytes(rule)
             }
 
-            let effect = try self.state.currentEffectUnlocked(target, deadline: deadline)
-            var resetLegacy = effect?.kind == .globalRestriction && effect?.active == true
-            var clearSelective = false
+            var resetLegacy = effects.contains { $0.kind == .globalRestriction && $0.active }
             if case .reconcile(let reset, let clear) = operation {
-                resetLegacy = resetLegacy || reset || effect?.kind == .globalRestriction
+                resetLegacy = resetLegacy || reset || effects.contains { $0.kind == .globalRestriction }
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
             }
+            let leases = effects.filter { self.state.isSelectiveLeaseActive($0) }
             let selective = !clearSelective && !self.restrictions.read().disablesRestrictions
-                && effect.map { self.state.isSelectiveLeaseActive($0) } == true
-            let background = selective ? effect!.background
+                && !leases.isEmpty
+            if selective, let first = leases.first {
+                guard leases.allSatisfy({ $0.effectID == first.effectID && $0.controller == first.controller
+                    && $0.background == first.background }) else { throw TerminalVisualStateError.staleEffect }
+            }
+            let background = selective ? leases[0].background
                 : try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline) ?? "reset"
-            if !selective { try self.cancelCurrentEffect(target, deadline: deadline) }
+            if !clearSelective {
+                try self.cancelEffects(selective ? effects.filter { !self.state.isSelectiveLeaseActive($0) } : effects,
+                                       deadline: deadline)
+            }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
             if resetTitle != nil && !resetLegacy { bytes.append(Data("\u{1B}]104\u{07}".utf8)) }
             bytes.append(Self.backgroundBytes(background))
@@ -160,7 +173,7 @@ final class VisualRecovery {
         let initial = Array(Set(cached.bindings + cached.effects.map(\.target)))
         var items = fanout(initial, operation: operation)
         items += cached.unreadable.map { _ in VisualRecoveryItem(status: .failed, reason: "Cached visual record unavailable.") }
-        var known = Set(initial), catalogueAvailable = false
+        var known = Set(initial.map(\.physicalTarget)), catalogueAvailable = false
         if native.finished.wait(timeout: .now() + 2.2) == .success,
            case .success(let rows) = native.result {
             catalogueAvailable = true
@@ -171,9 +184,22 @@ final class VisualRecovery {
                     items.append(VisualRecoveryItem(tty: row.tty, status: .failed, reason: "Native target binding unavailable."))
                     continue
                 }
-                if known.insert(target).inserted { additional.append(target) }
+                let handled = items.contains { $0.target?.physicalTarget == target.physicalTarget
+                    && ($0.status == .restored || $0.status == .unaffected) }
+                if handled {
+                    do { _ = try write(.register, to: target) }
+                    catch {
+                        items.removeAll { $0.target?.physicalTarget == target.physicalTarget }
+                        items.append(VisualRecoveryItem(target: target, tty: target.tty, status: .failed,
+                            reason: "Native alias registration unavailable."))
+                    }
+                } else { additional.append(target) }
+                known.insert(target.physicalTarget)
             }
-            items += fanout(additional, operation: operation)
+            for item in fanout(additional, operation: operation) {
+                items.removeAll { $0.target?.physicalTarget == item.target?.physicalTarget }
+                items.append(item)
+            }
         }
         let registry = registryHints()
         let knownTTYs = Set(known.map(\.tty))
@@ -188,19 +214,19 @@ final class VisualRecovery {
 
     func target(tty: String, owner: ProcessGeneration) throws -> TerminalTargetBinding {
         guard let plain = state.captureTarget(tty: tty, owner: owner) else { throw VisualRecoveryError.targetUnavailable }
-        guard let allowed = allowedSurfaces else { return plain }
         let cached = state.cachedRecords()
         let bindings = Set(cached.bindings + cached.effects.map(\.target)).filter {
-            $0.tty == tty && $0.device == plain.device && $0.ttyOwner == plain.ttyOwner
-                && $0.nativeSurface.map { allowed.contains($0) } == true && state.validateTarget($0) == .valid
+            $0.tty == tty && state.validateTarget($0) == .valid
         }
-        if bindings.count == 1 { return bindings.first! }
-        guard bindings.isEmpty else { throw VisualRecoveryError.scopeUnavailable }
+        guard bindings.allSatisfy({ $0.physicalTarget == plain }) else { throw VisualRecoveryError.targetUnavailable }
+        let natives = bindings.filter { $0.nativeSurface != nil }
+        if !natives.isEmpty { return try preferredTarget(Array(natives)) }
+        guard let allowed = allowedSurfaces else { return plain }
         let fresh = try nativeSnapshot().filter { $0.tty == tty && allowed.contains($0.id) }
             .compactMap { state.captureTarget(for: $0) }
             .filter { $0.device == plain.device && $0.ttyOwner == plain.ttyOwner }
         guard fresh.count == 1 else { throw VisualRecoveryError.scopeUnavailable }
-        return fresh[0]
+        return try preferredTarget(fresh)
     }
 
     func reconcilePriorEffects() -> [VisualRecoveryItem] {
@@ -216,26 +242,44 @@ final class VisualRecovery {
         let cached = state.cachedRecords()
         let matches = Set(cached.bindings + cached.effects.map(\.target)).filter {
             $0.tty == tty && state.validateTarget($0) == .valid
-                && (allowedSurfaces == nil || $0.nativeSurface.map { allowedSurfaces!.contains($0) } == true)
         }
-        guard let first = matches.first,
-              matches.allSatisfy({ $0.device == first.device && $0.ttyOwner == first.ttyOwner }) else {
+        return try preferredTarget(Array(matches))
+    }
+
+    private func preferredTarget(_ matches: [TerminalTargetBinding]) throws -> TerminalTargetBinding {
+        guard let first = matches.first, matches.allSatisfy({ $0.physicalTarget == first.physicalTarget }) else {
             throw VisualRecoveryError.targetUnavailable
         }
-        let native = matches.filter { $0.nativeSurface != nil }
-        if native.count == 1 { return native.first! }
-        guard native.isEmpty, matches.count == 1 else { throw VisualRecoveryError.scopeUnavailable }
-        return first
+        let native = Set(matches.filter { $0.nativeSurface != nil })
+        guard native.count <= 1 else { throw VisualRecoveryError.scopeUnavailable }
+        let target = native.first ?? first
+        if let allowed = allowedSurfaces {
+            guard let id = target.nativeSurface, allowed.contains(id) else { throw VisualRecoveryError.scopeUnavailable }
+        }
+        return target
     }
 
     private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation) -> [VisualRecoveryItem] {
+        let groups = Dictionary(grouping: Set(targets), by: \.physicalTarget)
+        let physical = Array(groups.keys)
+        let live = Dictionary(grouping: targets.filter { state.validateTarget($0) == .valid }, by: \.tty)
+        let conflicting = Set(live.filter { Set($0.value.map(\.physicalTarget)).count > 1 }.map(\.key))
         let lock = NSLock()
         var items: [VisualRecoveryItem] = []
-        DispatchQueue.concurrentPerform(iterations: targets.count) { index in
-            let target = targets[index]
+        DispatchQueue.concurrentPerform(iterations: physical.count) { index in
+            let aliases = groups[physical[index]]!
+            var target = aliases[0]
             let status: VisualRecoveryStatus
             var reason: String?
-            do { status = try write(operation, to: target) ? .restored : .unaffected }
+            do {
+                let validations = aliases.map { self.state.validateTarget($0) }
+                guard !validations.contains(.unavailable) else { throw VisualRecoveryError.targetUnavailable }
+                let valid = zip(aliases, validations).filter { $0.1 == .valid }.map(\.0)
+                guard !valid.isEmpty else { throw VisualRecoveryError.vanished }
+                guard !conflicting.contains(target.tty) else { throw VisualRecoveryError.targetUnavailable }
+                target = try self.preferredTarget(valid)
+                status = try self.write(operation, to: target) ? .restored : .unaffected
+            }
             catch VisualRecoveryError.vanished { status = .vanished }
             catch { status = .failed; reason = "Managed restoration unavailable." }
             lock.lock()
@@ -253,10 +297,16 @@ final class VisualRecovery {
         }
     }
 
-    private func cancelCurrentEffect(_ target: TerminalTargetBinding, deadline: UInt64) throws {
-        if let effect = try state.currentEffectUnlocked(target, deadline: deadline), effect.active {
-            _ = try state.cancelEffectUnlocked(target, effectID: effect.effectID,
-                controller: effect.controller, deadline: deadline)
+    private func effectsUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> [TerminalEffectRecord] {
+        try state.equivalentBindingsUnlocked(for: target, deadline: deadline).compactMap {
+            try state.currentEffectUnlocked($0, deadline: deadline)
+        }
+    }
+
+    private func cancelEffects(_ effects: [TerminalEffectRecord], deadline: UInt64) throws {
+        for effect in effects where effect.active {
+            _ = try state.cancelEffectUnlocked(effect.target, effectID: effect.effectID,
+                                              controller: effect.controller, deadline: deadline)
         }
     }
 

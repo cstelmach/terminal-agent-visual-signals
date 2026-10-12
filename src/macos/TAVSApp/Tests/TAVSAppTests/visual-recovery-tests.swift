@@ -10,6 +10,7 @@ final class VisualRecoveryTests: XCTestCase {
     private var identities: [Int32: ProcessIdentity] = [:]
     private var devices: [String: UInt32] = [:]
     private var missing = Set<String>()
+    private var missingProcesses = Set<Int32>()
     private var ptys: [(master: Int32, slave: Int32, path: String)] = []
     private let reset = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
 
@@ -23,7 +24,7 @@ final class VisualRecoveryTests: XCTestCase {
         state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock,
             lookup: { self.identities[$0] },
             device: { self.missing.contains($0) ? nil : self.devices[$0] },
-            deviceMissing: { self.missing.contains($0) }, processMissing: { _ in false })
+            deviceMissing: { self.missing.contains($0) }, processMissing: { self.missingProcesses.contains($0) })
         identities[80] = identity(80, device: UInt32.max)
         identities[90] = identity(90, device: UInt32.max)
     }
@@ -86,6 +87,11 @@ final class VisualRecoveryTests: XCTestCase {
         OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: target.ttyOwner,
             deliveryID: "delivery-\(target.ttyOwner.pid)", updatedAt: clock.now().timeIntervalSince1970,
             background: color)
+    }
+
+    private func nativeAlias(_ plain: TerminalTargetBinding, id: String = "pane") -> TerminalTargetBinding {
+        TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,
+            nativeSurface: GhosttySurfaceID(application: generation(80), terminalID: id))
     }
 
     private func pending(_ target: TerminalTargetBinding) -> URL {
@@ -448,6 +454,167 @@ final class VisualRecoveryTests: XCTestCase {
         }
         XCTAssertEqual(recovery().reconcilePriorEffects().first?.status, .restored)
         XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testReconcileRestoresLatestBoundIntentOnceAcrossAliasesAfterAgentExit() throws {
+        let plain = try terminal(10), native = nativeAlias(plain)
+        try cache(plain); try cache(native)
+        identities[11] = ProcessIdentity(generation: generation(11), parentPID: 10,
+            group: 10, device: plain.device, foregroundGroup: 10)
+        var old = intent(plain)
+        old.producer = generation(11)
+        old.updatedAt = 998
+        try state.publishIntent(old)
+        try state.bindOrdinaryIntentUnlocked(old, to: plain, deadline: .max)
+        var latest = old
+        latest.background = "#ABCDEF"
+        latest.deliveryID = "latest-delivery"
+        latest.updatedAt = 999
+        try state.publishIntent(latest)
+        try state.bindOrdinaryIntentUnlocked(latest, to: native, deadline: .max)
+        identities[11] = nil
+        let runner = MockProcessRunner()
+        var writes = 0
+        runner.managedHandler = { path, lock, prepare in
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+                let bytes = try prepare(fd, deadline)
+                if bytes != nil { writes += 1 }
+                return bytes
+            }
+        }
+        let service = recovery(runner: runner, native: { throw GhosttyCatalogError.permissionDenied })
+        let batch = service.apply(.reconcile(resetLegacy: false, clearSelective: false))
+        XCTAssertEqual(batch.items.count, 1)
+        XCTAssertEqual(batch.items.first?.target, native)
+        XCTAssertEqual(batch.items.first?.status, .restored)
+        XCTAssertEqual(writes, 1)
+        XCTAssertEqual(try read(plain), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        try noBytes(plain)
+    }
+
+    func testUnscopedHookComposesNativeLeaseAndRecoveryCancelsEveryAliasOnce() throws {
+        let plain = try terminal(10), native = nativeAlias(plain)
+        try cache(plain); try cache(native, effect: true)
+        let service = recovery(native: { XCTFail("Unique cached hook target does not need native discovery"); return [] })
+        let hook = try service.target(tty: plain.tty, owner: plain.ttyOwner)
+        XCTAssertEqual(hook, native)
+        XCTAssertTrue(try service.write(.ordinary(intent(plain), synthetic: false, intakeAt: 1_000), to: hook))
+        XCTAssertEqual(try read(plain), Data("\u{1B}]11;#AABBCC\u{1B}\\".utf8))
+        try cache(plain, effect: true)
+        let report = recovery(native: { throw GhosttyCatalogError.permissionDenied }).recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(try read(plain), reset)
+        try noBytes(plain)
+        for alias in [plain, native] {
+            XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(alias, deadline: .max)).active)
+        }
+    }
+
+    func testResumeCancelsAllAliasLeasesAndPaintsCurrentRuleOnce() throws {
+        let plain = try terminal(10), native = nativeAlias(plain)
+        try cache(plain, effect: true); try cache(native, effect: true)
+        try restrictions.write(suspended: true)
+        try MuteStateWriter.write(MuteStateData(muted: false, reason: .none, untilEpoch: 2_000,
+            writtenEpoch: 1_000, appPID: 80, pauseBg: "#123456", pauseFg: "#EEEEEE",
+            requestedMuted: true), to: root.appendingPathComponent("home/mute.state"))
+        let report = recovery().recover(resume: true)
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(try read(plain), Data("\u{1B}]104\u{07}\u{1B}]10;#EEEEEE\u{07}\u{1B}]11;#123456\u{07}\u{1B}]1337;SetBackgroundImageFile=\u{07}".utf8))
+        try noBytes(plain)
+        for alias in [plain, native] {
+            XCTAssertNil(try state.matchingEffectUnlocked(alias, effectID: "old-effect",
+                controller: generation(90), deadline: .max))
+        }
+    }
+
+    func testFreshNativeAliasRegistersWithoutRepaintingHandledPhysicalTarget() throws {
+        let plain = try terminal(10)
+        try cache(plain, effect: true)
+        let alias = nativeAlias(plain)
+        let row = GhosttySurface(id: try XCTUnwrap(alias.nativeSurface), windowID: "window", tabID: "tab",
+            title: nil, directory: nil, tty: plain.tty, foregroundPID: plain.ttyOwner.pid,
+            tabSelected: true, mappingIssue: nil)
+        let runner = MockProcessRunner()
+        var writes = 0
+        runner.managedHandler = { path, lock, prepare in
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+                let bytes = try prepare(fd, deadline)
+                if bytes != nil { writes += 1 }
+                return bytes
+            }
+        }
+        let report = recovery(runner: runner, native: { [row] }).recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(writes, 1)
+        XCTAssertEqual(try read(plain), reset)
+        try noBytes(plain)
+        XCTAssertEqual(Set(state.cachedRecords().bindings), Set([plain, alias]))
+    }
+
+    func testScopedResolutionRejectsConflictingLiveNativeAliasesWithoutPainting() throws {
+        let plain = try terminal(10), first = nativeAlias(plain, id: "pane-a"), second = nativeAlias(plain, id: "pane-b")
+        try cache(plain); try cache(first, effect: true); try cache(second, effect: true)
+        let service = recovery(allowed: [try XCTUnwrap(first.nativeSurface)], native: {
+            XCTFail("Conflicting cached aliases must not trigger native guessing"); return []
+        })
+        XCTAssertThrowsError(try service.target(tty: plain.tty, owner: plain.ttyOwner))
+        let report = recovery(allowed: [try XCTUnwrap(first.nativeSurface)]).recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(report.items.first?.status, .failed)
+        try noBytes(plain)
+    }
+
+    func testProvenOwnerEndIsVanishedButUnknownMetadataRemainsFailedWithoutRetirement() throws {
+        let reused = try terminal(10), ended = try terminal(11)
+        try cache(reused); try cache(ended)
+        identities[10] = ProcessIdentity(generation: ProcessGeneration(pid: 10, startSeconds: 101, startMicroseconds: 1),
+            parentPID: 1, group: 10, device: reused.device, foregroundGroup: 10)
+        identities[11] = nil
+        missingProcesses.insert(11)
+        let proved = recovery().recover()
+        XCTAssertFalse(proved.hasFailures)
+        XCTAssertEqual(proved.items.count, 2)
+        XCTAssertTrue(proved.items.allSatisfy { $0.status == .vanished })
+        let unknown = try terminal(12)
+        try cache(unknown)
+        identities[12] = nil
+        let partial = recovery().recover()
+        XCTAssertTrue(partial.hasFailures)
+        XCTAssertEqual(partial.items.filter { $0.status == .vanished }.count, 2)
+        XCTAssertEqual(partial.items.filter { $0.status == .failed }.count, 1)
+        XCTAssertEqual(Set(state.cachedRecords().bindings), Set([reused, ended, unknown]))
+        try noBytes(reused); try noBytes(ended); try noBytes(unknown)
+    }
+
+    func testConflictingLiveOwnersOnOneTTYAreReportedWithoutPaint() throws {
+        let first = try terminal(10)
+        identities[11] = identity(11, device: first.device)
+        let second = try XCTUnwrap(state.captureTarget(tty: first.tty, owner: generation(11)))
+        try cache(first); try cache(second)
+        XCTAssertThrowsError(try recovery().target(tty: first.tty, owner: first.ttyOwner))
+        let report = recovery().recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.count, 2)
+        XCTAssertTrue(report.items.allSatisfy { $0.status == .failed })
+        try noBytes(first)
+    }
+
+    func testUnknownNativeAliasMetadataRemainsFailureBesideHealthyCachedTTY() throws {
+        let uncertain = try terminal(10), native = nativeAlias(uncertain), healthy = try terminal(11)
+        try cache(uncertain); try cache(native, effect: true); try cache(healthy)
+        identities[80] = nil
+        let report = recovery().recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.count, 2)
+        XCTAssertEqual(report.items.first { $0.tty == uncertain.tty }?.status, .failed)
+        XCTAssertEqual(report.items.first { $0.tty == healthy.tty }?.status, .restored)
+        try noBytes(uncertain)
+        XCTAssertEqual(try read(healthy), reset)
+        XCTAssertTrue(state.cachedRecords().bindings.contains(native))
     }
 }
 

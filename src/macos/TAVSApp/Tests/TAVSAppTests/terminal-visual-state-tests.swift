@@ -459,15 +459,15 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertNil(store.captureTarget(for: ambiguous))
     }
 
-    func testCachedOwnerUncertaintyNeverProvesPaneClosure() throws {
+    func testCachedOwnerUncertaintyDiffersFromProvenEndedGeneration() throws {
         let store = makeStore()
         let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
         records[11] = nil
         XCTAssertEqual(store.validateTarget(binding), .unavailable)
         missingProcesses.insert(11)
-        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
         records[11] = identity(11, startMicroseconds: 2)
-        XCTAssertEqual(store.validateTarget(binding), .unavailable)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
         records[11] = identity(11, device: 456)
         XCTAssertEqual(store.validateTarget(binding), .unavailable)
         records[11] = identity(11)
@@ -478,6 +478,22 @@ final class TerminalVisualStateTests: XCTestCase {
         missingDevices = []
         devices[tty] = 456
         XCTAssertEqual(store.validateTarget(binding), .vanished)
+    }
+
+    func testProvenOwnerEndIsNotMaskedByUnavailableNativeOrDeviceMetadata() throws {
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let binding = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        records[43] = nil
+        records[11] = identity(11, startMicroseconds: 2)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+        devices[tty] = nil
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+        records[11] = nil
+        missingProcesses.insert(11)
+        XCTAssertEqual(store.validateTarget(binding), .vanished)
+        missingProcesses = []
+        XCTAssertEqual(store.validateTarget(binding), .unavailable)
     }
 
     func testNativeAndApplicationReuseNeverRetargetsOldRequest() throws {
@@ -680,7 +696,27 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertNil(store.coverage(for: surface(foreground: 11)).observation)
         XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: binding, deadline: deadline()), "#123ABC")
         let replacement = try XCTUnwrap(store.captureTarget(for: surface(terminal: "replacement", foreground: 11)))
+        XCTAssertThrowsError(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+    }
+
+    func testNativeAdoptionCannotRestoreDeadProducerIntentAfterContinuingOwnerReuse() throws {
+        records[43] = identity(43, device: UInt32.max)
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                     device: 123, foregroundGroup: 10)
+        let store = makeStore()
+        let row = surface(foreground: 12)
+        try store.publishObservation(observation(pid: 12))
+        try store.publishIntent(intent(pid: 12))
+        XCTAssertNotNil(store.coverage(for: row).intent)
+        let original = try XCTUnwrap(store.captureTarget(for: row))
+        try store.cacheTargetUnlocked(original, deadline: deadline())
+        records[12] = nil
+        records[11] = identity(11, startMicroseconds: 2)
+        let replacement = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        XCTAssertNotEqual(original.ttyOwner, replacement.ttyOwner)
+        try store.cacheTargetUnlocked(replacement, deadline: deadline())
         XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+        XCTAssertTrue(store.cachedRecords().bindings.contains(original))
     }
 
     func testIntentPublicationAndBindingUseTheCallersHeldStableLock() throws {
@@ -857,7 +893,51 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: native, deadline: deadline()), "#123ABC")
         XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: otherOwner, deadline: deadline()))
         let replacement = try XCTUnwrap(store.captureTarget(for: surface(terminal: "replacement", foreground: 11)))
-        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+        XCTAssertThrowsError(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+    }
+
+    func testEquivalentAliasesRestoreLatestBoundIntentAfterProducerExitWithoutAdoption() throws {
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                     device: 123, foregroundGroup: 10)
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let plain = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(12)))
+        let native = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        let old = intent(color: "#123ABC", time: 998, pid: 12)
+        try store.publishIntent(old)
+        try store.bindOrdinaryIntentUnlocked(old, to: plain, deadline: deadline())
+        let latest = intent(delivery: "latest-delivery", color: "#ABCDEF", time: 999, pid: 12)
+        try store.publishIntent(latest)
+        try store.bindOrdinaryIntentUnlocked(latest, to: native, deadline: deadline())
+        records[12] = nil
+        XCTAssertEqual(Set(try store.equivalentBindingsUnlocked(for: plain, deadline: deadline())), Set([plain, native]))
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: plain, deadline: deadline()), "#ABCDEF")
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: native, deadline: deadline()), "#ABCDEF")
+        let unmatched = intent(delivery: "unbound-delivery", color: "reset", time: 1_000, pid: 12)
+        try store.publishIntent(unmatched)
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: plain, deadline: deadline()))
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: native, deadline: deadline()))
+    }
+
+    func testEquivalentAliasLookupHonorsHeldLockDeadlineAndRejectsUnknownNativeMetadata() throws {
+        records[43] = identity(43, device: UInt32.max)
+        let store = makeStore()
+        let plain = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        let native = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        try store.cacheTargetUnlocked(plain, deadline: deadline())
+        try store.cacheTargetUnlocked(native, deadline: deadline())
+        let lockURL = try store.lockURL(forTTY: tty)
+        let fd = open(lockURL.path, O_RDWR | O_CREAT | O_NOFOLLOW, 0o600)
+        guard fd >= 0 else { XCTFail("Fixture lock unavailable"); return }
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        XCTAssertEqual(Set(try store.equivalentBindingsUnlocked(for: native, deadline: deadline())), Set([plain, native]))
+        XCTAssertThrowsError(try store.equivalentBindingsUnlocked(for: plain,
+            deadline: DispatchTime.now().uptimeNanoseconds - 1)) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.deadlineExceeded.description)
+        }
+        records[43] = nil
+        XCTAssertThrowsError(try store.equivalentBindingsUnlocked(for: plain, deadline: deadline()))
     }
 
     func testBindingRequiresExactLatestRecordAndReportsCorruptBoundIntent() throws {

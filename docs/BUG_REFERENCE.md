@@ -1,7 +1,21 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.10
+Version: 1.11
+
+## Plain and native aliases compose different visual state
+
+Hooks bound intent to a plain target while native registration used a separate alias. Recovery
+could write two different backgrounds into one terminal, and ordinary hooks missed a native
+selective lease. Composition now reads validated equivalent bindings of the same TTY, device
+and continuing owner, with one physical write/report and exact scope checks. Recovery cancels
+matching alias effects under its existing lock. Multiple live native IDs remain unavailable.
+
+Proven owner exit or changed generation is vanished; unavailable metadata is still a failure.
+A related legacy adoption leak let a changed owner reuse an old producer's color. Live adoption
+now snapshots the exact owner-bound intent; unbound fallback requires a live matching owner.
+Producer exit preserves the original owner's bound copy, while a new owner cannot inherit it.
+Twelve regressions and the full 379 Swift tests pass without schema or deadline changes.
 
 ## Suspended relaunch skips retained-effect cleanup
 
