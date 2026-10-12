@@ -28,11 +28,10 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections |
 | P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
-
-| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing |
+| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
 ---
 
@@ -1183,15 +1182,84 @@ or skill promotion is justified by this single producer/owner failure arc.
 strategy motives are [R]. Exact served model attribution and transcript extraction were unavailable.
 This entry records a source checkpoint, not master-goal completion.
 
+## 2026-10-12 · gpt-6 (self-reported) · alias-and-render-corrections
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: Codex desktop API
+  thinking: unknown
+  session: 01a10879
+  trace: reconstructed from visible tool results
+
+**Framing.** [O] The continuation retained the full nine-phase objective. Current PROGRESS and
+Git placed work in Phase 6; the goal's historical Phase 1 locator was not treated as current.
+Root confirmed the existing alias worker live before touching its paths or shared build. Physical
+Ghostty acceptance stayed unverified, with no deployment or native-event workaround attempted.
+The earlier review stub is folded into this entry: independent reviews found real paths, one
+suspended-startup defect was fixed, and passing tests had not proved the whole composition contract.
+
+**Strategy.** [O] The alias worker owned four Swift paths; the shell worker owned the connected
+render callers and fixtures. Parent owned the finite payload, managed composition and entry wiring.
+A read-only explorer investigated intent retention independently. [R] Those boundaries allowed
+parallel source work while serializing builds that included the shared test target. Source APIs
+were held until dependencies were ready rather than allowing missing methods to contaminate a
+worker's green result. No new control service, schema or runtime history store was introduced.
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Read and verify | SPEC, PLAN, PROGRESS, Git and live agent | Resume Phase 6 |
+| 2 | Delegate and review | Alias intent/effect lifetime | Physical grouping and exact scope |
+| 3 | Reproduce and correct | Changed-owner adoption | Full green did not replace source review |
+| 4 | Test then implement | Finite render and entry | Missing-type/API reds before code |
+| 5 | Probe compatibility | Joined emoji and style-only render | Two behavioral regressions corrected |
+| 6 | Exercise | Actual helper on owned PTYs | Rule flip and stale batch rejected |
+| 7 | Commit and document | Coherent features and reports | Preserve failure evidence |
+| 8 | Consolidate | Finished Phase 1 log | Exact round trip, linked pointer |
+
+**Decision points.** [O] Dedupe alone would not fix aliases: selecting an empty native intent could
+still reset a valid plain binding's color. Composition now shares validated state within the same
+TTY/device/continuing-owner lifetime, while conflicting native identities remain unavailable.
+Producer exit preserves an already bound intent, but a changed owner cannot inherit it. [O] Raw
+palette/title/image/bell writes after a managed background check retained a race. One ephemeral
+current render uses 23 finite NUL fields and one managed write. The helper selects complete ordinary
+styling or current restrictions under the existing lock; it does not parse arbitrary OSC payloads.
+
+**Failure arcs.** [O] An intermediate full 378 passed, then source inspection found old adoption
+could leak color to a changed owner with the same ID/device. A focused red confirmed it; live
+adoption now snapshots an owner-bound copy and legacy fallback requires a live exact owner.
+[O] New title validation rejected joined emoji because Foundation controlCharacters includes
+format scalars. The regression failed, then explicit C0/C1 filtering preserved emoji while blocking
+terminal controls. [O] A style-only render read an unrelated corrupt background intent and failed
+before writing its valid title/palette. Its red case led to lazy background composition with no
+reset publication. [O] Shell fixtures exposed a missing pytest interpreter, a doubled-slash HOME
+comparison and an obsolete raw-route expectation. Corrections were fixture-local; product lifetime
+and deadline validation remained intact.
+
+**Verification.** [O] Alias source finished with 379 full Swift tests. Render source then passed
+57 focused and 390 full tests with no warnings. Actual helper integration passed 53 selected Bats,
+including a rule activated after collection and a superseded synthetic batch. Audited Python 230
+and scoped title/idle/persistence 58 also passed. Title tracking changes only after confirmed
+ordinary delivery, and transient idle failure retries without advancing the applied stage.
+All source features were committed after their checks; no physical native result is claimed.
+
+**Remaining boundary.** [O] The retention explorer confirmed publication after timeout would
+start another budget. The next API uses semantic publication before device open within the same
+100 ms worker budget, releasing its record lock before open and repeating stale checks before
+paint. A fully held publication lock cannot guarantee retention under that deadline; it must
+report failure. The root explained this distinction explicitly. R4 implementation is still active.
+
+**Process correction.** [O] PROGRESS exceeded 900 lines. Sixty finished Phase 1 lines moved unchanged
+into an appendix; reconstruction exactly reproduced the pre-move document. A trailing blank-line
+warning was resolved by adding a useful return link after the preserved block, without trimming
+history. The previous review stub is folded here; old session entries remain byte-for-byte intact.
+
+**Heuristics and confidence.** P8 applies to source-verifying findings before remedies; P11 applies
+to separating native aliases, continuing owners and producers. Outcomes above are [O] from visible
+tool results; causal strategy claims are [R]. Exact served model attribution remains unobserved.
+No new skill or model profile is proposed. This is a verified checkpoint, not goal completion.
+
 ## Stubs
 
 <!-- Mid-task micro-captures (observe action). Folded into the next full
      entry, then deleted. -->
-
-- 19:48 [O] Independent Codex review confirmed suspended-startup cleanup and raw-style races;
-  Claude's Hub timed out and its wrapper returned a visibly degraded fallback review identifying
-  alias composition, ended-owner reporting, idle retries and intent retention. Source checks
-  confirmed the paths. Suspended relaunch was reproduced, corrected and verified with 367 Swift
-  tests before commit cd17388. [R] A passing routing suite was insufficient for the complete
-  composition contract. Alias/lifetime work is now a bounded four-file slice; typed style batching
-  and remaining retry/retention findings stay open. No review score was promoted to approval.

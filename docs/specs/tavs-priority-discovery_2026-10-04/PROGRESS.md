@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 19:48 CEST
-**Version:** 2.7
+**Last Updated:** 2026-10-12 20:39 CEST
+**Version:** 2.8
 
 ## Session Metadata
 
@@ -27,7 +27,7 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 367 Swift; 86 Bats; 230 Python | | Relaunch fixed; confirmed review gaps remain |
+| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 390 Swift; 53 selected Bats; 230 audited + 58 scoped Python | | Aliases/render/retry fixed; intent retention pending |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
@@ -844,3 +844,55 @@ continues Phase 6, collects that worker's result, verifies it, then implements t
 render and remaining idle/intent issues. No new phase, product decision or live deployment has
 been started. Full captures above are historical; the current mid-task review stub will be folded
 into a later capture. Goal stays active. Physical acceptance and stronger locks remain gated.
+
+### Phase 6 aliases and complete renders: 2026-10-12 20:39 CEST
+
+Previous goal turn was progress. Reoriented from d745e02 and confirmed the alias worker live;
+no goal completion or blocked state is warranted. Phase 6 remains In Progress.
+
+65f52c1 fixes plain/native intent and effect composition, physical write/report duplication and
+proven-ended classification. Unknown metadata remains unavailable; conflicting live aliases fail.
+The worker found a legacy same-ID/rdev changed-owner adoption leak after full378 green. It was
+reproduced and fixed without a schema or retirement: live adoption snapshots exact owner-bound
+intent, while legacy fallback requires the live exact owner. Final focused86 pBMxVx and full379
+uc68Lh pass. All four owned paths were released before renderer compilation.
+
+3a718d0 defines the finite 23-NUL-field UTF-8 render payload; fcb684a composes whole ordinary style
+or current restrictions inside the existing lock/deadline. Style-only requests neither publish
+reset nor read unrequested background intent. New parser, prepare-time policy flip, selective
+lease, stale whole-batch and authenticated entry tests cover the contract. Expected missing-type/
+API reds: 1oOwYO, 1YAYQF, OxI7De. Joined emoji exposed Foundation controlCharacters rejecting
+format scalars (5Grkj7); explicit C0/C1 validation preserves emoji. A corrupt unrequested intent
+stopped style-only output (hhdsmj); lazy background composition fixes it. Focused57 hTJPWD and
+full390 Z2PMal pass without warnings. Explicit helper build9nYwxU passed before actual CLI tests.
+
+666c950 routes the connected shell callers through one ephemeral current batch, flushes before
+forking workers, defers title-last-set persistence until rendered, and retries transient idle
+failure without advancing its applied stage. Only actual stale status3 stops the worker.
+Old raw style writes/encoders were removed from the four style families. The optional Kitty
+image subprocess remains an explicitly separate legacy feature outside this Ghostty release.
+Actual helper integration53/53 I36HTq passes: background12, managed22, idle6, emit6, liveness7.
+Audited Python230/230 2NwdoZ and scoped title/idle/persistence58/58 0DBw00 pass. Six separate Bash
+syntax/diff checks and queued trace-label follow-up y6HCOc pass. No live/native Ghostty ran.
+
+R4 remains open. Read-only explorer confirmed dropped intent before device entry but showed that
+publishing after timeout starts another budget, while an already-expired budget cannot retain it.
+The accepted foundation is semantic publication/binding before device open under the SAME100ms
+worker deadline and stable record lock, released before open; opened-device output still takes
+its lock after open and repeats stale validation. Device failure remains failure. A publication
+lock held for the whole budget must fail truthfully without an extra budget or late mutation.
+This explicitly distinguishes semantic publication from holding output serialization during open.
+
+/root/implement_phase4_record_store owns ProcessRunner.swift, terminal-visual-state.swift,
+MockProcessRunner.swift and their two existing test files for R4, plus the shared Swift build.
+Root owns visual-recovery/entry wiring. APIs agreed: writeManagedToDevice(path:lockURL:beforeOpen:
+prepare:) with one optional deadline callback, and target-aware publishIntent(_:to:synthetic:
+intakeAt:deadline:). A new four-argument mock seam preserves faithful callback/deadline forwarding;
+legacy three-argument handlers remain for nil callbacks, and incompatible forwarding must fail.
+Do not overlap those five files/builds. Shell worker released all 13 connected paths after green.
+
+Worker/explorer reports are durable as phase6-alias-lifetimes-report.md,
+phase6-render-shell-report.md and phase6-intent-retention-design.md. No source is deployed;
+physical native acceptance remains unverified. Next: finish/test R4 foundation and root wiring,
+then record all review dispositions before Phase 7. No new product decision, hook, adapter,
+stronger lock, generic OSC parser or control plane was added.
