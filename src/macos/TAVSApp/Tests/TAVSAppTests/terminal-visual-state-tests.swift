@@ -683,6 +683,133 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
     }
 
+    func testIntentPublicationAndBindingUseTheCallersHeldStableLock() throws {
+        let store = makeStore()
+        try store.publishObservation(observation())
+        try store.publishIntent(intent())
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        let observed = try Data(contentsOf: recordURL("observation"))
+        let lockURL = try store.lockURL(forTTY: tty)
+        let fd = open(lockURL.path, O_RDWR | O_NOFOLLOW)
+        XCTAssertGreaterThanOrEqual(fd, 0)
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        var before = stat(); XCTAssertEqual(fstat(fd, &before), 0)
+        let budget = deadline()
+        let value = intent(delivery: "new-delivery", color: "#abcdef", time: 999)
+        try store.publishIntentUnlocked(value, intakeAt: 999, deadline: budget)
+        try store.bindOrdinaryIntentUnlocked(value, to: binding, deadline: budget)
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: binding, deadline: budget), "#ABCDEF")
+        var after = stat(); XCTAssertEqual(lstat(lockURL.path, &after), 0)
+        XCTAssertEqual(before.st_ino, after.st_ino)
+        XCTAssertEqual(try Data(contentsOf: recordURL("observation")), observed)
+    }
+
+    func testExpiredIntentDeadlineCannotReplaceLatestOrTargetBoundCopy() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        try store.bindOrdinaryIntentUnlocked(intent(), to: binding, deadline: deadline())
+        let boundURL = try targetRecordURL("bound-intent.json")
+        let latest = try Data(contentsOf: recordURL("intent"))
+        let bound = try Data(contentsOf: boundURL)
+        let expired = DispatchTime.now().uptimeNanoseconds - 1
+        XCTAssertThrowsError(try store.publishIntentUnlocked(intent(color: "reset", time: 999), deadline: expired))
+        XCTAssertThrowsError(try store.bindOrdinaryIntentUnlocked(intent(), to: binding, deadline: expired))
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), latest)
+        XCTAssertEqual(try Data(contentsOf: boundURL), bound)
+    }
+
+    func testUnlockedIntentPreservesSyntheticAndIntakeOrdering() throws {
+        let store = makeStore()
+        try store.publishObservation(observation(delivery: "new-delivery", time: 999))
+        try store.publishIntent(intent(delivery: "new-delivery", color: "#ABCDEF", time: 999), intakeAt: 999)
+        let latest = try Data(contentsOf: recordURL("intent"))
+        XCTAssertThrowsError(try store.publishIntentUnlocked(intent(color: "reset", time: 1_000),
+                                                            synthetic: true, deadline: deadline()))
+        XCTAssertThrowsError(try store.publishIntentUnlocked(intent(color: "reset", time: 1_000),
+                                                            intakeAt: 998, deadline: deadline()))
+        XCTAssertEqual(try Data(contentsOf: recordURL("intent")), latest)
+        try store.publishIntentUnlocked(intent(delivery: "new-delivery", color: "reset", time: 1_000),
+                                         synthetic: true, deadline: deadline())
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for:
+            XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11))), deadline: deadline()), "reset")
+    }
+
+    func testBoundPlainIntentSurvivesChildExitAndRejectsUnmatchedLatestDelivery() throws {
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                      device: 123, foregroundGroup: 10)
+        let store = makeStore()
+        let value = intent(pid: 12)
+        try store.publishIntent(value)
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(12)))
+        XCTAssertEqual(binding.ttyOwner, generation(11))
+        try store.bindOrdinaryIntentUnlocked(value, to: binding, deadline: deadline())
+        records[12] = nil
+        XCTAssertEqual(try makeStore().ordinaryBackgroundUnlocked(for: binding, deadline: deadline()), "#123ABC")
+        let boundURL = try targetRecordURL("bound-intent.json")
+        let bound = try Data(contentsOf: boundURL)
+        let unmatched = intent(delivery: "unmatched", color: "reset", time: 999, pid: 12)
+        try store.publishIntent(unmatched)
+        XCTAssertThrowsError(try store.bindOrdinaryIntentUnlocked(unmatched, to: binding, deadline: deadline()))
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: binding, deadline: deadline()))
+        XCTAssertEqual(try Data(contentsOf: boundURL), bound)
+    }
+
+    func testBoundIntentCannotMigrateToDistinctOwnerOrNativeBinding() throws {
+        records[12] = ProcessIdentity(generation: generation(12), parentPID: 11, group: 10,
+                                      device: 123, foregroundGroup: 10)
+        records[43] = identity(43, device: UInt32.max)
+        records[13] = identity(13)
+        let store = makeStore()
+        let value = intent(pid: 12)
+        try store.publishIntent(value)
+        let plain = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(12)))
+        try store.bindOrdinaryIntentUnlocked(value, to: plain, deadline: deadline())
+        let otherOwner = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(13)))
+        XCTAssertThrowsError(try store.bindOrdinaryIntentUnlocked(value, to: otherOwner, deadline: deadline()))
+        let native = try XCTUnwrap(store.captureTarget(for: surface(foreground: 11)))
+        try store.bindOrdinaryIntentUnlocked(value, to: native, deadline: deadline())
+        records[12] = nil
+        XCTAssertEqual(try store.ordinaryBackgroundUnlocked(for: native, deadline: deadline()), "#123ABC")
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: otherOwner, deadline: deadline()))
+        let replacement = try XCTUnwrap(store.captureTarget(for: surface(terminal: "replacement", foreground: 11)))
+        XCTAssertNil(try store.ordinaryBackgroundUnlocked(for: replacement, deadline: deadline()))
+    }
+
+    func testBindingRequiresExactLatestRecordAndReportsCorruptBoundIntent() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        XCTAssertThrowsError(try store.bindOrdinaryIntentUnlocked(intent(color: "reset"), to: binding, deadline: deadline()))
+        try store.bindOrdinaryIntentUnlocked(intent(), to: binding, deadline: deadline())
+        let boundURL = try targetRecordURL("bound-intent.json")
+        var invalid = try JSONSerialization.jsonObject(with: Data(contentsOf: boundURL)) as! [String: Any]
+        invalid["payload"] = "BODY_SENTINEL"
+        try JSONSerialization.data(withJSONObject: invalid).write(to: boundURL)
+        XCTAssertThrowsError(try store.ordinaryBackgroundUnlocked(for: binding, deadline: deadline())) { error in
+            XCTAssertFalse(String(describing: error).contains("BODY_SENTINEL"))
+        }
+        let snapshot = store.cachedRecords()
+        XCTAssertEqual(snapshot.bindings, [binding])
+        XCTAssertEqual(snapshot.unreadable, [boundURL])
+    }
+
+    func testBoundIntentFilenameAloneDoesNotAuthorizeACachedTarget() throws {
+        let orphan = organizer.appendingPathComponent("targets/not-a-binding/bound-intent.json")
+        try FileManager.default.createDirectory(at: orphan.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder().encode(intent()).write(to: orphan)
+        let snapshot = makeStore().cachedRecords()
+        XCTAssertTrue(snapshot.bindings.isEmpty)
+        XCTAssertEqual(snapshot.unreadable.first?.resolvingSymlinksInPath(), orphan.resolvingSymlinksInPath())
+    }
+
+    private func targetRecordURL(_ filename: String) throws -> URL {
+        let files = try XCTUnwrap(FileManager.default.enumerator(at: organizer.appendingPathComponent("targets"),
+            includingPropertiesForKeys: nil)).allObjects.compactMap { $0 as? URL }
+        return try XCTUnwrap(files.first { $0.lastPathComponent == filename })
+    }
+
     private func deadline() -> UInt64 { DispatchTime.now().uptimeNanoseconds + 100_000_000 }
 
     private func effect(_ binding: TerminalTargetBinding, id: String = "effect-43") -> TerminalEffectRecord {

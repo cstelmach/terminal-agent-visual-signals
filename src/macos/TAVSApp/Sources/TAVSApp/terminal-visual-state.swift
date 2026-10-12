@@ -238,11 +238,16 @@ final class TerminalVisualStateStore {
     func ordinaryBackgroundUnlocked(for target: TerminalTargetBinding, deadline: UInt64) throws -> String? {
         try checkDeadline(deadline)
         guard validateTarget(target) == .valid else { try checkDeadline(deadline); return nil }
-        guard let intent: OrdinaryBackgroundIntent = try read(recordURL("intent", tty: target.tty), deadline: deadline)
-        else { return nil }
+        let latest: OrdinaryBackgroundIntent? = try read(recordURL("intent", tty: target.tty), deadline: deadline)
+        let bound = try boundIntent(for: target, deadline: deadline)
+        guard let intent = latest else { return nil }
         try validate(intent)
         guard intent.tty == target.tty, intent.device == target.device, let producer = intent.producer else {
             try checkDeadline(deadline); return nil
+        }
+        if intent == bound {
+            try checkDeadline(deadline)
+            return Self.normalizedBackground(intent.background)
         }
         if let surface = target.nativeSurface {
             let url = adoptionURL(tty: target.tty, producer: producer)
@@ -257,6 +262,40 @@ final class TerminalVisualStateStore {
         }
         try checkDeadline(deadline)
         return Self.normalizedBackground(intent.background)
+    }
+
+    func bindOrdinaryIntentUnlocked(_ intent: OrdinaryBackgroundIntent, to target: TerminalTargetBinding,
+                                    deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(intent)
+        guard validateTarget(target) == .valid, intent.tty == target.tty, intent.device == target.device,
+              let producer = intent.producer, validProducer(tty: target.tty, device: target.device, producer: producer),
+              continuingOwner(producer, device: target.device) == target.ttyOwner else {
+            try checkDeadline(deadline)
+            throw TerminalVisualStateError.targetUnavailable
+        }
+        var normalized = intent
+        normalized.background = Self.normalizedBackground(intent.background)!
+        guard let latest: OrdinaryBackgroundIntent = try read(recordURL("intent", tty: target.tty), deadline: deadline)
+        else { throw TerminalVisualStateError.staleIntent }
+        try validate(latest)
+        guard latest == normalized else { throw TerminalVisualStateError.staleIntent }
+        _ = try boundIntent(for: target, deadline: deadline)
+        try cacheTargetUnlocked(target, deadline: deadline)
+        try write(normalized, to: targetURL(target, filename: "bound-intent.json"), deadline: deadline)
+    }
+
+    private func boundIntent(for target: TerminalTargetBinding, deadline: UInt64? = nil) throws -> OrdinaryBackgroundIntent? {
+        guard let intent: OrdinaryBackgroundIntent = try read(targetURL(target, filename: "bound-intent.json"),
+                                                             deadline: deadline) else { return nil }
+        try validate(intent)
+        guard let saved: CachedTarget = try read(targetURL(target, filename: "target.json"), deadline: deadline),
+              saved.schema == 1, saved.target == target, intent.tty == target.tty,
+              intent.device == target.device, intent.producer != nil else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        try checkDeadline(deadline)
+        return intent
     }
 
     func cachedRecords() -> TerminalCachedVisualRecords {
@@ -279,7 +318,7 @@ final class TerminalVisualStateStore {
             if info.st_mode & S_IFMT == S_IFLNK {
                 enumerator.skipDescendants(); unreadable.append(url); continue
             }
-            guard ["target.json", "effect.json"].contains(url.lastPathComponent) else { continue }
+            guard ["target.json", "effect.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
             do {
                 if url.lastPathComponent == "target.json" {
                     guard let saved: CachedTarget = try read(url), saved.schema == 1 else {
@@ -291,7 +330,7 @@ final class TerminalVisualStateStore {
                         throw TerminalVisualStateError.invalidRecord
                     }
                     bindings.append(saved.target)
-                } else {
+                } else if url.lastPathComponent == "effect.json" {
                     guard let effect: TerminalEffectRecord = try read(url) else {
                         throw TerminalVisualStateError.invalidRecord
                     }
@@ -301,6 +340,14 @@ final class TerminalVisualStateStore {
                         throw TerminalVisualStateError.invalidRecord
                     }
                     effects.append(effect)
+                } else {
+                    guard let saved: CachedTarget = try read(url.deletingLastPathComponent().appendingPathComponent("target.json")),
+                          saved.schema == 1 else { throw TerminalVisualStateError.invalidRecord }
+                    try validate(saved.target)
+                    guard targetURL(saved.target, filename: "bound-intent.json").resolvingSymlinksInPath()
+                        == url.resolvingSymlinksInPath(), try boundIntent(for: saved.target) != nil else {
+                        throw TerminalVisualStateError.invalidRecord
+                    }
                 }
             } catch { unreadable.append(url) }
         }
@@ -437,43 +484,55 @@ final class TerminalVisualStateStore {
                 throw TerminalVisualStateError.invalidRecord
             }
         }
+        try withLock(record.tty) {
+            // Preserve legacy non-device publication timing; managed callers pass their original deadline.
+            try publishIntentUnlocked(record, synthetic: synthetic, intakeAt: intakeAt, deadline: .max)
+        }
+    }
+
+    func publishIntentUnlocked(_ record: OrdinaryBackgroundIntent, synthetic: Bool = false,
+                               intakeAt: Double? = nil, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(record)
+        if let intakeAt = intakeAt {
+            guard intakeAt.isFinite, intakeAt > 0, intakeAt <= record.updatedAt else {
+                throw TerminalVisualStateError.invalidRecord
+            }
+        }
         var normalized = record
         normalized.background = Self.normalizedBackground(record.background)!
-        try withLock(record.tty) {
-            var observation: TerminalObservation?
-            do {
-                observation = try read(recordURL("observation", tty: record.tty))
-                if let observation = observation { try validate(observation) }
-            } catch {
-                if synthetic { throw error }
-                observation = nil
-            }
-            if let intakeAt = intakeAt, let observation = observation,
-               observation.observedAt > intakeAt {
-                throw TerminalVisualStateError.staleDelivery
-            }
-            let matchesObservation = observation.map {
-                $0.tty == record.tty && $0.deliveryID == record.deliveryID
-                    && $0.producer == record.producer && $0.device == record.device
-            } ?? false
-            if synthetic {
-                guard matchesObservation, validProducer(tty: record.tty,
-                          device: record.device, producer: record.producer) else {
-                    throw TerminalVisualStateError.staleDelivery
-                }
-            }
-            let url = recordURL("intent", tty: record.tty)
-            if let current: OrdinaryBackgroundIntent = try readLatest(url, validating: validate,
-                                                                     recoverInvalid: !synthetic) {
-                // A new intake wins over a later render time from the superseded delivery.
-                let supersedesDelivery = matchesObservation && (current.deliveryID != record.deliveryID
-                    || current.producer != record.producer || current.device != record.device)
-                guard supersedesDelivery || record.updatedAt >= current.updatedAt else {
-                    throw TerminalVisualStateError.staleIntent
-                }
-            }
-            try write(normalized, to: url)
+        var observation: TerminalObservation?
+        do {
+            observation = try read(recordURL("observation", tty: record.tty), deadline: deadline)
+            if let observation = observation { try validate(observation) }
+        } catch TerminalVisualStateError.deadlineExceeded { throw TerminalVisualStateError.deadlineExceeded }
+        catch {
+            if synthetic { throw error }
+            observation = nil
         }
+        try checkDeadline(deadline)
+        if let intakeAt = intakeAt, let observation = observation, observation.observedAt > intakeAt {
+            throw TerminalVisualStateError.staleDelivery
+        }
+        let matchesObservation = observation.map {
+            $0.tty == record.tty && $0.deliveryID == record.deliveryID
+                && $0.producer == record.producer && $0.device == record.device
+        } ?? false
+        if synthetic {
+            guard matchesObservation, validProducer(tty: record.tty,
+                device: record.device, producer: record.producer) else { throw TerminalVisualStateError.staleDelivery }
+        }
+        let url = recordURL("intent", tty: record.tty)
+        if let current: OrdinaryBackgroundIntent = try readLatest(url, validating: validate,
+            recoverInvalid: !synthetic, deadline: deadline) {
+            // A new intake wins over a later render time from the superseded delivery.
+            let supersedesDelivery = matchesObservation && (current.deliveryID != record.deliveryID
+                || current.producer != record.producer || current.device != record.device)
+            guard supersedesDelivery || record.updatedAt >= current.updatedAt else {
+                throw TerminalVisualStateError.staleIntent
+            }
+        }
+        try write(normalized, to: url, deadline: deadline)
     }
 
     // Call only with a fresh successful catalogue row; cached rows cannot authorize adoption.
@@ -727,16 +786,19 @@ final class TerminalVisualStateStore {
     }
 
     private func readLatest<T: Decodable>(_ url: URL, validating validate: (T) throws -> Void,
-                                         recoverInvalid: Bool) throws -> T? {
+                                         recoverInvalid: Bool, deadline: UInt64? = nil) throws -> T? {
         do {
-            let record: T? = try read(url)
+            let record: T? = try read(url, deadline: deadline)
             if let record = record { try validate(record) }
+            try checkDeadline(deadline)
             return record
         } catch TerminalVisualStateError.invalidRecord {
+            try checkDeadline(deadline)
             var info = stat()
             guard recoverInvalid, lstat(url.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG else {
                 throw TerminalVisualStateError.invalidRecord
             }
+            try checkDeadline(deadline)
             return nil
         }
     }

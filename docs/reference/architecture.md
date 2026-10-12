@@ -1,7 +1,20 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
+
+## Intent publication inside managed output
+
+`publishIntentUnlocked` reuses ordinary publication validation and chronology under the
+caller's existing lock and original deadline. The public locking API keeps its earlier
+metadata-only timing; it never paints a device. Synthetic and delayed old delivery rejection
+remain unchanged.
+
+`bindOrdinaryIntentUnlocked` verifies a live producer, the exact continuing target and equality
+with the latest normalized per-TTY intent, then saves that same schema beside the target as
+`bound-intent.json`. An equal latest copy can survive producer exit while its target remains
+valid. Another owner/native binding or an unmatched latest delivery cannot borrow that evidence.
+Corrupt bound data remains an explicit availability failure; its filename authorizes no target.
 
 ## Current global policy
 
