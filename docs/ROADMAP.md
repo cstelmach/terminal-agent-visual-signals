@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.6
+Version: 1.7
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -53,5 +53,12 @@ remain unverified. The installed app has not been changed.
 
 ## Later phases
 
-Automatic focus follows this manual source checkpoint, with native acceptance still required.
+Phase 9 has a tested pure occurrence reducer: activation baselines, independent High cues,
+permission episodes, supported completion deduplication and exact acknowledgement snapshots.
+Consumed IDs prevent replay after acknowledgement, downgrade or temporary missing coverage.
+Unknown/unverified signals and ambiguous late permission companions cannot create cues.
+The permission classifier now requires a recognized event rather than generic Notification.
+Only the latest hook observation is stored, so overwritten episode boundaries remain unknown.
+Automatic mode, renderer integration, navigation acknowledgement and GUI controls are pending.
+Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.
