@@ -43,21 +43,21 @@ struct PauseVisual: Equatable {
         }!
     }
 
-    private static func contrastRatio(_ first: String, _ second: String) -> Double {
+    static func contrastRatio(_ first: String, _ second: String) -> Double {
         let firstLuminance = relativeLuminance(first)
         let secondLuminance = relativeLuminance(second)
         return (max(firstLuminance, secondLuminance) + 0.05)
             / (min(firstLuminance, secondLuminance) + 0.05)
     }
 
-    private static func relativeLuminance(_ color: String) -> Double {
+    static func relativeLuminance(_ color: String) -> Double {
         let components = rgbComponents(color)
         return 0.2126 * linearized(components.red)
             + 0.7152 * linearized(components.green)
             + 0.0722 * linearized(components.blue)
     }
 
-    private static func rgbComponents(_ color: String) -> (red: Double, green: Double, blue: Double) {
+    static func rgbComponents(_ color: String) -> (red: Double, green: Double, blue: Double) {
         let hex = String(color.dropFirst())
         let red = Int(hex.prefix(2), radix: 16)!
         let greenStart = hex.index(hex.startIndex, offsetBy: 2)
