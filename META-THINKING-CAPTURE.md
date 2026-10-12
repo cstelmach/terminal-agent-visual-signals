@@ -27,9 +27,9 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
-| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12 |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices) |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices) |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -797,6 +797,85 @@ Action/results are observed; causal interpretations and model attribution are re
 This completes the isolation slice, not the master goal.
 
 ---
+
+## 2026-10-12 · model-unverified · tavs-observations-intent
+
+meta:
+  model: GPT-6 family self-report; exact served variant unobserved
+  model_source: self-reported [R]; reviewer configured gpt-5.6-sol [O], server model unattested
+  interface: Codex desktop
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool actions and source diffs; causal explanations reconstructed
+
+**Framing.** [O] The user resumed the complete goal with approval. Current package state selected
+Phase 4 while keeping Phase 2's required native acceptance open. The work captured observations
+and ordinary intent without implementing recovery, previews or focus. Research and worker reports
+were freshly read rather than treated as current implementation evidence. [R] Keeping those
+boundaries explicit prevented successful record tests from implying visible product completion.
+
+**Strategy.** [O] Read-only exploration and distinct code ownership divided the record store,
+adapters and Sessions coverage. Parent handled CLI intake, semantic background routing and
+connected verification. New code reused Foundation JSON, kernel metadata, the existing headless
+entry and isolated runner. No dependency, fallback parser, real installation or process inventory
+was added. A private regular Dock bundle supplied Computer Use access without the scheduler.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Reorient/read | SPEC, PLAN, PROGRESS, reports and source | Phase 4 resumed |
+| Red/green | Typed records and intake | Frozen identity and separate resources |
+| Integrate | Adapters, backgrounds, Sessions | Metadata-only transport and coverage |
+| Probe | Owned PTY plus actual idle/error callbacks | Observation bytes remain stable |
+| Review | Independent Codex CLI | Three source-confirmed defects |
+| Repair | Version identity, controls, damaged latest files | Targeted tests pass |
+| Computer Use | Private fixture Dock app | Labels, age and failed-refresh retention visible |
+| Verify/commit | 273 Swift, 55 Bats, 230 Python | Five coherent source commits |
+
+**Decision points.** [O] Polling and generated colors retained an intake identity rather than
+creating new meaningful events. Consumer-owned adoption persisted across controller restart,
+while new deliveries still needed current producer correlation. Generic interpreters remained
+unverified. Missing helpers used the known capability query and reported unavailable metadata;
+they did not receive unknown verbs. The version-path fix resolved actual provider command links
+instead of accepting any executable with a version-shaped name. No post-fix review approval was
+invented from the initial CONCERN report.
+
+**Failure arcs.** F1, wrong caller boundary: [O] A standalone PTY writer produced records with no
+producer. Starting inspection at its own PID restored the controlling-terminal correlation;
+ordinary background-only calls could then publish intent without inventing an observation.
+F2, wrong ordering model: [O] A late ordinary callback replaced newer intent because render time
+was later. A PTY regression reproduced this. Frozen intake time is now compared under the same
+per-TTY lock; synthetic delivery matching remains strict.
+
+F3, review defects: [O] The actual Claude launcher points at a version-named native binary.
+Exact basename equality rejected it. The reviewer also traced decoded controls into OSC title
+framing and showed malformed latest JSON blocked fresh publication. Source verification preceded
+fixes. Fresh ordinary publications repair invalid regular latest files, while synthetic repair
+and corrupt native bindings remain refused. [R] Distinguishing latest data from identity binding
+avoided turning corruption recovery into an identity fallback.
+
+F4, misleading verification: [O] A regular fake-TTY file contained only the final bell, so a
+control-injection assertion passed without checking prior title bytes. Capturing the complete
+muted pending stream produced a real red, then green. Debug environment flags were also
+superseded by defaults; private user.conf made the intended debug path active. The idle test's
+set-e shell stopped at a legacy empty grep; only the worker inherited production shell flags,
+while parent assertions kept set-e. Old fixture refresh tests needed to await background reads.
+A fixture used the model's foregroundPID spelling instead of the wire pid key; correcting only
+that fixture made coverage visible. These were distinct fixture problems, not native evidence.
+
+**Verification and limits.** [O] Full Swift, isolated affected Bats, audited Python, release build,
+syntax, whitespace, hook parity and staged secret checks passed. Computer Use showed unverified
+completion and missing coverage honestly, then retained last-known display on catalogue failure.
+The owned PTY holder was reaped; the rebuilt private app remained open. Real Ghostty panes,
+Spaces, provider hooks and later recovery/focus are unverified. The existing safety denial was
+not bypassed. Broader unsafe Python cases remain excluded. [R] The reusable heuristic is to
+assert the complete observable stream before trusting a negative injection test. No new profile
+or skill was promoted from a single task type.
+
+**Confidence.** [O] covers commands, diffs, failures, tests and UI text. [R] covers causal design
+interpretations and model self-attribution. The native executable-path condition is supported by
+local symlink/source evidence; no real agent was launched to claim runtime classification.
 
 ## Stubs
 
