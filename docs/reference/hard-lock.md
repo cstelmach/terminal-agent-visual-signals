@@ -1,13 +1,13 @@
 # Hard Lock Reference
 
-**Last Updated:** 2026-07-13 | **Version:** 1.0
+**Last Updated:** 2026-10-12 | **Version:** 1.1
 
-The hard lock turns TAVS into a visual commitment device: during a locked
-period every registered terminal is painted with the pause visual plus a
-`🔒 locked until HH:MM` title, agent signals are suppressed, and reversing
-the lock requires passing a challenge. It is friction, not security: the
-goal is that no bypass can happen by reflex or accident (see
-[Honest limits](#honest-limits)).
+The hard lock is a visual commitment device: during an effective locked period,
+registered terminals receive the pause visual and a `🔒 locked until HH:MM` title.
+Agent signals are suppressed. Its ordinary time-boxed unlock uses a challenge.
+Persistent visual suspension overrides that effective policy without a challenge,
+while retaining saved rules and grants. Restrictions remain reversible during testing;
+stronger locks are deferred until recovery and required acceptance are validated.
 
 ## Concepts
 
@@ -20,6 +20,19 @@ goal is that no bypass can happen by reflex or accident (see
 
 A hard lock always implies the mute. A grant suspends only hard-caused
 muting; soft rules are never affected by grants.
+
+## Independent recovery implementation
+
+The source CLI accepts `tavs recover` and `tavs recover --resume`. It atomically
+saves persistent suspension/resumption before resolving the native helper, forwards
+the helper's result and returns nonzero for missing/unsupported or failed recovery.
+It preserves schedules and lock/grant definitions. Resumption leaves focus Off.
+
+The Phase 6 native target reset and managed-output routing are still in progress.
+The persistence/dispatch tests use private helper stubs and do not prove physical
+restoration. Current installed copies require the matching completed native release
+before this command can restore terminal pixels. A missing helper leaves the saved
+policy state intact and reports failure.
 
 ## Lock sources
 
