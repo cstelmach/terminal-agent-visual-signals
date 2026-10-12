@@ -358,6 +358,42 @@ final class VisualRecoveryTests: XCTestCase {
         try noBytes(target)
     }
 
+    func testHeadlessClientPreservesPartialReportAndSavesBeforeProbe() throws {
+        let runner = MockProcessRunner(), helper = URL(fileURLWithPath: "/fixture/current-bundle-helper")
+        let partial = VisualRecoveryReport(stateSaved: true, catalogueAvailable: false,
+            items: [VisualRecoveryItem(tty: "/dev/ttys043", status: .failed, reason: "Unavailable target.")])
+        var calls = 0
+        runner.boundedOutputHandler = { url, args, timeout, environment in
+            XCTAssertEqual(url, helper)
+            XCTAssertEqual(self.restrictions.read(), .suspended)
+            calls += 1
+            if calls == 1 {
+                XCTAssertEqual(args, ["--validate-config", "--managed-output-capabilities"])
+                XCTAssertEqual(timeout, 2)
+                return BoundedProcessOutput(data: Data("tavs-managed-output-schema=1\n".utf8), exitCode: 0)
+            }
+            XCTAssertEqual(timeout, 10)
+            XCTAssertEqual(args, ["--visual-recover", self.restrictions.url.path, self.root.path, "recover"])
+            return BoundedProcessOutput(data: try JSONEncoder().encode(partial), exitCode: 1)
+        }
+        let report = try VisualRecovery.recoverHeadlessly(marker: restrictions.url, runtime: root, resume: false,
+            executable: helper, environment: [:], runner: runner)
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.first?.reason, "Unavailable target.")
+        XCTAssertEqual(calls, 2)
+    }
+
+    func testMissingHeadlessHelperKeepsSavedSuspensionAndUnsafeRootCannotWrite() throws {
+        XCTAssertThrowsError(try VisualRecovery.recoverHeadlessly(marker: restrictions.url, runtime: root,
+            resume: false, executable: nil, environment: [:], runner: MockProcessRunner()))
+        XCTAssertEqual(restrictions.read(), .suspended)
+        let untouched = root.appendingPathComponent("outside/marker")
+        XCTAssertThrowsError(try VisualRecovery.recoverHeadlessly(marker: untouched, runtime: root,
+            resume: false, executable: nil, environment: ["TAVS_SESSIONS_TEST_ROOT": root.appendingPathComponent("inside").path],
+            runner: MockProcessRunner()))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: untouched.path))
+    }
+
     func testClearRestoresLatestIntentAndCanceledRecordRemainsRetryable() throws {
         let target = try terminal(10), value = try request()
         XCTAssertTrue(try recovery().write(.preview(value), to: target)); _ = try read(target)

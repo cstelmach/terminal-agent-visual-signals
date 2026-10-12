@@ -24,6 +24,12 @@ Exit 0 means the operation completed without reported failures. A nonzero CLI ex
 state failed, the helper was missing/unsupported, or native recovery was incomplete. When saving
 state succeeds but helper resolution fails, the saved suspension remains effective.
 
+The GUI client saves the same marker before querying the current bundle executable. It launches
+`--visual-recover MARKER RUNTIME recover|resume` on a background queue, accepts valid reports on
+exit 0 or 1, and displays partial failures without rolling back suspension. Capability queries
+omit the three isolated launch keys; recovery retains their exact private scope. Fixture scope
+uses its full validated ID set or the supplied narrower allowlist, never browsing selection.
+
 ## Internal helper compatibility
 
 The shell queries `--validate-config --managed-output-capabilities` and requires exactly

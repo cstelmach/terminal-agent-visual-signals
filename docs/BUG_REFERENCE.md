@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.15
+Version: 1.16
+
+## GUI recovery loses partial reports or its isolated target scope
+
+The existing code-zero process API discarded stdout on exit 1 and capped requests at two
+seconds. Independent recovery needs its JSON even on partial failure and can outlast discovery.
+The GUI client now persists suspension first, probes the current bundle's capability, and keeps
+valid exit-1 reports within a separate ten-second process bound. Device writes retain 100 ms.
+Tests cover persistence before probing, missing helpers, unsafe roots and partial reports.
+Fixture GUI launches derive explicit IDs when absent and preserve any supplied narrower scope.
+They do not invoke a native catalogue or silently widen recovery to real terminals.
 
 ## Concurrent terminal registration fails on a shared parent directory
 

@@ -188,7 +188,7 @@ enum ManagedOutputEntry {
         return URL(fileURLWithPath: value)
     }
 
-    private static func validateRoot(marker: URL, runtime: URL, environment: [String: String]) throws {
+    static func validateRoot(marker: URL, runtime: URL, environment: [String: String]) throws {
         guard scopeKeys.contains(where: { environment[$0] != nil }) else { return }
         guard let path = environment["TAVS_SESSIONS_TEST_ROOT"] else { throw Failure.unavailable }
         let root = try absoluteURL(path).resolvingSymlinksInPath()
@@ -258,7 +258,7 @@ enum ManagedOutputEntry {
 
     private struct FixtureInstance: Decodable { let application: ProcessGeneration }
 
-    private static func fixtureData(_ url: URL) throws -> Data {
+    static func fixtureData(_ url: URL) throws -> Data {
         var info = stat()
         guard lstat(url.path, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
               info.st_size >= 0, info.st_size <= 1_048_576 else { throw Failure.unavailable }

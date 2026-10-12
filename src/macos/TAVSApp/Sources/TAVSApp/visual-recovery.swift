@@ -42,6 +42,7 @@ enum VisualRecoveryError: Error {
     case vanished, targetUnavailable, scopeUnavailable, policyChanged, previewBlocked, previewUnavailable
 }
 enum TerminalRenderResult: String { case rendered, restricted, unaffected }
+enum HeadlessRecoveryError: Error { case helperUnavailable, invalidReport }
 
 final class VisualRecovery {
     private let runtimeDirectory: URL
@@ -54,6 +55,31 @@ final class VisualRecovery {
     private let allowedSurfaces: Set<GhosttySurfaceID>?
     private let nativeSnapshot: () throws -> [GhosttySurface]
     private static let reset = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
+
+    static func recoverHeadlessly(marker: URL, runtime: URL, resume: Bool, executable: URL?,
+                                  environment: [String: String], runner: ProcessRunner) throws -> VisualRecoveryReport {
+        guard marker.isFileURL, runtime.isFileURL else { throw HeadlessRecoveryError.helperUnavailable }
+        try ManagedOutputEntry.validateRoot(marker: marker, runtime: runtime, environment: environment)
+        try VisualRestrictionsStateStore(url: marker).write(suspended: !resume)
+        guard let executable = executable, executable.isFileURL else { throw HeadlessRecoveryError.helperUnavailable }
+        var probeEnvironment = environment
+        for key in ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"] {
+            probeEnvironment.removeValue(forKey: key)
+        }
+        let support = try runner.runBoundedOutput(executableURL: executable,
+            arguments: ["--validate-config", "--managed-output-capabilities"], timeout: 2, environment: probeEnvironment)
+        guard support.exitCode == 0, String(data: support.data, encoding: .utf8) == "tavs-managed-output-schema=1\n" else {
+            throw HeadlessRecoveryError.helperUnavailable
+        }
+        let result = try runner.runBoundedOutput(executableURL: executable,
+            arguments: ["--visual-recover", marker.path, runtime.path, resume ? "resume" : "recover"],
+            timeout: 10, environment: environment)
+        guard let report = try? JSONDecoder().decode(VisualRecoveryReport.self, from: result.data),
+              report.stateSaved, result.exitCode == (report.hasFailures ? 1 : 0) else {
+            throw HeadlessRecoveryError.invalidReport
+        }
+        return report
+    }
 
     init(runtimeDirectory: URL, restrictions: VisualRestrictionsStateStore,
          state: TerminalVisualStateStore, policy: VisualRestrictionPolicy,
