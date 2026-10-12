@@ -1,10 +1,17 @@
 import Foundation
 import Darwin
 
+struct BoundedProcessOutput {
+    let data: Data
+    let exitCode: Int32
+}
+
 protocol ProcessRunner: AnyObject {
     @discardableResult
     func run(executableURL: URL, arguments: [String]) throws -> Data
     func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval) throws -> Data
+    func runBoundedOutput(executableURL: URL, arguments: [String], timeout: TimeInterval,
+                          environment: [String: String]?) throws -> BoundedProcessOutput
     func writeToDevice(path: String, data: Data) throws
     // prepare runs under the stable lock; validate the opened fd and current policy there.
     // Honor the original deadline before state mutations after any delay; nil skips paint.
@@ -31,10 +38,21 @@ final class SystemProcessRunner: ProcessRunner {
 
     func runBounded(executableURL: URL, arguments: [String], timeout: TimeInterval = 2) throws -> Data {
         guard timeout.isFinite, timeout > 0 else { throw ProcessRunnerError.invalidTimeout }
-        let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(timeout, 2) * 1_000_000_000)
+        let result = try runBoundedOutput(executableURL: executableURL, arguments: arguments,
+                                         timeout: min(timeout, 2), environment: nil)
+        guard result.exitCode == 0 else { throw ProcessRunnerError.processExited(result.exitCode) }
+        return result.data
+    }
+
+    func runBoundedOutput(executableURL: URL, arguments: [String], timeout: TimeInterval,
+                          environment: [String: String]?) throws -> BoundedProcessOutput {
+        guard timeout.isFinite, timeout > 0 else { throw ProcessRunnerError.invalidTimeout }
+        let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(min(timeout, 10) * 1_000_000_000)
         let process = Process()
         process.executableURL = executableURL
         process.arguments = arguments
+        process.environment = environment
+        process.standardInput = FileHandle.nullDevice
         let pipes = [Pipe(), Pipe()]
         process.standardOutput = pipes[0]
         process.standardError = pipes[1]
@@ -73,10 +91,7 @@ final class SystemProcessRunner: ProcessRunner {
                                      collectingOutput: index == 0, deadline: deadline)
             }
         }
-        guard process.terminationStatus == 0 else {
-            throw ProcessRunnerError.processExited(process.terminationStatus)
-        }
-        return output
+        return BoundedProcessOutput(data: output, exitCode: process.terminationStatus)
     }
 
     private func drainProcessPipe(_ descriptor: inout pollfd, output: inout Data,

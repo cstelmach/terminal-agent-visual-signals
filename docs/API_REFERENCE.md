@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.3
+Version: 1.4
 
 ## Public recovery commands
 
@@ -49,6 +49,11 @@ Current palette, background, title and image styling is composed inside the writ
 the payload is ephemeral and is not retained as output history.
 
 ## Writer ordering
+
+`ProcessRunner.runBoundedOutput` retains stdout and exit status, accepts an explicit environment,
+and caps the process at ten seconds with bounded pipe draining. `runBounded` remains the
+code-zero-only wrapper with its two-second limit for native catalogue/configuration queries.
+The device writer's separate original 100 ms deadline is unchanged.
 
 `writeManagedToDevice(path:lockURL:beforeOpen:prepare:)` gives both callbacks the original
 absolute 100 ms deadline. Background requests publish validated intent and the exact continuing

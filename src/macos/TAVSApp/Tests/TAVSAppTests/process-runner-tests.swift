@@ -38,6 +38,21 @@ final class ProcessRunnerTests: XCTestCase {
         }
     }
 
+    func testBoundedOutputPreservesPartialReportAndExplicitEnvironment() throws {
+        let value = try SystemProcessRunner().runBoundedOutput(executableURL: URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "printf '%s' \"$TAVS_RECOVERY_TEST\"; printf PRIVATE_43 >&2; exit 1"],
+            timeout: 1, environment: ["TAVS_RECOVERY_TEST": "partial-report"])
+        XCTAssertEqual(value.exitCode, 1)
+        XCTAssertEqual(value.data, Data("partial-report".utf8))
+    }
+
+    func testRecoveryOutputCanFinishPastCatalogueLimit() throws {
+        let value = try SystemProcessRunner().runBoundedOutput(executableURL: URL(fileURLWithPath: "/bin/sh"),
+            arguments: ["-c", "/bin/sleep 2.25; printf complete"], timeout: 3, environment: nil)
+        XCTAssertEqual(value.exitCode, 0)
+        XCTAssertEqual(value.data, Data("complete".utf8))
+    }
+
     func testTimeoutKillsAndReapsOwnedProcessEvenAfterOutputCloses() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

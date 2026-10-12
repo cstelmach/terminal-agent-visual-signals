@@ -6,6 +6,7 @@ final class MockProcessRunner: ProcessRunner {
     var runCallLog: [(URL, [String])] = []
     var boundedResults: [Result<Data, Error>] = []
     var boundedHandler: ((URL, [String], TimeInterval) throws -> Data)?
+    var boundedOutputHandler: ((URL, [String], TimeInterval, [String: String]?) throws -> BoundedProcessOutput)?
     var managedHandler: ((String, URL, @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
     var managedBeforeOpenHandler: ((String, URL, ((UInt64) throws -> Void)?,
                                    @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
@@ -35,6 +36,13 @@ final class MockProcessRunner: ProcessRunner {
         if let handler = boundedHandler { return try handler(executableURL, arguments, timeout) }
         guard !boundedResults.isEmpty else { throw ProcessRunnerError.processTimedOut }
         return try boundedResults.removeFirst().get()
+    }
+
+    func runBoundedOutput(executableURL: URL, arguments: [String], timeout: TimeInterval,
+                          environment: [String: String]?) throws -> BoundedProcessOutput {
+        runCallLog.append((executableURL, arguments))
+        guard let handler = boundedOutputHandler else { throw ProcessRunnerError.processTimedOut }
+        return try handler(executableURL, arguments, timeout, environment)
     }
 
     func writeToDevice(path: String, data: Data) throws {
