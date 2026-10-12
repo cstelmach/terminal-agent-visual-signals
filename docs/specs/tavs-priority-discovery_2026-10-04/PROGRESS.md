@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 19:12 CEST
-**Version:** 2.6
+**Last Updated:** 2026-10-12 19:48 CEST
+**Version:** 2.7
 
 ## Session Metadata
 
@@ -27,7 +27,7 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 364 Swift; 86 Bats; 230 Python | | Production routes verified; independent reviews running |
+| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 367 Swift; 86 Bats; 230 Python | | Relaunch fixed; confirmed review gaps remain |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
@@ -834,3 +834,64 @@ issues and record Phase 6's review outcome before starting Phase 7. Do not rerun
 without a new change, failure or unresolved concern. No source has been deployed into the working
 app. Physical Ghostty pixels, native job-control mapping, Spaces/minimized-window behavior and
 real provider events remain unverified; the prior Computer Use denial must not be bypassed.
+
+### Phase 6 review findings and first correction: 2026-10-12 19:48 CEST
+
+Both available reviews returned CONCERN, 6/10, rather than release approval. Codex completed one
+read-only pass. Claude's Hub request exceeded 1800 seconds; its mandatory wrapper used the visibly
+degraded claude-p fallback. The archived report preserves that warning and its transport TODO.
+The Hub issue belongs to that other project, not this source implementation. AGY still has no
+provider verdict. No review was rerun against a new hash, and no source fingerprint was added.
+
+Parent confirmed Codex's suspended-startup and raw-style findings directly in current source.
+Its alias duplicate observation overlaps Claude's more serious alias-dependent intent composition.
+Claude's source-verification appendix also confirms ended-owner classification and transient idle
+failure behavior. Intent loss before device entry is a confirmed path; its remedy still needs a
+bounded design that preserves target validation, stale ordering and the original device deadline.
+The original review reports remain unchanged evidence of their snapshots, not post-fix approvals.
+
+**Fixed: Codex R1.** `cd17388` makes startup request typed cleanup even with suspended/unavailable
+state, performs cached-effect cleanup before native discovery, and permits safe transition cleanup
+into suspension after saving policy. Saved rules/grants and disabled restrictive paint are tested.
+The first test-only compile typo is retained as RFpdMA; actual behavior failed 23 assertions in
+HJvJuu, including three PTY timeouts behind native discovery. Focused67 F38C1k and full367 BnDgf8
+pass without deadline relaxation. Source verification and report are archived. Only a comment
+changed after full green, so no additional suite repetition was needed.
+
+**Open and next.** `/root/implement_phase4_record_store` owns the next bounded alias/lifetime fix:
+visual-recovery.swift, terminal-visual-state.swift and their two tests, plus the shared Swift build.
+Its agreed hypothesis uses validated TTY/device/continuing-owner identity for physical grouping,
+shares exact-latest bound intent across aliases, resolves a unique native alias for ordinary hooks,
+cancels matching alias effects under one existing lock and reports/writes once per physical target.
+Proven owner-generation end is vanished; unavailable metadata remains unavailable. No retirement,
+record deletion, schema, generic adapter or weakened native-scope check is authorized for that slice.
+Do not edit those four files or build concurrently until it releases them.
+
+Then implement Codex R2's complete typed current-invocation render. The read-only caller census
+and minimal finite 23-slot transport are archived in phase6-managed-style-design.md. A single
+managed transaction must choose current restrictions or complete ordinary palette/background/
+title/image/fresh-bell output. Style-only requests do not publish reset intent. Synthetic checks
+repeat inside that transaction; title-last-set persistence follows actual ordinary delivery.
+Updating the old shell flag or rechecking just before printf leaves the demonstrated race.
+No opaque style history, generic OSC parser, new dependency or subprocess control service is needed.
+Ghostty is the fixed release scope; preserve the existing optional Kitty image backend and record
+its separate legacy limitation without claiming all-backend repair or adding a Kitty adapter.
+
+Also resolve Claude's idle retry gap (retain the last successfully applied stage and stop only
+for actual stale delivery) and design/test ordinary-intent retention when device entry fails.
+Phase 6 remains In Progress; previews and later focus phases have not started. The release/PTY
+checks recorded above precede the scheduler correction; latest full source evidence is 367 Swift.
+
+Review files now saved: phase6-codex-recovery-review.md and phase6-claude-recovery-review.md.
+The latter preserves its degraded execution banner, reviewer recommendations and separate host
+source-verification appendix. Its assertion that all writers are routed does not close Codex R2:
+ordinary palette/title/image writes remain outside the managed transaction and can race a rule.
+Root read the full evaluated findings and keeps that confirmed gap open.
+
+Current committed source is cd17388 (367 full Swift). Alias/lifetime worker is active; it may
+leave owned red-test/source edits in its four paths before the next continuation. Preserve them
+and wait for its source/build release before any competing compilation. The next goal iteration
+continues Phase 6, collects that worker's result, verifies it, then implements the finite typed
+render and remaining idle/intent issues. No new phase, product decision or live deployment has
+been started. Full captures above are historical; the current mid-task review stub will be folded
+into a later capture. Goal stays active. Physical acceptance and stronger locks remain gated.

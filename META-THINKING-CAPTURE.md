@@ -1187,3 +1187,11 @@ This entry records a source checkpoint, not master-goal completion.
 
 <!-- Mid-task micro-captures (observe action). Folded into the next full
      entry, then deleted. -->
+
+- 19:48 [O] Independent Codex review confirmed suspended-startup cleanup and raw-style races;
+  Claude's Hub timed out and its wrapper returned a visibly degraded fallback review identifying
+  alias composition, ended-owner reporting, idle retries and intent retention. Source checks
+  confirmed the paths. Suspended relaunch was reproduced, corrected and verified with 367 Swift
+  tests before commit cd17388. [R] A passing routing suite was insufficient for the complete
+  composition contract. Alias/lifetime work is now a bounded four-file slice; typed style batching
+  and remaining retry/retention findings stay open. No review score was promoted to approval.
