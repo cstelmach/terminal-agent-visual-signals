@@ -6,6 +6,7 @@ enum ManagedVisualOperation {
     case ordinary(OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case forcedReset(OrdinaryBackgroundIntent, intakeAt: Double, title: String)
     case checkSynthetic(OrdinaryBackgroundIntent, intakeAt: Double)
+    case render(TerminalRender, OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -28,6 +29,7 @@ struct VisualRecoveryReport: Codable {
 }
 
 enum VisualRecoveryError: Error { case vanished, targetUnavailable, scopeUnavailable, policyChanged }
+enum TerminalRenderResult: String { case rendered, restricted, unaffected }
 
 final class VisualRecovery {
     private let runtimeDirectory: URL
@@ -59,6 +61,20 @@ final class VisualRecovery {
 
     @discardableResult
     func write(_ operation: ManagedVisualOperation, to target: TerminalTargetBinding) throws -> Bool {
+        try performWrite(operation, to: target, ordinaryRender: nil)
+    }
+
+    func render(_ render: TerminalRender, intent: OrdinaryBackgroundIntent, synthetic: Bool,
+                intakeAt: Double, to target: TerminalTargetBinding) throws -> TerminalRenderResult {
+        var ordinary = false
+        let wrote = try performWrite(.render(render, intent, synthetic: synthetic, intakeAt: intakeAt),
+            to: target, ordinaryRender: { ordinary = true })
+        // The writer completion orders classification before a successful return.
+        return wrote ? (ordinary ? .rendered : .restricted) : .unaffected
+    }
+
+    private func performWrite(_ operation: ManagedVisualOperation, to target: TerminalTargetBinding,
+                              ordinaryRender: (() -> Void)?) throws -> Bool {
         if let allowed = allowedSurfaces {
             guard let id = target.nativeSurface, allowed.contains(id) else {
                 throw VisualRecoveryError.scopeUnavailable
@@ -75,6 +91,13 @@ final class VisualRecovery {
                 try self.state.validateSyntheticUnlocked(intent, intakeAt: intakeAt, deadline: deadline)
                 return nil
             }
+            if case .render(_, let intent, let synthetic, let intakeAt) = operation {
+                guard intent.tty == target.tty, intent.device == target.device else {
+                    throw TerminalVisualStateError.invalidRecord
+                }
+                try self.state.validateRenderContextUnlocked(intent, synthetic: synthetic,
+                    intakeAt: intakeAt, deadline: deadline)
+            }
             try self.state.cacheTargetUnlocked(target, deadline: deadline)
             if case .register = operation {
                 _ = try self.state.equivalentBindingsUnlocked(for: target, deadline: deadline)
@@ -90,6 +113,8 @@ final class VisualRecovery {
 
             var publication: (OrdinaryBackgroundIntent, Bool, Double)?
             var resetTitle: String?
+            var render: TerminalRender?
+            var syntheticRender = false
             switch operation {
             case .ordinary(let intent, let synthetic, let intakeAt):
                 publication = (intent, synthetic, intakeAt)
@@ -98,6 +123,12 @@ final class VisualRecovery {
                       intent.background == "reset" else { throw TerminalVisualStateError.invalidRecord }
                 publication = (intent, true, intakeAt)
                 resetTitle = title
+            case .render(let style, var intent, let synthetic, let intakeAt):
+                render = style; syntheticRender = synthetic
+                if let background = style.background {
+                    intent.background = background
+                    publication = (intent, synthetic, intakeAt)
+                }
             default: break
             }
             if let (intent, synthetic, intakeAt) = publication {
@@ -136,17 +167,26 @@ final class VisualRecovery {
                 guard leases.allSatisfy({ $0.effectID == first.effectID && $0.controller == first.controller
                     && $0.background == first.background }) else { throw TerminalVisualStateError.staleEffect }
             }
-            let background = selective ? leases[0].background
-                : try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline) ?? "reset"
+            let needsBackground = render == nil || render?.background != nil || selective
+                || resetLegacy || effects.contains(where: { $0.active })
+            let background = needsBackground ? (selective ? leases[0].background
+                : try self.state.ordinaryBackgroundUnlocked(for: target, deadline: deadline) ?? "reset") : nil
             if !clearSelective {
                 try self.cancelEffects(selective ? effects.filter { !self.state.isSelectiveLeaseActive($0) } : effects,
                                        deadline: deadline)
             }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
             if resetTitle != nil && !resetLegacy { bytes.append(Data("\u{1B}]104\u{07}".utf8)) }
-            bytes.append(Self.backgroundBytes(background))
+            if let render = render { bytes.append(render.beforeBackground) }
+            if let background = background {
+                bytes.append(Self.backgroundBytes(background))
+            }
             if let title = resetTitle { bytes.append(Data("\u{1B}]0;\(title)\u{1B}\\".utf8)) }
-            return bytes
+            if let render = render {
+                bytes.append(render.afterBackground(synthetic: syntheticRender))
+                ordinaryRender?()
+            }
+            return bytes.isEmpty ? nil : bytes
         }
     }
 

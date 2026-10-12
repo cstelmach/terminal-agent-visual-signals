@@ -98,6 +98,80 @@ final class VisualRecoveryTests: XCTestCase {
         root.appendingPathComponent("pending/\(target.tty.replacingOccurrences(of: "/", with: "_")).osc")
     }
 
+    private func render(background: String? = "#123456", title: String = "ORDINARY_TITLE") throws -> TerminalRender {
+        var fields = [background ?? "", "set"] + ["#ABCDEF"] + Array(repeating: "", count: 15)
+        fields += ["1", title, "iterm2-clear", "", "1"]
+        return try TerminalRender(Data((fields.joined(separator: "\0") + "\0").utf8))
+    }
+
+    func testCompleteRenderUsesOneWriteAndCurrentSelectiveBackground() throws {
+        let target = try terminal(10)
+        try cache(target, effect: true)
+        let style = try render()
+        let result = try recovery().render(style, intent: intent(target), synthetic: false,
+            intakeAt: 1_000, to: target)
+        XCTAssertEqual(result, .rendered)
+        var expected = style.beforeBackground
+        expected.append(Data("\u{1B}]11;#AABBCC\u{1B}\\".utf8))
+        expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#123456")
+    }
+
+    func testRestrictionActivatedDuringPrepareReplacesWholeOrdinaryRender() throws {
+        let target = try terminal(10)
+        let runner = MockProcessRunner()
+        runner.managedHandler = { path, lock, prepare in
+            try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+                unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
+                to: self.root.appendingPathComponent("lock.state"))
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, prepare: prepare)
+        }
+        XCTAssertEqual(try recovery(runner: runner).render(render(), intent: intent(target), synthetic: false,
+            intakeAt: 1_000, to: target), .restricted)
+        let bytes = try read(target), text = String(decoding: bytes, as: UTF8.self)
+        XCTAssertTrue(text.contains("\u{1B}]10;#EEEEFF"))
+        XCTAssertTrue(text.contains("\u{1B}]11;#667788"))
+        XCTAssertFalse(text.contains("ORDINARY_TITLE"))
+        XCTAssertFalse(text.contains("\u{1B}]4;"))
+        XCTAssertFalse(text.contains("SetBackgroundImageFile=\u{07}\u{07}"))
+    }
+
+    func testStyleOnlyRenderDoesNotPublishBackgroundOrResetIt() throws {
+        let target = try terminal(10), style = try render(background: nil)
+        XCTAssertEqual(try recovery().render(style, intent: intent(target, color: "reset"), synthetic: false,
+            intakeAt: 1_000, to: target), .rendered)
+        var expected = style.beforeBackground; expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+    }
+
+    func testStyleOnlyRenderDoesNotReadUnrequestedCorruptBackgroundIntent() throws {
+        let target = try terminal(10)
+        try state.publishIntent(intent(target))
+        let files = try FileManager.default.contentsOfDirectory(at: root.appendingPathComponent("organizer"),
+            includingPropertiesForKeys: nil)
+        let url = try XCTUnwrap(files.first { $0.lastPathComponent.hasPrefix("intent-") })
+        try Data("invalid background record".utf8).write(to: url)
+        let style = try render(background: nil)
+        XCTAssertEqual(try recovery().render(style, intent: intent(target, color: "reset"), synthetic: false,
+            intakeAt: 1_000, to: target), .rendered)
+        var expected = style.beforeBackground; expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        XCTAssertEqual(try String(contentsOf: url), "invalid background record")
+    }
+
+    func testSupersededSyntheticRenderRejectsEveryStyleAndIntent() throws {
+        let target = try terminal(10), value = intent(target)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+            event: nil, deliveryID: "newer", responseID: nil, observedAt: 1_000))
+        XCTAssertThrowsError(try recovery().render(render(), intent: value, synthetic: true,
+            intakeAt: 1_000, to: target))
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+        try noBytes(target)
+    }
+
     private func read(_ target: TerminalTargetBinding) throws -> Data {
         let tty = try XCTUnwrap(ptys.first { $0.path == target.tty })
         var ready = pollfd(fd: tty.master, events: Int16(POLLIN), revents: 0)

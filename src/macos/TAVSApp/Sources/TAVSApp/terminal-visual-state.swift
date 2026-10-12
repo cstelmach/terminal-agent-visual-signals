@@ -623,6 +623,26 @@ final class TerminalVisualStateStore {
         try write(normalized, to: url, deadline: deadline)
     }
 
+    func validateRenderContextUnlocked(_ record: OrdinaryBackgroundIntent, synthetic: Bool,
+                                       intakeAt: Double, deadline: UInt64) throws {
+        if synthetic {
+            try validateSyntheticUnlocked(record, intakeAt: intakeAt, deadline: deadline)
+            return
+        }
+        try checkDeadline(deadline)
+        try validate(record)
+        guard intakeAt.isFinite, intakeAt > 0, intakeAt <= record.updatedAt else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        if let observation: TerminalObservation = try read(recordURL("observation", tty: record.tty), deadline: deadline) {
+            try validate(observation)
+            guard observation.observedAt <= intakeAt else { throw TerminalVisualStateError.staleDelivery }
+        }
+        let live = validProducer(tty: record.tty, device: record.device, producer: record.producer)
+        try checkDeadline(deadline)
+        guard live else { throw TerminalVisualStateError.staleDelivery }
+    }
+
     // Call only with a fresh successful catalogue row; cached rows cannot authorize adoption.
     func coverage(for surface: GhosttySurface) -> TerminalVisualCoverage {
         guard surface.mappingIssue == nil, let tty = surface.tty, Self.concreteTTY(tty) else {

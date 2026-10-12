@@ -21,7 +21,8 @@ enum ManagedOutputEntry {
 
     static func run(_ args: [String], environment: [String: String] = ProcessInfo.processInfo.environment,
                     factory: Factory = makeRecovery,
-                    lookup: (Int32) -> ProcessIdentity? = ProcessIdentity.inspect) -> ManagedOutputResult? {
+                    lookup: (Int32) -> ProcessIdentity? = ProcessIdentity.inspect,
+                    renderInput: () throws -> Data = readRenderInput) -> ManagedOutputResult? {
         if args.count >= 3, args[1] == "--validate-config", args[2] == "--managed-output-capabilities" {
             return args.count == 3 ? ManagedOutputResult(code: 0, output: "tavs-managed-output-schema=1\n", error: "")
                 : ManagedOutputResult(code: 1, output: "", error: "Managed output unavailable.\n")
@@ -35,7 +36,7 @@ enum ManagedOutputEntry {
             case "--visual-recover": count = 5
             case "--managed-register", "--managed-current", "--managed-reconcile", "--managed-check-context": count = 6
             case "--managed-background": count = 8
-            case "--managed-forced-reset": count = 7
+            case "--managed-forced-reset", "--managed-render": count = 7
             default: throw Failure.unavailable
             }
             guard args.count == count else { throw Failure.unavailable }
@@ -61,6 +62,7 @@ enum ManagedOutputEntry {
             }
             let operation: ManagedVisualOperation
             let owner: ProcessGeneration
+            var render: (TerminalRender, OrdinaryBackgroundIntent, Bool, Double)?
             if count == 6 && verb != "--managed-check-context" {
                 guard let pid = Int32(args[5]), pid > 0 else { throw Failure.unavailable }
                 owner = try ancestor(pid, device: verb == "--managed-reconcile" ? nil : number, lookup: lookup)
@@ -86,6 +88,10 @@ enum ManagedOutputEntry {
                     }
                     synthetic = args[7] == "1"
                     color = normalized
+                } else if verb == "--managed-render" {
+                    guard args[6] == "0" || args[6] == "1" else { throw Failure.unavailable }
+                    synthetic = args[6] == "1"
+                    color = "reset"
                 } else if verb == "--managed-forced-reset" {
                     guard args[6].utf8.count <= 512, args[6].rangeOfCharacter(from: .controlCharacters) == nil else {
                         throw Failure.unavailable
@@ -102,7 +108,11 @@ enum ManagedOutputEntry {
                 owner = producer
                 let intent = OrdinaryBackgroundIntent(tty: tty, device: number, producer: producer,
                     deliveryID: context.deliveryID, updatedAt: Date().timeIntervalSince1970, background: color)
-                if verb == "--managed-forced-reset" {
+                if verb == "--managed-render" {
+                    let style = try TerminalRender(renderInput())
+                    render = (style, intent, synthetic, context.observedAt)
+                    operation = .render(style, intent, synthetic: synthetic, intakeAt: context.observedAt)
+                } else if verb == "--managed-forced-reset" {
                     operation = .forcedReset(intent, intakeAt: context.observedAt, title: args[6])
                 } else if verb == "--managed-check-context" {
                     operation = .checkSynthetic(intent, intakeAt: context.observedAt)
@@ -113,6 +123,11 @@ enum ManagedOutputEntry {
             let recovery = try factory(marker, runtime, environment)
             let target = verb == "--managed-reconcile" ? try recovery.cachedTarget(tty: tty)
                 : try recovery.target(tty: tty, owner: owner)
+            if let (style, intent, synthetic, intakeAt) = render {
+                let result = try recovery.render(style, intent: intent, synthetic: synthetic,
+                    intakeAt: intakeAt, to: target)
+                return ManagedOutputResult(code: 0, output: result.rawValue + "\n", error: "")
+            }
             let wrote = try recovery.write(operation, to: target)
             return ManagedOutputResult(code: 0, output: wrote ? "restored\n" : "unaffected\n", error: "")
         } catch Failure.stale {
@@ -132,6 +147,32 @@ enum ManagedOutputEntry {
 
     private static func stale() -> ManagedOutputResult {
         ManagedOutputResult(code: 3, output: "", error: "Managed output stale.\n")
+    }
+
+    private static func readRenderInput() throws -> Data {
+        var info = stat()
+        guard fstat(STDIN_FILENO, &info) == 0,
+              info.st_mode & S_IFMT == S_IFIFO || info.st_mode & S_IFMT == S_IFREG else {
+            throw Failure.unavailable
+        }
+        let flags = fcntl(STDIN_FILENO, F_GETFL)
+        guard flags >= 0, fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK) == 0 else { throw Failure.unavailable }
+        defer { _ = fcntl(STDIN_FILENO, F_SETFL, flags) }
+        let deadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
+        var data = Data(), bytes = [UInt8](repeating: 0, count: 4_096)
+        while DispatchTime.now().uptimeNanoseconds < deadline {
+            let count = Darwin.read(STDIN_FILENO, &bytes, bytes.count)
+            if count == 0 { return data }
+            if count > 0 {
+                guard data.count + count <= 16_384 else { throw Failure.unavailable }
+                data.append(contentsOf: bytes.prefix(count)); continue
+            }
+            if errno == EINTR { continue }
+            guard errno == EAGAIN || errno == EWOULDBLOCK else { throw Failure.unavailable }
+            var ready = pollfd(fd: STDIN_FILENO, events: Int16(POLLIN), revents: 0)
+            _ = poll(&ready, 1, 5)
+        }
+        throw Failure.unavailable
     }
 
     private static func report(_ report: VisualRecoveryReport) -> ManagedOutputResult {

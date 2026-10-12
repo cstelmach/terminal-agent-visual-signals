@@ -96,6 +96,37 @@ final class ManagedOutputEntryTests: XCTestCase {
         try JSONEncoder().encode(context).base64EncodedString()
     }
 
+    private func renderData(_ background: String = "", title: String = "BATCH_TITLE") -> Data {
+        let fields = [background, "reset"] + Array(repeating: "", count: 16)
+            + ["1", title, "", "", "0"]
+        return Data((fields.joined(separator: "\0") + "\0").utf8)
+    }
+
+    func testTypedRenderUsesAuthenticatedEntryAndStyleOnlyLeavesIntentAbsent() throws {
+        let command = args("--managed-render", tty, try token(context()), "0")
+        let result = ManagedOutputEntry.run(command, factory: factory,
+            lookup: { self.identities[$0] }, renderInput: { self.renderData() })
+        XCTAssertEqual(result?.code, 0)
+        XCTAssertEqual(result?.output, "rendered\n")
+        XCTAssertEqual(try read(), Data("\u{1B}]104\u{1B}\\\u{1B}]0;BATCH_TITLE\u{1B}\\".utf8))
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: try XCTUnwrap(state.cachedRecords().bindings.first), deadline: .max))
+        XCTAssertEqual(nativeCalls, 0)
+    }
+
+    func testTypedRenderRejectsMalformedInputAndSupersededSyntheticWithoutBytes() throws {
+        let current = context(), text = try token(current)
+        var command = args("--managed-render", tty, text, "0")
+        let malformed = ManagedOutputEntry.run(command, factory: factory,
+            lookup: { self.identities[$0] }, renderInput: { Data("BODY_SENTINEL".utf8) })
+        XCTAssertEqual(malformed?.code, 1)
+        XCTAssertFalse((malformed?.error ?? "").contains("BODY_SENTINEL"))
+        command[6] = "1"
+        let stale = ManagedOutputEntry.run(command, factory: factory,
+            lookup: { self.identities[$0] }, renderInput: { self.renderData("#123456") })
+        XCTAssertEqual(stale?.code, 3)
+        noBytes()
+    }
+
     private func observe(_ context: OrganizerContext) throws {
         try state.publishObservation(TerminalObservation(tty: tty, device: device,
             producer: context.producer, provider: context.provider, verifiedAgent: true,

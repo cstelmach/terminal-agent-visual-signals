@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.11
+Version: 1.12
+
+## Ordinary style escapes the managed background transaction
+
+A hook checked suppression, wrote its background through fresh managed policy, then emitted
+palette/title/image/bell bytes directly using the old check. A newly active restriction or newer
+synthetic delivery could be overwritten. The complete current render is now validated and
+composed in one managed transaction; current restrictions replace all queued ordinary styling.
+Style-only requests do not publish or reset background intent, and do not read unrelated corrupt
+intent when no controlled background needs cleanup. Whole-batch stale rejection preserves intent.
+
+Typed entry, policy-flip, selective-overlay, stale-batch and style-only tests pass with the full
+390 Swift suite. The actual helper's owned-PTY rule-flip and superseded-batch tests also pass.
 
 ## Plain and native aliases compose different visual state
 
