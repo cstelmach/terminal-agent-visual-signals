@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.12
+Version: 1.13
+
+## Failed device entry drops ordinary background intent
+
+Intent publication ran only after device open and output-lock acquisition. A failed or wedged
+open therefore discarded the requested color or reset, leaving recovery to restore older state.
+The managed writer now publishes and binds validated semantic intent before open, releasing its
+record lock before device entry. Preparation repeats stale validation under the output lock.
+Publication, open, lock and paint share the original 100 ms deadline; no second budget is added.
+
+Device failure still reports failure. Publication-lock contention can exhaust that budget before
+intent is saved, and is reported honestly. Regression tests cover retained color/reset, late open,
+output-lock failure, stale/malformed reset, style-only preservation and newer intake during open.
+The full 405 Swift tests pass. These checks use owned PTYs and injected identities.
 
 ## Ordinary style escapes the managed background transaction
 

@@ -81,8 +81,36 @@ final class VisualRecovery {
             }
         }
         try requireValid(target)
+
+        var publication: (OrdinaryBackgroundIntent, Bool, Double)?
+        var resetTitle: String?
+        var render: TerminalRender?
+        var syntheticRender = false
+        switch operation {
+        case .ordinary(let intent, let synthetic, let intakeAt):
+            publication = (intent, synthetic, intakeAt)
+        case .forcedReset(let intent, let intakeAt, let title):
+            guard title.utf8.count <= 512, title.rangeOfCharacter(from: .controlCharacters) == nil,
+                  intent.background == "reset" else { throw TerminalVisualStateError.invalidRecord }
+            publication = (intent, true, intakeAt)
+            resetTitle = title
+        case .render(let style, var intent, let synthetic, let intakeAt):
+            render = style; syntheticRender = synthetic
+            if let background = style.background {
+                intent.background = background
+                publication = (intent, synthetic, intakeAt)
+            }
+        default: break
+        }
+        let beforeOpen: ((UInt64) throws -> Void)?
+        if let (intent, synthetic, intakeAt) = publication {
+            beforeOpen = { deadline in
+                try self.state.publishIntent(intent, to: target, synthetic: synthetic,
+                    intakeAt: intakeAt, deadline: deadline)
+            }
+        } else { beforeOpen = nil }
         return try processRunner.writeManagedToDevice(path: target.tty,
-            lockURL: state.lockURL(forTTY: target.tty)) { fd, deadline in
+            lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
             if case .checkSynthetic(let intent, let intakeAt) = operation {
                 guard intent.tty == target.tty, intent.device == target.device else {
@@ -111,26 +139,6 @@ final class VisualRecovery {
                 return Self.reset
             }
 
-            var publication: (OrdinaryBackgroundIntent, Bool, Double)?
-            var resetTitle: String?
-            var render: TerminalRender?
-            var syntheticRender = false
-            switch operation {
-            case .ordinary(let intent, let synthetic, let intakeAt):
-                publication = (intent, synthetic, intakeAt)
-            case .forcedReset(let intent, let intakeAt, let title):
-                guard title.utf8.count <= 512, title.rangeOfCharacter(from: .controlCharacters) == nil,
-                      intent.background == "reset" else { throw TerminalVisualStateError.invalidRecord }
-                publication = (intent, true, intakeAt)
-                resetTitle = title
-            case .render(let style, var intent, let synthetic, let intakeAt):
-                render = style; syntheticRender = synthetic
-                if let background = style.background {
-                    intent.background = background
-                    publication = (intent, synthetic, intakeAt)
-                }
-            default: break
-            }
             if let (intent, synthetic, intakeAt) = publication {
                 try self.state.publishIntentUnlocked(intent, synthetic: synthetic,
                     intakeAt: intakeAt, deadline: deadline)

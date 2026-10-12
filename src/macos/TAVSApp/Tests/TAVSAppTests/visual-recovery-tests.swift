@@ -121,11 +121,12 @@ final class VisualRecoveryTests: XCTestCase {
     func testRestrictionActivatedDuringPrepareReplacesWholeOrdinaryRender() throws {
         let target = try terminal(10)
         let runner = MockProcessRunner()
-        runner.managedHandler = { path, lock, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
             try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
                 unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
                 to: self.root.appendingPathComponent("lock.state"))
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, prepare: prepare)
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: beforeOpen, prepare: prepare)
         }
         XCTAssertEqual(try recovery(runner: runner).render(render(), intent: intent(target), synthetic: false,
             intakeAt: 1_000, to: target), .restricted)
@@ -169,6 +170,78 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertThrowsError(try recovery().render(render(), intent: value, synthetic: true,
             intakeAt: 1_000, to: target))
         XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+        try noBytes(target)
+    }
+
+    func testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint() throws {
+        let target = try terminal(10)
+        let failing = recovery(runner: SystemProcessRunner(openDevice: { _, _ in errno = EIO; return -1 }))
+        for color in ["#ABCDEF", "reset"] {
+            clock.advance(by: 1)
+            XCTAssertThrowsError(try failing.write(.ordinary(intent(target, color: color),
+                synthetic: false, intakeAt: clock.now().timeIntervalSince1970), to: target))
+            XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), color)
+            try noBytes(target)
+            XCTAssertTrue(try recovery().write(.reconcile(resetLegacy: false, clearSelective: true), to: target))
+            let expected = color == "reset" ? "\u{1B}]111\u{1B}\\" : "\u{1B}]11;\(color)\u{1B}\\"
+            XCTAssertEqual(try read(target), Data(expected.utf8))
+        }
+    }
+
+    func testRenderEntryFailureRetainsRequestedBackgroundButStyleOnlyLeavesItUntouched() throws {
+        let target = try terminal(10)
+        let failing = recovery(runner: SystemProcessRunner(openDevice: { _, _ in errno = EIO; return -1 }))
+        XCTAssertThrowsError(try failing.render(render(background: "#654321"), intent: intent(target, color: "reset"),
+            synthetic: false, intakeAt: 1_000, to: target))
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#654321")
+        XCTAssertThrowsError(try failing.render(render(background: nil), intent: intent(target, color: "reset"),
+            synthetic: false, intakeAt: 1_000, to: target))
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#654321")
+        try noBytes(target)
+    }
+
+    func testStaleAndMalformedForcedResetCannotPrepublishBeforeDeviceFailure() throws {
+        let target = try terminal(10)
+        try recovery().write(.ordinary(intent(target, color: "#778899"), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+            event: nil, deliveryID: "newer", responseID: nil, observedAt: 1_000))
+        let failing = recovery(runner: SystemProcessRunner(openDevice: { _, _ in errno = EIO; return -1 }))
+        XCTAssertThrowsError(try failing.write(.forcedReset(intent(target, color: "reset"),
+            intakeAt: 1_000, title: "old title"), to: target)) { error in
+            guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Expected stale delivery, got \(error)") }
+        }
+        XCTAssertThrowsError(try failing.write(.forcedReset(intent(target, color: "reset"),
+            intakeAt: 1_000, title: "\u{1B}BAD"), to: target)) { error in
+            guard case TerminalVisualStateError.invalidRecord = error else { return XCTFail("Expected invalid record, got \(error)") }
+        }
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#778899")
+        try noBytes(target)
+    }
+
+    func testNewIntakeDuringOpenRejectsPrepublishedRenderWithoutReplacingLatestIntent() throws {
+        let target = try terminal(10)
+        let value = intent(target)
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            do {
+                XCTAssertEqual(try self.state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#123456")
+                self.clock.advance(by: 1)
+                try self.state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+                    producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+                    event: nil, deliveryID: "newer", responseID: nil, observedAt: 1_001))
+                var newer = value
+                newer.deliveryID = "newer"; newer.background = "#ABCDEF"; newer.updatedAt = 1_001
+                try self.state.publishIntent(newer, to: target, synthetic: false, intakeAt: 1_001,
+                    deadline: DispatchTime.now().uptimeNanoseconds + 20_000_000)
+            } catch { XCTFail("New intake failed: \(error)"); errno = EIO; return -1 }
+            return Darwin.open(path, flags)
+        })
+        XCTAssertThrowsError(try recovery(runner: runner).render(render(), intent: value,
+            synthetic: false, intakeAt: 1_000, to: target)) { error in
+            guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Expected stale delivery, got \(error)") }
+        }
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
         try noBytes(target)
     }
 

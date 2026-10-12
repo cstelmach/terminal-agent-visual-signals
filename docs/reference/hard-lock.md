@@ -1,6 +1,6 @@
 # Hard Lock Reference
 
-**Last Updated:** 2026-10-12 | **Version:** 1.2
+**Last Updated:** 2026-10-12 | **Version:** 1.3
 
 The hard lock is a visual commitment device: during an effective locked period,
 registered terminals receive the pause visual and a `🔒 locked until HH:MM` title.
@@ -36,8 +36,14 @@ saved policy intact and reports failure. Resume reads current rules and cannot r
 pending alerts or titles.
 
 Connected Swift tests and public CLI recovery/resumption pass with owned PTYs and injected
-catalogues. Independent review remains in progress. This source has not been installed into the
-working app; physical terminal restoration is unverified.
+catalogues. Source-confirmed Codex and degraded Claude review findings have regression fixes;
+AGY review was unavailable before provider execution and supplied no verdict. This source has
+not been installed into the working app; physical Ghostty restoration is unverified.
+
+Ordinary backgrounds and complete hook styles use one managed output transaction. Background
+intent is saved before device entry within the same 100 ms deadline, then revalidated with current
+policy under the output lock. Failed delivery reports failure; it does not claim a repaint.
+See [API reference](../API_REFERENCE.md) for command results and internal interfaces.
 
 ## Lock sources
 
