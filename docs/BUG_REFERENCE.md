@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.14
+Version: 1.15
+
+## Concurrent terminal registration fails on a shared parent directory
+
+Different TTY writers created the common targets directory after separate absence checks.
+One then failed directory creation and reported unavailable storage, losing a multiselection cue.
+The controller test reproduced this; pre-creating only that shared directory removed the failure.
+Creation now accepts a directory another writer created, then repeats type and deadline checks.
+Symlinks and non-directories still fail. A stress regression caches 32 targets in four fresh
+roots; the full 434 Swift tests pass.
 
 ## Preview record rewrite can extend its expiry
 

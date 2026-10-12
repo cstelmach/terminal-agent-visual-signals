@@ -35,6 +35,26 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(makeStore().coverage(for: surface()).observation, observed)
     }
 
+    func testParallelFreshTargetsCreateSharedParentsWithoutLosingBindings() throws {
+        let targets = (0..<32).map { index -> TerminalTargetBinding in
+            let path = "/dev/ttys\(100 + index)"
+            devices[path] = 123
+            return TerminalTargetBinding(tty: path, device: 123, ttyOwner: generation(11), nativeSurface: nil)
+        }
+        for index in 0..<4 {
+            let store = makeStore(directory: root.appendingPathComponent("parallel-\(index)"))
+            let lock = NSLock()
+            var failures = 0
+            DispatchQueue.concurrentPerform(iterations: targets.count) { index in
+                do { try store.cacheTargetUnlocked(targets[index], deadline: .max) }
+                catch { lock.lock(); failures += 1; lock.unlock() }
+            }
+            XCTAssertEqual(failures, 0)
+            XCTAssertEqual(Set(store.cachedRecords().bindings), Set(targets))
+            XCTAssertTrue(store.cachedRecords().unreadable.isEmpty)
+        }
+    }
+
     func testMissingAndAmbiguousNativeMappingCannotAdopt() throws {
         let store = makeStore()
         try store.publishObservation(observation())

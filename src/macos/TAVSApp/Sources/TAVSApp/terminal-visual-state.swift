@@ -503,8 +503,14 @@ final class TerminalVisualStateStore {
                 do {
                     try FileManager.default.createDirectory(at: current, withIntermediateDirectories: false,
                                                             attributes: [.posixPermissions: 0o700])
-                } catch { throw TerminalVisualStateError.storageUnavailable }
+                } catch {
+                    // Different TTY writers can create a shared parent after the absence check.
+                    guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
+                        throw TerminalVisualStateError.storageUnavailable
+                    }
+                }
             }
+            try checkDeadline(deadline)
             guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
                 throw TerminalVisualStateError.storageUnavailable
             }
