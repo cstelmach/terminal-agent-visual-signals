@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 16 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 9 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 17 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1908,3 +1908,75 @@ Earlier captures remain byte-for-byte intact. [R] The existing review and execut
 cover the reusable patterns; no additional skill or control plane was warranted. All stated
 outcomes are source/tool observations; motivations marked [R] are reconstructions. Automatic
 mode, navigation, GUI, native acceptance and final reviews remain due.
+
+
+## 2026-10-13 · gpt-6 · tavs-automatic-controller-controls
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; runtime setting unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tools; motives reconstructed
+
+**Framing.** [O] Continued Phase 9 from its committed pure reducer. Current Git and the dated
+progress log were authoritative; physical acceptance remained incomplete in earlier phases.
+This slice connected explicit Automatic, current High membership, exact navigation snapshots
+and controls, while leaving installation and real terminals outside scope. Source completion
+was kept separate from native acceptance and independent final reviews.
+
+**Strategy.** [O] Reused the existing render Run, queues, colors, pinned recovery revision and
+writer. Added armed state without a persisted mode or cue registry. Zero cues retire the render
+run without disarming Automatic; later cues allocate a fresh ID. High membership changes clear
+old effects rather than leaving a promoted terminal dimmed. Sessions retains its one non-Off
+timer, and committed priority changes reconcile immediately. [R] These boundaries avoided a
+second focus service and kept occurrence meaning in the already tested reducer.
+
+**Action trace [O]**
+
+| Move | Object | Outcome |
+|---|---|---|
+| Orient | Current source, SPEC/PLAN/PROGRESS/GOAL | Phase 9 only; prior native blocks retained |
+| Red/green | Controller and model tests | Armed/active split, membership and exact acknowledgement |
+| Focused exploration | Cue producer after queued lookup | Actual source differs from emphasized shell owner |
+| Reproduce/fix | Producer-exit race | Three failing assertions, then guarded metadata revalidation |
+| Verify | Full Swift, current-release Bats and release | 490 Swift; 70 Bats; build passed |
+| CUA | New signed private fixture | Controls/recovery verified; relaunch attachment timed out |
+
+**Decision points.** [O] Working selection and Automatic High membership remain separate.
+Successful Go To subtracts only the pre-dispatch cue set; a later same-target occurrence survives.
+Failed navigation acknowledges nothing. Acknowledgement invalidates queued snapshots so an
+already acknowledged but still live agent cannot authorize another expired cue's paint.
+Recovery disarms both modes before independent repaint; explicit resumption stays Off.
+
+**Failure arc.** [O] A valid High shell was insufficient evidence for a live attention source.
+The focused report predicted a cue producer exiting during color lookup while its continuing
+owner survived. `hZE1x5` reproduced a new focus record, retained cue and output on an owned
+Normal PTY. The remedy passes the writer's original deadline into its current predicate and
+checks an actual cue producer plus its own binding, without cross-TTY coverage locking.
+Zero valid sources schedule existing exact-ID cleanup; deadline expiry preserves cue state.
+P8 applies. [R] Reusing metadata validation addressed the race without duplicating adoption.
+
+[O] Run/version currency is checked after metadata lookup as well. A regression exercises
+Focus Off during the final check; another verifies identical deadline forwarding at all three
+guards. Those checks were added after the draft guard, so they are green verification rather
+than claimed initial red evidence. Persisted recipes still contain no cue actor; ordinary
+composition relies on the accepted lease and controller refresh/cleanup.
+
+**UI evidence.** [O] The fresh fixture attached successfully and showed armed Automatic,
+independent browsing, explicit Manual switching and an accessible working-set label remaining
+on the first row. Recovery from Manual and Automatic saved suspension, left Off and accurately
+reported three unavailable simulated bindings. Explicit resumption left Off. A screenshot
+checked default layout. After owned quit, the original PID was confirmed gone. Relaunch had
+a live exact owned executable and saved suspension, but CUA attachment timed out. No restart
+followed solely from that observation timeout; relaunch UI remains unverified.
+
+**Verification and confidence.** [O] Full isolated Swift passed 490 tests in 7.822 seconds;
+release built in 11.95 seconds; 70 current-release shell regressions passed. Credential-pattern,
+ignored-.env and whitespace checks passed. No real Ghostty query, install/sync, schedule edit
+or user-session shutdown occurred. Finished reducer history moved unchanged into a linked
+appendix with verified round trip; P9 kept execution state owned by the dated SPEC. Earlier
+captures remain intact. [R] Existing execution/review skills cover the recurring rules; no
+new process machinery was warranted. Active-cue UI, physical/native acceptance and independent
+final reviews remain due. Motives marked [R] are reconstructions, not introspective evidence.
