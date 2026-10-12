@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 00:44 CEST
-**Version:** 3.6
+**Last Updated:** 2026-10-13 00:59 CEST
+**Version:** 3.7
 
 ## Session Metadata
 
@@ -30,10 +30,10 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 42f512c, 176aab7 | 479 Swift; 27 selected Bats | | Pure reducer verified; mode/navigation/UI pending |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
-SPEC tracking is `in-progress`, phase 8. Four implementation phases remain incomplete.
+SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
 Phase 2 has tested source but cannot be marked DONE before required live acceptance.
 Resolve its source checkpoint with `git log --grep='feat(phase-2): Add Sessions and priorities'`.
 Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'`.
@@ -50,6 +50,8 @@ Checkpoints report hashes without separate self-referencing state commits.
 - [PROGRESS_appendix_planning-and-goal-preparation.md](PROGRESS_appendix_planning-and-goal-preparation.md): finished initial planning and goal preparation.
 
 - [PROGRESS_appendix_phase-7-renderer-foundation.md](PROGRESS_appendix_phase-7-renderer-foundation.md): completed renderer/controller and GUI/client logs.
+
+- [PROGRESS_appendix_phase-8-foundations.md](PROGRESS_appendix_phase-8-foundations.md): finished renderer/writer source logs.
 
 ## Log
 
@@ -786,79 +788,10 @@ Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected
 callers before tests. One phase per next goal iteration; the master goal remains active.
 
 
-### Phase 8 renderer foundation: 2026-10-12 23:34 CEST
+### Phase 8 renderer and dynamic writer foundations
 
-Continued from clean `efcb6cd`, skipping only the explicitly Blocked native acceptance in
-Phases 2/7. This slice covers the pure Phase 8 renderer, not an active manual controller.
-`3ed6136` adds focusBackground: linear-light desaturation plus bounded neutral luminance
-adjustment. Candidates require RGB distance 24, luminance change at most 0.08 and configured
-normal-text contrast at least 4.5, or no worsening below that baseline. Invalid/unsafe cases
-are unavailable. Shared current/reset background resolution preserves existing preview behavior.
-PauseVisual.linearized became module-visible for reuse; this is the sole connected extra file.
-
-Three new tests cover neutral dark/light/black/white, saturated current intent, invalid colors
-and low-contrast extremes. Red `NO2q4J` failed on missing focusBackground. Focused `u9Gnlq`
-passed 10/10; full `UpDPzH` passed 442/442 in 7.330 seconds without warnings. Final focused
-`baLTjz` rechecked normalization assertions. Release `tCKZ1J` passed in 10.13 seconds. All runs
-used tests/run-isolated.sh and the owned Phase 6 scratch build. No shell source changed.
-
-Read-only source reports are preserved as phase8-writer-contract-research.md and
-phase8-manual-lifecycle-research.md. Verified the important seams in source: current global and
-fixed selective leases share effect.json; composition reuses the stored color; strict effect
-JSON rejects new keys; $objectWillChange precedes mode publication. A manual recipe needs a
-separate recoverable slot, fresh-intent composition, guarded renewal and exact-ID clear.
-An already persisted lease also needs to reject old recovery revisions after partial cancel
-and resume. Request-only guards cannot prove that. Preserve the pinned revision lifetime;
-do not serialize descriptors or add another token file/service. No guard design is implemented
-or claimed complete in this pure-renderer slice.
-
-**Next:** add owned-PTY writer/record tests before enabling manual focus. Cover dynamic intent,
-three-slot precedence, aliases, metadata validation, partial recovery/resume, queued renewal,
-expired/canceled IDs and independent clear. Reuse current 100 ms writer and marker revision.
-Then extend the same controller with captured IDs and keep Sessions' existing refresh timer
-alive while window open OR Manual, observing the actual new $mode value. Catalogue failure
-retains logical IDs and authorizes no new dimming; require a verified working binding before
-painting outside targets. Preserve preview independence and end Manual on confirmed last closure.
-Manual UI, lease/controller implementation and physical native acceptance remain pending.
-The goal stays active. Do not start Phase 9 or claim real salience/readability from color math.
-
-
-### Phase 8 dynamic writer checkpoint: 2026-10-13 00:10 CEST
-
-Continued from `0b53c50`. `66111ec` exposes strict serializable marker identity while retaining
-pinned revision comparison. `e1396ef` adds focus.json with normalized color inputs and revision,
-without moving legacy fixed/global data. Unknown/missing/wrong-kind fields fail; blind heartbeat
-and expired/canceled same-ID renewal cannot revive dynamic focus. `574ea99` composes from fresh
-ordinary intent on every managed paint, preserving pause/preview precedence and alias authority.
-Ordinary paint does not extend heartbeat. Exact clear cancels metadata before opening a device;
-old IDs/revisions cannot repaint newer state or rearm after failed recovery and resumption.
-`0f27931` retains retired preview pins through pending cleanup and verifies no stale repaint.
-
-Red logs: `xcVcSx` lacked serializable identity, `b6ToyR` lacked focus record fields, `1XQ3hQ`
-lacked writer operations. First record green exposed a lowercase expected-background fixture
-(`SF51Vk`/`yHsyi0`); canonicalized the expected value. Integration `4ovYDw` used an unsupported
-LockReason.none; corrected the unlocked fixture to manual, then 134 focused checks passed in
-`CjUEpN`. Expanded writer/alias/style cases passed; final focused `zaXQgk` passed 75/75.
-Full `ELq4oM` passed 457/457 in 7.623 seconds without warnings. Release `teOxiL` passed in
-11.30 seconds. Managed-background, parity, recover and sync Bats `LebnbS` passed 43/43 using
-the rebuilt helper. Every run used tests/run-isolated.sh and the owned Phase 6 scratch build.
-
-Read-only follow-up is preserved in phase8-writer-followup-2026-10-13.md. The initial preview
-pin concern was checked against fresh source after correction; the explorer found no additional
-concrete normal-path writer/decoder mismatch. This is source assessment, not native acceptance.
-Scope extensions are connected record/recovery/marker modules and tests. Reused the same stable
-lock and original 100 ms deadline; no new token file, service or persisted desired mode.
-No GUI activation, native query, production install/sync, real settings or session shutdown.
-
-**Next:** extend FocusController and Sessions with captured working IDs and Off/Manual. Retain
-revision pins while effects/pending cleanup remain live. After expiry, use a new paint ID rather
-than renewing an expired ID. Require a verified working binding before dimming outside surfaces;
-failed/empty catalogues preserve logical IDs but authorize no new paint or renewal. Keep polling
-while Sessions is open OR Manual and observe the new published mode value. Focus Off preserves
-preview; confirmed last closure ends Manual. Recovery and restart always leave Off. Then expose
-and check the controls in a fresh private fixture. Physical Ghostty acceptance stays unverified.
-A restored focus request may paint a preview layer; do not label that outcome as visible dimming.
-
+> Finished source logs: [Phase 8 appendix](PROGRESS_appendix_phase-8-foundations.md).
+> Current captured-set source and unresolved native acceptance remain below.
 
 ### Phase 8 captured-set source checkpoint: 2026-10-13 00:44 CEST
 
@@ -896,3 +829,41 @@ SPEC body remain fixed. No real Ghostty call, install/sync, schedule edit or use
 Phase 8 source steps are complete; required physical salience/readability and window lifecycle
 acceptance remain Blocked. The master goal stays active. Next iteration: Phase 9 pure occurrence
 reducer and explicit Automatic mode, preserving all unresolved native acceptance in Phases 2/7/8.
+
+
+### Phase 9 occurrence foundation: 2026-10-13 00:59 CEST
+
+Previous turn was progress: Phase 8 captured-set source committed with tests and partial fixture
+evidence. Continued clean `d96cc9d`; Phases 2/7/8 native blocks remain. Re-read this SPEC/PLAN
+and existing intake/coverage/controller callers. Two read-only reports are preserved as
+phase9-observation-contract-research.md and phase9-integration-contract-research.md.
+
+`42f512c` adds the planned pure AttentionState reducer, not an active Automatic mode. It
+baselines activation and old records adopted later, retains consumed completion IDs, coalesces
+permission episodes and subtracts exact navigation snapshots. Later/other cues survive. High
+downgrade, missing current binding and verified processing/reset remove eligibility without
+replay; idle/compacting/subagent/cosmetic error updates do not infer resumption. Occurrences
+include native-key scope plus provider, producer generation, TTY and device. Late prompt
+companions after a closed episode need a new PermissionRequest anchor; ambiguity stays ineligible.
+
+`176aab7` removes generic Notification from permission eligibility. Current intake recognizes
+permission_prompt explicitly, so a generic event alone had no request authority. `KzZUGo`
+reproduced that source defect; the narrow fix made affected `axXugB` pass 76/76. Missing reducer
+API red `hk8QZe` preceded 12-case green `eunURC`. Full `QZWkHD` passed 479/479 in 7.634 seconds
+without warnings. Release `yafsxQ` passed in 10.88 seconds. Hook/intent Bats `2V3r9L` passed
+27/27, including lifecycle pairs, fresh delivery IDs and discarded body sentinels. Every run
+used tests/run-isolated.sh, an explicit source-built helper and the owned Phase 6 scratch build.
+
+**Scope:** the planned new reducer/test pair, allowed coverage classifier/test and hook fixture.
+API/bug/roadmap/capture docs updated; SPEC tracking only changed phase 8 to 9, PLAN stayed fixed.
+Moved 74 finished Phase 8 foundation lines unchanged to a linked appendix with a verified round
+trip. Latest-only storage may miss intervening hooks; no journal, new hook or guessed episode ID.
+No UI/native/Ghostty call, device restriction, install/sync, real settings or process shutdown.
+
+**Next:** extend the existing controller render run for explicit armed Automatic, remaining armed
+at zero cues. Emphasize all current High rows while any cue remains. Membership changes must
+retire old dimming, especially a promoted High row. Snapshot cues before Go To, acknowledge only
+on verified success, and immediately reconcile successful priority saves. Preserve revision pins,
+version/expiry guards, independent preview, recovery Off and one non-Off catalogue timer. Add
+owned-PTY/model regressions before controls; all physical acceptance and final reviews remain due.
+The master goal stays active; Phase 9 remains In Progress. No automatic UI activation is claimed.

@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 7 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 15 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 16 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1836,3 +1836,75 @@ execution and review workflows already cover the demonstrated patterns.
 **Confidence.** Outcomes above are observed source/tool evidence. Reasons marked [R] are
 reconstructions. Physical Ghostty dimming, ANSI/TrueColor readability, Space navigation, Manual
 recovery controls and closed-window GUI behavior remain unverified.
+
+
+## 2026-10-13 · gpt-6 · tavs-automatic-occurrence-foundation
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; runtime setting unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tools; motives reconstructed
+
+**Framing.** [O] The active goal continued after the manual-focus source checkpoint. Current
+Git and the dated PROGRESS showed Phase 9 unstarted, while physical acceptance in Phases 2/7/8
+remained blocked. This iteration implemented the planned pure occurrence policy and a confirmed
+classification defect. It did not expose Automatic or claim the complete product phase passed.
+The historical goal text still named Phase 1; current durable source state took precedence.
+
+**Strategy.** [O] Two existing explorers received separate read-only questions about observation
+authority and integration. Reports were read from their files and findings checked against source.
+The parent retained the only Swift build slot and wrote reducer tests before implementation.
+[R] Separating occurrence meaning from the already tested render run allowed semantic tests
+without new native queries, hooks, services or terminal effects.
+
+**Action trace [O]**
+
+| Move | Object | Outcome |
+|---|---|---|
+| Orient | SPEC, PLAN, PROGRESS, GOAL and current Git | Phase 9; prior native blocks retained |
+| Explore twice | Intake/correlation and controller/navigation | Existing IDs and integration pitfalls identified |
+| Red/green | New pure reducer and 12 tests | Missing API red, then deterministic cases passed |
+| Reproduce | Generic Notification eligibility | Correlated fixture failed as predicted |
+| Narrow/test | Recognized permission events and hook pairs | 76 affected Swift checks and 27 Bats passed |
+| Verify/commit | Full isolated suite and release | 479 tests; two coherent source commits |
+
+**Decision points.** [O] Enabling Automatic will baseline current observations, including old
+records adopted later. Codex uses its supported turn ID, whereas Claude Stop uses the intake
+delivery ID already preserved through rendering. Cues include producer/device identity and live
+inside the native surface key. Acknowledgement subtracts an immutable snapshot instead of reading
+whatever cue exists when navigation finishes. Downgrades consume eligibility without replay
+when the row returns High. These choices implement the agreed occurrence rules.
+
+[O] Permissions lack provider episode IDs and only the latest hook record survives. Distinct
+companion delivery IDs therefore cannot prove a new request. The reducer retains one observed
+episode through acknowledgement; after verified resumption, a late prompt needs a new request
+anchor. [R] This favors explicit ambiguity over a false new cue and avoids inventing event history.
+Idle, compacting, subagent and cosmetic error changes likewise do not establish resumption.
+
+**Failure arc.** [O] Exploration found that the coverage classifier accepted generic Notification
+as permission authority, even though intake recognizes permission_prompt explicitly. The next
+probe published correlated generic, idle and supported event records. `KzZUGo` failed on the
+generic case. Removing that one classifier entry made the affected suite pass; legacy generic
+records stayed diagnostic. P8 applies. [R] The narrow remedy aligned existing intake and consumer
+contracts without adding a new fallback or widening the provider lifecycle.
+
+**Integration warning preserved.** [O] The second report identified that promoting a previously
+dimmed Normal row to High needs retirement of its old effect. Merely replacing emphasized IDs
+would leave its earlier focus record active. Zero cues must clear rendering while Automatic stays
+armed. These are recorded next-step requirements, not implemented or tested integration claims.
+
+**Verification.** [O] Final Swift passed 479 tests in 7.634 seconds; release built in 10.88 seconds.
+Hook/background tests passed 27 cases under explicit isolated roots and source-built helpers.
+Reducer cases cover baselines, multiple cues, late navigation arrivals, producer replacement,
+priority replay, invalid coverage, timestamp ambiguity and recognized resolution. No live UI,
+Ghostty, installation, real preference/schedule or process shutdown action occurred.
+
+**Heuristics and confidence.** [O] P9 kept the dated state authoritative. Seventy-four finished
+Phase 8 foundation lines moved unchanged into a linked appendix with a verified round trip.
+Earlier captures remain byte-for-byte intact. [R] The existing review and execution skills already
+cover the reusable patterns; no additional skill or control plane was warranted. All stated
+outcomes are source/tool observations; motivations marked [R] are reconstructions. Automatic
+mode, navigation, GUI, native acceptance and final reviews remain due.
