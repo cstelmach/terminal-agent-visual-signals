@@ -212,16 +212,26 @@ extension Scheduler {
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let runtimeDir = URL(fileURLWithPath: "/tmp/tavs-\(getuid())")
         let userConfURL = homeDir.appendingPathComponent(".tavs/user.conf")
+        let clock = SystemClock()
+        let restrictions = VisualRestrictionsStateStore(url:
+            homeDir.appendingPathComponent(".tavs/visual-restrictions.state"))
+        let recovery = VisualRecovery(runtimeDirectory: runtimeDir, restrictions: restrictions,
+            state: TerminalVisualStateStore(runtimeDirectory: runtimeDir, clock: clock),
+            policy: VisualRestrictionPolicy(restrictions: restrictions,
+                muteURL: homeDir.appendingPathComponent(".tavs/mute.state"),
+                lockURL: runtimeDir.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: SystemProcessRunner(), clock: clock,
+            controller: ProcessIdentity.inspect(getpid())?.generation,
+            nativeSnapshot: { try GhosttyCatalog.shared.snapshot() })
         let scheduler = Scheduler(
-            clock: SystemClock(),
+            clock: clock,
             timerScheduler: SystemTimerScheduler(),
             fileWatcher: FileWatcher(),
-            broadcaster: Broadcaster(runtimeDir: runtimeDir, processRunner: SystemProcessRunner()),
+            broadcaster: Broadcaster(recovery: recovery),
             muteStateURL: homeDir.appendingPathComponent(".tavs/mute.state"),
             scheduleURL: homeDir.appendingPathComponent(".tavs/schedule.json"),
             lockStateURL: runtimeDir.appendingPathComponent("lock.state"),
-            visualRestrictionsState: VisualRestrictionsStateStore(url:
-                homeDir.appendingPathComponent(".tavs/visual-restrictions.state")),
+            visualRestrictionsState: restrictions,
             runtimeWatcher: FileWatcher(),
             pauseVisualProvider: {
                 PauseVisualResolver.resolveForCurrentAppearance(userConfURL: userConfURL)

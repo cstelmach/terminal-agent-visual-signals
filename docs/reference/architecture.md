@@ -1,7 +1,19 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.8
+Version: 1.9
+
+## Current-policy broadcasting
+
+`Broadcaster` coalesces requests on a serial queue. Paused/locked requests carry no queued
+styling; the managed writer reads current policy. Reconciliation preserves required reset
+flags when later scheduler ticks arrive. Startup caches native bindings without paint, then
+clears only prior effect targets, preserving unaffected shell backgrounds. Failed bindings
+remain retryable. `lastResult` retains typed outcomes and catalogue availability.
+
+The production scheduler supplies the same restriction store, clock and recovery service.
+All native and device operations run off its calling thread. Historical OSC buffers, argv
+substring discovery and age-only registry pruning no longer authorize broadcaster output.
 
 ## Ordinary managed actions
 
@@ -35,8 +47,8 @@ composes only the current rule/intent. Dedicated scopes reject cached owner-only
 that lack an allowed native identity. No navigation, terminal input or process control occurs.
 
 This coordinator passes owned-PTY tests, including queued recovery ordering and healthy repaint
-before blocked discovery finishes. Production broadcaster/shell/startup/headless routing and
-the public managed capability are still unfinished; preview/focus release remains gated.
+before blocked discovery finishes. Broadcaster/startup routing is connected; shell/headless
+integration and the public managed capability are unfinished. Preview/focus release remains gated.
 
 ## Intent publication inside managed output
 
