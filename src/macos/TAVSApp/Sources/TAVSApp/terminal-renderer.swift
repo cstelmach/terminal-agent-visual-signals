@@ -1,4 +1,7 @@
 import Foundation
+import Darwin
+
+enum TerminalConfigurationError: Error { case unavailable, unresolvedAppearance }
 
 enum TerminalRenderer {
     struct Colors: Equatable {
@@ -11,6 +14,51 @@ enum TerminalRenderer {
             self.background = background
             self.foreground = foreground
         }
+    }
+
+    static func configuredColors(executable: URL, configurationFiles: [URL], runner: ProcessRunner) throws -> Colors {
+        guard executable.isFileURL else { throw TerminalConfigurationError.unavailable }
+        var configured = false
+        for file in configurationFiles {
+            guard file.isFileURL else { throw TerminalConfigurationError.unavailable }
+            var info = stat()
+            if stat(file.path, &info) != 0 {
+                guard errno == ENOENT else { throw TerminalConfigurationError.unavailable }
+                continue
+            }
+            guard info.st_mode & S_IFMT == S_IFREG, access(file.path, R_OK) == 0 else {
+                throw TerminalConfigurationError.unavailable
+            }
+            configured = configured || info.st_size > 0
+        }
+        // Default-loading actions can create a template when no configuration exists.
+        let arguments: [String]
+        if configured {
+            _ = try runner.runBounded(executableURL: executable, arguments: ["+validate-config"], timeout: 2)
+            arguments = ["+show-config", "--changes-only=false", "--no-pager"]
+        } else { arguments = ["+show-config", "--default", "--no-pager"] }
+        return try parseConfiguration(runner.runBounded(executableURL: executable, arguments: arguments, timeout: 2))
+    }
+
+    static func parseConfiguration(_ data: Data) throws -> Colors {
+        guard let text = String(data: data, encoding: .utf8) else { throw TerminalConfigurationError.unavailable }
+        var fields: [String: String] = [:]
+        for line in text.split(separator: "\n") {
+            guard let separator = line.firstIndex(of: "=") else { continue }
+            let key = line[..<separator].trimmingCharacters(in: .whitespacesAndNewlines)
+            guard ["background", "foreground", "theme"].contains(key) else { continue }
+            guard fields[key] == nil else { throw TerminalConfigurationError.unavailable }
+            fields[key] = line[line.index(after: separator)...].trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard let background = fields["background"], let foreground = fields["foreground"],
+              let theme = fields["theme"], let colors = Colors(background: background, foreground: foreground) else {
+            throw TerminalConfigurationError.unavailable
+        }
+        if theme.split(separator: ",").contains(where: {
+            let value = $0.trimmingCharacters(in: .whitespaces)
+            return value.hasPrefix("light:") || value.hasPrefix("dark:")
+        }) { throw TerminalConfigurationError.unresolvedAppearance }
+        return colors
     }
 
     static func previewBackground(ordinary: String?, colors: Colors) -> String? {

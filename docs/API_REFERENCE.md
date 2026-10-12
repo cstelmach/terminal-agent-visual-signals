@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
 
 ## Public recovery commands
 
@@ -84,6 +84,19 @@ value is unchanged; later accepted writes are discoverable by recovery. Exact-ID
 same revision so an old clear cannot reapply ordinary color after emergency reset.
 Replacement is a no-op; unavailable metadata and an expired original deadline remain failures.
 This uses the existing marker and adds no persistent token, schema or polling protocol.
+
+`TerminalRenderer.configuredColors(executable:configurationFiles:runner:)` checks explicit
+configuration paths and uses bounded subprocesses away from the UI. Existing nonempty config
+uses `+validate-config` followed by `+show-config --changes-only=false --no-pager`. With no
+nonempty configuration it uses `+show-config --default --no-pager`, which bypasses template
+creation. Canonical background, foreground and theme assignments are required; duplicates,
+malformed output, failed validation and unresolved dual-theme appearance are unavailable.
+The [show-config source](https://github.com/ghostty-org/ghostty/blob/main/src/cli/show_config.zig)
+has no supported appearance selector; the
+[validator](https://github.com/ghostty-org/ghostty/blob/main/src/cli/validate_config.zig) checks
+diagnostics that ordinary output can omit. Queries reload configuration rather than observe
+running colors. Concurrent deletion and optional-file loading remain native CLI limitations;
+path preflight does not make configured queries transactional. No live query ran in development.
 
 See [hard-lock reference](reference/hard-lock.md), [bug reference](BUG_REFERENCE.md) and
 [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
