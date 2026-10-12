@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 7 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 8 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 
 ---
@@ -1031,6 +1031,84 @@ justified. Existing execute-spec orientation already supplies the recurring stat
 **Confidence.** [O] Changes, tests, errors and commits are observable. [R] Causal strategy
 claims and model attribution remain reconstructions. Full Phase 6 correctness is unclaimed
 until every writer, headless recovery, failure reporting and independent review is connected.
+
+## 2026-10-12 · model-unverified · tavs-typed-recovery-coordinator
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unverified)
+  model_source: reconstructed from runtime instructions; no served-model field observed
+  interface: Codex desktop/API
+  thinking: extended requested; internal effort unobserved
+  session: 01a10879
+  trace: observed source diffs, tool calls, worker reports and test logs
+
+**Framing.** [O] The goal continuation resumed Phase 6 from clean 43914a0, with the prior
+turn classified as concrete progress. The stale Phase 1 locator did not override current
+PROGRESS and Git. Scope was current policy, locked intent and the typed recovery coordinator.
+Production routes, native acceptance and later phases remained explicit unfinished work.
+
+**Strategy.** [O] Reused two implementation workers and one read-only explorer. File ownership
+was disjoint; shared builds were serialized. Parent held new tests while policy/source APIs
+were missing, integrated Scheduler next, then released locked-intent work. Worker reports were
+read as files and their findings checked in actual source. [R] This reduced accidental compile
+failures from unrelated missing APIs, while preserving one shared application module for
+integration. The parent still spent too long considering later routing and lifecycle cases
+before implementing this slice; subsequent work should turn each concrete concern into a
+small test promptly rather than continue speculative enumeration.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Orient | SPEC, PLAN, PROGRESS, GOAL, Git | Phase 6, clean source |
+| 2 | Explore | Existing lock/mute projection and fixtures | Missing cause/request; unsafe liveness cleanup |
+| 3 | Test and implement | Bounded current policy | 30 focused, 332 full |
+| 4 | Integrate | Scheduler projection/order | Five assertions red; expiry red; 47 related/334 full green |
+| 5 | Reuse | Locked publication and bound intent | Missing API red, 48 focused green |
+| 6 | Test and implement | Typed recovery with owned PTYs | Missing class red; mock/fixture corrections |
+| 7 | Verify and commit | Coordinator and full integration | 76 related, 353 full; four feature commits |
+
+**Decision points.** [O] Suspension's effective MUTED=false hid the soft rule needed on resume.
+Adding requested mute and hard/soft cause to the existing schema retained the current rule
+without loading the full schedule inside device preparation. Parent then preserved its finite
+expiry and resolved colors. Projection writes now precede reconciliation so the fresh check
+does not see the pause being cleared. Definitions, merge and timer behavior were preserved.
+
+[O] Exact target-local intent copies replace the assumption that restoration always needs a
+live producer. Equality with the latest normalized per-TTY record and a valid continuing target
+remain mandatory. Dead producers cannot lend authority to another delivery or native lifetime.
+Cached fanout starts while native discovery runs; unavailable Automation is explicit but alone
+does not prove a live target failed. Registry names still authorize no output.
+
+**Failure arcs.** [O] Worker time tests found soft validity using a timestamp from before PID
+liveness. Refreshing time fixed three assertions, without widening deadlines. Requested-state
+tests exposed stale/effective flag confusion. Parent Scheduler tests then caught missing raw
+cause/projection and old-state reconciliation ordering, followed by a finite-expiry failure.
+Each original log was retained before correction.
+
+[O] Coordinator compilation rejected forwarding the mock's nonescaping callback into the
+escaping writer API. The mock now declares the same escaping contract; no unsafe closure
+escape conversion was added. The first behavioral run failed because the private fixture home
+directory did not exist before writing its sentinel schedule. Creating that owned directory
+fixed the fixture, preserving the assertion that recovery leaves definitions untouched.
+
+**Verification.** [O] Twelve coordinator tests use owned raw PTYs and injected identities.
+They establish persistence before discovery, effect presence before paint, current requested
+resumption, no pending title/alert replay, healthy output before blocked discovery completes,
+retained failures, vanished classification and queued restriction rejection. Final 353 Swift
+tests pass without warnings. Whitespace/credential checks precede exact staging. The explorer's
+live wildcard cleanup warning was confirmed by source read; that shell fixture was not run.
+
+**Limits and heuristics.** [O] No installed app, live native surface, working session, public
+helper capability or release build was changed/verified. No independent review was claimed
+before full Phase 6 routing. P9 was reused; original worker results remain separate from later
+integration green. Existing primitives supplied locks, deadlines, state parsing and target
+validation, with no daemon, dependency or process ledger. No new skill/model profile is proposed
+from this one slice.
+
+**Confidence.** [O] Source changes, checks and outcomes are observable. [R] Strategy explanations
+and model attribution are reconstructions. Coordinator unit evidence does not prove the full
+recovery command works until production/headless/shell routes and native acceptance are complete.
 
 ## Stubs
 

@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 15:13 CEST
-**Version:** 2.4
+**Last Updated:** 2026-10-12 16:32 CEST
+**Version:** 2.5
 
 ## Session Metadata
 
@@ -27,7 +27,7 @@
 | 3: Isolate shell and hook tests | DONE | 2026-10-12 10:57 | 2026-10-12 11:14 | e485618 | 33 Bats; 230 Python; 237 Swift | 17 min | Audited slices only |
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
-| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 314 Swift; 8 CLI stub | | Foundations verified; production routes unfinished |
+| 6: Bounded independent recovery | In Progress | 2026-10-12 14:23 | | Feature hashes below | 353 Swift; 8 CLI stub | | Coordinator verified; production routes unfinished |
 | 7: Safe previews and recovery controls | Not Started | | | | | | SPEC 1c |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
@@ -689,3 +689,74 @@ generation rather than trusting passed PIDs. The remaining inner env-i tests nee
 helper/private roots carried before managed shell coverage runs. Resume must keep focus Off and
 apply only current global rules. Required Phase 6 AGY/Codex reviews follow complete integration.
 Phase 2 still needs native acceptance. Do not mark Phase 6 DONE from these foundation tests.
+
+### Phase 6 typed coordinator checkpoint: 2026-10-12 16:32 CEST
+
+Previous goal turn was progress, with verified foundations and clean 43914a0. This slice remains
+Phase 6, not a preview/focus release. Source backups/build/helper are under
+`/tmp/tavs-phase6-coordinator-20261012T152000/`. Worker builds and parent integration used one
+shared scratch serially. Re-read all four dated state files and current source before edits.
+
+**Features.** `29d2a1f` adds bounded current global policy. It reuses finite lock/grant predicates,
+reads regular rule files under the original callback deadline, refreshes soft validity after
+PID liveness, and rechecks suspension before returning. Unknown/malformed rules do not enable
+restrictions; unsafe/unreadable files have fixed availability errors. No config/AppKit work is
+introduced inside prepare. Schema 1 appends hard/soft cause and requested mute fields.
+
+`2aa8ceb` connects those fields to Scheduler. Effective MUTED stays false during suspension;
+requested mute, cause, finite expiry and resolved colors survive for independent resume.
+Both projections are saved before visual reconciliation. Existing schedule/merge/timer policy
+remains the authority. Old opaque replay callers still require replacement later in this phase.
+
+`eee5573` adds unlocked intent publication and exact latest target-local copies. It uses the
+existing lock/deadline, retaining public metadata-only publication timing. Bound plain/native
+intent can survive producer exit only while its exact continuing target remains valid. An
+unmatched delivery or another binding cannot borrow that authority. Corrupt/orphan bound records
+remain explicit failures rather than guessed colors. The seven new store cases pass.
+
+`30b61b9` adds visual-recovery.swift. It saves state before discovery, restores cached targets
+while bounded native discovery proceeds, then includes available exact native bindings.
+Registry files are discovery hints only; unknown entries fail visibly. Current policy/intent
+composition, effect persistence before paint and cancellation run through the managed writer.
+Recovery never reads/replays opaque pending bytes. Known failures remain cached; confirmed
+vanished and unaffected results are separate. Catalogue unavailable is reported independently
+and is not itself evidence of a failed live target, so cached recovery requires no Automation.
+Dedicated scopes refuse cached owner-only bindings without an allowed native identity.
+
+**Test evidence.** All commands used tests/run-isolated.sh, explicit baseline-helper and the
+owned shared build. Runner logs have the same prefix recorded at the previous checkpoint.
+
+- Policy/state: 30 focused (ufmmRB), 332 full (IfaRi2), zero failures/warnings.
+- Scheduler integration: two new cases first failed five assertions (mOW1JT); added expiry
+  check failed twice (TDyoDM), then 47 related (otS6Q3) and 334 full (NQ0pRg) passed.
+- Locked intent: expected missing-API red (OtjDsw), 48 focused green (9IAQZj).
+- Coordinator: missing-class red (cZLZPy); first compile caught the mock handler's nonescaping
+  callback (opgSa9), corrected with the protocol's escaping contract. First behavioral run
+  (ACx699) exposed a missing private home directory in the new fixture, then nine cases passed.
+- Final 12 coordinator cases plus store/policy: **76/76** (KDl520). Final full Swift:
+  **353/353**, zero failures/warnings, 4.128 seconds (URGfvx).
+
+Owned PTYs prove marker persistence before discovery, no historical title/alert replay, current
+requested soft resumption, cached plain-shell recovery without Automation, healthy repaint before
+blocked discovery returns, effect presence before device bytes, uncertain versus vanished
+classification, retained failures, strict dedicated scope and queued restriction rejection.
+They do not establish physical Ghostty/native acceptance. No production install, real runtime
+mutation, existing session/app shutdown, live native operation or denial workaround occurred.
+No new release build, shell suite or public headless capability is claimed at this checkpoint.
+
+Reports saved by d5941bb: [current-policy exploration](PHASE6-CURRENT-POLICY-EXPLORATION.md),
+[policy worker](PHASE6-CURRENT-POLICY-REPORT.md), [locked-intent worker](PHASE6-LOCKED-INTENT-REPORT.md).
+Original worker outcomes remain unchanged; this entry records later parent integration.
+Source inspection verified a live wildcard cleanup in tests/integration/liveness.bats:23-26.
+Do not run it until teardown and inner child environments are surgically isolated.
+
+**Next.** Wire production Broadcaster and headless/internal managed entry points to VisualRecovery,
+then shared/standalone shell registration, semantic background, forced idle reset and debug
+reconciliation. Add a no-marker-mutation batch operation for ordinary broadcaster actions;
+do not call recover() to paint normal rules. Keep native work off the UI thread and serialized,
+revalidate each opened fd/current policy, preserve the original device deadline and current
+nonbackground styling. Replace all opaque replay/failure/age pruning. Audit inner env-i helper
+paths and use only owned PTY/scoped fixtures. Add actual helper/CLI tests before advertising
+tavs-managed-output-schema=1. Resume and relaunch must clear selective ownership and leave mode
+Off. Required AGY/Codex recovery reviews follow complete routing. Phase 2 native acceptance and
+Phases 7-9 remain open; the full goal remains active.
