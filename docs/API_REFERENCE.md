@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.8
+Version: 1.9
 
 ## Public recovery commands
 
@@ -84,6 +84,24 @@ over the latest ordinary intent. Failure or late open cannot claim paint or run 
 When publication succeeded before a device failure, later recovery retains that intended color
 or reset. If publication-lock contention consumes the whole budget, publication fails without a
 new budget or late retry. No arbitrary program-set color restoration is claimed.
+
+## Automatic occurrence foundation (Phase 9 in progress)
+
+`AttentionState` consumes fresh native-keyed coverage and the current High set. Initialization
+baselines existing observations; the activation time also excludes old records adopted later.
+It retains consumed completion IDs and observed permission episodes in memory. Acknowledgement
+subtracts only the captured occurrence set on its target, preserving later arrivals and other rows.
+Occurrences include provider, producer generation, TTY and device, so old navigation cannot
+acknowledge a replacement producer's cue. Downgrade removes eligibility without replay on promotion.
+
+Claude completion uses its intake delivery ID; Codex requires its supported completion event and
+turn ID. PermissionRequest and permission_prompt coalesce until observed processing/reset.
+A prompt after a closed episode needs a fresh request anchor; ambiguous companions are ineligible.
+Idle, compacting, subagent and cosmetic error restoration do not imply resumption. Invalid current
+coverage removes eligibility; retained acknowledged records cannot rearm. Equal-time or older
+same-producer observations do not invent an ordering. Generic Notification is diagnostic only.
+Latest-only records may miss intervening hook events; no event journal or new hook was introduced.
+Automatic controller, navigation and GUI integration remain pending; this reducer does not paint.
 
 ## Manual focus (Phase 8 source verified)
 
