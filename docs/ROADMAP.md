@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
-Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.4
+Last Updated: 2026-10-13 (Europe/Vienna)
+Version: 1.5
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -37,8 +37,10 @@ highlighting or navigation, and no production deployment has occurred.
 
 ## Later phases
 
-Phase 8 now has a tested pure dimming transform for current/reset intent, visible neutral
-background changes and configured-text contrast bounds. Renewable ownership, captured working
-sets and controls remain pending. Global pause must preserve manual leases, and recovery must
-invalidate persisted old leases before manual activation is exposed. Automatic focus follows.
+Phase 8 now has a tested transform and dynamic writer for current/reset intent, visible neutral
+changes and configured-text contrast bounds. Separate focus records survive pause/preview;
+ordinary writes do not renew ownership, and old recovery revisions cannot rearm a lease.
+Preview pins remain retained through pending cleanup. Captured working sets, mode polling and
+manual controls remain pending. The future controller must keep the same pin lifetime and
+handle expiry with a new paint ID. Automatic focus follows manual integration and acceptance.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.

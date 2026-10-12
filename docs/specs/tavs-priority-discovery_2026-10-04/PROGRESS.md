@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 23:34 CEST
-**Version:** 3.4
+**Last Updated:** 2026-10-13 00:10 CEST
+**Version:** 3.5
 
 ## Session Metadata
 
@@ -29,7 +29,7 @@
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
-| 8: Manual captured working set | In Progress | 2026-10-12 23:17 | | 3ed6136 | 442 Swift | | Renderer foundation; writer/controller/UI pending |
+| 8: Manual captured working set | In Progress | 2026-10-12 23:17 | | Feature hashes below | 457 Swift; 43 selected Bats | | Renderer/writer verified; captured set/UI pending |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
@@ -856,3 +856,40 @@ retains logical IDs and authorizes no new dimming; require a verified working bi
 painting outside targets. Preserve preview independence and end Manual on confirmed last closure.
 Manual UI, lease/controller implementation and physical native acceptance remain pending.
 The goal stays active. Do not start Phase 9 or claim real salience/readability from color math.
+
+
+### Phase 8 dynamic writer checkpoint: 2026-10-13 00:10 CEST
+
+Continued from `0b53c50`. `66111ec` exposes strict serializable marker identity while retaining
+pinned revision comparison. `e1396ef` adds focus.json with normalized color inputs and revision,
+without moving legacy fixed/global data. Unknown/missing/wrong-kind fields fail; blind heartbeat
+and expired/canceled same-ID renewal cannot revive dynamic focus. `574ea99` composes from fresh
+ordinary intent on every managed paint, preserving pause/preview precedence and alias authority.
+Ordinary paint does not extend heartbeat. Exact clear cancels metadata before opening a device;
+old IDs/revisions cannot repaint newer state or rearm after failed recovery and resumption.
+`0f27931` retains retired preview pins through pending cleanup and verifies no stale repaint.
+
+Red logs: `xcVcSx` lacked serializable identity, `b6ToyR` lacked focus record fields, `1XQ3hQ`
+lacked writer operations. First record green exposed a lowercase expected-background fixture
+(`SF51Vk`/`yHsyi0`); canonicalized the expected value. Integration `4ovYDw` used an unsupported
+LockReason.none; corrected the unlocked fixture to manual, then 134 focused checks passed in
+`CjUEpN`. Expanded writer/alias/style cases passed; final focused `zaXQgk` passed 75/75.
+Full `ELq4oM` passed 457/457 in 7.623 seconds without warnings. Release `teOxiL` passed in
+11.30 seconds. Managed-background, parity, recover and sync Bats `LebnbS` passed 43/43 using
+the rebuilt helper. Every run used tests/run-isolated.sh and the owned Phase 6 scratch build.
+
+Read-only follow-up is preserved in phase8-writer-followup-2026-10-13.md. The initial preview
+pin concern was checked against fresh source after correction; the explorer found no additional
+concrete normal-path writer/decoder mismatch. This is source assessment, not native acceptance.
+Scope extensions are connected record/recovery/marker modules and tests. Reused the same stable
+lock and original 100 ms deadline; no new token file, service or persisted desired mode.
+No GUI activation, native query, production install/sync, real settings or session shutdown.
+
+**Next:** extend FocusController and Sessions with captured working IDs and Off/Manual. Retain
+revision pins while effects/pending cleanup remain live. After expiry, use a new paint ID rather
+than renewing an expired ID. Require a verified working binding before dimming outside surfaces;
+failed/empty catalogues preserve logical IDs but authorize no new paint or renewal. Keep polling
+while Sessions is open OR Manual and observe the new published mode value. Focus Off preserves
+preview; confirmed last closure ends Manual. Recovery and restart always leave Off. Then expose
+and check the controls in a fresh private fixture. Physical Ghostty acceptance stays unverified.
+A restored focus request may paint a preview layer; do not label that outcome as visible dimming.

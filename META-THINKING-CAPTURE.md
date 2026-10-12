@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 13 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 14 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1691,3 +1691,77 @@ proposed. The next slice should turn these source findings into owned-terminal r
 
 **Confidence:** Code, commands, tests and inspected contract gaps are observed. The reason for
 choosing a bounded renderer-first slice is reconstructed; it is not a completion claim.
+
+
+## 2026-10-13 · gpt-6 (self-reported) · dynamic-focus-writer-and-recovery
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed commands, source and diffs; motivations reconstructed
+
+**Framing [O]:** Continued the incomplete Phase 8 from its renderer checkpoint. Read the dated
+state, accepted rendering/ownership rules and actual writer/decoder/caller contracts. Preserved
+native acceptance blockers and kept manual UI inactive. The objective was a recoverable dynamic
+lease foundation, not a narrower replacement for the captured working set. P9 selected the
+correct package and kept the legacy root plan out of implementation state.
+
+**Strategy [O/R]:** Added a separate dynamic focus kind/slot while retaining the old fixed/global
+slot. Stored normalized transform inputs and initiating marker identity, then composed inside
+the existing locked writer using current ordinary intent. [R] This avoided migrating old fixed
+records or guessing their missing foreground. Reused the existing pinned revision, stable lock,
+codec key validator and original caller deadline. No extra token file, persisted desired mode,
+service or general output parser was introduced. Public activation remains later work.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient/read | Dated state and writer/record contracts | Phase 8 continued |
+| Red/green | Marker identity and independent slot | Missing APIs then focused checks |
+| Integrate | Typed focus start/renew/clear and common composer | Current-intent backgrounds |
+| Regression | Owned PTYs, aliases, partial reset, style-only render | Existing behavior preserved |
+| Follow-up Explore | Current dirty source | Pin concern rechecked after fresh correction |
+| Fix | Retired preview pin and pre-open cleanup | No stale repaint after replacement |
+| Verify | Full Swift, release and isolated shell routes | 457 Swift and 43 shell tests |
+| Commit | Four coherent source/test changes | Documentation and capture appended |
+
+**Decision points [O/R]:** Selected a new focus slot rather than moving legacy fixed records.
+Dynamic alias agreement compares run/controller/revision/colors, since last computed colors can
+lag legitimately. Only guarded requests renew heartbeat; ordinary output cannot keep restrictions
+alive. Exact clear performs metadata cancellation before device open, using the same original
+100 ms budget, so a broken device cannot force later ordinary output to reuse an active recipe.
+A changed revision prevents visual repaint but does not forbid exact old-record cancellation.
+[R] Treating semantic cancellation separately from physical delivery preserves honest partial
+failure without introducing a second recovery mechanism.
+
+**Failure arcs [O/R]:** A record test expected lowercase background after the established writer
+normalized it; the expected fixture was canonicalized. An unlocked lock fixture used nonexistent
+LockReason.none; source enumeration showed manual was the supported value. After those fixture
+corrections, focused integration and the full suite passed. The follow-up explorer initially
+identified a pin-release boundary from its earlier read. Fresh source then retained retired
+preview runs in pending cleanup and canceled preview metadata before opening. A controller
+regression held identity mismatch through repeated atomic replacement, then cleared metadata
+without paint. The explorer reread that correction and withdrew the current preview concern.
+It retained the corresponding requirement for the unimplemented Manual run.
+
+**Verification [O]:** Stored malformed/missing/wrong-kind recipe fields are rejected. Tests cover
+expired/canceled IDs, stale requests, recipe agreement across native/plain aliases, latest intent,
+style-only normal palette/title/bell, global/preview precedence, physical deduplication, failure
+before device delivery and failed recovery followed by resumption. Marker identity contains only
+device/inode; the caller must retain its pin while effects or pending cleanup remain live.
+The full 457 Swift tests passed without warnings, release compilation passed and 43 selected
+shell tests used the rebuilt helper. No real native query, device, installation, setting or
+session operation occurred. A focus request can paint the preview layer, so its restored result
+must not be reported as proof of visible dimming by the future controller.
+
+**Pattern candidates [R]:** Check both persisted authority and queued work after partial recovery.
+An object-lifetime guard is incomplete if its caller drops the object before cleanup. These
+findings guide the next controller tests; no new workflow is proposed. Captured IDs, background
+polling, expiry re-entry and controls remain necessary work before manual activation is usable.
+
+**Confidence:** Source edits, regression outcomes and tool sequence are observed. Explanations
+for selecting existing mechanisms are reconstructed design arguments, not introspective facts.

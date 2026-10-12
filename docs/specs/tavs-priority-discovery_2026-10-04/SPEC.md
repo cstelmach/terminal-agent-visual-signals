@@ -5,7 +5,7 @@ title: "TAVS: Ghostty organizer and reversible focus"
 status: in-progress
 phase: 8
 created: 2026-10-05
-updated: 2026-10-12
+updated: 2026-10-13
 author: Codex
 ---
 
