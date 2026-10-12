@@ -341,7 +341,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         try ScheduleStore.save(config, to: scheduleURL)
     }
 
-    func testSuspensionSuppressesTransitionReplayAndTicksThenResumeRepaintsCurrentPause() throws {
+    func testSuspensionClearsPriorPaintAndSuppressesTicksThenResumeRepaintsCurrentPause() throws {
         try writeStandardConfig()
         var config = try ScheduleStore.load(from: scheduleURL)
         config.masterActive = false
@@ -359,22 +359,23 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertFalse(scheduler.isMuted)
         XCTAssertFalse(scheduler.isHardLocked)
         XCTAssertEqual(scheduler.reason, .none)
-        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertEqual(broadcaster.callOrder, calls + ["broadcastPausedClear", "broadcast"])
+        let cleanupCalls = broadcaster.callOrder
         XCTAssertEqual(try Data(contentsOf: scheduleURL), saved)
         clock.advance(by: 60)
         timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
         fileWatcher.simulateChange()
         RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.05))
         scheduler.restoreTerminalColors()
-        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertEqual(broadcaster.callOrder, cleanupCalls)
         XCTAssertTrue(try String(contentsOf: muteStateURL).contains("MUTED=\"false\""))
         try restrictions.write(suspended: false)
         scheduler.loadAndEvaluate()
         XCTAssertEqual(scheduler.visualRestrictionsStatus, .active)
         XCTAssertTrue(scheduler.isMuted)
         XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2)
-        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
-        XCTAssertEqual(broadcaster.broadcastCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
     }
 
     func testSuspendedStartupWithExplicitPersistentStoreIgnoresOldMutedProjection() throws {
@@ -389,7 +390,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(restarted.visualRestrictionsStatus, .suspended)
         XCTAssertFalse(restarted.isMuted)
         XCTAssertFalse(restarted.isHardLocked)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.callOrder, ["discover", "broadcastPausedClear", "broadcast"])
         XCTAssertTrue(try String(contentsOf: muteStateURL).contains("MUTED=\"false\""))
         restarted.stop()
         let next = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
@@ -397,7 +398,11 @@ final class SchedulerLifecycleTests: XCTestCase {
             visualRestrictionsState: restrictions)
         next.start()
         XCTAssertEqual(next.visualRestrictionsStatus, .suspended)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.discoverCallCount, 2)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
         next.stop()
     }
 
@@ -415,7 +420,56 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertFalse(scheduler.masterActive)
         XCTAssertFalse(scheduler.isMuted)
         XCTAssertFalse(scheduler.isHardLocked)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.callOrder, ["discover"])
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+    }
+
+    func testUnavailableStartupReconcilesPersistedMutedStateWithoutChangingMarkerOrRules() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let saved = try Data(contentsOf: scheduleURL)
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0,
+            writtenEpoch: Int64(clock.now().timeIntervalSince1970), appPID: 43), to: muteStateURL)
+        let markerURL = tempDir.appendingPathComponent("visual-restrictions.state")
+        let marker = Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"false\"\n".utf8)
+        try marker.write(to: markerURL)
+        scheduler.start()
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .unavailable)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.masterActive)
+        XCTAssertEqual(broadcaster.callOrder, ["discover", "broadcastPausedClear", "broadcast"])
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        XCTAssertEqual(try Data(contentsOf: markerURL), marker)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), saved)
+    }
+
+    func testUnavailableMarkerTransitionClearsOnceAndPreservesRequestedPause() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let saved = try Data(contentsOf: scheduleURL)
+        scheduler.start()
+        XCTAssertTrue(scheduler.isMuted)
+        let calls = broadcaster.callOrder
+        let markerURL = tempDir.appendingPathComponent("visual-restrictions.state")
+        let marker = Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"false\"\n".utf8)
+        try marker.write(to: markerURL)
+        scheduler.loadAndEvaluate()
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(scheduler.visualRestrictionsStatus, .unavailable)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertFalse(scheduler.masterActive)
+        XCTAssertEqual(broadcaster.callOrder, calls + ["broadcastPausedClear", "broadcast"])
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        XCTAssertEqual(try Data(contentsOf: markerURL), marker)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), saved)
+        XCTAssertTrue(try String(contentsOf: muteStateURL).contains("REQUESTED_MUTED=\"true\""))
     }
 
     func testRestoreTerminalColorsClearsWithoutChangingStateOrReplaying() throws {
@@ -1110,9 +1164,8 @@ final class SchedulerLifecycleTests: XCTestCase {
     // MARK: - B3 and H2 transition tests
 
     func testStartCallsTTYDiscoveryOnce() throws {
-        // M3: Scheduler.start must pre-populate active-ttys/ from running
-        // agent processes so first-mute-after-reboot doesn't paint zero
-        // terminals. Discovery runs exactly once per start.
+        // Startup requests cached-effect cleanup and native terminal binding
+        // discovery exactly once, including when restrictions are disabled.
         try writeStandardConfig()
 
         XCTAssertEqual(broadcaster.discoverCallCount, 0)

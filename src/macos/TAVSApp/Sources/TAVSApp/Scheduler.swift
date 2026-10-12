@@ -235,14 +235,10 @@ final class Scheduler: ObservableObject {
     }
 
     func start() {
-        // Pre-populate active-ttys/ from running agent processes. After a
-        // reboot, /tmp/tavs-$UID is wiped and the touch-based registry is
-        // empty until each terminal fires a hook. With this, the very first
-        // mute transition after login already covers all live agent sessions.
+        // Reconcile cached effects before discovering current native terminal
+        // bindings, including when saved suspension disables restrictive paint.
         visualRestrictionsStatus = visualRestrictionsState.read()
-        if !visualRestrictionsStatus.disablesRestrictions {
-            broadcaster.discoverAndRegisterActiveAgentTTYs()
-        }
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
 
         // Seed previousMuted from the on-disk mute.state so a restart-after-crash
         // correctly detects a muted→unmuted transition. Without this, a crash
@@ -430,7 +426,7 @@ final class Scheduler: ObservableObject {
                        hardCaused: hardCaused, requestedMuted: requestedMuted)
 
         // Managed reconciliation must read the new rule projection, not the pause it clears.
-        if !restrictionsDisabled && wasMuted && !projectedMuted {
+        if wasMuted && !projectedMuted {
             clearPausedVisualAndReplayPending()
         }
 

@@ -95,8 +95,9 @@ final class Broadcaster: BroadcasterProtocol {
             }
             condition.unlock()
 
-            let registration = register ? recovery.apply(.register) : nil
+            // Saved effects must be cleared without waiting for native discovery.
             let priorEffects = clearPriorEffects ? recovery.reconcilePriorEffects() : []
+            let registration = register ? recovery.apply(.register) : nil
             if let registration = registration {
                 record((registration.catalogueAvailable, registration.items + priorEffects))
             } else if clearPriorEffects {

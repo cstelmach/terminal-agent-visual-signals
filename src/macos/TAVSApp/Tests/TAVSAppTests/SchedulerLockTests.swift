@@ -145,7 +145,9 @@ final class SchedulerLockTests: XCTestCase {
         XCTAssertFalse(scheduler.isHardLocked)
         XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
         XCTAssertEqual(try Data(contentsOf: lockStateURL), saved)
-        XCTAssertEqual(broadcaster.callOrder, calls)
+        XCTAssertEqual(broadcaster.callOrder, calls + ["broadcastPausedClear", "broadcast"])
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
     }
 
     func testNewManualLockIsSavedButVisuallyInertUntilExplicitResume() throws {
@@ -164,7 +166,7 @@ final class SchedulerLockTests: XCTestCase {
         XCTAssertFalse(scheduler.isHardLocked)
         XCTAssertEqual(scheduler.statusText, VisualRestrictionsStatus.suspended.message)
         XCTAssertEqual(try Data(contentsOf: scheduleURL), savedSchedule)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.callOrder, ["discover"])
         try restrictions.write(suspended: false)
         scheduler.loadAndEvaluate()
         XCTAssertTrue(scheduler.isHardLocked)
@@ -190,7 +192,7 @@ final class SchedulerLockTests: XCTestCase {
         XCTAssertTrue(scheduler.masterActive)
         XCTAssertEqual(scheduler.visualRestrictionsStatus, .suspended)
         XCTAssertEqual(LockStateReader.read(at: lockStateURL)?.lockUntilEpoch, manual.lockUntilEpoch)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.callOrder, ["discover"])
     }
 
     func testManualLockAndGrantExpireDuringSuspensionWithoutScheduleOrReplay() throws {
@@ -212,7 +214,7 @@ final class SchedulerLockTests: XCTestCase {
         scheduler.loadAndEvaluate()
         XCTAssertFalse(scheduler.isMuted)
         XCTAssertFalse(scheduler.isHardLocked)
-        XCTAssertTrue(broadcaster.callOrder.isEmpty)
+        XCTAssertEqual(broadcaster.callOrder, ["discover"])
     }
 
     // MARK: - Hard schedule projection

@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.10
+Version: 1.11
 
 ## Shell output routing
 
@@ -25,6 +25,9 @@ clears only prior effect targets, preserving unaffected shell backgrounds. Faile
 remain retryable. `lastResult` retains typed outcomes and catalogue availability.
 
 The production scheduler supplies the same restriction store, clock and recovery service.
+Startup requests cached cleanup even when restrictions are disabled; that cleanup precedes
+native registration. Muted-to-unmuted transitions use safe typed cleanup after saving policy,
+including a transition caused by persistent suspension.
 All native and device operations run off its calling thread. Historical OSC buffers, argv
 substring discovery and age-only registry pruning no longer authorize broadcaster output.
 
@@ -131,8 +134,9 @@ rejected. State mutations in `prepare` must also honor the passed deadline becau
 closure cannot be forcibly canceled. Busy locks and backpressured devices retain the same
 budget, and independent healthy writes can complete. The lock inode is never replaced/unlinked.
 
-This is the recovery writer foundation. Existing broadcaster and shell callers still need
-typed routing, binding validation, current policy composition and recovery result reporting.
+Broadcaster and managed background/reset callers use this writer. Ordinary palette/title/image
+output still needs a single typed render transaction; its current direct-write gap is tracked
+as Codex R2 in the dated Phase 6 package.
 
 ## Persistent visual suspension
 
@@ -156,8 +160,9 @@ remain saved but visually inert; CLI status explains when rules are suspended or
 Mute diagnostics now use the injected runtime directory instead of a shared fixed tmp file.
 
 The scheduler continues raw rule evaluation, lock/grant merging and expiry timers. Suspension
-overrides its visual projection and skips all broadcaster work, including ordinary unmute
-reset/replay. Menu controls use configured master activation separately from projected mute.
+overrides its visual projection and disables restrictive paint. Safe typed cleanup still runs
+on startup and muted-to-unmuted transitions, retrying prior effects without historical replay.
+Menu controls use configured master activation separately from projected mute.
 Sessions reads the independent marker before an in-flight native refresh can return early.
 Production stores receive an explicit `.tavs` URL; private launch stores use `root/home/.tavs`.
 
@@ -332,8 +337,8 @@ Terminal escape sequence functions:
 The macOS menu-bar broadcaster has an additional pause contract: pause entry
 resets legacy palette overrides (OSC 104), sets default foreground/background
 (OSC 10/11), and clears legacy iTerm2 background images (OSC 1337
-`SetBackgroundImageFile`). Pause clear resets palette, default foreground, and
-background (OSC 104/110/111). Normal shell-driven active states do not emit
+`SetBackgroundImageFile`). Pause clear resets palette and default foreground, then restores
+latest ordinary background intent or the configured background reset. Normal active states do not emit
 OSC 10/110; they continue to own state backgrounds, palettes, and titles only.
 
 ### session-icon.sh (Session Identity)

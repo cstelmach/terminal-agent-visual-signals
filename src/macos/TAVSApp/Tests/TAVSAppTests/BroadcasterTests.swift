@@ -56,7 +56,8 @@ final class BroadcasterTests: XCTestCase {
             foregroundPID: target.ttyOwner.pid, tabSelected: true, mappingIssue: nil)
     }
 
-    private func cache(_ target: TerminalTargetBinding, selective: Bool = false, color: String? = nil) throws {
+    private func cache(_ target: TerminalTargetBinding, selective: Bool = false, color: String? = nil,
+                       effectKind: TerminalEffectKind? = nil) throws {
         if let color = color {
             try state.publishIntent(OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
                 producer: target.ttyOwner, deliveryID: "delivery-\(target.ttyOwner.pid)", updatedAt: 1_000,
@@ -70,9 +71,10 @@ final class BroadcasterTests: XCTestCase {
                     device: target.device, producer: target.ttyOwner, deliveryID: "delivery-\(target.ttyOwner.pid)",
                     updatedAt: 1_000, background: color), to: target, deadline: deadline)
             }
-            if selective {
+            if selective || effectKind != nil {
                 try self.state.saveEffectUnlocked(TerminalEffectRecord(target: target, controller: self.generation(90),
-                    effectID: "previous-effect", kind: .selectiveBackground, background: "#AABBCC", heartbeatAt: 1_000),
+                    effectID: "previous-effect", kind: effectKind ?? .selectiveBackground,
+                    background: "#AABBCC", heartbeatAt: 1_000),
                     deadline: deadline)
             }
             return nil
@@ -199,6 +201,38 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertTrue(runner.writtenDevices.isEmpty)
         XCTAssertEqual(broadcaster.lastResult?.catalogueAvailable, true)
         XCTAssertEqual(broadcaster.lastResult?.items.first?.status, .unaffected)
+    }
+
+    func testStartupRestoresCachedEffectBeforeBlockedNativeForEveryRestrictionStatus() throws {
+        for (index, status) in [VisualRestrictionsStatus.active, .suspended, .unavailable].enumerated() {
+            let target = try terminal(Int32(10 + index))
+            try cache(target, effectKind: .globalRestriction)
+            try writeMute(status.disablesRestrictions)
+            if status == .unavailable {
+                try Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"false\"\n".utf8).write(to: restrictions.url)
+            } else {
+                try restrictions.write(suspended: status == .suspended)
+            }
+            let marker = try Data(contentsOf: restrictions.url)
+            let entered = DispatchSemaphore(value: 0)
+            let release = DispatchSemaphore(value: 0)
+            defer { release.signal() }
+            let broadcaster = broadcaster(native: {
+                XCTAssertFalse(Thread.isMainThread)
+                entered.signal()
+                release.wait()
+                return []
+            })
+            broadcaster.discoverAndRegisterActiveAgentTTYs()
+            XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+            XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8))
+            XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, deadline: .max)).active)
+            XCTAssertEqual(try Data(contentsOf: restrictions.url), marker)
+            release.signal()
+            XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+            try noBytes(target)
+            XCTAssertEqual(restrictions.read(), status)
+        }
     }
 
     func testQueuedPauseReadsSuspensionAfterEarlierNativeWork() throws {

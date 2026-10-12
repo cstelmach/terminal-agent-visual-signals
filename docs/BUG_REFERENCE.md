@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.9
+Version: 1.10
+
+## Suspended relaunch skips retained-effect cleanup
+
+The scheduler skipped discovery and transition cleanup when suspension disabled restrictions.
+That was appropriate for the old raw broadcaster, but it also skipped the new safe cached-effect
+cleanup after a failed recovery repaint. Startup now always requests typed reconciliation, and
+cached effects clear before optional native discovery. A transition into suspension also requests
+safe cleanup after saving the new projection. Tests cover active, suspended and unavailable states
+with blocked native discovery, saved definitions and no restrictive disabled paint.
 
 ## Shell suppression accepts invalid soft-pause liveness
 
