@@ -802,7 +802,7 @@ final class TerminalVisualStateStore {
             return record.state == "complete" && event == "agent-turn-complete" && record.responseID != nil
         }
         return record.state == "complete" && event == "Stop"
-            || record.state == "permission" && ["PermissionRequest", "Notification", "permission_prompt"].contains(event)
+            || record.state == "permission" && ["PermissionRequest", "permission_prompt"].contains(event)
     }
 
     private func validate(_ record: TerminalObservation) throws {

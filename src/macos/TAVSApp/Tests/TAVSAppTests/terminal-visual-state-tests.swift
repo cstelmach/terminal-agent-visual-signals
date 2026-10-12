@@ -115,6 +115,18 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertFalse(files.contains { $0.hasPrefix("adoption-") })
     }
 
+    func testPermissionEligibilityRequiresAnExplicitPermissionEvent() throws {
+        let store = makeStore()
+        for (index,event) in ["Notification", "idle_prompt", "PermissionRequest", "permission_prompt"].enumerated() {
+            var record = observation(delivery: "permission-\(index)", time: 990 + Double(index))
+            record.state = "permission"; record.event = event
+            try store.publishObservation(record)
+            let coverage = store.coverage(for: surface())
+            XCTAssertNotNil(coverage.observation)
+            XCTAssertEqual(coverage.attentionEligible, index >= 2, event)
+        }
+    }
+
     func testRetainedDeliverySurvivesBackgroundingButNewDeliveryNeedsCurrentCorrelation() throws {
         let store = makeStore()
         try store.publishObservation(observation())

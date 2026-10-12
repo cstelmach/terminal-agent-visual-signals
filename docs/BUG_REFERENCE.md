@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.19
+Version: 1.20
+
+## Generic notifications are misclassified as permission requests
+
+The attention classifier accepted permission state with a generic Notification event. Intake
+requires a recognized permission_prompt subtype, so the generic event alone supplies no request
+authority. Eligibility now requires PermissionRequest or permission_prompt; legacy generic records
+remain diagnostic. A red/green correlation regression covers generic, idle and supported events.
+Adapter fixtures also check state/event pairing, fresh delivery IDs and discarded payload bodies.
 
 ## Unmapped outside surfaces falsely keep a manual paint ID fresh
 

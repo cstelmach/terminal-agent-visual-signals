@@ -77,6 +77,37 @@ PY
     _assert_private_dispatch reset session-end
 }
 
+@test "Existing Claude lifecycle events preserve reducer authority and fresh intake IDs" {
+    local state hook subtype expected
+    : > "$BATS_TEST_TMPDIR/delivery-ids"
+    while IFS='|' read -r state hook subtype expected; do
+        printf '{"hook_event_name":"%s","notification_type":"%s","prompt":"BODY_SENTINEL"}' \
+            "$hook" "$subtype" > "$BATS_TEST_TMPDIR/payload.json"
+        run _claude "$state"
+        [ "$status" -eq 0 ]
+        _assert_private_dispatch "$state"
+        python3 - "$CAPTURE" "$expected" "$BATS_TEST_TMPDIR/delivery-ids" <<'PY'
+import base64,json,sys
+c=json.loads(base64.b64decode(json.load(open(sys.argv[1]))["env"]["TAVS_ORGANIZER_CONTEXT"]))
+assert c.get("event", "") == sys.argv[2]
+with open(sys.argv[3]) as f:
+    assert c["deliveryID"] not in f.read().splitlines()
+with open(sys.argv[3],"a") as f:
+    f.write(c["deliveryID"]+"\n")
+PY
+    done <<'CASES'
+permission|PermissionRequest||PermissionRequest
+permission|Notification|permission_prompt|permission_prompt
+idle|Notification|idle_prompt|idle_prompt
+permission|Notification|unknown|
+complete|Stop||Stop
+processing|UserPromptSubmit||UserPromptSubmit
+processing|PostToolUse||PostToolUse
+reset|SessionStart||SessionStart
+reset|SessionEnd||SessionEnd
+CASES
+}
+
 @test "Adapters reject unknown states without passing free-form state to core" {
     printf '%s' '{}' > "$BATS_TEST_TMPDIR/payload.json"
     run _claude STATE_BODY_SENTINEL
