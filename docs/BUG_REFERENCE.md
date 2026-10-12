@@ -1,7 +1,16 @@
 # Bug Reference
 
-Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.17
+Last Updated: 2026-10-13 (Europe/Vienna)
+Version: 1.18
+
+## Recovery releases a preview's revision before pending metadata cleanup
+
+Recovery invalidated the in-memory preview and discarded its pinned marker revision. A partial
+device failure could leave the old record active while subsequent atomic marker writes reused
+an unpinned inode. Retired preview runs now remain in pending cleanup, and exact-ID cleanup
+cancels metadata before device open. Changed revisions suppress visual repaint. A controller
+regression checks repeated replacement, retained mismatch and cleanup with no emitted bytes.
+The future manual run must preserve the same pin lifetime while effects remain recoverable.
 
 ## Synced installations retain stale or non-executable entry points
 

@@ -145,6 +145,28 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(try read(0), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8))
     }
 
+    func testRecoveryRetainsPreviewRevisionUntilMetadataCleanupAfterReplacement() throws {
+        let row = try surface(10), focus = controller(MockTimerScheduler())
+        try restrictions.write(suspended: false)
+        focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        let target = try XCTUnwrap(state.captureTarget(for: row))
+        let identity = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.revision)
+        focus.cancelForRecovery()
+        for _ in 0..<8 {
+            try restrictions.write(suspended: true); try restrictions.write(suspended: false)
+            XCTAssertFalse(try restrictions.matches(identity, deadline: .max))
+        }
+        focus.clearPreview()
+        let deadline = Date(timeIntervalSinceNow: 1)
+        while Date() < deadline,
+              try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.active == true {
+            RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.01))
+        }
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
     func testSessionsSelectionRefreshAndCloseUseSeparateTimerOwners() throws {
         let row = try surface(10), previewTimers = MockTimerScheduler(), catalogueTimers = MockTimerScheduler()
         let focus = controller(previewTimers)

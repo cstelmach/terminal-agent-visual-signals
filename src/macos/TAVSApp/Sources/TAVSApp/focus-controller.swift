@@ -102,8 +102,10 @@ final class FocusController: ObservableObject {
     }
 
     func cancelForRecovery() {
-        lock.lock(); current = nil; lock.unlock()
-        timers.cancelAll(); pendingClear.removeAll()
+        lock.lock(); let old = current; current = nil; lock.unlock()
+        // Retain the pinned revision until pending metadata cancellation succeeds.
+        if let old = old, !pendingClear.contains(where: { $0 === old }) { pendingClear.append(old) }
+        timers.cancelAll()
         isPreviewActive = false; previewed.removeAll(); previewStatus = "No preview."
     }
 
