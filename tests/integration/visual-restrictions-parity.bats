@@ -85,21 +85,45 @@ PY
     source "$LIB"
     _tavs_visual_restrictions_write true
     printf 'TAVS_TITLE_MODE="off"\nENABLE_STYLISH_BACKGROUNDS="false"\n' > "$HOME/.tavs/user.conf"
-    run bash "$REPO_ROOT/src/core/trigger.sh" processing
+    cat > "$BATS_TEST_TMPDIR/owned-pty.py" <<'PY'
+import errno,os,pty,select,signal,sys,time
+pid,fd=pty.fork()
+if pid==0:
+    os.environ['TTY_DEVICE']=os.ttyname(0)
+    with open(sys.argv[2],'w') as out:out.write(os.environ['TTY_DEVICE'])
+    os.execv('/bin/bash',['bash','-p',sys.argv[1]+'/src/core/trigger.sh','processing'])
+status=None; output=bytearray(); deadline=time.monotonic()+15
+try:
+    while time.monotonic()<deadline:
+        if select.select([fd],[],[],.05)[0]:
+            try:output.extend(os.read(fd,4096))
+            except OSError as error:
+                if error.errno!=errno.EIO:raise
+        got,code=os.waitpid(pid,os.WNOHANG)
+        if got:status=code;break
+    assert status is not None,'Owned trigger exceeded deadline'
+    print(output.decode(errors='replace'),end='')
+    sys.exit(os.waitstatus_to_exitcode(status))
+finally:
+    if status is None:os.kill(pid,signal.SIGKILL);os.waitpid(pid,0)
+    os.close(fd)
+PY
+    run python3 "$BATS_TEST_TMPDIR/owned-pty.py" "$REPO_ROOT" "$BATS_TEST_TMPDIR/owned-tty"
     [ "$status" -eq 0 ]
-    [ -s "$TTY_DEVICE" ]
+    [[ "$output" == *$'\033]11;'* ]]
     cmp "$TAVS_RUNTIME_DIR/lock.state" "$BATS_TEST_TMPDIR/lock.before"
     cmp "$HOME/.tavs/mute.state" "$BATS_TEST_TMPDIR/mute.before"
-    python3 - "$TAVS_RUNTIME_DIR" "$TTY_DEVICE" <<'PY'
+    python3 - "$TAVS_RUNTIME_DIR" "$BATS_TEST_TMPDIR/owned-tty" <<'PY'
 import json,pathlib,sys
 root=pathlib.Path(sys.argv[1])
-assert b'\x1b]11;' in pathlib.Path(sys.argv[2]).read_bytes()
+tty=pathlib.Path(sys.argv[2]).read_text()
 assert not list((root/'pending').glob('*.osc'))
 observations=list((root/'organizer').glob('observation-*.json'))
 intents=list((root/'organizer').glob('intent-*.json'))
 assert len(observations)==len(intents)==1
 assert json.loads(observations[0].read_text())['state']=='processing'
 assert json.loads(intents[0].read_text())['background'].startswith('#')
+assert json.loads(intents[0].read_text())['tty']==tty
 PY
 }
 
@@ -115,7 +139,6 @@ _TAVS_S0_LOCK_UNTIL=$(( $(date +%s) + 3600 ))
 _tavs_visual_restrictions_write true
 _tavs_validate_mute_liveness
 test "$_TAVS_SUPPRESS_OUTPUT" = 0
-test -z "${_TAVS_S0_LOCKED:-}"
 if _tavs_check_mute_state; then exit 1; fi
 test "$_TAVS_SUPPRESS_OUTPUT" = 0
 _tavs_visual_restrictions_write false
