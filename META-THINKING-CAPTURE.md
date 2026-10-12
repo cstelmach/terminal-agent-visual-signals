@@ -29,7 +29,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 11 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 12 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
 
@@ -1550,3 +1550,73 @@ P9 is already covered by execute-spec, so an additional process workflow is unne
 
 **Confidence:** Commands, source edits, test results and UI states are observed. Reasons for
 choosing reuse and the inferred benefit of avoiding a repeated click are reconstructed.
+
+
+## 2026-10-12 · gpt-6 (self-reported) · copied-recovery-entry-points
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool calls and diffs; motivations reconstructed
+
+**Framing [O]:** The goal continuation followed verified GUI progress. Re-read the dated SPEC,
+PLAN, GOAL and current progress before selecting the remaining Phase 7 copy work. Native Ghostty
+acceptance was still unavailable, but packaging and removal of an unused legacy action could
+proceed without native access. Private fake plugin cache and marketplace roots were the mutation
+boundary. No real installation, schedule, user preference or existing session was changed.
+
+**Strategy [O/R]:** Read the old packaging exploration and actual sync consumers, then reused
+an Explore agent for failure and executable-mode details. Its report described initial HEAD and
+was checked against source and injected failures. [R] Explicit known copies plus status checks
+were sufficient; a recursive tree synchronizer, rollback service or new installation mode would
+have added machinery without resolving another requirement. Existing core/CLI globs supplied
+the neighboring dependencies, and the standalone shellrc did not need another installed module.
+
+**Action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient | Dated state and connected callers | Phase 7 only; P9 applied |
+| Red tests | Stale fake roots with mode 0644 | Six initial copy/dispatch failures |
+| Source/probe | cp mode and conditional Bash calls | Explicit failure checks selected |
+| Implement | Root CLI, adapters, hook JSON, installer, shell source | Exact paths and execute-bit repair |
+| Green | Copied entry points and private state | Seven tests, then 62 selected shell checks |
+| Retire | Reset action with only test callers | Four action-only tests removed |
+| Verify | Current Swift/release helper | 439 retained tests and fresh copied CLI checks |
+| Preserve | Finished progress blocks | Round trip and 900-line limit checked |
+
+**Decision points [O/R]:** Conditional caller error propagation needed checks inside the copy
+function as well as its caller because Bash suppresses implicit errexit there. Executable bits
+were repaired only for known direct entry points, avoiding metadata-preserving copies or execute
+permission on JSON. Copied adapters used an explicit typed helper and the existing visual kill
+switch, so intake could be tested without a native target or raw payload logs. Copied recovery
+used the current source-built helper with deliberately invalid private scope; saved suspension
+and accurate partial failure were the expected result. [R] Executing copied commands supplied
+stronger evidence than their presence alone while preserving the live-use boundary.
+
+**Failure arcs [O/R]:** Initial tests reproduced every missing-path failure. The first corrected
+run passed five cases but expected a Codex path containing a double slash. Reading the generated
+config showed a correctly normalized direct-argv path. The fixture root was normalized; production
+argv code did not change. A later progress consolidation assertion caught that the first pointer
+layout still exceeded 900 lines. The parent file had not been rewritten by that failed step;
+finished blocks were already preserved in appendices. A smaller pointer layout brought the file
+to 900 lines, with restoration reproducing the prior text exactly. No source or log data was lost.
+
+**Verification [O]:** bash syntax and whitespace checks passed. Copy tests compared bytes,
+executability, typed intake, standalone state readers, direct Codex argv, refusal of a missing
+explicit helper and failure propagation. Preferences/schedule/lock sentinels were unchanged.
+The 439 Swift count is four below the earlier 443 solely because the obsolete action's four
+dedicated tests were retired. Current recovery and scheduler suspension tests remain. Release
+build and seven copied-entry tests passed with the rebuilt helper. Real highlighting, timing,
+keyboard focus, panes/Spaces and locked-menu acceptance are still unverified; Phase 7 is Blocked,
+not DONE. Manual focus is the next independently implementable phase.
+
+**Pattern candidates [R]:** Test copied executable behavior after seeding old non-executable
+modes. Do not interpret a test path spelling mismatch as a production quoting defect until the
+generated value is inspected. P9 already belongs to execute-spec; no new workflow is proposed.
+
+**Confidence:** Source, tests, commands, state changes and failure messages are observed.
+Claims about why reuse reduced complexity are reconstructed design arguments.

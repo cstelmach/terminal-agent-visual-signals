@@ -61,3 +61,18 @@ fixed priority-pinning TTY files. Tests first use controlled paths/stubs, never 
 Broader suites will run only after their overrides and process cleanup are audited.
 
 > Return to [PROGRESS.md](PROGRESS.md).
+
+
+## Additional preserved finished notes
+
+### Phase 3
+
+- Seven planned runner/fixture/test/documentation paths changed, plus the ordinary audit report.
+- The test runner and its connected callers are one isolation feature. No production helper,
+  watchdog, sandbox, dependency or replacement test framework was introduced.
+- Proceeded past Phase 2's acceptance blocker because this phase consumes no live native result;
+  execute-spec E1 allows skipping Blocked phases. No skipped acceptance is marked DONE.
+- Additional audited Python runs were justified by shared helper changes. Unsafe remaining
+  cases were explicitly excluded; passing suites were not repeated after verification.
+
+> Current execution: [PROGRESS.md](PROGRESS.md).

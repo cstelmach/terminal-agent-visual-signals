@@ -106,3 +106,31 @@ previews, manual focus and automatic focus are unfinished. The full Codex goal r
 
 
 > Return to [PROGRESS.md](PROGRESS.md).
+
+
+## Additional preserved finished notes
+
+### Phase 4 started: 2026-10-12 11:41 CEST
+
+Reoriented from e485618 with clean source. Phase 2 remains Blocked only for native acceptance;
+this record-only foundation can proceed independently. Backups/scratch are in
+`/tmp/tavs-phase4-20261012T114102/`. Use the Phase 3 runner and explicit source-built helper.
+Two read-only source explorations cover intake/debug compatibility and record/adoption rules.
+Wiki recall was partial: it supplied a current Claude documentation pointer but no useful
+payload-schema answer. Current source plus primary provider documentation must fill that gap.
+
+The Swift record foundation is delegated to implement_phase4_record_store, owning only its new
+module and tests. Parent owns headless intake, shell bridges and integrations. Shared schemas
+separate meaningful observations from background intent; consumer-owned native adoption avoids
+hook/GUI overwrite races. Generation/device/foreground evidence gates adoption and attention.
+Per-TTY publication comparison/replacement uses a short file lock for stale synthetic updates.
+This is runtime write ordering, not a process ledger. No preview/controller ownership is added.
+
+Headless support uses the known --validate-config entry with an exact capability response;
+new flags are invoked only after that query. New headless dispatch precedes isolated UI launch.
+Only allowed metadata survives intake. No raw payload/argv/process arguments/title/cwd diagnostic
+content is retained. Preserve existing permission/context/session/directory behavior separately.
+New small intake module and SessionsView wiring are connected additions needed beyond PLAN's
+named files; keep them focused and record their final scope in the divergence check.
+
+> Current execution: [PROGRESS.md](PROGRESS.md).

@@ -117,3 +117,15 @@ and use an explicitly owned staging root rather than the fixed global temporary 
 Findings are based on fresh source reads, tracked-path comparison and current tests. I did not
 execute fake-install tests, native helper probes, signing, builds or live deployment. Native
 staged acceptance and proven owned-worker refresh remain parent work.
+
+
+## Verified implementation follow-up: 2026-10-12
+
+`0efa3c4` implements the explicit connected copies and executable-mode repair. Required mkdir,
+copy and chmod failures propagate even when Bash errexit is disabled by a conditional caller.
+Seven fake-install tests execute copied CLI/adapters/installers and compare source bytes;
+62 selected isolated shell checks pass. The source helper is explicit, with no installed fallback.
+A follow-up read-only report in `/tmp/explorer-tavs-sync-failure-cases-20261012.md` independently
+probed these failure semantics before implementation. Its findings were tested against source.
+No real plugin root, setting, schedule or existing worker was changed. Copy failure can leave
+prior successful copies in place, reported with nonzero status. Native deployment remains separate.

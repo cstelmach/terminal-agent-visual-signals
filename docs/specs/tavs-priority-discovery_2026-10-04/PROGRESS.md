@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-12 22:50 CEST
-**Version:** 3.2
+**Last Updated:** 2026-10-12 23:05 CEST
+**Version:** 3.3
 
 ## Session Metadata
 
@@ -28,7 +28,7 @@
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
-| 7: Safe previews and recovery controls | In Progress | 2026-10-12 21:07 | | Feature hashes below | 443 Swift; 20 recovery Bats this slice | | GUI fixture verified; copy/native pending |
+| 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Not Started | | | | | | SPEC 2 |
 | 9: Automatic attention focus | Not Started | | | | | | SPEC 3 |
 
@@ -51,28 +51,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 ## Log
 
-### Phase 4 started: 2026-10-12 11:41 CEST
-
-Reoriented from e485618 with clean source. Phase 2 remains Blocked only for native acceptance;
-this record-only foundation can proceed independently. Backups/scratch are in
-`/tmp/tavs-phase4-20261012T114102/`. Use the Phase 3 runner and explicit source-built helper.
-Two read-only source explorations cover intake/debug compatibility and record/adoption rules.
-Wiki recall was partial: it supplied a current Claude documentation pointer but no useful
-payload-schema answer. Current source plus primary provider documentation must fill that gap.
-
-The Swift record foundation is delegated to implement_phase4_record_store, owning only its new
-module and tests. Parent owns headless intake, shell bridges and integrations. Shared schemas
-separate meaningful observations from background intent; consumer-owned native adoption avoids
-hook/GUI overwrite races. Generation/device/foreground evidence gates adoption and attention.
-Per-TTY publication comparison/replacement uses a short file lock for stale synthetic updates.
-This is runtime write ordering, not a process ledger. No preview/controller ownership is added.
-
-Headless support uses the known --validate-config entry with an exact capability response;
-new flags are invoked only after that query. New headless dispatch precedes isolated UI launch.
-Only allowed metadata survives intake. No raw payload/argv/process arguments/title/cwd diagnostic
-content is retained. Preserve existing permission/context/session/directory behavior separately.
-New small intake module and SessionsView wiring are connected additions needed beyond PLAN's
-named files; keep them focused and record their final scope in the divergence check.
+> Phase 4 startup is complete. [Detailed log](PROGRESS_appendix_phase-4.md).
 
 ### Phase 3: DONE (2026-10-12)
 > Detailed log: [PROGRESS_appendix_phase-3.md](PROGRESS_appendix_phase-3.md)
@@ -198,13 +177,7 @@ discovery, settings and login registration, not merely substitute a temporary re
 
 ### Phase 3
 
-- Seven planned runner/fixture/test/documentation paths changed, plus the ordinary audit report.
-- The test runner and its connected callers are one isolation feature. No production helper,
-  watchdog, sandbox, dependency or replacement test framework was introduced.
-- Proceeded past Phase 2's acceptance blocker because this phase consumes no live native result;
-  execute-spec E1 allows skipping Blocked phases. No skipped acceptance is marked DONE.
-- Additional audited Python runs were justified by shared helper changes. Unsafe remaining
-  cases were explicitly excluded; passing suites were not repeated after verification.
+> Completed isolation notes. [Detailed log](PROGRESS_appendix_phase-3.md).
 
 ### Phase 2
 
@@ -217,14 +190,7 @@ discovery, settings and login registration, not merely substitute a temporary re
 
 ### Phase 1
 
-- Eight planned source/test paths changed, all linked to the Phase 1 steps/tests.
-- SPEC edits are limited to tracking frontmatter; PLAN and root hard-lock state are untouched.
-- Added one review synopsis required by the GOAL milestone and refreshed GOAL activation metadata.
-  These are state/review documentation, not additional product scope.
-- Kept the runner's polling/draining responsibilities small; no dependency, adapter framework,
-  service or process-provenance mechanism was introduced.
-- Checks passed before the connected native-catalogue feature commit. No duplicate unchanged
-  failure loop or unsafe real-home shell run occurred.
+> Completed native notes. [Detailed log](PROGRESS_appendix_phase-1.md).
 
 Planning previously changed only the package state files and required capture; those logs remain.
 
@@ -891,3 +857,44 @@ no new service, dependency or recovery protocol. API, bug, roadmap and companion
 **Next:** finish Phase 7 exact-copy packaging and fake-install coverage. Read cmd-sync and its
 connected CLI/adapters before tests. Keep required native acceptance Blocked in Phase 2. Do not
 start Phase 8 or treat fixture controls as physical terminal evidence. The master goal stays active.
+
+
+### Phase 7 source and copied-install checkpoint: 2026-10-12 23:05 CEST
+
+Continued from `185e4d2` with clean source. `0efa3c4` copies the root dispatcher, Claude/Codex
+adapters, both hook JSON files, plugin shell source and Codex installer. Required directories,
+copy operations and execute-bit repairs propagate errors, including conditional Bash callers.
+Core/CLI dependencies still use existing globs. No recursive sync, rollback service or new
+installer mode was added. Earlier successful copies may remain when a later copy fails.
+
+Seven new fake-install tests compare exact bytes and execute copied CLI recovery/help,
+standalone shell installation/readers, Codex installation and disabled-visual Claude/Codex
+intake. Direct scripts start at 0644 to reproduce stale modes. Preferences, schedules and lock
+sentinels are preserved. Missing explicit helpers remain failures after suspension is saved.
+Typed fixture logs contain only fixed provider/session identifiers; no raw payload logging.
+
+Red `Cn3aV3` failed all six initial copy/dispatch/error cases. First green attempt `D33Qwd`
+passed five but failed an expected path containing a double slash: the copied Codex installer
+correctly normalized it. Normalized the test root, not production argv. Final seven cases
+passed in `W0bqBi`. Selected regressions `n3orIs` passed 62/62 (sync, recover, shellrc,
+managed-background and suspension parity). `BQPYDG` repeated seven copied-entry cases against
+the newly rebuilt helper. bash -n and diff whitespace checks passed.
+
+`cc1b515` retires the old Scheduler reset method after the menu replacement left only test
+callers. Four action-only tests are removed; mixed scheduler suspension/unknown-state assertions
+remain, as do current independent recovery/client regressions. Full Swift `Mz8PCt` passed
+439/439 in 7.188 seconds without warnings. The previous 443 count included those four retired
+tests. Release `o4lwtX` passed in 9.97 seconds, using the owned Phase 6 scratch build.
+Read-only follow-up: `/tmp/explorer-tavs-sync-failure-cases-20261012.md`; source findings were
+verified with failure injection and existing-mode fixtures. No native query or real-home sync.
+
+Phase 7 implementation steps 1-5 now have source/owned-PTY/fake-copy/fixture evidence. Required
+physical two-second +/-250 ms highlighting, keyboard focus, real hidden/split targets, ANSI/
+TrueColor and light/dark content, pane/Space navigation and locked-menu use remain unverified.
+Phase 7 is Blocked on these accepted native cases, not DONE. Earlier Ghostty Computer Use
+access denial remains binding; no alternate native automation or unchanged access retry ran.
+The prior staged fixture remains available; production app, schedules and sessions are untouched.
+
+**Next:** Phase 8 manual captured working set may proceed from this verified source foundation.
+Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected state/controller
+callers before tests. One phase per next goal iteration; the master goal remains active.

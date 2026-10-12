@@ -65,3 +65,19 @@ AppleEvents, terminal painting, installs or shell regression runs. Tests precede
 Goal continuations authorize the next phase after this phase's verified checkpoint.
 
 Continue with the [current progress log](PROGRESS.md).
+
+
+## Additional preserved finished notes
+
+### Phase 1
+
+- Eight planned source/test paths changed, all linked to the Phase 1 steps/tests.
+- SPEC edits are limited to tracking frontmatter; PLAN and root hard-lock state are untouched.
+- Added one review synopsis required by the GOAL milestone and refreshed GOAL activation metadata.
+  These are state/review documentation, not additional product scope.
+- Kept the runner's polling/draining responsibilities small; no dependency, adapter framework,
+  service or process-provenance mechanism was introduced.
+- Checks passed before the connected native-catalogue feature commit. No duplicate unchanged
+  failure loop or unsafe real-home shell run occurred.
+
+> Current execution: [PROGRESS.md](PROGRESS.md).
