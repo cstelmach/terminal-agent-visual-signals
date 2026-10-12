@@ -1,7 +1,15 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.12
+Version: 1.13
+
+## Finite render payload
+
+`TerminalRender` accepts exactly 23 NUL-delimited UTF-8 fields, capped at 16 KiB. They describe
+optional background, palette action and 16 colors, optional title, iTerm2 image action/path and
+bell. Native code encodes only the existing known escape templates; no OSC payload is parsed.
+Terminal C0/C1 bytes are rejected in title/path while joined emoji remain valid. An absent
+background is distinct from an explicit reset. Synthetic rendering never emits an alert bell.
 
 ## Physical lifetime and native aliases
 
