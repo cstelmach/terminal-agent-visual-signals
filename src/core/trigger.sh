@@ -24,6 +24,12 @@ case "$_tavs_status_lower" in
 esac
 unset _tavs_status_lower
 
+unset _TAVS_HOOK_PAYLOAD
+case "${1:-}" in
+    processing|permission|complete|idle|compacting|reset|subagent|subagent-start|subagent-stop|tool_error|tool-error|replay) ;;
+    *) printf 'tavs: unsupported signal state\n' >&2; exit 1 ;;
+esac
+
 # ==============================================================================
 # MUTE GATE — STAGE 0 (builtins only, before any source)
 # ==============================================================================
@@ -113,80 +119,14 @@ trap '[[ -n "${_TAVS_PENDING_BUFFER:-}" ]] && rm -f "$_TAVS_PENDING_BUFFER"' EXI
 # === DEBUG LOGGING ===
 debug_log_invocation() {
     [[ "$DEBUG_ALL" != "1" ]] && return 0
-
+    local state="$1" agent="${TAVS_AGENT:-unknown}" ts
+    case "$agent" in claude|codex|gemini|opencode) ;; *) agent=unknown ;; esac
+    ts=$(date +%Y%m%d-%H%M%S)
     mkdir -p "$DEBUG_LOG_DIR"
-    local ts=$(date +%Y%m%d-%H%M%S)
-    local log_file="${DEBUG_LOG_DIR}/${ts}-$$-${1:-unknown}.log"
-
-    {
-        echo "=== TERMINAL VISUAL SIGNALS DEBUG LOG ==="
-        echo "Timestamp: $(date -Iseconds 2>/dev/null || date)"
-        echo "PID: $$"
-        echo "PPID: $PPID"
-        echo ""
-        echo "=== ARGUMENTS ==="
-        echo "Arg count: $#"
-        echo "All args: $*"
-        echo "Arg 1 (state): ${1:-<empty>}"
-        echo ""
-        echo "=== WORKING DIRECTORY ==="
-        echo "PWD env var: $PWD"
-        echo "pwd command: $(pwd)"
-        echo "get_short_cwd: $(get_short_cwd 2>/dev/null || echo '<function not loaded>')"
-        echo ""
-        echo "=== TTY INFO ==="
-        echo "TTY_DEVICE: ${TTY_DEVICE:-<unset>}"
-        echo "TTY_SAFE: ${TTY_SAFE:-<unset>}"
-        echo "tty command: $(tty 2>/dev/null || echo '<no tty>')"
-        echo ""
-        echo "=== PARENT PROCESS ==="
-        ps -p $PPID -o pid,ppid,comm,args 2>/dev/null || echo "ps failed"
-        echo ""
-        echo "=== SCRIPT PATHS ==="
-        echo "SCRIPT_DIR: $SCRIPT_DIR"
-        echo "CORE_DIR: $CORE_DIR"
-        echo "BASH_SOURCE[0]: ${BASH_SOURCE[0]}"
-        echo ""
-        echo "=== HOOK PAYLOAD / STDIN ==="
-        # Use pre-captured payload from agent trigger (if available)
-        if [[ -n "${_TAVS_HOOK_PAYLOAD:-}" ]]; then
-            echo "$_TAVS_HOOK_PAYLOAD"
-        else
-            # Fallback: try reading stdin directly (non-Claude agents)
-            if read -t 0.1 -r stdin_line 2>/dev/null; then
-                echo "First line: $stdin_line"
-                local count=1
-                while read -t 0.1 -r stdin_line && [[ $count -lt 100 ]]; do
-                    echo "Line $((++count)): $stdin_line"
-                done
-            else
-                echo "(no stdin data)"
-            fi
-        fi
-        echo ""
-        echo "=== PERMISSION MODE ==="
-        echo "TAVS_PERMISSION_MODE: ${TAVS_PERMISSION_MODE:-<unset>}"
-        echo ""
-        echo "=== CONFIG (post-load) ==="
-        echo "TAVS_FACE_MODE: ${TAVS_FACE_MODE:-<unset>}"
-        echo "TAVS_TITLE_PRESET: ${TAVS_TITLE_PRESET:-<unset>}"
-        echo "TAVS_TITLE_MODE: ${TAVS_TITLE_MODE:-<unset>}"
-        echo "TAVS_TITLE_FORMAT: ${TAVS_TITLE_FORMAT:-<unset>}"
-        echo "TAVS_COMPACT_THEME: ${TAVS_COMPACT_THEME:-<unset>}"
-        echo "TAVS_COMPACT_CONTEXT_EYE: ${TAVS_COMPACT_CONTEXT_EYE:-<unset>}"
-        echo "ENABLE_TITLE_PREFIX: ${ENABLE_TITLE_PREFIX:-<unset>}"
-        echo "ENABLE_ANTHROPOMORPHISING: ${ENABLE_ANTHROPOMORPHISING:-<unset>}"
-        echo "TAVS_IDENTITY_MODE: ${TAVS_IDENTITY_MODE:-<unset>}"
-        echo "IDENTITY_MODE: ${IDENTITY_MODE:-<unset>}"
-        echo "_USER_CONFIG: ${_USER_CONFIG:-<unset>}"
-        echo "_USER_CONFIG exists: $(test -f "${_USER_CONFIG:-/nonexistent}" && echo yes || echo no)"
-        echo "TAVS_SESSION_ID: ${TAVS_SESSION_ID:-<unset>}"
-        echo ""
-        echo "=== END DEBUG LOG ==="
-    } > "$log_file" 2>&1
-
-    # Also append summary to consolidated log
-    echo "${ts} pid=$$ state=${1:-?} pwd=$PWD tty=${TTY_DEVICE:-?}" >> "${DEBUG_LOG_DIR}/summary.log"
+    local context_available=0
+    [[ "${TAVS_ORGANIZER_INTAKE:-0}" == 1 ]] && context_available=1
+    printf 'pid=%s agent=%s state=%s context_available=%s\n' "$$" "$agent" "$state" \
+        "$context_available" >> "$DEBUG_LOG_DIR/${ts}-$$-${state}.log"
 }
 
 # === TITLE TRACE LOGGING ===
@@ -194,24 +134,12 @@ debug_log_invocation() {
 debug_log_title_trace() {
     [[ "$DEBUG_ALL" != "1" ]] && return 0
     local state="$1"
-    local title_output="$2"
-    local extra_info="${3:-}"
-
+    case "$state" in
+        processing|permission|complete|idle|idle_[0-9]*|compacting|reset|subagent|tool_error) ;;
+        *) state=unknown ;;
+    esac
     mkdir -p "$DEBUG_LOG_DIR"
-    local ts=$(date +%Y%m%d-%H%M%S.%N 2>/dev/null || date +%Y%m%d-%H%M%S)
-    {
-        echo "--- TITLE TRACE $ts ---"
-        echo "state=$state"
-        echo "TAVS_FACE_MODE=${TAVS_FACE_MODE:-<unset>}"
-        echo "TAVS_TITLE_FORMAT=${TAVS_TITLE_FORMAT:-<unset>}"
-        echo "session_icon=$(get_session_icon 2>/dev/null || echo '<error>')"
-        echo "dir_icon=$(get_dir_icon 2>/dev/null || echo '<error>')"
-        echo "tty_device=${TTY_DEVICE:-<empty>}"
-        echo "tty_writable=$(test -w "${TTY_DEVICE:-/nonexistent}" && echo yes || echo no)"
-        echo "title_output=$title_output"
-        [[ -n "$extra_info" ]] && echo "extra=$extra_info"
-        echo ""
-    } >> "${DEBUG_LOG_DIR}/title-trace.log" 2>&1
+    printf 'event=title-update state=%s\n' "$state" >> "$DEBUG_LOG_DIR/title-trace.log"
 }
 
 # Log this invocation
@@ -219,6 +147,14 @@ debug_log_invocation "$@"
 
 # Exit silently if no TTY available
 [[ -z "$TTY_DEVICE" ]] && exit 0
+
+_observation_state="$1"
+case "$_observation_state" in
+    subagent-start|subagent-stop) _observation_state=subagent ;;
+    tool-error) _observation_state=tool_error ;;
+esac
+[[ "$_observation_state" != replay ]] && _tavs_organizer_begin "$_observation_state"
+unset _observation_state
 
 # Helper: Apply palette if enabled (must be called BEFORE background)
 # This prevents contrast flicker by setting colors before background changes
@@ -543,9 +479,9 @@ case "$STATE" in
             sleep 1.5
             # Return to processing or subagent state
             if has_active_subagents 2>/dev/null; then
-                "$SCRIPT_DIR/trigger.sh" subagent
+                TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" subagent
             else
-                "$SCRIPT_DIR/trigger.sh" processing
+                TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" processing
             fi
         ) </dev/null >/dev/null 2>&1 &
         disown 2>/dev/null || true

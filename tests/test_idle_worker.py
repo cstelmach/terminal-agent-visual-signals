@@ -70,14 +70,14 @@ class TestIdleFaceKeyGeneration:
 class TestIdleWorkerEmitOscPattern:
     """Test that idle worker writes OSC bytes through emit_osc."""
 
-    def test_uses_emit_osc_for_color_writes(self):
-        """Color writes should use the mute-aware emit_osc choke point."""
+    def test_routes_color_writes_through_background_intent_helper(self):
+        """Color writes retain intent before reaching the mute-aware OSC writer."""
         result = run_bash(
-            'grep -E \'emit_osc "\\\\033\\]11\' src/core/idle-worker-background.sh'
+            'grep "send_osc_bg" src/core/idle-worker-background.sh'
         )
 
         assert result.returncode == 0
-        assert "emit_osc" in result.stdout
+        assert "send_osc_bg" in result.stdout
 
     def test_uses_emit_osc_for_title_writes(self):
         """Title writes should use the mute-aware emit_osc choke point."""

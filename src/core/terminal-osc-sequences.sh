@@ -7,6 +7,7 @@
 
 # Source face themes for anthropomorphising feature
 TERMINAL_SH_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$TERMINAL_SH_DIR/organizer-state.sh"
 # Note: themes.sh kept for backward compatibility, agent-theme.sh provides get_random_face()
 source "$TERMINAL_SH_DIR/themes.sh"
 
@@ -98,6 +99,9 @@ emit_osc() {
 send_osc_bg() {
     local color="$1"
     [[ -z "$TTY_DEVICE" ]] && return
+    local intent_result=0
+    _tavs_organizer_record_intent "$color" || intent_result=$?
+    [[ "$intent_result" == 3 ]] && return 0
     if [[ "$color" == "reset" ]]; then
         emit_osc "\033]111\033\\"
     else

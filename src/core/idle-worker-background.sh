@@ -76,6 +76,7 @@ cleanup_stale_timers() {
 # The main worker function
 unified_timer_worker() {
     local tty_device="$1"
+    export TAVS_ORGANIZER_SYNTHETIC=1
     local start_seconds=$SECONDS
     local current_stage=0
     local last_applied_stage=-1
@@ -135,7 +136,7 @@ unified_timer_worker() {
             _TAVS_SUPPRESS_OUTPUT=0
             {
                 _idle_reset_palette 2>/dev/null || true
-                should_send_bg_color && emit_osc "\033]111\033\\" 2>/dev/null || true
+                should_send_bg_color && send_osc_bg reset 2>/dev/null || true
                 emit_osc "\033]0;%s\033\\" "$SHORT_CWD" 2>/dev/null || true
             } &
             local reset_pid=$!
@@ -179,11 +180,7 @@ unified_timer_worker() {
 
             # Apply Background Color
             if should_send_bg_color; then
-                if [[ "$stage_color" == "reset" ]]; then
-                    emit_osc "\033]111\033\\"
-                else
-                    emit_osc "\033]11;%s\033\\" "$stage_color"
-                fi
+                send_osc_bg "$stage_color"
             fi
 
             # Apply Title using compose_title()

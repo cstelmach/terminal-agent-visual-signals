@@ -256,7 +256,7 @@ assign_dir_icon() {
         done < "$cache_file"
 
         if [[ "$cached_cwd" == "$cwd" ]]; then
-            [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Dir icon cache hit: $cwd" >&2
+            [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Directory identity cache hit" >&2
             return 0
         fi
     fi
@@ -327,7 +327,7 @@ assign_dir_icon() {
     mv "$tmp_cache" "$cache_file" 2>/dev/null
 
     [[ "${DEBUG_ALL:-0}" == "1" ]] && \
-        echo "[TAVS] Dir icon assigned: $main_icon (dir=$dir_path, cwd=$cwd, TTY=$TTY_SAFE)" >&2
+        echo "[TAVS] Directory identity assigned" >&2
 }
 
 # Get this session's directory icon (empty if none assigned).
@@ -365,5 +365,5 @@ release_dir_icon() {
 
     rm -f "$cache_file" 2>/dev/null
 
-    [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Dir icon released (TTY=$TTY_SAFE)" >&2
+    [[ "${DEBUG_ALL:-0}" == "1" ]] && echo "[TAVS] Directory identity released" >&2
 }
