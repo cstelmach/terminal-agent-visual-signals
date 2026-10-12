@@ -26,7 +26,7 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
-| P6 | live-vs-tests | Sample the live process after tests | 1 | unverified | 2026-10-03 |
+| P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12 |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices) |
 | P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 |
@@ -664,6 +664,70 @@ reconstructions. The whole master goal remains incomplete.
   temporary roots fixed it. The test's directory-URL slash assertion was corrected to compare
   paths; the full suite passed 237/237. The corrected fixture process stays running, but
   Computer Use cannot select its menu-only UI. Asked the operator to open its Sessions window.
+
+---
+
+## 2026-10-12 · model-unverified · tavs-development-dock-launch
+
+meta:
+  model: GPT-6 family self-report; exact served variant unobserved
+  model_source: self-reported, reconstructed [R]
+  interface: codex-desktop
+  thinking: user requested thoughtful continuation; runtime setting unverified
+  session: 01a10879
+  trace: observed actions in this conversation
+
+**Framing [O].** The operator asked why TAVS did not open and explicitly authorized a normal
+Dock application during development. The isolated test app was running, while the production
+app was separately alive. The task was to make the development window accessible and open it,
+without installing a replacement or changing working terminal restrictions. The earlier goal
+remained incomplete because native Ghostty acceptance was still unavailable.
+
+**Strategy [O/R].** Source inspection found the isolated delegate's accessory policy and a
+leading MenuBarExtra scene. The app had no initial visible window. [R] Changing those two
+development responsibilities directly was preferable to adding another UI control route or
+asking the operator to find an inaccessible menu. The implementation changed the isolated
+delegate to regular activation and retained Sessions as its primary scene. Production behavior
+and the test branch's private storage, fixture banner and omitted scheduler were preserved.
+
+**Action trace [O]**
+
+| # | Move | Object | Outcome |
+|---|------|--------|---------|
+| 1 | Read and inventory | App source, state and process metadata | Separate production/test identities |
+| 2 | Back up and edit | Isolated delegate and scene | Regular activation, primary Window |
+| 3 | Verify | Existing Swift suite and release | 237/237; build succeeds |
+| 4 | Stage | Owned test bundle and LSUIElement | Only verified test process restarted |
+| 5 | Computer Use | Normal app launch | Visible Sessions window and fixture banner |
+| 6 | Interact | Row selection and priority menu | Three selected; choices visible |
+| 7 | Observe and stop | User-interaction signal | Fresh state, no claimed priority edit |
+| 8 | Sample runtime | Public process metadata | Regular policy; production PID unchanged |
+
+**Decision points [O].** The user's development-mode permission was applied to the isolated
+app rather than the installed scheduler app. No new environment switch was needed. The
+existing Window and SessionsView were reused, and ordinary macOS app controls replaced the
+test-only menu-bar control. The staged plist changed alongside the delegate so launch metadata
+did not contradict runtime behavior. Verification used the supported Computer Use tool after
+the source change; no Ghostty access denial was bypassed.
+
+**Failure arc [O/R], development reachability.** A live process had previously been mistaken
+for a usable development interface. Source and process checks separated successful launch
+from window visibility. The correction opened the window on the first supported-tool attempt
+after rebuilding. [R] The transferable rule is to prove the UI affordance users need, rather
+than using process liveness as the completion test. The remaining native acceptance cannot
+be inferred from this fixture window.
+
+**Interaction boundary [O].** Computer Use detected user activity during the High-priority
+click. A fresh AX read showed Normal values still present, so the edit was not reported as
+successful. Further UI mutations stopped and the app was left available. This avoided
+competing with the operator while preserving evidence of the already verified multiselection.
+
+**Verification and confidence [O/R].** Full tests passed in 2.174 seconds, release in 5.54.
+Signature/plist validation, visible screenshot/AX state and regular activation metadata passed.
+Resizing, GUI persistence and real native navigation were not checked. P6 recurred; no new
+skill or automation is proposed. Tool outcomes and edits are observed; strategy causality
+and exact model attribution remain reconstructed. This closes the opening/debug request,
+not the full nine-phase implementation goal.
 
 ---
 

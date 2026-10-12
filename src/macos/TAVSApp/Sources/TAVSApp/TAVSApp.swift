@@ -170,7 +170,7 @@ struct IsolatedSessionsLaunch {
 }
 
 private final class IsolatedSessionsDelegate: NSObject, NSApplicationDelegate {
-    func applicationDidFinishLaunching(_ notification: Notification) { NSApp.setActivationPolicy(.accessory) }
+    func applicationDidFinishLaunching(_ notification: Notification) { NSApp.setActivationPolicy(.regular) }
 }
 
 private struct IsolatedSessionsApp: App {
@@ -185,10 +185,6 @@ private struct IsolatedSessionsApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("TAVS Sessions Test", systemImage: "list.bullet.rectangle") {
-            OpenSessionsButton()
-            Button("Quit Sessions Test") { NSApplication.shared.terminate(nil) }
-        }
         Window("TAVS Sessions Test", id: "sessions") {
             VStack(alignment: .leading) {
                 Text(modeLabel).font(.caption).padding(.horizontal)
