@@ -120,13 +120,13 @@ final class ProcessRunnerTests: XCTestCase {
         defer { close(lockFD) }
         let store = VisualRestrictionsStateStore(url: root.appendingPathComponent("suspension.state"))
         try store.write(suspended: false)
-        let entered = expectation(description: "Device open pauses before syscall")
+        let entered = DispatchSemaphore(value: 0)
         let finished = expectation(description: "Current policy skips paint")
         let release = DispatchSemaphore(value: 0)
         defer { release.signal() }
         let result = ManagedWriteResult()
         let runner = SystemProcessRunner(openDevice: { path, flags in
-            entered.fulfill()
+            entered.signal()
             release.wait()
             return Darwin.open(path, flags)
         })
@@ -138,7 +138,8 @@ final class ProcessRunnerTests: XCTestCase {
             })
             finished.fulfill()
         }
-        wait(for: [entered], timeout: 1)
+        // Do not spend the writer's real 100 ms budget polling XCTest's main run loop.
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
         XCTAssertEqual(flock(lockFD, LOCK_EX | LOCK_NB), 0, "Opening a device cannot hold output serialization")
         try store.write(suspended: true)
         XCTAssertEqual(flock(lockFD, LOCK_UN), 0)

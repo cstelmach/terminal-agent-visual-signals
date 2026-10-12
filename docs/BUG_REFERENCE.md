@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.3
+Version: 1.4
+
+## Writer race fixture waits past its real deadline
+
+The full Phase 6 Swift run exposed a timeout in the paused-open test despite all store cases
+passing. Its XCTest main-loop wait and suspension write occurred inside the real 100 ms writer
+budget. The fixture now waits directly on a semaphore for the open barrier. No production
+deadline or rejection assertion changed. Focused 57 and full 312 isolated Swift tests pass.
+
+Keep failure logs when a timing test fails, and remove harness scheduling latency before
+considering a timeout change. A timed-out writer must still reject late bytes and release its
+owned resources.
 
 ## Suspension readers and policy projection
 
