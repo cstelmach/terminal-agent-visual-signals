@@ -365,6 +365,73 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertEqual(try service.target(tty: plain.tty, owner: plain.ttyOwner), native)
         XCTAssertThrowsError(try recovery(allowed: []).target(tty: plain.tty, owner: plain.ttyOwner))
     }
+
+    func testRelaunchReconciliationTouchesPriorEffectsOnly() throws {
+        let unaffected = try terminal(10), affected = try terminal(11)
+        try cache(unaffected)
+        try cache(affected, effect: true)
+        let items = recovery().reconcilePriorEffects()
+        XCTAssertEqual(items.count, 1)
+        XCTAssertEqual(items.first?.target, affected)
+        XCTAssertEqual(try read(affected), Data("\u{1B}]111\u{1B}\\".utf8))
+        try noBytes(unaffected)
+        XCTAssertEqual(restrictions.read(), .active)
+    }
+
+    func testCachedTargetPrefersOneNativeAliasWithoutDiscovery() throws {
+        let plain = try terminal(10)
+        let native = TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,
+            nativeSurface: GhosttySurfaceID(application: generation(80), terminalID: "pane"))
+        try cache(plain)
+        try cache(native)
+        let service = recovery(native: { XCTFail("Cached reconciliation must not discover targets"); return [] })
+        XCTAssertEqual(try service.cachedTarget(tty: plain.tty), native)
+        XCTAssertThrowsError(try recovery(allowed: []).cachedTarget(tty: plain.tty))
+        try noBytes(plain)
+    }
+
+    func testSyntheticCheckValidatesWithoutPaintingOrCaching() throws {
+        let target = try terminal(10), value = intent(target)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "complete",
+            event: nil, deliveryID: value.deliveryID, responseID: nil, observedAt: 1_000))
+        XCTAssertFalse(try recovery().write(.checkSynthetic(value, intakeAt: 1_000), to: target))
+        XCTAssertTrue(state.cachedRecords().bindings.isEmpty)
+        XCTAssertNil(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max))
+        clock.advance(by: 1)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+            event: nil, deliveryID: "new-delivery", responseID: nil, observedAt: 1_001))
+        XCTAssertThrowsError(try recovery().write(.checkSynthetic(value, intakeAt: 1_000), to: target))
+        try noBytes(target)
+    }
+
+    func testCachedTargetRejectsAmbiguousNativeSurfacesAndReusedOwner() throws {
+        let plain = try terminal(10)
+        for id in ["pane-a", "pane-b"] {
+            try cache(TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,
+                nativeSurface: GhosttySurfaceID(application: generation(80), terminalID: id)))
+        }
+        XCTAssertThrowsError(try recovery().cachedTarget(tty: plain.tty))
+        identities[10] = ProcessIdentity(generation: ProcessGeneration(pid: 10, startSeconds: 101, startMicroseconds: 1),
+            parentPID: 1, group: 10, device: plain.device, foregroundGroup: 10)
+        XCTAssertThrowsError(try recovery().cachedTarget(tty: plain.tty))
+        try noBytes(plain)
+    }
+
+    func testRelaunchClearsLegacyForegroundAfterCanceledGlobalPaintFailure() throws {
+        let target = try terminal(10)
+        try cache(target)
+        _ = try SystemProcessRunner().writeManagedToDevice(path: target.tty,
+            lockURL: state.lockURL(forTTY: target.tty)) { _, deadline in
+            try self.state.saveEffectUnlocked(TerminalEffectRecord(target: target,
+                controller: self.generation(90), effectID: "failed-global", kind: .globalRestriction,
+                background: "#123456", heartbeatAt: 1_000, active: false), deadline: deadline)
+            return nil
+        }
+        XCTAssertEqual(recovery().reconcilePriorEffects().first?.status, .restored)
+        XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8))
+    }
 }
 
 private final class RecoveryWriteResult { var value: Result<Bool, Error>? }

@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.6
+Version: 1.7
+
+## Startup resets unaffected shell backgrounds
+
+Registration followed by unrestricted reconciliation painted OSC 111 into newly discovered
+plain shells. Startup now registers without paint and reconciles only cached effect targets.
+An inactive global effect still requires palette/foreground cleanup because cancellation can
+succeed before device output fails. Owned-PTY regressions cover both cases and preserve the
+background of an untouched shell. Broadcaster routing and startup checks pass with 340 Swift
+tests; headless and shell integration remain in progress.
 
 ## Suspension loses the rule needed for independent resume
 

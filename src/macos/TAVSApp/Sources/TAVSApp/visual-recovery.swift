@@ -5,6 +5,7 @@ enum ManagedVisualOperation {
     case register
     case ordinary(OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case forcedReset(OrdinaryBackgroundIntent, intakeAt: Double, title: String)
+    case checkSynthetic(OrdinaryBackgroundIntent, intakeAt: Double)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -67,6 +68,12 @@ final class VisualRecovery {
         return try processRunner.writeManagedToDevice(path: target.tty,
             lockURL: state.lockURL(forTTY: target.tty)) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
+            if case .checkSynthetic(let intent, let intakeAt) = operation {
+                guard intent.tty == target.tty, intent.device == target.device,
+                      intent.producer == target.ttyOwner else { throw TerminalVisualStateError.invalidRecord }
+                try self.state.validateSyntheticUnlocked(intent, intakeAt: intakeAt, deadline: deadline)
+                return nil
+            }
             try self.state.cacheTargetUnlocked(target, deadline: deadline)
             if case .register = operation { return nil }
             if case .emergencyReset = operation {
@@ -112,7 +119,7 @@ final class VisualRecovery {
             var resetLegacy = effect?.kind == .globalRestriction && effect?.active == true
             var clearSelective = false
             if case .reconcile(let reset, let clear) = operation {
-                resetLegacy = resetLegacy || reset
+                resetLegacy = resetLegacy || reset || effect?.kind == .globalRestriction
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
             }
@@ -193,6 +200,31 @@ final class VisualRecovery {
             .filter { $0.device == plain.device && $0.ttyOwner == plain.ttyOwner }
         guard fresh.count == 1 else { throw VisualRecoveryError.scopeUnavailable }
         return fresh[0]
+    }
+
+    func reconcilePriorEffects() -> [VisualRecoveryItem] {
+        let cached = state.cachedRecords()
+        let targets = Array(Set(cached.effects.map(\.target)))
+        let items = fanout(targets, operation: .reconcile(resetLegacy: false, clearSelective: true))
+        return items + cached.unreadable.map { _ in
+            VisualRecoveryItem(status: .failed, reason: "Cached visual record unavailable.")
+        }
+    }
+
+    func cachedTarget(tty: String) throws -> TerminalTargetBinding {
+        let cached = state.cachedRecords()
+        let matches = Set(cached.bindings + cached.effects.map(\.target)).filter {
+            $0.tty == tty && state.validateTarget($0) == .valid
+                && (allowedSurfaces == nil || $0.nativeSurface.map { allowedSurfaces!.contains($0) } == true)
+        }
+        guard let first = matches.first,
+              matches.allSatisfy({ $0.device == first.device && $0.ttyOwner == first.ttyOwner }) else {
+            throw VisualRecoveryError.targetUnavailable
+        }
+        let native = matches.filter { $0.nativeSurface != nil }
+        if native.count == 1 { return native.first! }
+        guard native.isEmpty, matches.count == 1 else { throw VisualRecoveryError.scopeUnavailable }
+        return first
     }
 
     private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation) -> [VisualRecoveryItem] {
