@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.18
+Version: 1.19
+
+## Unmapped outside surfaces falsely keep a manual paint ID fresh
+
+The controller initially advanced its common heartbeat when no mapped target reported failure.
+An unmapped outside row produced no failure item even though its saved lease was not renewed.
+After remapping, the controller reused an expired ID that the writer correctly rejected.
+Heartbeat now advances only when every outside row is mapped and every delivery avoids failure.
+A virtual-clock/owned-PTY regression reproduces expiry through repeated unmapped catalogues,
+then verifies immediate fresh-ID ownership after remapping. Failed/empty catalogue tests also
+check that queued and coalesced work cannot paint after native coverage becomes unavailable.
 
 ## Recovery releases a preview's revision before pending metadata cleanup
 
@@ -10,7 +20,7 @@ device failure could leave the old record active while subsequent atomic marker 
 an unpinned inode. Retired preview runs now remain in pending cleanup, and exact-ID cleanup
 cancels metadata before device open. Changed revisions suppress visual repaint. A controller
 regression checks repeated replacement, retained mismatch and cleanup with no emitted bytes.
-The future manual run must preserve the same pin lifetime while effects remain recoverable.
+Manual runs now preserve the same pin lifetime while effects or pending cleanup remain live.
 
 ## Synced installations retain stale or non-executable entry points
 

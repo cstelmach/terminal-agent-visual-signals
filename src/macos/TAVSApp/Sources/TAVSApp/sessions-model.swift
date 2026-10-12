@@ -36,12 +36,22 @@ final class SessionsModel: ObservableObject {
     private let focus: FocusController?
     private let recoverAction: ((Bool, @escaping (Result<VisualRecoveryReport, Error>) -> Void) -> Void)?
     private var focusObservation: AnyCancellable?
+    private var modeObservation: AnyCancellable?
     private let visualQueue = DispatchQueue(label: "tavs.sessions.visual-state")
     private var isOpen = false
+    private var polling = false
 
     var previewStatus: String { focus?.previewStatus ?? "Preview unavailable." }
     var previewActive: Bool { focus?.isPreviewActive ?? false }
     var previewCleanupError: String? { focus?.cleanupError }
+    var focusMode: FocusMode { focus?.mode ?? .off }
+    var focusStatus: String { focus?.focusStatus ?? "Focus: Off" }
+    var focusCleanupError: String? { focus?.focusCleanupError }
+    func isInWorkingSet(_ id: GhosttySurfaceID) -> Bool { focus?.workingSet.contains(id) == true }
+    var canFocusSelected: Bool {
+        focus != nil && !recovering && catalogueAvailable && !selection.isEmpty
+            && !visualRestrictionsStatus.disablesRestrictions
+    }
 
     var rows: [GhosttySurface] {
         surfaces.enumerated().sorted {
@@ -70,6 +80,7 @@ final class SessionsModel: ObservableObject {
         self.visualRestrictionsState = restrictions
         self.visualRestrictionsStatus = restrictions.read()
         self.focusObservation = focus?.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }
+        self.modeObservation = focus?.$mode.sink { [weak self] mode in self?.updatePolling(mode) }
         if FileManager.default.fileExists(atPath: prioritiesURL.path) {
             do {
                 let saved = try JSONDecoder().decode(SavedPriorities.self, from: Data(contentsOf: prioritiesURL))
@@ -117,10 +128,25 @@ final class SessionsModel: ObservableObject {
         guard !isOpen else { return }
         isOpen = true
         refresh()
-        timerScheduler.scheduleRepeating(interval: 2, on: .main) { [weak self] in self?.refresh() }
+        updatePolling(focusMode)
     }
 
-    func closed() { isOpen = false; timerScheduler.cancelAll(); clearPreview() }
+    func closed() { isOpen = false; clearPreview(); updatePolling(focusMode) }
+
+    private func updatePolling(_ mode: FocusMode) {
+        let needed = isOpen || mode != .off
+        guard needed != polling else { return }
+        polling = needed
+        timerScheduler.cancelAll()
+        if needed { timerScheduler.scheduleRepeating(interval: 2, on: .main) { [weak self] in self?.refresh() } }
+    }
+
+    func focusSelected() {
+        guard canFocusSelected else { return }
+        focus?.focusSelected(surfaces.filter { selection.contains($0.id) }, catalogue: surfaces)
+    }
+
+    func focusOff() { focus?.focusOff() }
 
     func clearPreview() { focus?.clearPreview() }
 
@@ -157,6 +183,7 @@ final class SessionsModel: ObservableObject {
 
     func refresh() {
         visualRestrictionsStatus = visualRestrictionsState.read()
+        if visualRestrictionsStatus.disablesRestrictions, focusMode != .off { focusOff() }
         guard !refreshing else { return }
         refreshing = true
         readCatalogue { [weak self] result in
@@ -192,11 +219,13 @@ final class SessionsModel: ObservableObject {
         selection.formIntersection(ids)
         if priorityStorageError == nil { save(priorities.filter { ids.contains($0.key) }) }
         visualCoverage = coverage
+        focus?.acceptCatalogue(rows)
         refreshing = false
     }
 
     private func markCoverageStale() {
         clearPreview()
+        focus?.catalogueUnavailable()
         visualCoverage = visualCoverage.mapValues {
             TerminalVisualCoverage(observation: $0.observation, intent: $0.intent, attentionEligible: false,
                                    status: "Last-known coverage; native catalogue unavailable.")

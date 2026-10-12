@@ -78,6 +78,171 @@ final class FocusControllerTests: XCTestCase {
         return Data(bytes.prefix(count))
     }
 
+    private func awaitManual(_ focus: FocusController) {
+        let done = expectation(description: "Manual update completed")
+        focus.$focusStatus.first { $0.contains("outside") || $0.contains("unavailable") }
+            .sink { _ in done.fulfill() }.store(in: &subscriptions)
+        wait(for: [done], timeout: 2)
+    }
+
+    func testManualCapturedSetIsIndependentOfPreviewAndClearsLatestIntent() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        _ = try read(1)
+        focus.preview([b]); awaitPaint(focus, count: 1); _ = try read(1)
+        XCTAssertEqual(focus.workingSet, [a.id])
+        focus.clearPreview(); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        try recovery.write(.ordinary(OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, deliveryID: "updated", updatedAt: 1_000, background: "#AA2200"),
+            synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(1)
+        focus.focusOff()
+        XCTAssertEqual(focus.mode, .off); XCTAssertTrue(focus.workingSet.isEmpty)
+        XCTAssertEqual(try read(1), Data("\u{1B}]11;#AA2200\u{1B}\\".utf8))
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testNewOutsideSurfaceAndConfirmedLastClosureEndManualFocus() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let c = try surface(30)
+        focus.acceptCatalogue([a,b,c]); _ = try read(2)
+        XCTAssertEqual(focus.workingSet, [a.id])
+        focus.acceptCatalogue([b,c])
+        XCTAssertEqual(focus.mode, .off)
+        _ = try read(1)
+        XCTAssertEqual(try read(2), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testCatalogueFailureRetainsLogicalSetAndExpiredOwnershipGetsANewID() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let old = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        focus.catalogueUnavailable()
+        XCTAssertEqual(focus.workingSet, [a.id]); XCTAssertEqual(focus.mode, .manual)
+        clock.advance(by: 10)
+        focus.acceptCatalogue([a,b]); _ = try read(1)
+        let next = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(next.effectID, old.effectID)
+        XCTAssertEqual(next.heartbeatAt, 1_010)
+        focus.focusOff(); _ = try read(1)
+    }
+
+    func testNoVerifiedWorkingBindingCannotDimTheWholeCatalogue() throws {
+        var a = try surface(10); a.mappingIssue = .missingTTY
+        let b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
+        XCTAssertEqual(focus.workingSet, [a.id])
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.focusOff()
+    }
+
+    func testUnmappedOutsideSurfaceCannotKeepAnExpiredPaintIDFresh() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let old = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        var unavailable = b; unavailable.mappingIssue = .missingTTY
+        for _ in 0..<4 {
+            clock.advance(by: 2); focus.acceptCatalogue([a,unavailable]); awaitManual(focus)
+        }
+        clock.advance(by: 2); focus.acceptCatalogue([a,b]); awaitManual(focus)
+        let next = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(next.effectID, old.effectID)
+        XCTAssertTrue(state.isSelectiveLeaseActive(next))
+        focus.focusOff()
+    }
+
+    func testRecoveryEndsManualWithoutPaintingAndRestartStartsOff() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        focus.cancelForRecovery()
+        XCTAssertEqual(focus.mode, .off); XCTAssertTrue(focus.workingSet.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        XCTAssertFalse(recovery.recover().hasFailures); _ = try read(1)
+        let restarted = controller(MockTimerScheduler())
+        XCTAssertEqual(restarted.mode, .off)
+        restarted.focusSelected([a], catalogue: [a,b])
+        XCTAssertEqual(restarted.mode, .off)
+    }
+
+    func testCatalogueFailureInvalidatesBlockedAndCoalescedManualUpdates() throws {
+        let a = try surface(10), b = try surface(20), c = try surface(30)
+        let queue = DispatchQueue(label: "blocked.manual")
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let focus = controller(MockTimerScheduler(), queue: queue, colors: { _ in
+            entered.signal(); release.wait()
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer { release.signal() }
+        focus.focusSelected([a], catalogue: [a,b])
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus.acceptCatalogue([a,b,c]); focus.catalogueUnavailable(); release.signal()
+        let drained = expectation(description: "Invalidated manual worker returned")
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }
+        wait(for: [drained], timeout: 2)
+        XCTAssertEqual(focus.workingSet, [a.id]); XCTAssertEqual(focus.mode, .manual)
+        XCTAssertTrue(focus.focusStatus.contains("stale"))
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        for index in 1...2 {
+            var ready = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        focus.acceptCatalogue([a,b,c]); awaitManual(focus)
+        _ = try read(1); _ = try read(2)
+        focus.focusOff(); _ = try read(1); _ = try read(2)
+    }
+
+    func testSessionsKeepOneCatalogueTimerThroughManualWindowCloseAndBrowsing() throws {
+        let a = try surface(10), b = try surface(20), timers = MockTimerScheduler()
+        let focus = controller(MockTimerScheduler())
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([a,b])) }, navigate: { _, _ in XCTFail("Focus must not navigate") },
+            timerScheduler: timers, clock: clock, visualRestrictionsState: restrictions, focus: focus)
+        model.opened(); model.selection = [a.id]; awaitPaint(focus, count: 1); _ = try read(0)
+        model.clearPreview(); _ = try read(0)
+        model.focusSelected(); awaitManual(focus); _ = try read(1)
+        XCTAssertEqual(timers.scheduledTimers.count, 1)
+        model.selection = [b.id]; awaitPaint(focus, count: 1); _ = try read(1)
+        model.setPriority(.high, for: [b.id])
+        XCTAssertEqual(focus.workingSet, [a.id])
+        model.closed(); _ = try read(1)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(timers.scheduledTimers.count, 1)
+        clock.advance(by: 2); timers.fireAll(); _ = try read(1)
+        model.opened()
+        XCTAssertEqual(timers.scheduledTimers.count, 1)
+        model.closed(); model.focusOff(); _ = try read(1)
+        XCTAssertTrue(timers.scheduledTimers.isEmpty)
+        XCTAssertEqual(model.selection, [b.id])
+    }
+
+    func testSessionsExternalRecoveryEndsManualAndCannotResumeIt() throws {
+        let a = try surface(10), b = try surface(20), timers = MockTimerScheduler()
+        let focus = controller(MockTimerScheduler())
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([a,b])) }, navigate: { _, _ in },
+            timerScheduler: timers, visualRestrictionsState: restrictions, focus: focus)
+        model.opened(); model.selection = [a.id]; awaitPaint(focus, count: 1); _ = try read(0)
+        model.clearPreview(); _ = try read(0)
+        model.focusSelected(); awaitManual(focus); _ = try read(1)
+        let cleared = expectation(description: "External recovery cleanup completed")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        try restrictions.write(suspended: true); model.refresh()
+        XCTAssertEqual(focus.mode, .off)
+        wait(for: [cleared], timeout: 2)
+        model.focusSelected(); XCTAssertEqual(focus.mode, .off)
+        try restrictions.write(suspended: false); model.refresh()
+        XCTAssertEqual(focus.mode, .off)
+        model.closed()
+    }
+
     func testMultiselectionUsesOneExpiryAndClearOnlyResetsBackground() throws {
         let rows = [try surface(10), try surface(20)], timers = MockTimerScheduler(), focus = controller(timers)
         focus.preview(rows); awaitPaint(focus, count: 2)

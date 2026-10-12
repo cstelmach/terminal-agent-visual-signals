@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.7
+Version: 1.8
 
 ## Public recovery commands
 
@@ -85,7 +85,7 @@ When publication succeeded before a device failure, later recovery retains that 
 or reset. If publication-lock contention consumes the whole budget, publication fails without a
 new budget or late retry. No arbitrary program-set color restoration is claimed.
 
-## Manual rendering foundation (Phase 8 in progress)
+## Manual focus (Phase 8 source verified)
 
 Dynamic schema-1 `focus` records use `focus.json`, separate from legacy/global `effect.json`
 and `preview.json`. They require normalized `focusColors` and marker `revision`; malformed,
@@ -104,7 +104,24 @@ retain precedence without replacing the dynamic record; clearing or expiry recom
 intent. Alias agreement compares inputs, revision, run and controller, not last computed color.
 Exact-ID clear cancels metadata before device open and emits no stale repaint after replacement.
 Stored revision mismatch cannot revive a lease after partial recovery and explicit resumption.
-Manual working-set/controller integration and GUI activation remain pending.
+`FocusController.focusSelected(_:catalogue:)` captures native surface IDs independently of
+browsing selection and priorities. Accepted catalogues retain that set, add new surfaces only
+to its outside set, and end Manual on confirmed last-member closure. Empty or failed Sessions
+catalogues retain logical membership, invalidate queued updates and authorize no new paint.
+At least one captured surface needs a verified binding before any outside background is changed.
+
+Manual updates reuse the serialized preview worker and coalesce to the latest catalogue.
+Requests revalidate run identity, catalogue version, six-second age and pinned recovery revision.
+An expired run gets a fresh effect ID; unmapped or failed outside targets cannot refresh its
+common heartbeat. Retired IDs are cleared after replacement, so old cleanup cannot repaint a
+new run. Failed exact-ID cleanup retains its targets and revision pin for retry or recovery.
+
+Sessions keeps one two-second catalogue timer while its window is open or Manual is active.
+Focus Off preserves browsing selection and preview. Restore Visibility cancels both in-memory
+effects before independent recovery; external suspension ends Manual on the next refresh.
+Relaunch and explicit resumption start Off. Sessions and menu controls expose unavailable and
+partial outcomes; the working-set row label is also included in its accessibility label.
+Native dimming/readability and closed-window GUI acceptance remain unverified.
 
 ## Preview rendering foundation (Phase 7 source verified)
 
