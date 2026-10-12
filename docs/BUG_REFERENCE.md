@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.8
+Version: 1.9
+
+## Shell suppression accepts invalid soft-pause liveness
+
+The legacy shell gate accepted absent PID/heartbeat fields and future heartbeat timestamps.
+It could suppress ordinary signals while the managed Swift writer considered the rule invalid.
+The shared gate now requires a live positive PID, valid decimal times and a nonfuture heartbeat
+within 120 seconds. It preserves legacy absent-schema handling and rejects explicit invalid
+schemas. Isolated regressions cover the rejected metadata and hard-mirror expiry/grant behavior.
 
 ## Synthetic styling confuses producer and shell owner
 

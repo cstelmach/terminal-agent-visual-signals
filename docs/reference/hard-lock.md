@@ -1,6 +1,6 @@
 # Hard Lock Reference
 
-**Last Updated:** 2026-10-12 | **Version:** 1.1
+**Last Updated:** 2026-10-12 | **Version:** 1.2
 
 The hard lock is a visual commitment device: during an effective locked period,
 registered terminals receive the pause visual and a `🔒 locked until HH:MM` title.
@@ -35,9 +35,9 @@ per-target `restored`, `vanished`, `unaffected` or `failed` outcomes. A missing 
 saved policy intact and reports failure. Resume reads current rules and cannot replay historical
 pending alerts or titles.
 
-Connected Swift tests pass with owned PTYs and injected catalogues. Shell integration and
-independent review remain in progress. This source has not been installed into the working app;
-physical terminal restoration is unverified.
+Connected Swift tests and public CLI recovery/resumption pass with owned PTYs and injected
+catalogues. Independent review remains in progress. This source has not been installed into the
+working app; physical terminal restoration is unverified.
 
 ## Lock sources
 

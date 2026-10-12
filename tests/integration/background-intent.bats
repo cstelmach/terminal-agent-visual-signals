@@ -10,18 +10,45 @@ setup() {
     : > "$TTY_DEVICE"
 }
 
+_owned_pty() {
+    python3 - "$@" <<'PY'
+import errno,os,pty,select,signal,sys,time
+pid,fd=pty.fork()
+if pid==0:
+    os.environ['TTY_DEVICE']=os.ttyname(0)
+    os.execvp(sys.argv[1],sys.argv[1:])
+status=None; output=bytearray(); deadline=time.monotonic()+15
+try:
+    while time.monotonic()<deadline:
+        if select.select([fd],[],[],.05)[0]:
+            try:
+                output.extend(os.read(fd,4096))
+            except OSError as error:
+                if error.errno!=errno.EIO: raise
+        got,code=os.waitpid(pid,os.WNOHANG)
+        if got: status=code; break
+    assert status is not None, 'owned child exceeded deadline'
+    print(output.decode(errors='replace'),end='')
+    sys.exit(os.waitstatus_to_exitcode(status))
+finally:
+    if status is None:
+        os.kill(pid,signal.SIGKILL); os.waitpid(pid,0)
+    os.close(fd)
+PY
+}
+
 @test "background helper records colors and resets even while muted" {
     cat > "$CASE_DIR/check.sh" <<'SCRIPT'
 set -e
 source "$1/src/core/terminal-osc-sequences.sh"
 capture="$2"
-_tavs_organizer_record_intent() { printf '%s\n' "$1" >> "$capture"; }
+_tavs_managed_background() { printf '%s\n' "$1" >> "$capture"; }
 _TAVS_SUPPRESS_OUTPUT=1
 _TAVS_PENDING_BUFFER="$capture.pending"
 send_osc_bg '#112233'
 send_osc_bg reset
 test "$(cat "$capture")" = $'#112233\nreset'
-test -s "$capture.pending"
+test ! -e "$capture.pending"
 SCRIPT
     run bash "$CASE_DIR/check.sh" "$REPO_ROOT" "$CASE_DIR/intents"
     [ "$status" -eq 0 ]
@@ -31,7 +58,7 @@ SCRIPT
     cat > "$CASE_DIR/check.sh" <<'SCRIPT'
 set -e
 source "$1/src/core/terminal-osc-sequences.sh"
-_tavs_organizer_record_intent() { return 3; }
+_tavs_managed_background() { _TAVS_MANAGED_STALE=1; return 3; }
 send_osc_bg '#445566'
 test ! -s "$TTY_DEVICE"
 SCRIPT
@@ -49,10 +76,10 @@ SCRIPT
     export DEBUG_ALL=1 TAVS_TITLE_MODE=off TAVS_AGENT=claude
     export _TAVS_HOOK_PAYLOAD=EXPORTED_BODY_SENTINEL
     printf '%s' '{"prompt":"PROMPT_BODY_SENTINEL","tool_input":{"x":"TOOL_BODY_SENTINEL"},"permission_mode":"plan","session_id":"fixture","cwd":"/fixture","hook_event_name":"PermissionRequest"}' > "$CASE_DIR/payload.json"
-    run bash "$REPO_ROOT/src/agents/claude/trigger.sh" permission ARG_BODY_SENTINEL < "$CASE_DIR/payload.json"
-    [ "$status" -eq 0 ]
-    [[ "$output" != *BODY_SENTINEL* ]]
-    run bash "$REPO_ROOT/src/core/trigger.sh" processing ARG_BODY_SENTINEL < "$CASE_DIR/payload.json"
+    run _owned_pty bash -c '
+        bash "$1/src/agents/claude/trigger.sh" permission ARG_BODY_SENTINEL < "$2/payload.json"
+        bash "$1/src/core/trigger.sh" processing ARG_BODY_SENTINEL < "$2/payload.json"
+    ' _ "$REPO_ROOT" "$CASE_DIR"
     [ "$status" -eq 0 ]
     [[ "$output" != *BODY_SENTINEL* ]]
     python3 - "$TAVS_RUNTIME_DIR/organizer" "$TAVS_TMP_DIR/debug" <<'PY'
@@ -74,9 +101,18 @@ PY
 }
 
 @test "standalone muted background writes retain intent without inventing an observation" {
-    run bash -c 'source "$1/src/core/terminal-osc-sequences.sh"; _TAVS_SUPPRESS_OUTPUT=1; _TAVS_PENDING_BUFFER="$2/pending"; send_osc_bg reset' _ "$REPO_ROOT" "$CASE_DIR"
+    cat > "$HOME/.tavs/mute.state" <<STATE
+MUTED="true"
+UNTIL_EPOCH="0"
+WRITTEN_EPOCH="$(date +%s)"
+APP_PID="$$"
+REASON="quiet_period"
+PAUSE_BG="#314159"
+SCHEMA_VERSION="1"
+STATE
+    run _owned_pty bash -c 'source "$1/src/core/terminal-osc-sequences.sh"; send_osc_bg reset' _ "$REPO_ROOT"
     [ "$status" -eq 0 ]
-    [ ! -s "$TTY_DEVICE" ]
+    [[ "$output" == *']11;#314159'* && "$output" != *$'\033]111'* ]]
     python3 - "$TAVS_RUNTIME_DIR/organizer" <<'PY'
 import json,pathlib,sys
 root=pathlib.Path(sys.argv[1])
@@ -86,10 +122,10 @@ assert json.loads(files[0].read_text())['background']=='reset'
 PY
 }
 
-@test "core replay diagnostic remains available without publishing an observation" {
+@test "core replay rejects an invalid target without publishing an observation" {
     run bash "$REPO_ROOT/src/core/trigger.sh" replay missing-cache
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"No pending cache"* ]]
+    [ "$status" -ne 0 ]
+    [[ "$output" == *Usage:* ]]
     [ ! -d "$TAVS_RUNTIME_DIR/organizer" ]
 }
 
@@ -109,15 +145,12 @@ WRITTEN_EPOCH="$(date +%s)"
 SCHEMA_VERSION="1"
 STATE
     printf '%s' '{"hook_event_name":"PermissionRequest","session_id":"q\u0007\u001b[2J\nINJECTED_ID"}' > "$CASE_DIR/unsafe-id.json"
-    run bash "$REPO_ROOT/src/agents/claude/trigger.sh" permission < "$CASE_DIR/unsafe-id.json"
+    run _owned_pty bash -c 'bash "$1/src/agents/claude/trigger.sh" permission < "$2/unsafe-id.json"' _ "$REPO_ROOT" "$CASE_DIR"
     [ "$status" -eq 0 ]
-    [ ! -s "$TTY_DEVICE" ]
-    local pending="$TAVS_RUNTIME_DIR/pending/${TTY_DEVICE//\//_}.osc"
-    [ -s "$pending" ]
-    python3 - "$pending" "$TAVS_TMP_DIR" "$TAVS_RUNTIME_DIR" <<'PY'
+    [[ "$output" != *$'\033[2J'* ]]
+    python3 - "$TAVS_TMP_DIR" "$TAVS_RUNTIME_DIR" <<'PY'
 import pathlib,sys
-assert b'\x1b[2J' not in pathlib.Path(sys.argv[1]).read_bytes()
-for directory in sys.argv[2:]:
+for directory in sys.argv[1:]:
     for path in pathlib.Path(directory).rglob('*'):
         if path.is_file():assert b'INJECTED_ID' not in path.read_bytes(),path
 PY
@@ -137,7 +170,7 @@ _TAVS_SUPPRESS_OUTPUT=1
 _TAVS_PENDING_BUFFER="$2/pending"
 send_osc_bg '#445566'
 cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before.json"
-test -s "$2/pending"
+test ! -e "$2/pending"
 cp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/idle-intent.json"
 source "$1/src/core/theme-config-loader.sh"
 source "$1/src/core/session-state.sh"
@@ -166,7 +199,6 @@ _tavs_organizer_begin permission
 send_osc_bg '#778899'
 cp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/latest.json"
 export TAVS_ORGANIZER_CONTEXT="$old_context" TAVS_ORGANIZER_SYNTHETIC=1
-: > "$2/pending"
 send_osc_bg reset
 cmp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/latest.json"
 test ! -s "$2/pending"
@@ -221,4 +253,129 @@ assert idle['deliveryID']==before['deliveryID'] and idle['background']=='#445566
 assert json.load(open(root+'/latest.json'))['background']=='#778899'
 PY
     [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+}
+
+@test "public recovery and resume use owned scoped PTY with current rules and no historical replay" {
+    export RECOVERY_REAL_HELPER="$TAVS_TEST_HELPER_BIN"
+    cat > "$CASE_DIR/recovery-helper" <<'HELPER'
+#!/bin/bash
+if [[ "$1" == --visual-recover ]]; then
+    expected=true
+    [[ "$4" == resume ]] && expected=false
+    grep -q "^SUSPENDED=\"$expected\"$" "$2" || exit 1
+    printf '%s\n' "$4:marker-saved" >> "$RECOVERY_CALLS"
+fi
+exec "$RECOVERY_REAL_HELPER" "$@"
+HELPER
+    chmod +x "$CASE_DIR/recovery-helper"
+    export RECOVERY_CALLS="$CASE_DIR/recovery-calls"
+    run _owned_pty bash --norc -ic '
+        set -e
+        set +m
+        repo="$1"; case_dir="$2"
+        marker="$HOME/.tavs/visual-restrictions.state"
+        token=$("$RECOVERY_REAL_HELPER" --organizer-context unknown "$$")
+        python3 - "$token" "$case_dir/catalogue.json" "$case_dir/allowed.json" "$TTY_DEVICE" <<'"'"'PY'"'"'
+import base64,json,sys
+generation=json.loads(base64.b64decode(sys.argv[1]))["producer"]
+surface={"application":generation,"terminalID":"owned-recovery"}
+json.dump([surface],open(sys.argv[3],"w"))
+json.dump({"application":generation,"surfaces":[{"terminalID":"owned-recovery",
+    "windowID":"owned-window","tabID":"owned-tab","tty":sys.argv[4],
+    "pid":generation["pid"],"selected":True}]},open(sys.argv[2],"w"))
+PY
+        export TAVS_SESSIONS_TEST_ROOT="$TAVS_TEST_ROOT"
+        export TAVS_SESSIONS_TEST_FIXTURE="$case_dir/catalogue.json"
+        export TAVS_SESSIONS_TEST_TARGETS="$(cat "$case_dir/allowed.json")"
+        cat > "$HOME/.tavs/mute.state" <<STATE
+MUTED="false"
+REQUESTED_MUTED="true"
+MUTE_LEVEL="soft"
+REASON="quiet_period"
+UNTIL_EPOCH="0"
+WRITTEN_EPOCH="$(date +%s)"
+APP_PID="$$"
+PAUSE_BG="#314159"
+PAUSE_FG="#EEEEEE"
+SCHEMA_VERSION="1"
+STATE
+        TTY="$TTY_DEVICE"
+        source "$repo/src/shell/tavs-shellrc.sh"
+        export TAVS_ORGANIZER_CONTEXT="$token"
+        export TAVS_AGENT=claude
+        source "$repo/src/core/terminal-osc-sequences.sh"
+        _tavs_organizer_begin complete
+        send_osc_bg "#112233"
+        _tavs_managed_forced_reset "fresh-title"
+        mkdir -p "$TAVS_RUNTIME_DIR/pending"
+        pending="$TAVS_RUNTIME_DIR/pending/${TTY_DEVICE//\//_}.osc"
+        printf "\\033]0;OLD_TITLE\\007\\007" > "$pending"
+        bash "$repo/src/core/trigger.sh" replay "${TTY_DEVICE//\//_}"
+        export TAVS_TEST_HELPER_BIN="$case_dir/recovery-helper"
+        printf "RECOVER_BEGIN\n"
+        bash "$repo/tavs" recover > "$case_dir/recover.json"
+        test ! -e "$pending"
+        printf "RECOVER_DONE\nRESUME_BEGIN\n"
+        sed -i "" "s/#314159/#271828/" "$HOME/.tavs/mute.state"
+        bash "$repo/tavs" recover --resume > "$case_dir/resume.json"
+        printf "RESUME_DONE\n"
+        python3 - "$case_dir/recover.json" "$case_dir/resume.json" <<'"'"'PY'"'"'
+import json,sys
+for path in sys.argv[1:]:
+    report=json.load(open(path))
+    assert report["stateSaved"] and report["catalogueAvailable"],report
+    assert report["items"] and all(item["status"] in ("restored","unaffected") for item in report["items"]),report
+PY
+    ' _ "$REPO_ROOT" "$CASE_DIR"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+    [[ "$(cat "$RECOVERY_CALLS")" == $'recover:marker-saved\nresume:marker-saved' ]]
+    python3 - "$output" <<'PY'
+import re,sys
+output=sys.argv[1]
+recover=output.split('RECOVER_BEGIN',1)[1].split('RECOVER_DONE',1)[0]
+resume=output.split('RESUME_BEGIN',1)[1].split('RESUME_DONE',1)[0]
+assert '\x1b]104\x07' in recover and '\x1b]110\x07' in recover and '\x1b]111\x07' in recover
+assert ']11;#271828' in resume
+assert 'OLD_TITLE' not in output and 'fresh-title' not in output and '\x1b]0;' not in output
+without_osc=re.sub(r'\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)','',output)
+assert '\x07' not in without_osc
+PY
+}
+
+@test "owned nested producer validates synthetic context beneath continuing shell without output or intent" {
+    cat > "$CASE_DIR/nested-check.sh" <<'SH'
+set -e
+export TAVS_AGENT=claude
+source "$1/src/core/terminal-osc-sequences.sh"
+_tavs_organizer_begin complete
+python3 - "$TAVS_RUNTIME_DIR/organizer" "$TAVS_ORGANIZER_CONTEXT" "$OUTER_PTY_OWNER" "$$" "$2/binding-before.json" <<'PY'
+import base64,json,pathlib,sys
+root=pathlib.Path(sys.argv[1]); context=json.loads(base64.b64decode(sys.argv[2]))
+targets=list(root.rglob('target.json')); assert len(targets)==1
+target=json.loads(targets[0].read_text())['target']
+assert target['ttyOwner']['pid']==int(sys.argv[3])
+assert context['producer']['pid']==int(sys.argv[4])!=target['ttyOwner']['pid']
+observation=json.loads(next(root.glob('observation-*.json')).read_text())
+assert observation['producer']==context['producer'] and observation['device']==target['device']
+json.dump({'path':str(targets[0]),'contents':targets[0].read_text()},open(sys.argv[5],'w'))
+PY
+export TAVS_ORGANIZER_SYNTHETIC=1
+_tavs_managed_check_context
+python3 - "$TAVS_RUNTIME_DIR/organizer" "$2/binding-before.json" <<'PY'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1]); before=json.load(open(sys.argv[2]))
+assert pathlib.Path(before['path']).read_text()==before['contents']
+assert not list(root.glob('intent-*.json'))
+assert not list(root.rglob('bound-intent.json')) and not list(root.rglob('effect.json'))
+PY
+SH
+    run _owned_pty bash --norc -ic '
+        set -e
+        export OUTER_PTY_OWNER="$$"
+        "$TAVS_TEST_HELPER_BIN" --managed-register "$HOME/.tavs/visual-restrictions.state" \
+            "$TAVS_RUNTIME_DIR" "$TTY_DEVICE" "$$" >/dev/null
+        bash "$2/nested-check.sh" "$1" "$2"
+    ' _ "$REPO_ROOT" "$CASE_DIR"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+    [ -z "$output" ]
 }

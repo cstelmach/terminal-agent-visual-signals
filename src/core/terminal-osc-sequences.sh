@@ -78,19 +78,12 @@ if [[ -n "${TTY_DEVICE:-}" ]]; then
     TTY_SAFE="${TTY_DEVICE//\//_}"
 fi
 
-# === EMIT_OSC — SINGLE CHOKE POINT FOR ALL TTY WRITES ===
-# When _TAVS_SUPPRESS_OUTPUT=1, bytes go to the pending buffer instead of
-# the TTY. This is the ONLY code site that knows about mute state;
-# everything upstream is unchanged. (SPEC §4.5, D21)
+# Nonbackground signals are suppressed without retaining historical bytes.
 emit_osc() {
     local fmt="$1"; shift
-    if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" && \
-          -n "${_TAVS_PENDING_BUFFER:-}" && \
-          "${_TAVS_REPLAY_BYPASS_MUTE:-0}" != "1" ]]; then
-        printf "$fmt" "$@" >> "$_TAVS_PENDING_BUFFER"
-    else
-        printf "$fmt" "$@" > "$TTY_DEVICE"
-    fi
+    [[ "${_TAVS_MANAGED_STALE:-0}" == 1 ]] && return 0
+    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == 1 ]] && return 0
+    printf "$fmt" "$@" > "$TTY_DEVICE"
 }
 
 # === OSC COMMANDS ===
@@ -99,14 +92,10 @@ emit_osc() {
 send_osc_bg() {
     local color="$1"
     [[ -z "$TTY_DEVICE" ]] && return
-    local intent_result=0
-    _tavs_organizer_record_intent "$color" || intent_result=$?
-    [[ "$intent_result" == 3 ]] && return 0
-    if [[ "$color" == "reset" ]]; then
-        emit_osc "\033]111\033\\"
-    else
-        emit_osc "\033]11;%s\033\\" "$color"
-    fi
+    local result=0
+    _tavs_managed_background "$color" || result=$?
+    [[ "$result" == 3 ]] && return 0
+    return "$result"
 }
 
 # === OSC 4 PALETTE COMMANDS ===

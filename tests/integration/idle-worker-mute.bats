@@ -10,19 +10,39 @@ RUNTIME_DIR=""
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    TEST_HOME=$(mktemp -d)
+    [[ -n "${TAVS_TEST_ROOT:-}" ]] || return 1
+    TEST_HOME=$(mktemp -d "$TAVS_TEST_ROOT/idle-mute.XXXXXX")
     RUNTIME_DIR="$TEST_HOME/runtime"
     export TAVS_RUNTIME_DIR="$RUNTIME_DIR"
     export TAVS_TMP_DIR="$TEST_HOME/state"
     export XDG_RUNTIME_DIR="$TEST_HOME/xdg"
     mkdir -p "$TEST_HOME/.tavs" "$TAVS_TMP_DIR" "$XDG_RUNTIME_DIR"
+    export TAVS_TEST_HELPER_BIN="$TEST_HOME/helper" IDLE_TEST_CORE="$REPO_ROOT/src/core"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+case "$1" in
+    --validate-config)
+        if [[ "$2" == --managed-output-capabilities ]]; then printf 'tavs-managed-output-schema=1\n'
+        else printf 'tavs-organizer-schema=1\n'; fi ;;
+    --organizer-context) printf 'fixture-context\n' ;;
+    --organizer-observe|--managed-check-context) exit 0 ;;
+    --managed-background)
+        [[ "$4" == "$TAVS_TEST_ROOT/"* && "$5" == fixture-context ]] || exit 1
+        printf '%s\n' "$6" > "$TAVS_RUNTIME_DIR/fixture-background"
+        source "$IDLE_TEST_CORE/mute-gate.sh"
+        _tavs_check_mute_state && exit 0
+        printf '\033]11;%s\033\\' "$6" > "$4" ;;
+    --managed-forced-reset) exit 0 ;;
+    *) exit 1 ;;
+esac
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
 }
 
 teardown() {
     # Clean up worker processes and temp files
     [[ -n "${_WORKER_PID:-}" ]] && kill "$_WORKER_PID" 2>/dev/null || true
     [[ -n "${_WORKER_PID:-}" ]] && wait "$_WORKER_PID" 2>/dev/null || true
-    rm -rf "$TEST_HOME"
 }
 
 _create_mute_state() {
@@ -33,7 +53,7 @@ _create_mute_state() {
     now=$(date +%s)
     cat > "$home/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
 APP_PID="$parent_pid"
@@ -45,7 +65,7 @@ _write_worker_script() {
     local script_path="$1"
     cat > "$script_path" <<'SCRIPT'
 #!/bin/bash
-export HOME="$1"
+export HOME="$1" CFFIXED_USER_HOME="$1" ZDOTDIR="$1"
 export TTY_DEVICE="$2"
 CORE_DIR="$3"
 
@@ -65,6 +85,7 @@ source "$CORE_DIR/dir-icon.sh"
 source "$CORE_DIR/context-data.sh"
 
 _tavs_mute_gate_init
+_tavs_organizer_begin complete
 
 UNIFIED_CHECK_INTERVAL=0.3
 MAX_TIMER_RUNTIME=30
@@ -90,9 +111,9 @@ SCRIPT
     grep -q '_tavs_check_mute_state' "$REPO_ROOT/src/core/idle-worker-background.sh"
 }
 
-@test "idle worker opens/closes pending buffer per state transition" {
-    grep -q '_tavs_mute_buffer_open' "$REPO_ROOT/src/core/idle-worker-background.sh"
-    grep -q '_tavs_mute_buffer_close' "$REPO_ROOT/src/core/idle-worker-background.sh"
+@test "idle worker cannot open or republish historical pending buffers" {
+    ! grep -q '_tavs_mute_buffer_open' "$REPO_ROOT/src/core/idle-worker-background.sh"
+    ! grep -q '_tavs_mute_buffer_close' "$REPO_ROOT/src/core/idle-worker-background.sh"
 }
 
 @test "idle worker muted: TTY gets no bytes during muted tick" {
@@ -116,12 +137,10 @@ SCRIPT
 
     local bytes
     bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    rm -f "$worker_script" "$tty_file"
-
     [ "$bytes" -eq 0 ]
 }
 
-@test "idle worker muted: pending cache contains captured bytes" {
+@test "idle worker muted: typed current intent persists without pending bytes" {
     _create_mute_state "$TEST_HOME"
     local tty_file
     tty_file=$(mktemp "$TEST_HOME/tty.XXXXXX")
@@ -143,11 +162,7 @@ SCRIPT
     local tty_safe="${tty_file//\//_}"
     local cache="$RUNTIME_DIR/pending/${tty_safe}.osc"
 
-    local result="false"
-    [ -f "$cache" ] && result="true"
-
-    # Clean up
-    rm -f "$worker_script" "$tty_file" "$cache" "$RUNTIME_DIR/active-ttys/$tty_safe" 2>/dev/null
-
-    [ "$result" = "true" ]
+    [ ! -f "$cache" ]
+    [ -s "$RUNTIME_DIR/fixture-background" ]
+    [ ! -s "$tty_file" ]
 }

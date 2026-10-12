@@ -5,8 +5,9 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    TEST_HOME=$(mktemp -d)
-    TEST_RUNTIME=$(mktemp -d)
+    [[ -n "${TAVS_TEST_ROOT:-}" ]] || return 1
+    TEST_HOME=$(mktemp -d "$TAVS_TEST_ROOT/mute-home.XXXXXX")
+    TEST_RUNTIME=$(mktemp -d "$TAVS_TEST_ROOT/mute-runtime.XXXXXX")
     mkdir -p "$TEST_HOME/.tavs"
 
     export HOME="$TEST_HOME"
@@ -17,10 +18,6 @@ setup() {
 
     source "$REPO_ROOT/src/core/mute-gate.sh"
     _tavs_resolve_runtime_dir
-}
-
-teardown() {
-    rm -rf "$TEST_HOME" "$TEST_RUNTIME"
 }
 
 # --- Runtime Dir ---
@@ -55,13 +52,13 @@ teardown() {
     [ "$count" = "0" ]
 }
 
-@test "clean_active_tty_registry removes old entries" {
+@test "clean_active_tty_registry retains old entries without owner-exit evidence" {
     touch "$TAVS_RUNTIME_DIR/active-ttys/old_entry"
     # Make it look old (25 hours ago)
     touch -t "$(date -v-25H +%Y%m%d%H%M 2>/dev/null || date -d '25 hours ago' +%Y%m%d%H%M)" \
         "$TAVS_RUNTIME_DIR/active-ttys/old_entry" 2>/dev/null || skip "date manipulation not available"
     clean_active_tty_registry
-    [ ! -f "$TAVS_RUNTIME_DIR/active-ttys/old_entry" ]
+    [ -f "$TAVS_RUNTIME_DIR/active-ttys/old_entry" ]
 }
 
 @test "clean_active_tty_registry keeps recent entries" {
@@ -84,10 +81,10 @@ teardown() {
     now=$(date +%s)
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     _tavs_check_mute_state
@@ -100,7 +97,7 @@ EOF
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="false"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     _TAVS_SUPPRESS_OUTPUT=0
@@ -115,7 +112,7 @@ EOF
 MUTED="true"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$stale"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     _TAVS_SUPPRESS_OUTPUT=0
@@ -131,7 +128,7 @@ EOF
 MUTED="true"
 UNTIL_EPOCH="$past"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     _TAVS_SUPPRESS_OUTPUT=0
@@ -161,7 +158,7 @@ EOF
 MUTED="true"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="99"
 EOF
     _TAVS_SUPPRESS_OUTPUT=0
@@ -171,13 +168,57 @@ EOF
 
 # --- Pending Buffer Lifecycle ---
 
-@test "buffer_open creates temp file when suppressed" {
+@test "legacy absent schema matches Swift while explicit invalid schemas are rejected" {
+    local schema now
+    now=$(date +%s)
+    for schema in absent '' 99; do
+        cat > "$TEST_HOME/.tavs/mute.state" <<EOF
+MUTED="true"
+UNTIL_EPOCH="0"
+WRITTEN_EPOCH="$now"
+APP_PID="$$"
+EOF
+        if [[ "$schema" != absent ]]; then
+            printf 'SCHEMA_VERSION="%s"\n' "$schema" >> "$TEST_HOME/.tavs/mute.state"
+        fi
+        run _tavs_check_mute_state
+        if [[ "$schema" == absent ]]; then
+            [ "$status" -eq 0 ]
+        else
+            [ "$status" -eq 1 ]
+        fi
+    done
+}
+
+@test "soft mute rejects missing pid or heartbeat and future heartbeat" {
+    local now=$(date +%s) bad
+    for bad in missing_pid missing_written future_written zero_written invalid_until; do
+        cat > "$TEST_HOME/.tavs/mute.state" <<STATE
+MUTED="true"
+REASON="quiet_period"
+UNTIL_EPOCH="0"
+WRITTEN_EPOCH="$now"
+APP_PID="$$"
+SCHEMA_VERSION="1"
+STATE
+        case "$bad" in
+            missing_pid) sed -i '' '/APP_PID=/d' "$TEST_HOME/.tavs/mute.state" ;;
+            missing_written) sed -i '' '/WRITTEN_EPOCH=/d' "$TEST_HOME/.tavs/mute.state" ;;
+            future_written) sed -i '' "s/WRITTEN_EPOCH=.*/WRITTEN_EPOCH=\"$((now+100))\"/" "$TEST_HOME/.tavs/mute.state" ;;
+            zero_written) sed -i '' 's/WRITTEN_EPOCH=.*/WRITTEN_EPOCH="0"/' "$TEST_HOME/.tavs/mute.state" ;;
+            invalid_until) sed -i '' 's/UNTIL_EPOCH=.*/UNTIL_EPOCH="INVALID"/' "$TEST_HOME/.tavs/mute.state" ;;
+        esac
+        run _tavs_check_mute_state
+        [ "$status" -eq 1 ] || { printf 'invalid case accepted: %s\n' "$bad" >&2; return 1; }
+    done
+}
+
+@test "buffer_open cannot create opaque cache while suppressed" {
     _TAVS_SUPPRESS_OUTPUT=1
     TTY_SAFE="_dev_ttys001"
     _tavs_mute_buffer_open
-    [ -n "$_TAVS_PENDING_BUFFER" ]
-    [ -f "$_TAVS_PENDING_BUFFER" ]
-    rm -f "$_TAVS_PENDING_BUFFER"
+    [ -z "${_TAVS_PENDING_BUFFER:-}" ]
+    [ -z "$(find "$TAVS_RUNTIME_DIR/pending" -type f -print)" ]
 }
 
 @test "buffer_open is no-op when not suppressed" {
@@ -186,26 +227,22 @@ EOF
     [ -z "${_TAVS_PENDING_BUFFER:-}" ]
 }
 
-@test "buffer_close atomic-renames to pending cache" {
+@test "buffer_close cannot republish an inherited opaque buffer" {
     _TAVS_SUPPRESS_OUTPUT=1
     TTY_SAFE="_dev_ttys001"
-    _tavs_mute_buffer_open
-    echo -n "test-bytes" >> "$_TAVS_PENDING_BUFFER"
+    _TAVS_PENDING_BUFFER="$TEST_RUNTIME/old-buffer"
+    printf OLD_TITLE > "$_TAVS_PENDING_BUFFER"
     _tavs_mute_buffer_close
-    [ -f "$TAVS_RUNTIME_DIR/pending/_dev_ttys001.osc" ]
-    local content
-    content=$(cat "$TAVS_RUNTIME_DIR/pending/_dev_ttys001.osc")
-    [ "$content" = "test-bytes" ]
+    [ ! -f "$TAVS_RUNTIME_DIR/pending/_dev_ttys001.osc" ]
     [ -z "${_TAVS_PENDING_BUFFER:-}" ]
 }
 
-@test "buffer_close removes empty buffer (no rename)" {
+@test "buffer_close cannot create a pending file from an empty buffer" {
     _TAVS_SUPPRESS_OUTPUT=1
     TTY_SAFE="_dev_ttys001"
     _tavs_mute_buffer_open
-    local buf="$_TAVS_PENDING_BUFFER"
     _tavs_mute_buffer_close
-    [ ! -f "$buf" ]
+    [ -z "${_TAVS_PENDING_BUFFER:-}" ]
     [ ! -f "$TAVS_RUNTIME_DIR/pending/_dev_ttys001.osc" ]
 }
 

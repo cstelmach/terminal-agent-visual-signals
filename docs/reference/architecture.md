@@ -1,7 +1,20 @@
 # Architecture
 
 Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.9
+Version: 1.10
+
+## Shell output routing
+
+All TAVS background writes use the headless managed helper. Startup registers its continuing
+shell owner and requests current policy. Idle resets and debug reconciliation use typed actions;
+muted nonbackground signals are discarded without retaining pending OSC bodies. Synthetic
+updates validate the current observation before palette/title output, including when background
+coloring is disabled. Producer identity is checked separately from the continuing shell owner.
+
+Capability queries use a known headless validation flag before any new verb. Missing/older/failed
+helpers report failure and never fall back to raw background output. Actual write calls preserve
+dedicated test scopes. Shell mute liveness matches the Swift policy's live PID, finite decimal
+times and nonfuture heartbeat; a hard mirror cannot survive lock expiry or an unlock grant.
 
 ## Current-policy broadcasting
 
@@ -47,8 +60,9 @@ composes only the current rule/intent. Dedicated scopes reject cached owner-only
 that lack an allowed native identity. No navigation, terminal input or process control occurs.
 
 This coordinator passes owned-PTY tests, including queued recovery ordering and healthy repaint
-before blocked discovery finishes. Broadcaster/startup routing is connected; shell/headless
-integration and the public managed capability are unfinished. Preview/focus release remains gated.
+before blocked discovery finishes. Broadcaster, startup, shell and headless routes are connected,
+and the source helper advertises its managed capability. Independent review and physical native
+acceptance remain outstanding; previews and focus are not released by these source checks alone.
 
 ## Intent publication inside managed output
 

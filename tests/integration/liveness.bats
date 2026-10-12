@@ -10,29 +10,41 @@ TEST_HOME=""
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    TEST_HOME=$(mktemp -d)
+    [[ -n "${TAVS_TEST_ROOT:-}" ]] || return 1
+    TEST_HOME=$(mktemp -d "$TAVS_TEST_ROOT/liveness.XXXXXX")
+    export TAVS_TMP_DIR="$TEST_HOME/state" _TAVS_TMP_DIR="$TEST_HOME/state"
     mkdir -p "$TEST_HOME/.tavs"
     # Isolated runtime dir: a real hard lock in the live /tmp/tavs-$UID would
     # suppress the fail-open cases this file asserts.
     export TAVS_RUNTIME_DIR="$TEST_HOME/runtime"
     mkdir -p "$TAVS_RUNTIME_DIR"
-}
-
-teardown() {
-    rm -rf "$TEST_HOME"
-    local runtime="/tmp/tavs-$(id -u)"
-    rm -f "$runtime"/pending/_var_folders_*.osc 2>/dev/null
-    rm -f "$runtime"/active-ttys/_var_folders_* 2>/dev/null
+    export TAVS_TEST_HELPER_BIN="$TEST_HOME/helper" LIVENESS_CORE="$REPO_ROOT/src/core"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+case "$1" in
+    --validate-config)
+        if [[ "$2" == --managed-output-capabilities ]]; then printf 'tavs-managed-output-schema=1\n'
+        else printf 'tavs-organizer-schema=1\n'; fi ;;
+    --organizer-context) printf 'fixture-context\n' ;;
+    --organizer-observe) exit 0 ;;
+    --managed-background)
+        [[ "$4" == "$TAVS_TEST_ROOT/"* ]] || exit 1
+        source "$LIVENESS_CORE/mute-gate.sh"
+        _tavs_check_mute_state && exit 0
+        printf '\033]11;%s\033\\' "$6" > "$4" ;;
+    *) exit 1 ;;
+esac
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
 }
 
 _run_trigger() {
     local tty_file
-    tty_file=$(mktemp)
-    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" PATH="$PATH" \
+    tty_file=$(mktemp "$TEST_HOME/tty.XXXXXX")
+    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" CFFIXED_USER_HOME="$TEST_HOME" ZDOTDIR="$TEST_HOME" \
         bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
     local bytes
     bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    rm -f "$tty_file"
     echo "$bytes"
 }
 
@@ -41,10 +53,10 @@ _run_trigger() {
     stale=$(( $(date +%s) - 200 ))
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$stale"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     local bytes
@@ -58,10 +70,10 @@ EOF
     past=$(( now - 60 ))
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="$past"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     local bytes
@@ -74,7 +86,7 @@ EOF
     now=$(date +%s)
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
 APP_PID="99999"
@@ -93,7 +105,7 @@ MUTED="false"
 REASON=""
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="1"
 EOF
     local bytes
@@ -113,10 +125,10 @@ EOF
     now=$(date +%s)
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
-APP_PID=""
+APP_PID="$$"
 SCHEMA_VERSION="99"
 EOF
     local bytes
@@ -130,18 +142,17 @@ EOF
     now=$(date +%s)
     cat > "$TEST_HOME/.tavs/mute.state" <<EOF
 MUTED="true"
-REASON="test"
+REASON="quiet_period"
 UNTIL_EPOCH="0"
 WRITTEN_EPOCH="$now"
 APP_PID="$parent_pid"
 SCHEMA_VERSION="1"
 EOF
     local tty_file
-    tty_file=$(mktemp)
-    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" PATH="$PATH" \
+    tty_file=$(mktemp "$TEST_HOME/tty.XXXXXX")
+    TTY_DEVICE="$tty_file" HOME="$TEST_HOME" CFFIXED_USER_HOME="$TEST_HOME" ZDOTDIR="$TEST_HOME" \
         bash "$REPO_ROOT/src/core/trigger.sh" processing 2>/dev/null
     local bytes
     bytes=$(wc -c < "$tty_file" | tr -d ' ')
-    rm -f "$tty_file"
     [ "$bytes" -eq 0 ]
 }

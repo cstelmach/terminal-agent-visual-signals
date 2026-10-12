@@ -59,6 +59,20 @@ _tavs_visual_restrictions_suspended() {
 }
 
 
+_tavs_shellrc_managed_helper() {
+    local helper support=""
+    if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then helper="$TAVS_TEST_HELPER_BIN"
+    else helper=/Applications/TAVS.app/Contents/MacOS/TAVSApp
+    fi
+    if [[ -x "$helper" ]]; then
+        support=$(env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
+            -u TAVS_SESSIONS_TEST_TARGETS "$helper" --validate-config --managed-output-capabilities \
+            2>/dev/null) || support=""
+    fi
+    [[ "$support" == tavs-managed-output-schema=1 ]] || return 1
+    _TAVS_SHELLRC_MANAGED_HELPER="$helper"
+}
+
 _tavs_shellrc_main() {
     # Interactive shells only.
     case "$-" in *i*) ;; *) return 0 ;; esac
@@ -86,100 +100,21 @@ _tavs_shellrc_main() {
     fi
     : >| "$_rt/active-ttys/$_tty_safe" 2>/dev/null
 
+    if ! _tavs_shellrc_managed_helper; then
+        printf 'tavs: managed output helper unavailable or unsupported.\n' >&2
+        return 0
+    fi
+    # The native helper rechecks current policy and the opened TTY under one output lock.
+    "$_TAVS_SHELLRC_MANAGED_HELPER" --managed-register "$HOME/.tavs/visual-restrictions.state" \
+        "$_rt" "$_tty" "$$" >/dev/null || printf 'tavs: terminal registration unavailable.\n' >&2
     if _tavs_visual_restrictions_suspended; then
         if [[ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" == unavailable ]]; then
             printf 'tavs: visual restriction state unavailable; restrictive visuals disabled.\n' >&2
         fi
         return 0
     fi
-
-    # --- Read lock.state (builtins only; absent/malformed = unlocked, D3) ---
-    local _locked="" _lock_until="" _unlock_until="" _lock_bg="" _lock_fg="" _lock_ver=""
-    local _k _v
-    if [[ -r "$_rt/lock.state" ]]; then
-        while IFS='=' read -r _k _v; do
-            _v="${_v%\"}"; _v="${_v#\"}"
-            case "$_k" in
-                LOCKED)             _locked="$_v" ;;
-                LOCK_UNTIL_EPOCH)   _lock_until="$_v" ;;
-                UNLOCK_UNTIL_EPOCH) _unlock_until="$_v" ;;
-                LOCK_BG)            _lock_bg="$_v" ;;
-                LOCK_FG)            _lock_fg="$_v" ;;
-                SCHEMA_VERSION)     _lock_ver="$_v" ;;
-            esac
-        done < "$_rt/lock.state"
-    fi
-
-    # --- Read mute.state (soft pause; fail-open exactly like the hook gate) -
-    local _muted="" _m_until="" _m_written="" _m_pid="" _m_ver="" _pause_bg="" _pause_fg=""
-    if [[ -r "$HOME/.tavs/mute.state" ]]; then
-        while IFS='=' read -r _k _v; do
-            _v="${_v%\"}"; _v="${_v#\"}"
-            case "$_k" in
-                MUTED)          _muted="$_v" ;;
-                UNTIL_EPOCH)    _m_until="$_v" ;;
-                WRITTEN_EPOCH)  _m_written="$_v" ;;
-                APP_PID)        _m_pid="$_v" ;;
-                SCHEMA_VERSION) _m_ver="$_v" ;;
-                PAUSE_BG)       _pause_bg="$_v" ;;
-                PAUSE_FG)       _pause_fg="$_v" ;;
-            esac
-        done < "$HOME/.tavs/mute.state"
-    fi
-
-    # Fast path: nothing to evaluate, nothing to paint.
-    [[ "$_locked" != "true" && "$_muted" != "true" ]] && return 0
-
-    # One time fetch: zsh/datetime EPOCHSECONDS (zero forks) or date(1).
-    local _now="${EPOCHSECONDS:-}"
-    [[ -z "$_now" ]] && _now=$(date +%s)
-
-    # --- Effective-lock predicate (single definition, spec §2.2) ------------
-    # effective := LOCKED && now < LOCK_UNTIL && !(now < UNLOCK_UNTIL)
-    # Missing or non-numeric LOCK_UNTIL_EPOCH means NOT locked (no indefinite
-    # locks, no heartbeat, no PID check: fail-closed against app death only
-    # until the finite expiry).
-    local _lock_effective=0
-    if [[ "$_locked" == "true" && "${_lock_ver:-1}" == "1" ]]; then
-        if [[ -n "$_lock_until" && "$_lock_until" != *[!0-9]* ]] && (( _now < _lock_until )); then
-            _lock_effective=1
-            if [[ -n "$_unlock_until" && "$_unlock_until" != *[!0-9]* ]] && (( _now < _unlock_until )); then
-                _lock_effective=0
-            fi
-        fi
-    fi
-
-    if (( _lock_effective )); then
-        local _until_hhmm=""
-        if [[ -n "${ZSH_VERSION:-}" ]]; then
-            strftime -s _until_hhmm '%H:%M' "$_lock_until" 2>/dev/null
-        else
-            _until_hhmm=$(date -r "$_lock_until" +%H:%M 2>/dev/null)
-        fi
-        printf '\033]104\007'
-        [[ -n "$_lock_fg" ]] && printf '\033]10;%s\007' "$_lock_fg"
-        printf '\033]11;%s\007' "${_lock_bg:-#3A3A3A}"
-        printf '\033]1337;SetBackgroundImageFile=\007'
-        printf '\033]0;🔒 locked until %s\007' "$_until_hhmm"
-        return 0
-    fi
-
-    # --- Soft pause paint: mirror the hook gate's validity rules ------------
-    # (MUTED + schema 1 + live APP_PID + unexpired UNTIL + fresh heartbeat).
-    [[ "$_muted" != "true" || "${_m_ver:-1}" != "1" ]] && return 0
-    if [[ -n "$_m_pid" ]] && ! kill -0 "$_m_pid" 2>/dev/null; then
-        return 0
-    fi
-    if [[ -n "$_m_until" && "$_m_until" != "0" && "$_m_until" != *[!0-9]* ]] && (( _m_until < _now )); then
-        return 0
-    fi
-    if [[ -n "$_m_written" && "$_m_written" != *[!0-9]* ]] && (( _now - _m_written > 120 )); then
-        return 0
-    fi
-    printf '\033]104\007'
-    [[ -n "$_pause_fg" ]] && printf '\033]10;%s\007' "$_pause_fg"
-    printf '\033]11;%s\007' "${_pause_bg:-#3A3A3A}"
-    printf '\033]1337;SetBackgroundImageFile=\007'
+    "$_TAVS_SHELLRC_MANAGED_HELPER" --managed-current "$HOME/.tavs/visual-restrictions.state" \
+        "$_rt" "$_tty" "$$" >/dev/null || printf 'tavs: current visual policy unavailable.\n' >&2
     return 0
 }
 

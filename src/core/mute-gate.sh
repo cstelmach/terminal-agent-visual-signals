@@ -2,15 +2,7 @@
 # ==============================================================================
 # TAVS - Terminal Agent Visual Signals — Mute Gate (Stage-1 Helpers)
 # ==============================================================================
-# Sourced by trigger.sh AFTER stage-0 has set _TAVS_SUPPRESS_OUTPUT.
-# Provides: runtime dir resolution, mute liveness validation, active-TTY
-# registry, pending-cache buffer open/close, and emit_osc (the single
-# choke point for all OSC writes to the TTY).
-#
-# Stage-0 (inline in trigger.sh) uses builtins only to read mute.state
-# and set a preliminary _TAVS_SUPPRESS_OUTPUT flag. Stage-1 (this file)
-# validates the time-sensitive fields (UNTIL_EPOCH, WRITTEN_EPOCH) which
-# require one date(1) fork — acceptable because sourcing already costs ~ms.
+# Reads current mute/lock policy and tracks candidate TTYs without historical replay.
 # ==============================================================================
 
 _tavs_policy_dir="${BASH_SOURCE[0]%/*}"
@@ -38,81 +30,12 @@ _tavs_resolve_runtime_dir() {
 }
 
 # ==============================================================================
-# MUTE LIVENESS VALIDATION (Stage-1)
+# MUTE LIVENESS VALIDATION
 # ==============================================================================
-# Called after stage-0 sets _TAVS_SUPPRESS_OUTPUT=1. Validates the
-# time-sensitive fields that stage-0 deferred (requires date(1) fork).
-# If validation fails, resets _TAVS_SUPPRESS_OUTPUT to 0.
-#
-# Rationale for the split: stage-0 must use bash builtins only (SPEC §4.5)
-# because it runs before theme/terminal sources. Epoch comparison needs
-# date +%s which is an external command. Stage-1 runs during the normal
-# source pass (~57ms baseline) where one fork is negligible.
-# ==============================================================================
+# Always recompute from current files so a hard mirror cannot retain a past lock.
 
 _tavs_validate_mute_liveness() {
-    if _tavs_visual_restrictions_suspended; then
-        _TAVS_SUPPRESS_OUTPUT=0
-        unset _TAVS_S0_MUTED _TAVS_S0_PID _TAVS_S0_VER _TAVS_S0_UNTIL _TAVS_S0_WRITTEN _TAVS_S0_REASON
-        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
-        return 0
-    fi
-    if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" != "1" ]]; then
-        return 0
-    fi
-
-    local now
-    now=$(date +%s)
-
-    # Hard lock first (spec D3, fail-closed): an unexpired lock without an
-    # active grant keeps suppression on REGARDLESS of every mute check below
-    # (dead APP_PID, stale heartbeat, absent mute.state). Expiry always wins;
-    # a missing or non-numeric LOCK_UNTIL means not locked.
-    if [[ "${_TAVS_S0_LOCKED:-}" == "true" ]]; then
-        if [[ -n "${_TAVS_S0_LOCK_UNTIL:-}" && "${_TAVS_S0_LOCK_UNTIL}" != *[!0-9]* ]] \
-            && (( now < _TAVS_S0_LOCK_UNTIL )); then
-            local _grant="${_TAVS_S0_UNLOCK_UNTIL:-}"
-            if ! { [[ -n "$_grant" && "$_grant" != *[!0-9]* ]] && (( now < _grant )); }; then
-                _tavs_debug_mute "LOCK effective until ${_TAVS_S0_LOCK_UNTIL}"
-                unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
-                return 0
-            fi
-        fi
-    fi
-
-    # Lock not effective: stage-0 sets suppression for EITHER cause, so the
-    # mute-only verdict must be recomputed from scratch here, including the
-    # PID/version gates stage-0 applies only on the mute path.
-    if [[ "${_TAVS_S0_MUTED:-}" != "true" || "${_TAVS_S0_VER:-1}" != "1" ]]; then
-        _TAVS_SUPPRESS_OUTPUT=0
-        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
-        return 0
-    fi
-    if [[ -n "${_TAVS_S0_PID:-}" ]] && ! kill -0 "$_TAVS_S0_PID" 2>/dev/null; then
-        _TAVS_SUPPRESS_OUTPUT=0
-        unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
-        return 0
-    fi
-
-    # UNTIL_EPOCH: 0 means indefinite; non-zero means mute expires at that epoch
-    if [[ -n "${_TAVS_S0_UNTIL:-}" && "${_TAVS_S0_UNTIL}" != "0" ]]; then
-        if (( _TAVS_S0_UNTIL < now )); then
-            _TAVS_SUPPRESS_OUTPUT=0
-            return 0
-        fi
-    fi
-
-    # WRITTEN_EPOCH: heartbeat must be within 120 seconds
-    if [[ -n "${_TAVS_S0_WRITTEN:-}" ]]; then
-        if (( now - _TAVS_S0_WRITTEN > 120 )); then
-            _TAVS_SUPPRESS_OUTPUT=0
-            return 0
-        fi
-    fi
-
-    # Clean up stage-0 temporaries
-    unset _TAVS_S0_MUTED _TAVS_S0_PID _TAVS_S0_VER _TAVS_S0_UNTIL _TAVS_S0_WRITTEN _TAVS_S0_REASON
-    unset _TAVS_S0_LOCKED _TAVS_S0_LOCK_UNTIL _TAVS_S0_UNLOCK_UNTIL _TAVS_S0_LOCK_VER
+    _tavs_check_mute_state || true
 }
 
 # ==============================================================================
@@ -120,7 +43,7 @@ _tavs_validate_mute_liveness() {
 # ==============================================================================
 # The idle worker is a long-running background process that needs to
 # re-check mute state each tick. This function does the full read +
-# validation in one call (stage-0 + stage-1 combined).
+# validation in one call.
 # ==============================================================================
 
 _tavs_check_mute_state() {
@@ -159,12 +82,16 @@ _tavs_check_mute_state() {
 
     [[ ! -f "$mute_file" ]] && return 1
 
-    local _muted="" _until="" _written="" _app_pid="" _version=""
+    local _muted="" _requested="" _requested_present=0 _level="" _reason=""
+    local _until="" _written="" _app_pid="" _version=1
     while IFS='=' read -r key val; do
         val="${val%\"}"
         val="${val#\"}"
         case "$key" in
             MUTED) _muted="$val" ;;
+            REQUESTED_MUTED) _requested="$val"; _requested_present=1 ;;
+            MUTE_LEVEL) _level="$val" ;;
+            REASON) _reason="$val" ;;
             UNTIL_EPOCH) _until="$val" ;;
             WRITTEN_EPOCH) _written="$val" ;;
             APP_PID) _app_pid="$val" ;;
@@ -172,25 +99,33 @@ _tavs_check_mute_state() {
         esac
     done < "$mute_file"
 
-    # Must be explicitly muted with known schema
+    # A hard-lock mirror must not outlive the finite lock or its unlock grant.
+    [[ "$_level" == hard ]] && return 1
+    [[ "$_muted" == true || "$_muted" == false ]] || return 1
+    [[ "$_requested_present" == 1 ]] && _muted="$_requested"
     [[ "$_muted" != "true" ]] && return 1
-    [[ "${_version:-1}" != "1" ]] && return 1
-
-    # PID liveness (kill -0 is a bash builtin)
-    if [[ -n "$_app_pid" ]] && ! kill -0 "$_app_pid" 2>/dev/null; then
-        return 1
-    fi
+    [[ -z "$_level" || "$_level" == soft ]] || return 1
+    case "$_reason" in schedule_window|quiet_period|master_paused|hard_lock|"") ;; *) return 1 ;; esac
+    [[ -z "$_level" && "$_reason" == hard_lock ]] && return 1
+    [[ "$_version" == 1 ]] || return 1
+    [[ -n "$_until" && -n "$_written" && -n "$_app_pid" ]] || return 1
+    [[ "$_until$_written$_app_pid" != *[!0-9]* ]] || return 1
+    [[ ${#_until} -le 19 && ${#_written} -le 19 && ${#_app_pid} -le 19 ]] || return 1
+    # Decimal conversion avoids Bash interpreting leading zeroes as octal.
+    _until=$((10#$_until)); _written=$((10#$_written)); _app_pid=$((10#$_app_pid))
+    (( _until >= 0 && _written > 0 && _app_pid > 0 && _app_pid <= 2147483647 )) || return 1
+    kill -0 "$_app_pid" 2>/dev/null || return 1
 
     local now
     now=$(date +%s)
 
     # UNTIL_EPOCH expiry
-    if [[ -n "$_until" && "$_until" != "0" ]] && (( _until < now )); then
+    if (( _until != 0 && _until < now )); then
         return 1
     fi
 
     # WRITTEN_EPOCH heartbeat (120s staleness window)
-    if [[ -n "$_written" ]] && (( now - _written > 120 )); then
+    if (( _written > now || now - _written > 120 )); then
         return 1
     fi
 
@@ -202,7 +137,7 @@ _tavs_check_mute_state() {
 # ACTIVE-TTY REGISTRY
 # ==============================================================================
 # Every trigger.sh / idle-worker invocation touches a file here so the
-# broadcaster (Mac app) knows which TTYs are alive. Mtime is the signal.
+# broadcaster can inspect candidates. Native owner/device binding authorizes output.
 # ==============================================================================
 
 register_active_tty() {
@@ -211,51 +146,12 @@ register_active_tty() {
     touch "$TAVS_RUNTIME_DIR/active-ttys/$TTY_SAFE"
 }
 
-# Sweep entries older than 24 hours (called by broadcaster or debug CLI)
-clean_active_tty_registry() {
-    _tavs_resolve_runtime_dir
-    local dir="$TAVS_RUNTIME_DIR/active-ttys"
-    [[ ! -d "$dir" ]] && return 0
-    find "$dir" -type f -mmin +1440 -delete 2>/dev/null || true
-}
+# Age and transient write failures do not establish that a TTY owner exited.
+clean_active_tty_registry() { return 0; }
 
-# ==============================================================================
-# PENDING-CACHE BUFFER LIFECYCLE
-# ==============================================================================
-# When _TAVS_SUPPRESS_OUTPUT=1, emit_osc appends bytes to a temp buffer.
-# At dispatch end, the buffer is atomically renamed to the per-TTY pending
-# cache. On crash, the EXIT trap cleans up the temp file.
-# ==============================================================================
-
-_tavs_mute_buffer_open() {
-    [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" != "1" ]] && return 0
-    [[ -z "${TTY_SAFE:-}" ]] && return 0
-    _tavs_resolve_runtime_dir
-    _TAVS_PENDING_BUFFER=$(mktemp "$TAVS_RUNTIME_DIR/pending/.tmp.XXXXXX")
-    export _TAVS_PENDING_BUFFER
-}
-
-_tavs_mute_buffer_close() {
-    local buf="${_TAVS_PENDING_BUFFER:-}"
-    [[ -z "$buf" ]] && return 0
-
-    local tty_safe="${TTY_SAFE:-}"
-    if [[ -z "$tty_safe" ]]; then
-        rm -f "$buf"
-        unset _TAVS_PENDING_BUFFER
-        return 0
-    fi
-
-    _tavs_resolve_runtime_dir
-    local target="$TAVS_RUNTIME_DIR/pending/${tty_safe}.osc"
-
-    if [[ -s "$buf" ]]; then
-        mv -f "$buf" "$target"
-    else
-        rm -f "$buf"
-    fi
-    unset _TAVS_PENDING_BUFFER
-}
+# Compatibility callers cannot create or republish opaque historical output.
+_tavs_mute_buffer_open() { unset _TAVS_PENDING_BUFFER; }
+_tavs_mute_buffer_close() { unset _TAVS_PENDING_BUFFER; }
 
 # ==============================================================================
 # DEBUG MUTE LOGGING
@@ -272,9 +168,7 @@ _tavs_debug_mute() {
 # ==============================================================================
 # INITIALIZATION
 # ==============================================================================
-# Called explicitly by trigger.sh AFTER TTY_DEVICE/TTY_SAFE are resolved
-# (terminal-osc-sequences.sh must be sourced first). Do NOT auto-init on
-# source — TTY_SAFE is not available at source time in trigger.sh.
+# Called explicitly after TTY_DEVICE/TTY_SAFE are resolved.
 # ==============================================================================
 
 _tavs_mute_gate_init() {
@@ -283,7 +177,6 @@ _tavs_mute_gate_init() {
     register_active_tty
 
     if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" ]]; then
-        _tavs_mute_buffer_open
-        _tavs_debug_mute "MUTED: buffer=${_TAVS_PENDING_BUFFER:-} tty=${TTY_SAFE:-}"
+        _tavs_debug_mute "MUTED: tty=${TTY_SAFE:-}"
     fi
 }

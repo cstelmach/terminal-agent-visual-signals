@@ -31,61 +31,9 @@ case "${1:-}" in
 esac
 
 # ==============================================================================
-# MUTE GATE: STAGE 0 (builtins only, before theme/terminal sources)
+# Mute state is evaluated after all helpers have loaded, before dispatch.
 # ==============================================================================
-# Reads ~/.tavs/mute.state using bash builtins. Sets _TAVS_SUPPRESS_OUTPUT=1
-# if the TAVS macOS app says we should be muted and its PID is still alive.
-# Time-sensitive checks (UNTIL_EPOCH, WRITTEN_EPOCH) are deferred to stage-1
-# (mute-gate.sh) which runs during the normal source pass.
-# Never exits early — full dispatch always runs for bookkeeping (SPEC D21).
-# ==============================================================================
-_tavs_policy_dir="${BASH_SOURCE[0]%/*}"
-[[ "$_tavs_policy_dir" == "${BASH_SOURCE[0]}" ]] && _tavs_policy_dir=.
-source "$_tavs_policy_dir/visual-restrictions-state.sh"
-unset _tavs_policy_dir
 _TAVS_SUPPRESS_OUTPUT=0
-if ! _tavs_visual_restrictions_suspended && [[ -f "$HOME/.tavs/mute.state" ]]; then
-    _TAVS_S0_MUTED="" _TAVS_S0_PID="" _TAVS_S0_VER=""
-    _TAVS_S0_UNTIL="" _TAVS_S0_WRITTEN="" _TAVS_S0_REASON=""
-    while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
-        _tavs_s0_v="${_tavs_s0_v%\"}" ; _tavs_s0_v="${_tavs_s0_v#\"}"
-        case "$_tavs_s0_k" in
-            MUTED) _TAVS_S0_MUTED="$_tavs_s0_v" ;;
-            APP_PID) _TAVS_S0_PID="$_tavs_s0_v" ;;
-            SCHEMA_VERSION) _TAVS_S0_VER="$_tavs_s0_v" ;;
-            UNTIL_EPOCH) _TAVS_S0_UNTIL="$_tavs_s0_v" ;;
-            WRITTEN_EPOCH) _TAVS_S0_WRITTEN="$_tavs_s0_v" ;;
-            REASON) _TAVS_S0_REASON="$_tavs_s0_v" ;;
-        esac
-    done < "$HOME/.tavs/mute.state"
-    if [[ "$_TAVS_S0_MUTED" == "true" && "${_TAVS_S0_VER:-1}" == "1" ]]; then
-        if [[ -z "$_TAVS_S0_PID" ]] || kill -0 "$_TAVS_S0_PID" 2>/dev/null; then
-            _TAVS_SUPPRESS_OUTPUT=1
-        fi
-    fi
-    unset _tavs_s0_k _tavs_s0_v
-fi
-
-# Hard lock (spec D3): read /tmp/tavs-$UID/lock.state with builtins only.
-# Unlike the mute path there is deliberately NO APP_PID gate: an unexpired
-# lock suppresses even when the app is dead (fail-closed). Time-sensitive
-# checks (LOCK_UNTIL/UNLOCK_UNTIL) are deferred to stage-1.
-_TAVS_S0_LOCKED="" _TAVS_S0_LOCK_UNTIL="" _TAVS_S0_UNLOCK_UNTIL="" _TAVS_S0_LOCK_VER=""
-if ! _tavs_visual_restrictions_suspended && [[ -f "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state" ]]; then
-    while IFS='=' read -r _tavs_s0_k _tavs_s0_v; do
-        _tavs_s0_v="${_tavs_s0_v%\"}" ; _tavs_s0_v="${_tavs_s0_v#\"}"
-        case "$_tavs_s0_k" in
-            LOCKED) _TAVS_S0_LOCKED="$_tavs_s0_v" ;;
-            LOCK_UNTIL_EPOCH) _TAVS_S0_LOCK_UNTIL="$_tavs_s0_v" ;;
-            UNLOCK_UNTIL_EPOCH) _TAVS_S0_UNLOCK_UNTIL="$_tavs_s0_v" ;;
-            SCHEMA_VERSION) _TAVS_S0_LOCK_VER="$_tavs_s0_v" ;;
-        esac
-    done < "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state"
-    if [[ "$_TAVS_S0_LOCKED" == "true" && "${_TAVS_S0_LOCK_VER:-1}" == "1" ]]; then
-        _TAVS_SUPPRESS_OUTPUT=1
-    fi
-    unset _tavs_s0_k _tavs_s0_v
-fi
 
 # Resolve Script Directory and Project Root
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -115,10 +63,8 @@ source "$CORE_DIR/context-data.sh"    # Context window data for title tokens
     source "$CORE_DIR/title-iterm2.sh"
 
 # Mute gate stage-1: now that TTY_SAFE is resolved, validate liveness,
-# register the active TTY, and open the pending buffer if muted.
+# register the active TTY, and suppress current nonbackground signals if muted.
 _tavs_mute_gate_init
-# EXIT trap: clean up orphaned pending buffer on crash
-trap '[[ -n "${_TAVS_PENDING_BUFFER:-}" ]] && rm -f "$_TAVS_PENDING_BUFFER"' EXIT
 
 # === DEBUG LOGGING ===
 debug_log_invocation() {
@@ -160,8 +106,11 @@ esac
 [[ "$_observation_state" != replay ]] && _tavs_organizer_begin "$_observation_state"
 unset _observation_state
 
-# Helper: Apply palette if enabled (must be called BEFORE background)
-# This prevents contrast flicker by setting colors before background changes
+if [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]]; then
+    _tavs_managed_check_context || exit 0
+fi
+
+# Helper: Apply ordinary palette signals after managed delivery validation.
 _apply_palette_if_enabled() {
     should_enable_palette_theming || return 0
     local mode
@@ -234,30 +183,19 @@ _revalidate_identity() {
     [[ "$_id_mode" == "dual" ]] && assign_dir_icon
 }
 
-# Handle replay subcommand (debug): write cached pending bytes to TTY
+# The legacy debug command reconciles current typed intent, never cached OSC.
 if [[ "${1:-}" == "replay" ]]; then
     local_tty_safe="${2:-}"
-    if [[ -z "$local_tty_safe" ]]; then
-        echo "Usage: $0 replay <tty_safe>" >&2
-        echo "Example: $0 replay dev_ttys001" >&2
+    case "$local_tty_safe" in
+        _dev_ttys[0-9]*|dev_ttys[0-9]*) ;;
+        *) printf 'Usage: %s replay <tty_safe>\n' "$0" >&2; exit 1 ;;
+    esac
+    local_tty_dev="${local_tty_safe#_}"
+    local_tty_dev="/${local_tty_dev//_//}"
+    _tavs_managed_reconcile "$local_tty_dev" || {
+        printf 'tavs: current background reconciliation unavailable\n' >&2
         exit 1
-    fi
-    _tavs_resolve_runtime_dir
-    local_cache="$TAVS_RUNTIME_DIR/pending/${local_tty_safe}.osc"
-    if [[ ! -f "$local_cache" ]]; then
-        echo "No pending cache for $local_tty_safe" >&2
-        exit 0
-    fi
-    # Reconstruct device path: _dev_ttys001 → /dev/ttys001
-    local_tty_dev="${local_tty_safe//_//}"
-    if [[ ! -w "$local_tty_dev" ]]; then
-        echo "TTY $local_tty_dev not writable" >&2
-        exit 1
-    fi
-    local_bytes=$(wc -c < "$local_cache" | tr -d ' ')
-    cat "$local_cache" > "$local_tty_dev"
-    rm -f "$local_cache"
-    echo "Replayed $local_bytes bytes to $local_tty_dev" >&2
+    }
     exit 0
 fi
 
@@ -279,15 +217,14 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
+            _apply_palette_if_enabled
             # Use new title system with user override detection
             should_send_title "processing" && set_tavs_title "processing"
             set_state_background_image "processing"
         else
-            _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
+            _reset_palette_if_enabled
             should_send_title "processing" && reset_tavs_title
             clear_background_image
         fi
@@ -298,9 +235,8 @@ case "$STATE" in
     permission)
         kill_idle_timer
         if [[ "$ENABLE_PERMISSION" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_PERMISSION"
+            _apply_palette_if_enabled
             # Use new title system with user override detection
             should_send_title "permission" && set_tavs_title "permission"
             set_state_background_image "permission"
@@ -316,15 +252,14 @@ case "$STATE" in
         reset_subagent_count  # Reset subagent tracking on complete
 
         if [[ "$ENABLE_COMPLETE" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPLETE"
+            _apply_palette_if_enabled
             # Use new title system with user override detection
             should_send_title "complete" && set_tavs_title "complete"
             set_state_background_image "complete"
         else
-            _reset_palette_if_enabled
             should_send_bg_color && send_osc_bg "reset"
+            _reset_palette_if_enabled
             should_send_title "complete" && reset_tavs_title
             clear_background_image
         fi
@@ -343,9 +278,9 @@ case "$STATE" in
             if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
                 write_skip_signal
             else
-                # Fallback start - apply palette before background
-                _apply_palette_if_enabled
+                # Start a new worker with the current managed background
                 should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
+                _apply_palette_if_enabled
                 # Use new title system with user override detection
                 should_send_title "idle" && set_tavs_title "idle_1"
                 set_state_background_image "idle"
@@ -359,9 +294,8 @@ case "$STATE" in
         should_change_state "$STATE" || exit 0
         kill_idle_timer
         if [[ "$ENABLE_COMPACTING" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_COMPACTING"
+            _apply_palette_if_enabled
             # Use new title system with user override detection
             should_send_title "compacting" && set_tavs_title "compacting"
             set_state_background_image "compacting"
@@ -380,9 +314,9 @@ case "$STATE" in
 
         kill_idle_timer
         reset_subagent_count  # Reset subagent tracking on session reset
-        # Reset palette FIRST, then background
-        _reset_palette_if_enabled
+        # Validate the background before emitting palette or title signals
         should_send_bg_color && send_osc_bg "reset"
+        _reset_palette_if_enabled
         clear_background_image
         send_bell_if_enabled "$STATE"
         record_state "$STATE"
@@ -424,9 +358,8 @@ case "$STATE" in
         increment_subagent_count
         kill_idle_timer
         if [[ "$ENABLE_SUBAGENT" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_SUBAGENT"
+            _apply_palette_if_enabled
             should_send_title "subagent" && set_tavs_title "subagent"
             set_state_background_image "subagent"
         fi
@@ -447,8 +380,8 @@ case "$STATE" in
             [[ "$DEBUG_ALL" == "1" ]] && echo "[TAVS] All subagents complete, returning to processing" >&2
 
             if [[ "$ENABLE_PROCESSING" == "true" ]]; then
-                _apply_palette_if_enabled
                 should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
+                _apply_palette_if_enabled
                 should_send_title "processing" && set_tavs_title "processing"
                 set_state_background_image "processing"
             fi
@@ -468,9 +401,8 @@ case "$STATE" in
         # Don't check should_change_state - errors should always show briefly
         kill_idle_timer
         if [[ "$ENABLE_TOOL_ERROR" == "true" ]]; then
-            # Apply palette FIRST (prevents contrast flicker)
-            _apply_palette_if_enabled
             should_send_bg_color && send_osc_bg "$COLOR_TOOL_ERROR"
+            _apply_palette_if_enabled
             should_send_title "tool_error" && set_tavs_title "tool_error"
             set_state_background_image "tool_error"
         fi
@@ -496,8 +428,5 @@ case "$STATE" in
         exit 1
         ;;
 esac
-
-# Close pending buffer: atomic-rename temp → per-TTY .osc cache (no-op if unsuppressed)
-_tavs_mute_buffer_close
 
 exit 0

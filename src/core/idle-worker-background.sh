@@ -10,9 +10,7 @@
 #
 # These are sourced by trigger.sh before idle-worker-background.sh, so they are available.
 #
-# Mute integration: The worker re-reads mute.state each tick via
-# _tavs_check_mute_state() and routes all OSC writes through emit_osc.
-# When muted, bytes go to the pending cache; when unmuted, directly to TTY.
+# Backgrounds and forced resets use native validation; muted signals are discarded.
 # ==============================================================================
 
 # Helper: Send OSC 4 palette in idle worker via emit_osc
@@ -88,9 +86,7 @@ unified_timer_worker() {
     local my_pid
     my_pid=$( sh -c 'echo $PPID' )
 
-    # Set TTY_DEVICE + TTY_SAFE for emit_osc and pending cache naming.
-    # Replaces the old fd-3 pattern. emit_osc opens/closes TTY_DEVICE
-    # per write — works fine from background subshells.
+    # Keep the inherited delivery context so superseded workers cannot paint.
     TTY_DEVICE="$tty_device"
     TTY_SAFE="${TTY_DEVICE//\//_}"
 
@@ -131,20 +127,8 @@ unified_timer_worker() {
         if [[ $elapsed -ge $max_runtime ]]; then
             [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Max runtime reached" >> "$IDLE_DEBUG_LOG"
 
-            # Best effort reset (palette + background + title)
-            # Force unmuted for reset — we want the visual reset to reach the TTY
-            _TAVS_SUPPRESS_OUTPUT=0
-            {
-                _idle_reset_palette 2>/dev/null || true
-                should_send_bg_color && send_osc_bg reset 2>/dev/null || true
-                emit_osc "\033]0;%s\033\\" "$SHORT_CWD" 2>/dev/null || true
-            } &
-            local reset_pid=$!
-            sleep 1
-            kill $reset_pid 2>/dev/null || true
-
-            kill -TERM $my_pid 2>/dev/null
-            exit 0
+            _tavs_managed_forced_reset "$SHORT_CWD" || true
+            return 0
         fi
 
         # Completion Check
@@ -163,24 +147,21 @@ unified_timer_worker() {
                 write_session_state "idle" "$my_pid"
             fi
 
-            # Open pending buffer for this tick's OSC writes (if muted)
-            if type _tavs_mute_buffer_open &>/dev/null; then
-                _tavs_mute_buffer_open
-            fi
-
             local stage_color="${UNIFIED_STAGE_COLORS[$current_stage]}"
             local stage_status_icon="${UNIFIED_STAGE_STATUS_ICONS[$current_stage]}"
 
-            # Apply Palette FIRST (prevents contrast flicker)
+            # Validate the synthetic delivery before any palette or title output.
+            if should_send_bg_color; then
+                send_osc_bg "$stage_color" || return 0
+                [[ "${_TAVS_MANAGED_STALE:-0}" == 1 ]] && return 0
+            else
+                _tavs_managed_check_context || return 0
+            fi
+
             if [[ "$stage_color" == "reset" ]]; then
                 _idle_reset_palette
             else
                 _idle_send_palette "$(_get_palette_mode)"
-            fi
-
-            # Apply Background Color
-            if should_send_bg_color; then
-                send_osc_bg "$stage_color"
             fi
 
             # Apply Title using compose_title()
@@ -199,10 +180,6 @@ unified_timer_worker() {
                 emit_osc "\033]0;%s\033\\" "$title"
             fi
 
-            # Close pending buffer: atomic-rename to per-TTY cache
-            if type _tavs_mute_buffer_close &>/dev/null; then
-                _tavs_mute_buffer_close
-            fi
         fi
     done
 }
