@@ -333,6 +333,38 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertFalse(text.contains("SetBackgroundImageFile=\u{07}\u{07}"))
     }
 
+    func testQueuedRenderCannotReplayStyleAfterRecoveryOrResume() throws {
+        for resume in [false, true] {
+            let target = try terminal(resume ? 11 : 10)
+            try cache(target)
+            let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+            let finished = DispatchSemaphore(value: 0), result = RecoveryWriteResult()
+            defer { release.signal() }
+            let style = try render(), value = intent(target)
+            let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
+                entered.signal(); release.wait(); return Darwin.open(path, flags)
+            }))
+            DispatchQueue.global().async {
+                result.value = Result {
+                    try queued.render(style, intent: value, synthetic: false, intakeAt: 1_000,
+                        to: target) == .rendered
+                }
+                finished.signal()
+            }
+            XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+            XCTAssertFalse(recovery().recover().hasFailures)
+            XCTAssertEqual(try read(target), reset)
+            if resume { try restrictions.write(suspended: false) }
+            release.signal()
+            XCTAssertEqual(finished.wait(timeout: .now() + 1), .success)
+            XCTAssertFalse(try XCTUnwrap(result.value).get())
+            try noBytes(target)
+            XCTAssertEqual(try recovery().render(style, intent: value, synthetic: false,
+                intakeAt: 1_000, to: target), .rendered)
+            XCTAssertFalse(try read(target).isEmpty)
+        }
+    }
+
     func testStyleOnlyRenderDoesNotPublishBackgroundOrResetIt() throws {
         let target = try terminal(10), style = try render(background: nil)
         XCTAssertEqual(try recovery().render(style, intent: intent(target, color: "reset"), synthetic: false,

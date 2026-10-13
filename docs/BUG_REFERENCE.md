@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.21
+Version: 1.22
+
+## A queued ordinary render replays titles and bells after recovery
+
+Recovery preserves typed observations and background intent. The full-render validator therefore
+accepted a hook paused during device open after suspension replaced the marker, replaying its
+palette, title and bell after the reset. Full renders now pin the marker before device open within
+the existing writer budget and compare it under the output lock. Replacement yields no output,
+including after explicit resume. A barrier regression reproduces both cases and verifies that a
+fresh hook can still render normally. Typed intent is retained without replaying style history.
 
 ## An emphasized shell can outlive the agent that authorized Automatic focus
 

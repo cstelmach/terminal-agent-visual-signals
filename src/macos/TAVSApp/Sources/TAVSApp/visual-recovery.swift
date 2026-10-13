@@ -157,6 +157,14 @@ final class VisualRecovery {
                     intakeAt: intakeAt, deadline: deadline)
             }
         } else { beforeOpen = nil }
+        var renderRevision: VisualRestrictionsRevision?
+        if render != nil {
+            let publish = beforeOpen
+            beforeOpen = { deadline in
+                renderRevision = try self.restrictions.captureRevision()
+                try publish?(deadline)
+            }
+        }
         let clear: (String, VisualRestrictionsRevision, TerminalEffectKind)?
         switch operation {
         case .clearFocus(let id, let revision): clear = (id, revision, .focus)
@@ -186,6 +194,9 @@ final class VisualRecovery {
                 return nil
             }
             if case .render(_, let intent, let synthetic, let intakeAt) = operation {
+                // Recovery invalidates queued styles even when it preserves their typed intent.
+                guard let revision = renderRevision,
+                      try self.restrictions.matches(revision, deadline: deadline) else { return nil }
                 guard intent.tty == target.tty, intent.device == target.device else {
                     throw TerminalVisualStateError.invalidRecord
                 }
