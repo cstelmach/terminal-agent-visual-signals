@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 02:45 CEST
-**Version:** 3.9
+**Last Updated:** 2026-10-13 04:39 CEST
+**Version:** 4.0
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 71e0f60; earlier hashes below/appendix | 497 Swift; 165 broad + 50 final Bats; 230 Python | | Four review leads fixed; fresh final reviews and native acceptance pending |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 689203e; earlier hashes below/appendix | 500 Swift; earlier shell/Python evidence below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -842,47 +842,47 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished source/fixture checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 review corrections: 2026-10-13 02:45 CEST
+### Phase 9 first review corrections
 
-Continued clean `5bd0bd2` from the dated state and active goal. Original Codex native exit was
-zero but scores, coverage and verdict were absent. Its four raw leads were verified separately,
-not accepted as a completed review. Original Claude Hub exhausted 1800 seconds; automatic
-fallback failed report validation. Neither supplied an accepted final review. AGY remains
-unavailable under the unchanged fingerprint-policy conflict; no dispatch or fingerprint occurred.
+> Finished four-fix checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-Four verified fixes are separate commits: `4940466` pins queued render revision before open;
-`9f660ef` validates delayed tool-error delivery before timer/state side effects; `95a391f` starts
-idle notifications with a current-context timer at stage one; `71e0f60` permits timeout cleanup
-through unchanged typed intent and a validated continuing owner after producer exit. Forced
-resets also reject a changed recovery revision before queued palette/title output.
+### Phase 9 final reviews and confirmed closure: 2026-10-13 04:39 CEST
 
-Focused independent inspection found a draft race: the first live publication could overwrite
-a newer standalone intent, then become its own bound evidence after producer exit during open.
-`TtcCjQ` reproduced three assertions. The latest-intent check now precedes both live/orphaned
-branches and repeats after open. The follow-up found no further concrete bypass within the
-intake contract. A separate during-open standalone-intent regression is a green check.
+Previous turn was progress; continued clean `12bacee`. Final source reviews completed against
+immutable `71e0f60`: Codex file-mode Sol/xhigh returned CONCERN, 7/10, all nine phases/83 targets;
+Claude Opus/high via explicit CLI completed four partitions and native synopsis, CONCERN,
+5.9/10, same full scope. Neither ran tests or native acceptance; later fixes are outside scope.
+Preserved both complete reports, four Claude parts and two source follow-ups in this package.
+AGY remains unavailable under the unchanged fingerprint-policy conflict; no retry occurred.
 
-Final `L6yRjc` passed 497/497 Swift tests in 8.040 seconds without warnings. Product release
-`c7aA6M` passed in 11.86 seconds. Broad Bats `uaFGiJ` passed 165/165 before the final common-intent
-guard; connected final-release `CKXAQ5` passed 50/50 afterward. Audited Python `6bEfyY` passed
-230/230 in 10.02 seconds. All used explicit helpers, tests/run-isolated.sh and private roots/PTYs.
-Fixture/compiler/interpreter failures and genuine red logs remain documented in
-[review corrections](final-review-corrections-2026-10-13.md). No dependency installation occurred.
+`689203e` fixes source-verified Codex R1: successful empty catalogues now reconcile known closure,
+prune stored priorities/selection, clear previews and closed cues, end the last Manual set and
+leave Automatic armed. Empty activation is disabled. Actual native errors retain last-known
+data. Model red `CWtVBe` had nine failed assertions; connected control red `Ewz7tl` failed once.
+Final `ukRCyM` passed 500/500 Swift tests in 8.011 seconds without warnings. Current release
+`tfCNTK` passed in 10.69 seconds. All used private roots and the explicit source helper; new
+focus fixtures have nil device/lifetime lookup and a mock writer, so cannot open real devices.
 
-Fresh full-scope Codex file-mode and explicit native Claude wrapper reviews are requested for
-`71e0f60` versus `e113fb8`. All nine phases and 83 product/test paths remain in scope; no old
-thread or partial report is reused. Reports are pending. Only supporting docs may change during
-these reviews; product source is frozen. Original failure/raw reports and the focused follow-up
-are preserved in this package. Backups: `/tmp/tavs-final-review-fixes-20261013/`.
+Source verification confirms Codex R2's obsolete/unsafe priority suite, Claude M1's nil-coverage
+and Boolean-source cue loss, and M4's accumulated cleanup runs. Follow-ups also identify false
+heartbeat advancement on rejected/unaffected writes and skipped source checks with all-High rows.
+Execution regressions/fixes remain pending. Other Claude findings need source/spec adjudication,
+including compatibility, the delayed restore race, recovery classification, resource admission
+and scheduler recomposition after recovery. No product boundary was changed to accept a finding.
+See [review corrections and next actions](final-review-corrections-2026-10-13.md).
 
-**Scope:** the original planned core/state/writer/entry and connected tests, plus API/bug docs.
-The cleanup fix spans seven connected source/test/docs files; keeping its authority and caller
-changes together avoids a nonfunctional partial commit. SPEC body and PLAN remain fixed.
-Moved 44 finished controller-checkpoint lines unchanged into the existing Phase 9 appendix;
-verified the source round trip. Prior history is preserved. Required capture accompanies this log.
-No real Ghostty call, install/sync, settings/schedule change or user-session shutdown occurred.
-Owned fixture relaunch UI remains unverified after the earlier CUA timeout; no unchanged retry.
+Private fixture PID 68022 is confirmed running. CUA path and bundle-ID observations timed out;
+inventory confirms its registration. Its brief sample shows ordinary AppKit event-loop activity,
+not a proven deadlock or visible acceptance. Native launch API is absent on the Mac provider.
+No activation workaround or restart was attempted. Sample: /tmp/tavs-ui-observation-20261013/.
+Ghostty access denial remains binding; no alternate native request or device paint occurred.
 
-**Next:** read and verify the fresh final reviewer reports, resolve material findings, then finish
-active-cue UI/relaunch and physical/native acceptance in Phases 2/7/8/9 when access permits.
-Phase 9 stays In Progress and the master goal stays active; required acceptance is incomplete.
+**Scope:** one planned model correction plus connected tests and API/bug docs. SPEC body and
+PLAN are fixed. Released the parent source freeze only after remaining reviewer packets were
+confirmed immutable; their target remains `71e0f60`. Moved the finished 44-line first-corrections
+entry unchanged into the existing Phase 9 appendix with a verified round trip. Required capture
+accompanies this log. No install/sync, personal settings/schedule change or user-session shutdown.
+
+**Next:** verify and repair remaining material source findings in bounded test-first slices,
+starting with unknown-cue lifetime semantics or isolated priority-suite repair. Preserve the
+full specification and native acceptance requirements; the master goal remains active.

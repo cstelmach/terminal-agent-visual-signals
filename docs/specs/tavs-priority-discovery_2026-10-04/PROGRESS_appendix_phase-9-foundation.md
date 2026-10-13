@@ -85,3 +85,48 @@ SPEC body and PLAN remain fixed. Source steps are implemented; Phase 9 stays In 
 material defects. Inspect current reviewer contracts before provider dispatch; do not retry the
 unchanged AGY fingerprint-policy conflict without a changed contract. Active-cue UI and all
 required physical/native cases in Phases 2/7/8/9 remain incomplete. The goal stays active.
+
+### Phase 9 review corrections: 2026-10-13 02:45 CEST
+
+Continued clean `5bd0bd2` from the dated state and active goal. Original Codex native exit was
+zero but scores, coverage and verdict were absent. Its four raw leads were verified separately,
+not accepted as a completed review. Original Claude Hub exhausted 1800 seconds; automatic
+fallback failed report validation. Neither supplied an accepted final review. AGY remains
+unavailable under the unchanged fingerprint-policy conflict; no dispatch or fingerprint occurred.
+
+Four verified fixes are separate commits: `4940466` pins queued render revision before open;
+`9f660ef` validates delayed tool-error delivery before timer/state side effects; `95a391f` starts
+idle notifications with a current-context timer at stage one; `71e0f60` permits timeout cleanup
+through unchanged typed intent and a validated continuing owner after producer exit. Forced
+resets also reject a changed recovery revision before queued palette/title output.
+
+Focused independent inspection found a draft race: the first live publication could overwrite
+a newer standalone intent, then become its own bound evidence after producer exit during open.
+`TtcCjQ` reproduced three assertions. The latest-intent check now precedes both live/orphaned
+branches and repeats after open. The follow-up found no further concrete bypass within the
+intake contract. A separate during-open standalone-intent regression is a green check.
+
+Final `L6yRjc` passed 497/497 Swift tests in 8.040 seconds without warnings. Product release
+`c7aA6M` passed in 11.86 seconds. Broad Bats `uaFGiJ` passed 165/165 before the final common-intent
+guard; connected final-release `CKXAQ5` passed 50/50 afterward. Audited Python `6bEfyY` passed
+230/230 in 10.02 seconds. All used explicit helpers, tests/run-isolated.sh and private roots/PTYs.
+Fixture/compiler/interpreter failures and genuine red logs remain documented in
+[review corrections](final-review-corrections-2026-10-13.md). No dependency installation occurred.
+
+Fresh full-scope Codex file-mode and explicit native Claude wrapper reviews are requested for
+`71e0f60` versus `e113fb8`. All nine phases and 83 product/test paths remain in scope; no old
+thread or partial report is reused. Reports are pending. Only supporting docs may change during
+these reviews; product source is frozen. Original failure/raw reports and the focused follow-up
+are preserved in this package. Backups: `/tmp/tavs-final-review-fixes-20261013/`.
+
+**Scope:** the original planned core/state/writer/entry and connected tests, plus API/bug docs.
+The cleanup fix spans seven connected source/test/docs files; keeping its authority and caller
+changes together avoids a nonfunctional partial commit. SPEC body and PLAN remain fixed.
+Moved 44 finished controller-checkpoint lines unchanged into the existing Phase 9 appendix;
+verified the source round trip. Prior history is preserved. Required capture accompanies this log.
+No real Ghostty call, install/sync, settings/schedule change or user-session shutdown occurred.
+Owned fixture relaunch UI remains unverified after the earlier CUA timeout; no unchanged retry.
+
+**Next:** read and verify the fresh final reviewer reports, resolve material findings, then finish
+active-cue UI/relaunch and physical/native acceptance in Phases 2/7/8/9 when access permits.
+Phase 9 stays In Progress and the master goal stays active; required acceptance is incomplete.

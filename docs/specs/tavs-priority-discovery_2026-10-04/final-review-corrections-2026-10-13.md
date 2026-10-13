@@ -1,9 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.0
+Version: 1.1
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
-Corrected product target: `71e0f60`.
+First corrected product target: `71e0f60`.
+Current product checkpoint: `689203e`.
 
 ## Review execution status
 
@@ -18,10 +19,11 @@ fallback failed report validation. No scores or readiness verdict are inferred f
 - [AGY unavailable](final-agy-unavailable-2026-10-13.md): the installed fingerprint requirement
   still conflicts with the user's instructions. No provider dispatch or fingerprint occurred.
 
-Fresh Codex file-mode profile execution and explicitly selected Claude CLI wrapper reviews
-were requested for corrected target `71e0f60`. They cover all nine phases and the original
-83 changed non-Markdown product/test paths, with adjacent dependencies. They are pending;
-this document is parent verification of leads, not a substitute final provider verdict.
+Fresh Codex file-mode and explicit Claude CLI wrapper reviews completed for `71e0f60`.
+Both cover all nine phases and 83 product/test paths, with adjacent dependencies. Codex returned
+CONCERN, 7/10; Claude's four passes and native synopsis returned CONCERN, 5.9/10. They ran no
+tests or native acceptance. Later corrections are outside their reviewed target. This document
+records parent verification and corrections; it does not substitute a provider verdict.
 
 ## Findings adjudicated against source and execution
 
@@ -84,3 +86,64 @@ or schedule change, or shutdown of a user session occurred. The earlier owned fi
 running; its relaunch Computer Use attachment timed out. No repeated unchanged retry occurred.
 
 The SPEC body and PLAN are fixed. Phase 9 remains In Progress; the master goal remains active.
+
+## Completed reviews and the next correction
+
+- [Complete Codex review](final-codex-corrected-review-2026-10-13.md).
+- [Complete Claude synopsis](final-claude-corrected-review-2026-10-13.md), with accepted
+  [A](final-claude-part-a-2026-10-13.md), [B](final-claude-part-b-2026-10-13.md),
+  [C](final-claude-part-c-2026-10-13.md) and [D](final-claude-part-d-2026-10-13.md).
+
+Codex R1 is resolved by `689203e`. A successful empty catalogue is confirmed closure, while
+actual native errors retain last-known state. `CWtVBe` reproduced nine failed assertions in
+the model suite, including retained priority/selection, Manual membership and Automatic cues.
+The accepted path now clears closed rows, stored priorities, selection and previews; ends Manual
+after its last member closes; and clears closed cues while Automatic stays armed. The connected
+empty activation guard separately failed in `Ewz7tl` before correction.
+
+Final `ukRCyM` passed 500 Swift tests in 8.011 seconds with no warnings. Current release `tfCNTK`
+passed in 10.69 seconds. These isolated tests use nil device/lifetime lookup and a mock writer;
+they cannot open a real device. Failed-native retention remains tested separately.
+Backups: `/tmp/tavs-empty-catalogue-20261013/`.
+
+## Remaining adjudication and implementation
+
+The following source findings are verified; execution regressions and fixes remain pending:
+
+1. **Obsolete priority suite (Codex R2 / Claude M7).** Its pending-file assertions have no current
+   writer, `REASON=test` is unsupported, and child `env -i` drops the explicit helper. Do not run
+   it until private-root/helper propagation is repaired. Retarget it to typed intent and no replay.
+2. **Unknown cue data (Claude M1).** The [source follow-up](unknown-coverage-followup-2026-10-13.md)
+   confirms both reducer nil-clearing and final-writer Boolean invalidation. Reuse known-invalid
+   versus unavailable evidence, retaining unknown cues and rejecting uncertain paints. The remedy
+   must also distinguish rejected writes from masked metadata renewal and handle all-High rows
+   where no outside writer predicate executes.
+3. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
+   proves a finite 24-second sequence with three retired runs and 15 retry jobs. These share one
+   revision object, not one descriptor per rollover. Blind replacement by the newest attempted
+   ID can lose older ownership. Preserve exact IDs/pins, and verify any bound against partial
+   healthy focus and physical restoration rather than accepting a weaker product behavior.
+
+Other Claude findings still require parent source/spec verification before fixes or dismissal.
+Prioritize the synthetic check-to-dispatch race, recovery classification, wedged-worker growth
+and post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
+only on its TTY string: nil capture cannot establish current physical/native identity.
+
+Helper-required compatibility must be reconciled with the original supported scope and direct
+ordinary-signaling requirement before proposing a product decision. Do not revise the SPEC to
+make current tests easier to satisfy or introduce an unsafe raw fallback. Maintainability,
+performance, UI and other lower-ranked recommendations remain visible in the complete report;
+they are not accepted defects merely because the provider assigned them a rank.
+
+## Current UI evidence
+
+PID 68022 remained the same running private Automatic Acceptance process. Computer Use timed
+out through both its path and registered bundle ID. Enabled-app inventory confirmed its ID.
+A one-second sample observed the normal AppKit event loop, not a demonstrated deadlock; it does
+not prove visible UI or responsiveness. The documented native launch capability is absent on
+this Mac provider. No activation workaround or process restart occurred. The sample remains at
+`/tmp/tavs-ui-observation-20261013/sample-68022.txt`. Native Ghostty access remains denied.
+
+The source freeze was released after confirming that remaining provider inputs were immutable
+`71e0f60` packets. Every completed review stays labeled with that target; `689203e` is a separately
+verified correction. The goal remains active with source defects and required acceptance open.

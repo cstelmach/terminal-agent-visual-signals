@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 10 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 18 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 11 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 19 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup |
 
@@ -2058,3 +2058,78 @@ regressions already carry the current evidence.
 **Confidence.** Tool actions, diffs, failures and verification above are observed. The claimed
 reason for choosing this strategy and reusable lessons are reconstructions. Exact model variant
 and physical acceptance remain unknown. The master goal and final provider reviews are open.
+
+
+## 2026-10-13 · gpt-6 · final-reviews-empty-catalogue
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unobserved)
+  model_source: runtime instructions, not provider attestation
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879
+  trace: observed actions; causal interpretation reconstructed
+
+**Framing [O].** Continued the active full nine-phase goal from current Git and dated state.
+The previous turn had delivered four verified corrections. Final reviewers were live on their
+original handles. Native acceptance was still incomplete. No phase was marked complete merely
+because the source built or a provider report returned.
+
+**Strategy [R].** Separating reviewed Git identity from evolving implementation permits useful
+corrections while immutable review packets finish. The critical distinction is scope: a provider
+verdict for 71e0f60 does not certify a later parent fix. A successful zero-row response also has
+different meaning from missing response data. Reusing the existing accepted-catalogue path
+provided the smallest correction and preserved the actual-failure behavior.
+
+**Action trace [O].**
+
+| # | Move | Object | Outcome |
+|---|---|---|---|
+| 1 | Reorient | Dated state and clean 12bacee | Phase 9 remained active |
+| 2 | Poll owners | Native sessions 20285 and 2054 | Confirmed live; no restart |
+| 3 | Observe UI | Private PID 68022, path and bundle ID | CUA timeout; process live |
+| 4 | Sample/inventory | Same fixture and enabled apps | Normal event loop; no visible proof |
+| 5 | Read reviews | Accepted Codex and Claude partitions | Source leads for verification |
+| 6 | Verify and reproduce | Successful empty catalogue | Nine failing model assertions |
+| 7 | Correct and verify | Existing reconciliation plus activation guard | 500 Swift tests passed |
+| 8 | Preserve | Complete reviews and focused source reports | Remaining findings stayed open |
+
+**Decisions [O/R].** Native enumeration already returns explicit failures for unavailable access,
+so treating its valid empty array as uncertainty had no source basis. Empty success now closes
+rows, priorities, selection, previews and the last Manual set. Automatic clears closed cues while
+remaining armed. The connected activation predicate initially stayed enabled with no surfaces;
+a separate red assertion identified that seam before its correction. Mock lifetime/device lookup
+and writer dependencies mean these new focus fixtures cannot open a real terminal.
+
+The parent released its source freeze after the Claude owner confirmed every remaining packet
+was already immutable. Reviewers retained their original target and did not read parent changes
+or peer adjudication. This avoids claiming that later source is already independently approved.
+
+**Failure arcs [O].** CUA reported timeoutReached for both a path and registered bundle ID. The
+next moves were a process check, a one-second sample and enabled-app inventory. The sample
+showed ordinary AppKit event-loop activity; it did not prove the window visible or rule out a
+transient problem. The documented native launch capability was absent on the Mac provider.
+No activation workaround, restart or Ghostty access bypass occurred.
+
+The model tests exposed a deliberate old assumption: empty and failed refresh shared retention.
+The corrected test separated them. Original red had nine failed assertions; a later empty-control
+assertion failed once. Final tests passed 500 in 8.011 seconds without warnings; the current
+release build passed in 10.69 seconds. These are code evidence, not native visibility evidence.
+
+**Review verification [O].** Codex completed all 83 targets and nine phases with CONCERN, 7/10.
+Claude completed four partitions and a native synopsis with CONCERN, 5.9/10, on the same target.
+Their findings were not all accepted automatically. Focused source checks confirmed unknown-data
+cue loss in both reducer and final writer, heartbeat ambiguity and skipped checks with all-High
+rows. Another source check computed three retired runs and 15 retry jobs over a finite 24-second
+failure sequence, while correcting the claim that every rollover creates another pinned file.
+Both follow-ups ran no builds or tests. Their proposed remedies still need regressions.
+
+**Heuristics [R].** P8 applies to verifying concrete triggers and checking the safety of proposed
+remedies; P9 keeps the active phase tied to its dated state. Bare TTY equality cannot justify
+suppressing an unbound native-row failure. A conservative fix that loses healthy partial behavior
+must not silently replace the agreed product. Compatibility needs source/spec reconciliation
+before a scope decision. These are bounded next actions, not new process machinery.
+
+**Confidence.** Actions, test counts and report scope are observed. Strategy and reusable lessons
+are reconstructed. Source defects, unadjudicated lower-ranked recommendations and native/UI
+acceptance remain open. No new profile tendency, skill, memory update or goal completion is claimed.
