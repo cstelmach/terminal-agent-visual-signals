@@ -866,6 +866,104 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertEqual(restrictions.read(), .suspended)
     }
 
+    func testSuspendedReconciliationPreservesCurrentPreviewAndBackgroundOnlyExpiry() throws {
+        let target = try terminal(10), service = recovery()
+        _ = try service.write(.ordinary(intent(target, color: "#123456"), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        try state.withLock(target.tty) {
+            try state.saveEffectUnlocked(TerminalEffectRecord(target: target, controller: self.generation(90),
+                effectID: "global", kind: .globalRestriction, background: "#667788", heartbeatAt: 1_000), deadline: .max)
+        }
+        XCTAssertFalse(service.recover().hasFailures); _ = try read(target)
+        XCTAssertTrue(try service.write(.preview(request(id: "current-suspended-preview")), to: target))
+        let color = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).background
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        clock.advance(by: 2)
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+        XCTAssertFalse(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        try noBytes(target)
+    }
+
+    func testSuspendedReconciliationClearsStaleFocusAndPreviewToDefaultBackground() throws {
+        for kind in [TerminalEffectKind.focus, .preview] {
+            let target = try terminal(kind == .focus ? 10 : 20), service = recovery()
+            _ = try service.write(.ordinary(intent(target, color: "#123456"), synthetic: false, intakeAt: 1_000), to: target)
+            _ = try read(target)
+            if kind == .focus { _ = try service.write(.focus(focusRequest()), to: target) }
+            else { _ = try service.write(.preview(request()), to: target) }
+            _ = try read(target)
+            try restrictions.write(suspended: true)
+            XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+            XCTAssertEqual(try read(target), Data("\u{1B}]111\u{1B}\\".utf8))
+            XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: kind, deadline: .max)).active)
+            XCTAssertFalse(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+            try noBytes(target)
+            try restrictions.write(suspended: false)
+        }
+    }
+
+    func testUnavailableMarkerCannotKeepAPreviewThroughMatchingFileIdentity() throws {
+        let target = try terminal(10), service = recovery()
+        try restrictions.write(suspended: true)
+        let value = try request()
+        _ = try service.write(.preview(value), to: target); _ = try read(target)
+        try Data("SCHEMA_VERSION=\"77\"\nSUSPENDED=\"true\"\n".utf8).write(to: restrictions.url)
+        XCTAssertEqual(restrictions.read(), .unavailable)
+        XCTAssertTrue(try restrictions.matches(value.revision, deadline: .max))
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+    }
+
+    func testSuspendedStartupClearsCurrentPreviewToLatestOrdinaryBackground() throws {
+        let target = try terminal(10), service = recovery()
+        try restrictions.write(suspended: true)
+        _ = try service.write(.ordinary(intent(target, color: "#123456"), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        _ = try service.write(.preview(request()), to: target); _ = try read(target)
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: true), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+    }
+
+    func testReconciliationQueuedBeforeSuspensionReadsTheMarkerAfterDeviceOpen() throws {
+        let target = try terminal(10), service = recovery()
+        _ = try service.write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#FFFFFF"),
+            to: root.appendingPathComponent("lock.state"))
+        _ = try service.write(.currentRestriction, to: target); _ = try read(target)
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            do { try self.restrictions.write(suspended: true) }
+            catch { XCTFail("Owned marker write failed: \(error)"); errno = EIO; return -1 }
+            return Darwin.open(path, flags)
+        })
+        XCTAssertTrue(try recovery(runner: runner).write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), reset)
+        XCTAssertFalse(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        try noBytes(target)
+    }
+
+    func testResidualGlobalCleanupPreservesCurrentSuspendedPreviewBackground() throws {
+        let target = try terminal(10), service = recovery()
+        try restrictions.write(suspended: true)
+        _ = try service.write(.preview(request()), to: target); _ = try read(target)
+        let color = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).background
+        try state.withLock(target.tty) {
+            try state.saveEffectUnlocked(TerminalEffectRecord(target: target, controller: self.generation(90),
+                effectID: "residual-global", kind: .globalRestriction, background: "#667788", heartbeatAt: 1_000), deadline: .max)
+        }
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]11;\(color)\u{1B}\\".utf8))
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max)).active)
+    }
+
     func testPreviewWithoutOrdinaryIntentExpiresToOnlyGhosttyBackgroundReset() throws {
         let target = try terminal(10)
         let color = try preview(target)

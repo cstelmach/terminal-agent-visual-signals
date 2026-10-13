@@ -3,6 +3,7 @@ import Darwin
 @testable import TAVSApp
 
 final class BroadcasterTests: XCTestCase {
+    private let emergencyReset = Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8)
     private var root: URL!
     private var restrictions: VisualRestrictionsStateStore!
     private var state: TerminalVisualStateStore!
@@ -81,13 +82,17 @@ final class BroadcasterTests: XCTestCase {
         }
     }
 
-    private func broadcaster(runner: ProcessRunner = SystemProcessRunner(),
-                             native: @escaping () throws -> [GhosttySurface] = { throw GhosttyCatalogError.permissionDenied }) -> Broadcaster {
+    private func recovery(runner: ProcessRunner = SystemProcessRunner(),
+                          native: @escaping () throws -> [GhosttySurface] = { throw GhosttyCatalogError.permissionDenied }) -> VisualRecovery {
         let policy = VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("home/mute.state"),
             lockURL: root.appendingPathComponent("lock.state"), clock: clock, pidAlive: { $0 == 80 })
-        let recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+        return VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: policy, processRunner: runner, clock: clock, controller: generation(90), nativeSnapshot: native)
-        return Broadcaster(recovery: recovery)
+    }
+
+    private func broadcaster(runner: ProcessRunner = SystemProcessRunner(),
+                             native: @escaping () throws -> [GhosttySurface] = { throw GhosttyCatalogError.permissionDenied }) -> Broadcaster {
+        Broadcaster(recovery: recovery(runner: runner, native: native))
     }
 
     private func writeMute(_ muted: Bool) throws {
@@ -175,6 +180,79 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertEqual(state.cachedRecords().bindings, [target])
     }
 
+    func testSuspendedSchedulerClearDoesNotReapplyRetainedThemeAfterRecovery() throws {
+        let target = try terminal(10)
+        try cache(target, color: "#456789")
+        try writeMute(true)
+        let service = recovery(), broadcaster = Broadcaster(recovery: service)
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(target)
+        XCTAssertFalse(service.recover().hasFailures)
+        XCTAssertEqual(try read(target), emergencyReset)
+        for _ in 0..<3 {
+            broadcaster.broadcastPausedClear(); broadcaster.broadcast()
+            XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+            try noBytes(target)
+        }
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#456789")
+        clock.advance(by: 1)
+        let fresh = OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: target.ttyOwner,
+            deliveryID: "fresh-after-recovery", updatedAt: 1_001, background: "#ABCDEF")
+        XCTAssertTrue(try service.write(.ordinary(fresh, synthetic: false, intakeAt: 1_001), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        broadcaster.broadcastPausedClear(); broadcaster.broadcast()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        try noBytes(target)
+    }
+
+    func testSuspendedStartupRestoresDefaultsInsteadOfRetainedIntent() throws {
+        let target = try terminal(10)
+        try cache(target, color: "#456789", effectKind: .globalRestriction)
+        try restrictions.write(suspended: true)
+        let broadcaster = broadcaster(native: { [] })
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        XCTAssertEqual(try read(target), emergencyReset)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#456789")
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max)).active)
+        broadcaster.broadcastPausedClear(); broadcaster.broadcast()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+    }
+
+    func testDelayedSuspendedClearAndRelaunchPreserveFreshCompleteRender() throws {
+        let plain = try terminal(10), row = surface(plain)
+        let target = try XCTUnwrap(state.captureTarget(for: row))
+        try cache(target, color: "#456789", effectKind: .globalRestriction)
+        let service = recovery()
+        XCTAssertFalse(service.recover().hasFailures); _ = try read(target)
+        let entered = expectation(description: "Clear is waiting for native discovery")
+        let release = DispatchSemaphore(value: 0), lock = NSLock()
+        defer { release.signal() }
+        var calls = 0
+        let broadcaster = broadcaster(native: {
+            lock.lock(); calls += 1; let first = calls == 1; lock.unlock()
+            if first { entered.fulfill(); release.wait() }
+            return [row]
+        })
+        broadcaster.broadcastPausedClear()
+        wait(for: [entered], timeout: 1); try noBytes(target)
+        clock.advance(by: 1)
+        var fields = ["#ABCDEF", "set", "#123456"] + Array(repeating: "", count: 15)
+        fields += ["1", "FRESH_TITLE", "iterm2-clear", "", "1"]
+        let style = try TerminalRender(Data((fields.joined(separator: "\0") + "\0").utf8))
+        let fresh = OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: target.ttyOwner,
+            deliveryID: "fresh-render", updatedAt: 1_001, background: "#ABCDEF")
+        XCTAssertEqual(try service.render(style, intent: fresh, synthetic: false, intakeAt: 1_001, to: target), .rendered)
+        var expected = style.beforeBackground
+        expected.append(Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        release.signal(); XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
+    }
+
     func testStartupDiscoversUncachedPlainShellWithoutPaintingItsBackground() throws {
         let plain = try terminal(10)
         let row = surface(plain)
@@ -225,7 +303,9 @@ final class BroadcasterTests: XCTestCase {
             })
             broadcaster.discoverAndRegisterActiveAgentTTYs()
             XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
-            XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8))
+            let expected = status.disablesRestrictions ? emergencyReset
+                : Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8)
+            XCTAssertEqual(try read(target), expected)
             XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, deadline: .max)).active)
             XCTAssertEqual(try Data(contentsOf: restrictions.url), marker)
             release.signal()
@@ -256,7 +336,6 @@ final class BroadcasterTests: XCTestCase {
         try restrictions.write(suspended: true)
         release.signal()
         XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
-        XCTAssertEqual(try read(plain), Data("\u{1B}]111\u{1B}\\".utf8))
         try noBytes(plain)
         XCTAssertEqual(restrictions.read(), .suspended)
     }

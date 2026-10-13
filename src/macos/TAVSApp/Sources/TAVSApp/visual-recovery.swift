@@ -331,11 +331,33 @@ final class VisualRecovery {
                 return Self.restrictionBytes(rule)
             }
 
+            let restrictionsStatus = self.restrictions.read()
+            let restrictionsDisabled = restrictionsStatus.disablesRestrictions
             var resetLegacy = effects.contains { $0.kind == .globalRestriction && $0.active }
             if case .reconcile(let reset, let clear) = operation {
-                resetLegacy = resetLegacy || reset || effects.contains { $0.kind == .globalRestriction }
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
+                if restrictionsDisabled {
+                    // A completed recovery leaves canceled records, not a request to replay themes.
+                    let remaining = effects.filter { $0.active }
+                    let previews = try remaining.filter { effect in
+                        guard restrictionsStatus == .suspended, effect.kind == .preview,
+                              let revision = effect.revision else { return false }
+                        return try self.restrictions.matches(revision, deadline: deadline)
+                    }
+                    let obsolete = remaining.filter { !previews.contains($0) }
+                    try self.cancelEffects(obsolete, deadline: deadline)
+                    if previews.isEmpty {
+                        guard !obsolete.isEmpty else { return nil }
+                        return obsolete.contains { $0.kind == .globalRestriction }
+                            ? Self.reset : Self.backgroundBytes("reset")
+                    }
+                    // Explicit previews in this suspension still clear/expire to current intent.
+                    resetLegacy = obsolete.contains { $0.kind == .globalRestriction }
+                    effects = try self.effectsUnlocked(for: target, deadline: deadline)
+                } else {
+                    resetLegacy = resetLegacy || reset || effects.contains { $0.kind == .globalRestriction }
+                }
             }
             var active: [TerminalEffectRecord] = []
             for effect in effects where self.state.isSelectiveLeaseActive(effect) {
@@ -346,7 +368,6 @@ final class VisualRecovery {
                 active.append(effect)
             }
             let previews = active.filter { $0.kind == .preview }
-            let restrictionsDisabled = self.restrictions.read().disablesRestrictions
             let focused = active.filter { $0.kind == .focus && !restrictionsDisabled }
             let leases = previews.isEmpty
                 ? (focused.isEmpty ? active.filter { $0.kind == .selectiveBackground && !restrictionsDisabled } : focused)
