@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.23
+Version: 1.24
+
+## An idle notification leaves its timer on the completion delivery
+
+Adapter intake publishes a new idle delivery. Sending only a skip signal left the old timer
+carrying the completion delivery, so its next paint was correctly rejected and progression ended.
+The idle branch now retires that timer and starts one with the current context at the first idle
+stage. The worker accepts an internal `idle` start argument without repainting completion.
+An owned-PTY regression verifies the notification's delivery reaches a later graduated color;
+connected timer, mute and managed-render checks still pass.
 
 ## A delayed tool-error restore cancels a newer completion timer
 

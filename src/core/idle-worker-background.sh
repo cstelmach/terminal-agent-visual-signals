@@ -73,6 +73,11 @@ unified_timer_worker() {
     local start_seconds=$SECONDS
     local current_stage=0
     local last_applied_stage=-1
+    local initial_state=complete
+    if [[ "${2:-}" == idle ]]; then
+        start_seconds=$((SECONDS - UNIFIED_STAGE_DURATIONS[0]))
+        initial_state=idle
+    fi
 
     local max_runtime=${MAX_TIMER_RUNTIME:-450}
 
@@ -93,8 +98,7 @@ unified_timer_worker() {
         SESSION_ICON=$(get_session_icon 2>/dev/null)
     fi
 
-    # Initial state: complete
-    write_session_state "complete" "$my_pid"
+    write_session_state "$initial_state" "$my_pid"
 
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] Unified timer started, tty=$tty_device, pid=$my_pid" >> "$IDLE_DEBUG_LOG"
 

@@ -270,22 +270,16 @@ case "$STATE" in
         ;;
 
     idle)
-        # Idle notification -> Skip signal for timer
+        # A new notification must transfer its delivery into a new timer.
         if [[ "$ENABLE_IDLE" == "true" ]]; then
-            read_session_state || true
-            if [[ -n "$SESSION_TIMER_PID" ]] && kill -0 "$SESSION_TIMER_PID" 2>/dev/null; then
-                write_skip_signal
-            else
-                # Start a new worker with the current managed background
-                should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
-                _apply_palette_if_enabled
-                # Use new title system with user override detection
-                should_send_title "idle" && set_tavs_title "idle_1"
-                set_state_background_image "idle"
-                _tavs_render_flush || true
-                ( unified_timer_worker "$TTY_DEVICE" ) </dev/null >/dev/null 2>&1 &
-                disown 2>/dev/null || true
-            fi
+            kill_idle_timer
+            should_send_bg_color && send_osc_bg "${UNIFIED_STAGE_COLORS[1]}"
+            _apply_palette_if_enabled
+            should_send_title "idle" && set_tavs_title "idle_1"
+            set_state_background_image "idle"
+            _tavs_render_flush || true
+            ( unified_timer_worker "$TTY_DEVICE" idle ) </dev/null >/dev/null 2>&1 &
+            disown 2>/dev/null || true
         fi
         ;;
 

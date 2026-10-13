@@ -293,6 +293,50 @@ SH
     [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
 }
 
+@test "an idle notification transfers the current delivery into graduated idle paints" {
+    cat > "$HOME/.tavs/user.conf" <<'CONF'
+ENABLE_TITLE_PREFIX=false
+IDLE_CHECK_INTERVAL=0.1
+STAGE_DURATIONS=(60 1 60 60 60 60 60)
+IDLE_STAGE_0_COLOR="#112233"
+IDLE_STAGE_1_COLOR="#AABBCC"
+IDLE_STAGE_2_COLOR="#445566"
+CONF
+    cat > "$CASE_DIR/idle-handoff-check.sh" <<'SH'
+set -e
+repo="$1"; case_dir="$2"
+export TAVS_AGENT=claude
+source "$repo/src/core/session-state.sh"
+TTY_SAFE="${TTY_DEVICE//\//_}"
+trap 'read_session_state || :; if [[ -n "$SESSION_TIMER_PID" ]]; then kill "$SESSION_TIMER_PID" 2>/dev/null || :; fi' EXIT
+printf '%s' '{"hook_event_name":"Stop"}' |
+    bash "$repo/src/agents/claude/trigger.sh" complete
+for ((attempt=0; attempt<40; attempt++)); do
+    read_session_state || true
+    [[ -n "$SESSION_TIMER_PID" ]] && break
+    sleep 0.05
+done
+test -n "$SESSION_TIMER_PID"
+printf '%s' '{"hook_event_name":"Notification","notification_type":"idle_prompt"}' |
+    bash "$repo/src/agents/claude/trigger.sh" idle
+for ((attempt=0; attempt<70; attempt++)); do
+    grep -q '#445566' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json && break
+    sleep 0.05
+done
+python3 - "$TAVS_RUNTIME_DIR/organizer" <<'CHECK'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1])
+observation=json.loads(next(root.glob('observation-*.json')).read_text())
+intent=json.loads(next(root.glob('intent-*.json')).read_text())
+assert observation['state']=='idle' and observation['event']=='idle_prompt'
+assert intent['deliveryID']==observation['deliveryID'], 'worker retained completion delivery'
+assert intent['background']=='#445566', intent['background']
+CHECK
+SH
+    run _owned_pty bash "$CASE_DIR/idle-handoff-check.sh" "$REPO_ROOT" "$CASE_DIR"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+}
+
 @test "public recovery and resume use owned scoped PTY with current rules and no historical replay" {
     export RECOVERY_REAL_HELPER="$TAVS_TEST_HELPER_BIN"
     cat > "$CASE_DIR/recovery-helper" <<'HELPER'
