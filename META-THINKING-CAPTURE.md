@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 17 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 25 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 18 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 26 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2564,3 +2564,72 @@ reconstruction and prior capture-log preservation were checked. The design repor
 with implementation and test scope explicit, avoiding another large provider packet. No new
 skill promotion or process layer is proposed. [R] Keep metadata ownership resolution and actual
 repaint responsibility separate in the next target-retirement implementation.
+
+## 2026-10-13 · gpt-6 (self-reported; variant unverified) · focus-cancellation-evidence
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported [R]; served variant unobserved
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879
+  trace: observed actions; causal interpretation reconstructed
+
+**Framing [O].** Continue the full nine-phase goal from the current dated package. The prior
+preview-queue fix was progress, while retained focus ownership remained unbounded. The next
+prerequisite was a precise acknowledgement from the existing locked cancellation stage. The
+aggregate device result alone could not distinguish resolved ownership from a repaint still owed.
+The scope stayed within the existing managed writer, with no new persisted schema or result
+protocol. The controller bound remains pending after this prerequisite.
+
+**Strategy [O/R].** Extend clearFocus with a defaulted didCancel(target) callback, preserving
+all existing callers. Invoke it after validated alias enumeration and complete matching
+cancellation under the original TTY lock, with the same deadline. Tests inspect the callback and
+actual metadata/output independently. [R] This makes ownership evidence available without treating
+an error or no-paint result as a false claim about the terminal's physical presentation.
+
+**Action trace [O].**
+
+| # | Move | Evidence | Result |
+|---|---|---|---|
+| 1 | Orient | current source, SPEC/PLAN/PROGRESS/GOAL | Phase 9 remains incomplete |
+| 2 | API red | wiTdOP | extra didCancel argument rejected |
+| 3 | Behavioral red | YT5mXu | four acknowledgements missing |
+| 4 | Implement | callback under existing lock/deadline | 83 recovery cases pass |
+| 5 | Broaden checks | deadline and alias deduplication | 526 Swift tests pass |
+| 6 | Build/regress | lhIshL and tehdJQ | release and 172 isolated Bats pass |
+| 7 | Commit | 372e1f0 | API prerequisite, not retention completion |
+| 8 | Record | source report and journal | guarded size failures, then exact relocation |
+
+**Decision points [O].** Ownership notification remains valid if a later device operation fails.
+Marker replacement permits old metadata cancellation while the old repaint guard still rejects
+output. Unknown aliases prevent acknowledgement because the complete physical binding set could
+not be inspected. The callback fires once for the preferred validated binding in a physical
+fanout group. Consumers must first invalidate the old renewal predicate: absence evidence creates
+no tombstone and cannot alone prevent a still-authorized queued request from publishing again.
+Callbacks must be short and thread-safe, without re-entering a writer or coverage query.
+
+**Failure arcs [O/R].** F1, contract gap: tests initially failed compilation because the callback
+argument did not exist. Adding only the signature produced four behavioral failures; adding the
+notification at the complete pre-open cancellation boundary made them pass. Existing no-paint
+behavior remained asserted. F2, journal sizing: two candidate append scripts exceeded the size
+assertion before writing the journal or appendix. The report copy already existed and was
+preserved. The correction used the actual line calculation: 897 minus 25 plus 4 plus 19 equals
+895. Relocation reconstructed the original journal exactly. [R] Precomputing that footprint would
+have avoided the second failed size attempt; no source/test failure or historical loss followed.
+
+**Verification [O].** Six new and two strengthened tests cover failure before/after metadata,
+global masking, marker replacement, corrupt aliases, expired deadline, duplicate aliases and a
+newer active ID. All 526 Swift cases passed in 9.340 seconds without warnings; release built in
+12.93 seconds and the rebuilt helper passed 172 isolated Bats before commit. The independent
+source report ran no tests or devices. Actual partial-alias writes and post-rename deadline errors
+still need targeted integration coverage. Unknown saved candidates must remain possible owners.
+No native/app-control call, installation, personal settings/schedules or session shutdown occurred.
+Required visible Ghostty acceptance and the per-target retirement implementation remain open.
+
+**Residue [O/R].** P8 adjudicated the callback's contract against source; P9 preserved ownership
+of the dated implementation state. The report is 64 lines with explicit scope. The finished
+preview entry moved unchanged to its existing appendix; prior capture history is preserved.
+No new skill promotion or process layer is proposed. [R] Use this evidence to separate ownership
+resolution from repaint responsibility in the next controller change, without dropping unknown
+IDs or allowing one failed target to stop healthy renewals.

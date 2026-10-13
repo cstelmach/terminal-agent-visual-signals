@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 07:47 CEST
-**Version:** 4.6
+**Last Updated:** 2026-10-13 08:12 CEST
+**Version:** 4.7
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | eeed5cb; earlier hashes below/appendix | 520 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 372e1f0; earlier hashes below/appendix | 526 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -870,28 +870,26 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished admission correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 independent preview clear: 2026-10-13 07:47 CEST
+### Phase 9 independent preview clear
 
-Previous turn progressed through admission `ca27873`, recorded in `edd9528`.
-`eeed5cb` gives preview and focus cleanup separate queues. Shared per-TTY output serialization,
-exact-ID cancellation, target checks and the original device deadline are preserved.
-Red `Q72Rts` failed the 0.5-second healthy-preview completion expectation while another target's
-focus cleanup was held. Green `OpyL1V` passed all 33 controller tests. The regression checks
-completion before unrelated release, exact reset bytes and canceled preview metadata on owned PTYs.
-Final `HBwtxF` passed 520/520 Swift tests in 11.032 seconds without warnings; release `KcJkJV`
-built in 15.83 seconds; current-helper `kzSZFO` passed 172/172 isolated Bats. All returned before
-commit. No shell source changed. Backups: /tmp/tavs-focus-cleanup-20261013/backup/.
+> Finished queue correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-The retained source design proposes per-target leases within one logical focus run. Healthy
-renewals must continue while one target retains its old exact ID/revision and one retiring
-obligation. Missing didRenew cannot prove absence: record rename precedes a final deadline check.
-Canceled metadata and an unaffected/no-paint result also cannot prove physical restoration.
-Root verified both source paths. A focused cancellation-stage distinction is still required;
-no new effect schema, persistent registry or generic result protocol is proposed or implemented.
+### Phase 9 focus cancellation evidence: 2026-10-13 08:12 CEST
 
-**Next:** implement and test that per-target retirement bound, including same-refresh fresh IDs,
-mode switches, unknown saves and outstanding repaint. The preview queue defect is resolved;
-retained-run growth remains open. The previous finished admission block moved unchanged to its
-existing appendix with reconstruction verified. SPEC body/PLAN remain fixed. Phases 2/7/8 remain
-Blocked, Phase 9 In Progress, and the goal active. No native/app-control call, install, personal
-settings/schedule change or user-session shutdown occurred. Required native acceptance is unverified.
+Previous turn progressed through preview fix `eeed5cb`, recorded in `4d1d194`.
+`372e1f0` adds defaulted didCancel(target) to internal clearFocus after complete validated alias
+cancellation and the original deadline check under the existing TTY lock. Unknown metadata gives
+no callback; acknowledged ownership and physical repaint remain separate. Existing output is fixed.
+Red `YT5mXu` reproduced four missing acknowledgements after `wiTdOP` exposed the missing API.
+Green `9oOhYE` passed 83 recovery tests. Six new and two strengthened cases cover stage failures,
+masking, marker changes, unknown aliases, expiry and physical deduplication.
+Final `28SNKq`: 526/526 Swift, 9.340 seconds, no warnings. Release `lhIshL`: 12.93 seconds.
+Current-helper `tehdJQ`: 172/172 isolated Bats. All returned before commit, using private roots
+and owned PTYs/mocked identities. No shell change. The 64-line source report is retained.
+**Next:** implement per-target retirement with old predicates invalidated, healthy renewal and
+separate repaint responsibility. Retention remains unimplemented; partial alias writes and
+post-rename errors need integration regressions. The preview entry moved verbatim to its appendix
+with reconstruction verified. Oversize append attempts stopped before state writes; this shorter
+entry passes the limit. SPEC body/PLAN remain fixed; phases 2/7/8 stay Blocked, Phase 9 active.
+No native/app control, install, personal settings/schedules or session shutdown; native acceptance
+is unverified. Backups: /tmp/tavs-focus-cancellation-20261013/backup/.

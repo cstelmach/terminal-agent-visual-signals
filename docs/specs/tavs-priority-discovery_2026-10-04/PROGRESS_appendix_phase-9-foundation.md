@@ -350,3 +350,30 @@ or cross-process workers. Focus cleanup retention remains unresolved. Verify sch
 and helper compatibility next without weakening the agreed product. Phases 2/7/8 remain Blocked,
 Phase 9 In Progress and the goal active. Native visible acceptance is still unverified; no native
 query, installation, personal schedule/settings change or user-session shutdown occurred.
+
+
+### Phase 9 independent preview clear: 2026-10-13 07:47 CEST
+
+Previous turn progressed through admission `ca27873`, recorded in `edd9528`.
+`eeed5cb` gives preview and focus cleanup separate queues. Shared per-TTY output serialization,
+exact-ID cancellation, target checks and the original device deadline are preserved.
+Red `Q72Rts` failed the 0.5-second healthy-preview completion expectation while another target's
+focus cleanup was held. Green `OpyL1V` passed all 33 controller tests. The regression checks
+completion before unrelated release, exact reset bytes and canceled preview metadata on owned PTYs.
+Final `HBwtxF` passed 520/520 Swift tests in 11.032 seconds without warnings; release `KcJkJV`
+built in 15.83 seconds; current-helper `kzSZFO` passed 172/172 isolated Bats. All returned before
+commit. No shell source changed. Backups: /tmp/tavs-focus-cleanup-20261013/backup/.
+
+The retained source design proposes per-target leases within one logical focus run. Healthy
+renewals must continue while one target retains its old exact ID/revision and one retiring
+obligation. Missing didRenew cannot prove absence: record rename precedes a final deadline check.
+Canceled metadata and an unaffected/no-paint result also cannot prove physical restoration.
+Root verified both source paths. A focused cancellation-stage distinction is still required;
+no new effect schema, persistent registry or generic result protocol is proposed or implemented.
+
+**Next:** implement and test that per-target retirement bound, including same-refresh fresh IDs,
+mode switches, unknown saves and outstanding repaint. The preview queue defect is resolved;
+retained-run growth remains open. The previous finished admission block moved unchanged to its
+existing appendix with reconstruction verified. SPEC body/PLAN remain fixed. Phases 2/7/8 remain
+Blocked, Phase 9 In Progress, and the goal active. No native/app-control call, install, personal
+settings/schedule change or user-session shutdown occurred. Required native acceptance is unverified.

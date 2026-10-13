@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.7
+Version: 1.8
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `eeed5cb`.
+Current product checkpoint: `372e1f0`.
 
 ## Review execution status
 
@@ -243,6 +243,19 @@ retirement gating, preserving healthy renewals. Retention remains unresolved. Ro
 the post-rename deadline check and no-paint clear paths: absent callbacks and canceled metadata
 do not establish physical restoration. The next change needs focused cancellation evidence,
 retained repaint responsibility and tests for unknown writes, not blind pruning of retired IDs.
+
+## Focus cancellation evidence (Claude M4 prerequisite)
+
+`372e1f0` adds a focused defaulted acknowledgement after complete validated alias cancellation
+under the existing TTY lock and original deadline. It reports metadata resolution, not repaint.
+The [source check](focus-cancellation-evidence-followup-2026-10-13.md) found no contract objection.
+Consumers must invalidate old renewal predicates first; absent IDs receive no tombstone.
+Partial writes and post-rename deadline errors before acknowledgement remain unknown and retryable.
+Later device failures or suppressed paint do not undo the acknowledged metadata fact.
+Final `28SNKq` passed 526/526 Swift tests in 9.340 seconds; release `lhIshL` built in 12.93
+seconds; current-helper `tehdJQ` passed 172/172 isolated Bats. All completed before commit.
+Controller retention is still unimplemented. Use this narrow evidence in the per-target bound,
+and retain outstanding physical responsibility through failures, masking and recovery revisions.
 
 ## Remaining adjudication and implementation
 
