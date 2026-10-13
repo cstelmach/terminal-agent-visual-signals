@@ -1,5 +1,6 @@
 """One bounded device transaction; record policy is supplied by its typed caller."""
 
+from contextlib import contextmanager
 import errno
 import fcntl
 import json
@@ -30,7 +31,35 @@ def _check(deadline):
         raise OSError(errno.ETIMEDOUT, "Portable device output timed out")
 
 
-def _perform(path, lock_path, before_open, prepare, deadline):
+@contextmanager
+def output_lock(lock_path, deadline):
+    _check(deadline)
+    parent = Path(lock_path).parent
+    parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _check(deadline)
+    if not stat.S_ISDIR(os.lstat(parent).st_mode):
+        raise OSError(errno.EINVAL, "Invalid lock directory")
+    lock = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, 0o600)
+    try:
+        _check(deadline)
+        info = os.fstat(lock)
+        if (not stat.S_ISREG(info.st_mode) or info.st_mode & 0o777 != 0o600
+                or info.st_uid != os.geteuid()):
+            raise OSError(errno.EINVAL, "Invalid output lock")
+        while True:
+            _check(deadline)
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (BlockingIOError, InterruptedError):
+                time.sleep(min(0.001, max(0, (deadline - time.monotonic_ns()) / 1e9)))
+        _check(deadline)
+        yield
+    finally:
+        os.close(lock)
+
+
+def _perform(path, lock_path, before_open, prepare, deadline, after_write):
     _check(deadline)
     if before_open is not None:
         before_open(deadline)
@@ -45,26 +74,7 @@ def _perform(path, lock_path, before_open, prepare, deadline):
         opened = os.fstat(fd)
         if not stat.S_ISCHR(opened.st_mode) or opened.st_rdev != expected:
             raise OSError(errno.ESTALE, "Device changed")
-        parent = Path(lock_path).parent
-        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        _check(deadline)
-        if not stat.S_ISDIR(os.lstat(parent).st_mode):
-            raise OSError(errno.EINVAL, "Invalid lock directory")
-        lock = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, 0o600)
-        try:
-            _check(deadline)
-            info = os.fstat(lock)
-            if (not stat.S_ISREG(info.st_mode) or info.st_mode & 0o777 != 0o600
-                    or info.st_uid != os.geteuid()):
-                raise OSError(errno.EINVAL, "Invalid output lock")
-            while True:
-                _check(deadline)
-                try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except (BlockingIOError, InterruptedError):
-                    time.sleep(min(0.001, max(0, (deadline - time.monotonic_ns()) / 1e9)))
-            _check(deadline)
+        with output_lock(lock_path, deadline):
             data = prepare(fd, deadline)
             _check(deadline)
             if data is None:
@@ -86,17 +96,19 @@ def _perform(path, lock_path, before_open, prepare, deadline):
                     if count == 0:
                         raise OSError(errno.EIO, "Incomplete device output")
                     written += count
-            except OSError as error:
+                if after_write is not None:
+                    _check(deadline)
+                    after_write(fd, deadline)
+                    _check(deadline)
+            except Exception as error:
                 error.bytes_written = written
                 raise
             return bool(data)
-        finally:
-            os.close(lock)
     finally:
         os.close(fd)
 
 
-def write_managed(path, lock_path, before_open, prepare):
+def write_managed(path, lock_path, before_open, prepare, after_write=None):
     reap_completed()
     deadline = time.monotonic_ns() + 100_000_000
     read_fd, write_fd = os.pipe()
@@ -117,7 +129,7 @@ def write_managed(path, lock_path, before_open, prepare):
                 pass
         try:
             try:
-                result = {"wrote": _perform(path, lock_path, before_open, prepare, deadline)}
+                result = {"wrote": _perform(path, lock_path, before_open, prepare, deadline, after_write)}
             except Exception as error:
                 result = {"errno": (error.errno or errno.EIO) if isinstance(error, OSError) else errno.EINVAL,
                           "bytes": getattr(error, "bytes_written", None)}

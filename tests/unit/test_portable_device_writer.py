@@ -145,6 +145,31 @@ class PortableDeviceWriterTests(unittest.TestCase):
         writer.reap_completed()
         self.assertFalse(prepared.exists())
 
+    def test_before_open_publication_reuses_same_lock_before_output(self):
+        published = self.root / "published"
+        def before_open(deadline):
+            with writer.output_lock(self.lock, deadline):
+                published.write_text("published")
+        self.assertTrue(writer.write_managed(self.path, self.lock, before_open,
+                                             lambda fd, deadline: b"current"))
+        self.assertTrue(published.exists())
+        self.assertEqual(os.read(self.master, 1024), b"current")
+
+    def test_after_output_failure_reports_known_complete_bytes_under_held_lock(self):
+        def after_write(fd, deadline):
+            probe = os.open(self.lock, os.O_RDWR)
+            try:
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(probe, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                os.close(probe)
+            raise OSError(errno.EIO, "Injected metadata completion failure")
+        with self.assertRaises(OSError) as failure:
+            writer.write_managed(self.path, self.lock, None, lambda fd, deadline: b"complete",
+                                 after_write=after_write)
+        self.assertEqual(failure.exception.bytes_written, 8)
+        self.assertEqual(os.read(self.master, 1024), b"complete")
+
 
 if __name__ == "__main__":
     unittest.main()

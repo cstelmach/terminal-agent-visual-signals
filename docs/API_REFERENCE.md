@@ -1,7 +1,15 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.37
+Version: 1.38
+
+## Portable worker completion (integration pending)
+
+`portable_device_writer.output_lock` reuses the stable owned per-TTY lock with the supplied
+deadline. A before-open publisher releases it before bounded device open and output admission.
+`write_managed` optionally runs `after_write(fd, deadline)` after complete output, under the same
+lock and original 100 ms budget. Completion errors retain known written-byte counts, including
+complete output with failed metadata completion. Parent timeout retains unknown output status.
 
 ## Portable intent publication (integration pending)
 
