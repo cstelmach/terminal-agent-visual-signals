@@ -71,7 +71,7 @@ What it does:
 
 Every new interactive terminal then registers itself with TAVS and paints the
 current lock/pause state immediately at open, even without any agent session.
-Cost: <1ms at shell startup when TAVS is idle.
+Cost: native helper calls at shell startup; latency depends on runtime and cached targets.
 EOF
         return 0
     fi

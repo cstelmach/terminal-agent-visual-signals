@@ -11,11 +11,11 @@
 #   2. Self-paint the lock/pause visual at shell open, so terminals opened
 #      DURING a lock or pause are correct immediately without a broadcast.
 #
-# Paint goes to stdout: during rc sourcing of an interactive shell stdout is
-# the terminal, and unlike hook contexts there is no redirection in play.
+# The managed helper paints the resolved TTY under shared output serialization.
 #
-# Cost budget: <1ms when no state files exist (the common case). Worst case
-# two forks in bash (tty + date); zero forks in zsh (zsh/datetime module).
+# Enabled active startup invokes capability, registration and current-policy helpers.
+# Suspension omits current-policy. Bash may invoke tty; registry creation invokes mkdir.
+# Latency depends on helper startup and cached targets, including when no rules exist.
 # Must stay source-compatible with BOTH zsh and bash 3.2.
 # ==============================================================================
 
