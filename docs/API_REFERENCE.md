@@ -1,7 +1,23 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.34
+Version: 1.35
+
+## Portable ownership guard (integration pending)
+
+`portable_ownership.Store` resolves the current continuing physical owner and prefers one exact
+native alias when present. It scans every owner branch in the requested TTY bucket, including
+effect-only targets, with held directory/file reads and canonical placement checks. Unreadable
+state, unexplained live identity and multiple physical/native bindings refuse admission.
+
+`ordinary_ownership` requires the shared output lock and opened TTY descriptor. It revalidates
+the target and pinned suspension revision, current global policy and selective lease evidence.
+Recent unknown controllers refuse output; proven exit, reuse, expiry or disabled restrictions
+release obsolete ownership. A current suspended preview may still own the background.
+The method returns obsolete active records for cancellation; it does not cancel or paint them.
+The caller must handle residual global foreground/palette reset before ordinary rendering.
+Actual owned macOS PTYs verify current output and recovery rejection. Linux scope, publication,
+cleanup and hook routing remain pending; this guard advertises no capability.
 
 ## Portable record decoder (integration pending)
 
