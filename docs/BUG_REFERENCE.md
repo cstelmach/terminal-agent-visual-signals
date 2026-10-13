@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.47
+Version: 1.48
+
+## Portable forced-reset draft broadens orphan entry
+
+The first renderer treated a same-generation producer on another device as an orphan, allowing
+unchanged old bound records to authorize reset. Native entry selects the orphan path only for
+missing/replaced generations. The renderer now follows that distinction; a moved-device live
+producer must pass ordinary target capture and fails. The regression retained matching old
+records, reproduced unintended output and then verified refusal. Direct reset publication keeps
+its native invalid-producer contract; entry selection is the additional boundary. No helper
+capability or production routing used this draft.
 
 ## Portable intent draft rejects before retaining latest
 

@@ -1,7 +1,17 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.40
+Version: 1.41
+
+## Portable forced-reset transaction (integration pending)
+
+`Renderer.forced_reset` reuses the existing bounded transaction. Missing/replaced generations
+may select a current cached target; a live same-generation producer on another device refuses
+the request. Reset authority is rechecked before open and under the output lock. Title accepts
+at most 512 UTF-8 bytes without control/format characters. Palette resets before default
+background/title; foreground resets only for residual global presentation. No audible alert or
+historical stream is added. An owned producer exits while its parent terminal remains live in
+the physical PTY test. Reconcile and helper/hook integration remain pending.
 
 ## Portable bound reset authority (integration pending)
 

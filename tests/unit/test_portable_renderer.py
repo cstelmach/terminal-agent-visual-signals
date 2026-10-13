@@ -2,6 +2,7 @@ import errno
 import os
 from pathlib import Path
 import select
+import signal
 import sys
 import time
 import unittest
@@ -27,6 +28,7 @@ def style(background="#123456", title=None, bell=False):
 
 @unittest.skipUnless(sys.platform == "darwin", "Native schema-1 owned process/PTY transaction")
 class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase):
+    child_producer = True
     def record(self):
         return {"schema": 1, "tty": self.tty, "device": self.store.device(self.tty),
                 "producer": self.producer, "deliveryID": "delivery-43", "updatedAt": time.time(),
@@ -160,6 +162,46 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
                                  time.monotonic_ns()+100_000_000)
         self.assertEqual(remaining["effectID"], "new-effect")
         self.assertTrue(remaining["active"])
+
+    def test_forced_reset_after_actual_producer_exit_uses_bound_parent_lifetime(self):
+        record = self.record()
+        observation = {key: value for key, value in record.items() if key not in {"updatedAt", "background"}}
+        observation.update(provider="claude", verifiedAgent=False, state="complete", observedAt=record["updatedAt"])
+        path = self.store.directory / ("observation-"+key(self.tty)+".json")
+        records.write(self.store.directory, path, observation, "observation", time.time(), time.monotonic_ns()+100_000_000)
+        self.assertTrue(self.render(record=record))
+        self.received()
+        os.kill(self.producer_pid, signal.SIGTERM)
+        until = time.monotonic() + 1
+        while self.store.lookup(self.producer_pid) is not None and time.monotonic() < until:
+            time.sleep(0.001)
+        self.assertIsNone(self.store.lookup(self.producer_pid))
+        reset = dict(record, background="reset", updatedAt=time.time())
+        self.assertTrue(Renderer(self.store).forced_reset(reset, record["updatedAt"], ""))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]111\x1b\\\x1b]0;\x1b\\")
+
+    def test_forced_reset_title_controls_are_rejected(self):
+        with self.assertRaises(OSError):
+            Renderer(self.store).forced_reset(self.record(), time.time(), "\x1b]11;red")
+
+    def test_live_same_generation_on_other_device_cannot_use_orphan_authority(self):
+        record = self.record()
+        observation = {key: value for key, value in record.items() if key not in {"updatedAt", "background"}}
+        observation.update(provider="claude", verifiedAgent=False, state="complete", observedAt=record["updatedAt"])
+        path = self.store.directory / ("observation-"+key(self.tty)+".json")
+        records.write(self.store.directory, path, observation, "observation", time.time(), time.monotonic_ns()+100_000_000)
+        self.assertTrue(self.render(record=record))
+        self.received()
+        actual_lookup = self.store.lookup
+        def moved_device(pid):
+            value = actual_lookup(pid)
+            if pid == self.producer_pid and value is not None:
+                value = dict(value, device=record["device"]+1)
+            return value
+        self.store.lookup = moved_device
+        with self.assertRaises(OSError):
+            Renderer(self.store).forced_reset(dict(record, updatedAt=time.time()), record["updatedAt"], "")
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
 
 
 if __name__ == "__main__":
