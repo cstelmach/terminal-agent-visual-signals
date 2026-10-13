@@ -217,8 +217,7 @@ class PortableOwnershipTests(unittest.TestCase):
             self.assertEqual(failure.exception.errno, errno.EBUSY)
 
 
-@unittest.skipUnless(sys.platform == "darwin", "Native schema-1 owned process/PTY acceptance")
-class PortableOwnershipPTYTests(unittest.TestCase):
+class OwnedPTYFixture:
     def setUp(self):
         self.root = Path(tempfile.mkdtemp(prefix="ownership-pty-", dir=os.environ["TAVS_TEST_ROOT"]))
         self.actor, self.master = pty.fork()
@@ -254,6 +253,8 @@ class PortableOwnershipPTYTests(unittest.TestCase):
             os.waitpid(self.actor, 0)
         os.close(self.master)
 
+@unittest.skipUnless(sys.platform == "darwin", "Native schema-1 owned process/PTY acceptance")
+class PortableOwnershipPTYTests(OwnedPTYFixture, unittest.TestCase):
     def write(self, recover=False):
         context = {}
         def before_open(deadline):

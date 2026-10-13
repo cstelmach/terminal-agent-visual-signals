@@ -170,6 +170,15 @@ class PortableDeviceWriterTests(unittest.TestCase):
         self.assertEqual(failure.exception.bytes_written, 8)
         self.assertEqual(os.read(self.master, 1024), b"complete")
 
+    def test_after_output_cannot_return_success_with_an_expired_deadline(self):
+        def expire(fd, deadline):
+            writer.time.monotonic_ns = lambda: deadline
+        with self.assertRaises(OSError) as failure:
+            writer.write_managed(self.path, self.lock, None, lambda fd, deadline: b"complete", after_write=expire)
+        self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
+        self.assertEqual(failure.exception.bytes_written, 8)
+        self.assertEqual(os.read(self.master, 1024), b"complete")
+
 
 if __name__ == "__main__":
     unittest.main()

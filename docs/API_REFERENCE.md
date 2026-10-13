@@ -1,7 +1,22 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.38
+Version: 1.39
+
+## Portable ordinary transaction (integration pending)
+
+`portable_renderer.Renderer.render` connects finite decoding, current ownership, intent and the
+bounded worker. It pins recovery revision and publishes background intent under the shared lock
+before device open. Under the output lock it revalidates context/target, republishes the frozen
+intent and refuses active native control. Obsolete effects restore latest background; residual
+global effects additionally reset legacy foreground/palette before the current finite style.
+Synthetic output suppresses its alert and leaves observation identity unchanged.
+
+Obsolete active effects are cancelled after successful output, using exact record snapshots.
+This differs from native pre-output cancellation to keep retry work discoverable after failed
+portable writes. Completion failure reports delivered bytes accurately and retains unfinished
+records. All steps share the original 100 ms budget. Owned Mac PTYs verify this transaction;
+helper verbs, forced reset/reconcile, hook routing and Linux record integration remain pending.
 
 ## Portable worker completion (integration pending)
 
