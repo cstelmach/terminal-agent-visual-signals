@@ -21,6 +21,7 @@ final class FocusController: ObservableObject {
     private let colors: (ProcessGeneration) throws -> TerminalRenderer.Colors
     private let queue: DispatchQueue
     private let clearQueue = DispatchQueue(label: "tavs.preview-clear")
+    private let focusClearQueue = DispatchQueue(label: "tavs.focus-clear")
     private let lock = NSLock()
     private var current: Run?
     private var pendingClear: [Run] = []
@@ -379,7 +380,7 @@ final class FocusController: ObservableObject {
         for run in runs {
             lock.lock(); let targets = run.targets; lock.unlock()
             guard !targets.isEmpty else { continue }
-            clearQueue.async { [weak self] in
+            focusClearQueue.async { [weak self] in
                 guard let self = self else { return }
                 let failed = self.recovery.apply(.clearFocus(effectID: run.id, revision: run.revision), to: targets)
                     .contains { $0.status == .failed }

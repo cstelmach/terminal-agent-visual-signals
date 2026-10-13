@@ -497,6 +497,39 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(poll(&ready, 1, 20), 0)
     }
 
+    func testHealthyPreviewClearDoesNotWaitForUnrelatedFocusCleanup() throws {
+        let a = try surface(10), b = try surface(20)
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            if path == b.tty && beforeOpen != nil { entered.signal(); release.wait() }
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: beforeOpen, prepare: prepare)
+        }
+        recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
+                lockURL: root.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: runner, clock: clock, controller: generation(90), nativeSnapshot: { [] })
+        let focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let focusCleared = expectation(description: "Blocked focus cleanup drained")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in focusCleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff()
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus.preview([a]); awaitPaint(focus, count: 1); _ = try read(0)
+        let previewCleared = expectation(description: "Healthy preview clears before unrelated focus is released")
+        focus.$cleanupError.dropFirst().first().sink { _ in previewCleared.fulfill() }.store(in: &subscriptions)
+        focus.clearPreview()
+        wait(for: [previewCleared], timeout: 0.5)
+        release.signal()
+        wait(for: [focusCleared], timeout: 2)
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+        let target = try XCTUnwrap(state.captureTarget(for: a))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+    }
+
     func testManualCapturedSetIsIndependentOfPreviewAndClearsLatestIntent() throws {
         let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
