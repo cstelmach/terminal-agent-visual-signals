@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 11 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 19 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 12 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 20 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup |
 
@@ -2133,3 +2133,72 @@ before a scope decision. These are bounded next actions, not new process machine
 **Confidence.** Actions, test counts and report scope are observed. Strategy and reusable lessons
 are reconstructed. Source defects, unadjudicated lower-ranked recommendations and native/UI
 acceptance remain open. No new profile tendency, skill, memory update or goal completion is claimed.
+
+
+## 2026-10-13 · gpt-6 (variant unverified) · priority-suite-repair
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from current visible tool results
+
+**Framing:** [O] The active goal remained the nine-phase implementation. Durable state named
+review corrections as the current slice, with native acceptance still open. The next concrete
+item was an obsolete integration suite. Reading its source confirmed removed pending-cache
+expectations, unsupported policy data and a child environment that discarded the explicit
+helper. Historical restoration guidance was used only to preserve the installed application
+and user sessions. No stored process inventory was treated as current authorization.
+
+**Strategy:** [R] A test-only correction was the smallest complete remedy. Reintroducing a
+pending writer would contradict the specification. Keeping file-shaped devices would exercise
+rejection rather than real managed output. The chosen harness therefore reused the repository's
+owned-PTY pattern and current source-built helper. Two children stayed alive together for the
+independence case, preventing terminal-path reuse from weakening that assertion. All state and
+captures remained under the isolated runner. No general fixture framework or product hook was added.
+
+**Action trace [O]:**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient and inspect | Git, SPEC/PLAN/PROGRESS, review and connected writers | Clean baseline |
+| 2 | Repair isolation before execution | Legacy priority fixture | Three cache checks failed |
+| 3 | Substitute owned PTYs and typed assertions | Same existing test file | Two BEL checks failed |
+| 4 | Preserve and inspect bytes | Private PTY output captures | OSC terminators identified |
+| 5 | Correct assertions and run regressions | Focused, Bats and Swift suites | 4, 169 and 500 passed |
+| 6 | Document and consolidate | Existing bug/state/capture files | History round trip verified |
+
+**Decision points:** [O] The child now inherits the sanitized wrapper environment rather than
+rebuilding an incomplete allowlist. A dedicated child check validates helper, HOME, Foundation,
+shell, runtime, temporary and XDG values. The no-replay case resumes the private policy and
+publishes a fresh standalone background: old processing color, configured title and standalone
+alert bells must remain absent. Device output is fully drained after child exit before checking
+it. Retained captures support diagnosis without touching the operator's terminals.
+
+**Failure arcs:** [O] The initial safe legacy run failed three missing-cache assertions and
+rejected regular-file devices. That demonstrates obsolete fixture semantics, not a new product
+regression. [R] Treating that failure as a reason to restore cache replay would have confused
+implementation history with the current contract. The correction removed that expectation.
+A second arc came from draft assertions that rejected every BEL byte. Private output inspection
+showed valid pause OSC commands terminated with BEL. Assertions now remove complete OSC sequences
+before looking for standalone alert bells. The causal explanation concerns test parsing; no
+product change was needed. The captures initially lived in Bats-managed temporary directories;
+the fixture was moved into the runner's retained root before the discriminating inspection.
+
+**Heuristics:** [O] P8 recurred: verify the reviewer against current code before selecting the
+remedy. P9 recurred: keep work within the dated SPEC's state directory, while recording the test
+repair as a bounded Phase 9 correction. Existing native-access restrictions were preserved.
+No new reusable pattern, skill promotion or comparative model profile is asserted from this slice.
+
+**Verification:** [O] Focused checks passed 4/4, the connected isolated Bats audit passed 169/169,
+and Swift passed 500/500 in 7.940 seconds with no warnings. The existing current release helper
+was sufficient for a test-only change. No native Ghostty action, Computer Use retry, installed
+app update or personal schedule edit was executed. Unknown-cue handling, resource growth and
+other review leads still require corrections; physical acceptance remains unverified. The
+finished 41-line review/closure checkpoint moved unchanged into its existing appendix, with
+reconstruction equality checked. The broader goal remains active.
+
+**Confidence:** Execution results and edits are observed. Strategy and causal interpretation
+are reconstructed. Exact served model attribution and physical terminal acceptance remain unknown.

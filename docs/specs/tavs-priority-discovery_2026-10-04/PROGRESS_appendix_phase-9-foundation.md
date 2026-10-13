@@ -130,3 +130,46 @@ Owned fixture relaunch UI remains unverified after the earlier CUA timeout; no u
 **Next:** read and verify the fresh final reviewer reports, resolve material findings, then finish
 active-cue UI/relaunch and physical/native acceptance in Phases 2/7/8/9 when access permits.
 Phase 9 stays In Progress and the master goal stays active; required acceptance is incomplete.
+
+### Phase 9 final reviews and confirmed closure: 2026-10-13 04:39 CEST
+
+Previous turn was progress; continued clean `12bacee`. Final source reviews completed against
+immutable `71e0f60`: Codex file-mode Sol/xhigh returned CONCERN, 7/10, all nine phases/83 targets;
+Claude Opus/high via explicit CLI completed four partitions and native synopsis, CONCERN,
+5.9/10, same full scope. Neither ran tests or native acceptance; later fixes are outside scope.
+Preserved both complete reports, four Claude parts and two source follow-ups in this package.
+AGY remains unavailable under the unchanged fingerprint-policy conflict; no retry occurred.
+
+`689203e` fixes source-verified Codex R1: successful empty catalogues now reconcile known closure,
+prune stored priorities/selection, clear previews and closed cues, end the last Manual set and
+leave Automatic armed. Empty activation is disabled. Actual native errors retain last-known
+data. Model red `CWtVBe` had nine failed assertions; connected control red `Ewz7tl` failed once.
+Final `ukRCyM` passed 500/500 Swift tests in 8.011 seconds without warnings. Current release
+`tfCNTK` passed in 10.69 seconds. All used private roots and the explicit source helper; new
+focus fixtures have nil device/lifetime lookup and a mock writer, so cannot open real devices.
+
+Source verification confirms Codex R2's obsolete/unsafe priority suite, Claude M1's nil-coverage
+and Boolean-source cue loss, and M4's accumulated cleanup runs. Follow-ups also identify false
+heartbeat advancement on rejected/unaffected writes and skipped source checks with all-High rows.
+Execution regressions/fixes remain pending. Other Claude findings need source/spec adjudication,
+including compatibility, the delayed restore race, recovery classification, resource admission
+and scheduler recomposition after recovery. No product boundary was changed to accept a finding.
+See [review corrections and next actions](final-review-corrections-2026-10-13.md).
+
+Private fixture PID 68022 is confirmed running. CUA path and bundle-ID observations timed out;
+inventory confirms its registration. Its brief sample shows ordinary AppKit event-loop activity,
+not a proven deadlock or visible acceptance. Native launch API is absent on the Mac provider.
+No activation workaround or restart was attempted. Sample: /tmp/tavs-ui-observation-20261013/.
+Ghostty access denial remains binding; no alternate native request or device paint occurred.
+
+**Scope:** one planned model correction plus connected tests and API/bug docs. SPEC body and
+PLAN are fixed. Released the parent source freeze only after remaining reviewer packets were
+confirmed immutable; their target remains `71e0f60`. Moved the finished 44-line first-corrections
+entry unchanged into the existing Phase 9 appendix with a verified round trip. Required capture
+accompanies this log. No install/sync, personal settings/schedule change or user-session shutdown.
+
+**Next:** verify and repair remaining material source findings in bounded test-first slices,
+starting with unknown-cue lifetime semantics or isolated priority-suite repair. Preserve the
+full specification and native acceptance requirements; the master goal remains active.
+
+> Current corrections and open acceptance remain in [PROGRESS.md](PROGRESS.md).

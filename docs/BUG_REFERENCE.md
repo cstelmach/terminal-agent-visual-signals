@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.26
+Version: 1.27
+
+## Priority integration tests select the installed helper and require removed replay files
+
+The priority fixture's child `env -i` discarded the explicit source-built helper. Its regular-file
+TTY stand-ins, unsupported mute reason and pending-file assertions also bypassed the current
+typed-intent contract. The suite now requires the isolated runner, inherits its explicit helper
+and private roots, uses owned PTYs and a valid pause, and retains diagnostic captures. Tests cover
+latest intent, simultaneously live independent terminals, pause precedence and no historical
+title/bell replay on resumption. A child environment check prevents helper/root regression.
+BEL assertions distinguish OSC terminators from standalone alert bells. The repaired suite and
+the connected isolated Bats audit pass without invoking the installed app or any user terminal.
 
 ## A successful empty catalogue preserves confirmed closed sessions
 

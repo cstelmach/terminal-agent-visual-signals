@@ -1,7 +1,7 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.1
+Version: 1.2
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
 Current product checkpoint: `689203e`.
@@ -106,19 +106,35 @@ passed in 10.69 seconds. These isolated tests use nil device/lifetime lookup and
 they cannot open a real device. Failed-native retention remains tested separately.
 Backups: `/tmp/tavs-empty-catalogue-20261013/`.
 
+## Priority-suite repair (Codex R2 / Claude M7)
+
+Resolved the source-verified fixture finding in `tests/integration/priority-pinning.bats`.
+The child inherits the explicit source helper and all private roots; a separate PTY-child check
+verifies those values. Owned PTYs replace regular-file devices, and both per-TTY targets remain
+live together before either can release its device. The policy uses supported `quiet_period`.
+Assertions cover current typed intent, distinct deliveries, pause precedence, repeated replacement
+and fresh background output after resumption without historical title/bell replay or OSC caches.
+No production behavior, API, installed app or personal setting was changed.
+
+After isolation repair, legacy `TKNLLK` failed its three removed-cache assertions. That run also
+rejected regular-file targets; it is obsolete-test evidence, not a new product regression.
+The first owned-PTY drafts failed two assertions because legitimate OSC BEL terminators were
+mistaken for audible bells (`CZFUqp`, `pKXRWf`, `DLscOe`). Retained byte captures identified the
+error. The final checks remove complete OSC sequences before testing for standalone bells.
+Focused `yuM9HW` passed 4/4; connected `1jV0wk` passed 169/169 Bats; full `E8VXVU` passed 500/500
+Swift tests in 7.940 seconds without warnings. The existing current release helper was used;
+no product rebuild was needed for this test-only change. Backups: `/tmp/tavs-priority-tests-20261013/`.
+
 ## Remaining adjudication and implementation
 
 The following source findings are verified; execution regressions and fixes remain pending:
 
-1. **Obsolete priority suite (Codex R2 / Claude M7).** Its pending-file assertions have no current
-   writer, `REASON=test` is unsupported, and child `env -i` drops the explicit helper. Do not run
-   it until private-root/helper propagation is repaired. Retarget it to typed intent and no replay.
-2. **Unknown cue data (Claude M1).** The [source follow-up](unknown-coverage-followup-2026-10-13.md)
+1. **Unknown cue data (Claude M1).** The [source follow-up](unknown-coverage-followup-2026-10-13.md)
    confirms both reducer nil-clearing and final-writer Boolean invalidation. Reuse known-invalid
    versus unavailable evidence, retaining unknown cues and rejecting uncertain paints. The remedy
    must also distinguish rejected writes from masked metadata renewal and handle all-High rows
    where no outside writer predicate executes.
-3. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
+2. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
    proves a finite 24-second sequence with three retired runs and 15 retry jobs. These share one
    revision object, not one descriptor per rollover. Blind replacement by the newest attempted
    ID can lose older ownership. Preserve exact IDs/pins, and verify any bound against partial
