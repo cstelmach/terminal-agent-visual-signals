@@ -486,3 +486,33 @@ The [source check](tty-cache-scope-check-2026-10-13.md) found no new defect; pri
 **Scope:** Two source/two test paths; shared lookup correction extends Phase 9's original file list.
 No retirement/index or latency claim. Same-TTY history and preview config cost remain M5 work.
 H1 input and native acceptance stay open. SPEC/PLAN fixed; goal active, 2/7/8 Blocked, 9 active.
+
+### Phase 9 preview preparation timing: 2026-10-13 16:28 CEST
+
+`a710d9f` starts the preview lease after preparation; one timestamp feeds record, predicate and timer.
+Every accepted start queues cleanup before the paint-age guard. Canceled preparation paints nothing.
+Five tests cover slow queries, replacement, explicit failure, late setup and expired accepted starts.
+Red `l1Vq3t`: 11 failures; draft review reproduced no-timer cleanup in `CDAsJf` (three failures).
+Corrected clock/drain fixtures pass. `RoXBKk` retained old-timer and managed-reset output failures;
+root cause unproven. Diagnostic `4vjXjB`: 2/2; final `1SEz4e`: 556/556 Swift, 10.803 s.
+Release `o2l0ps`: 22.08 s; current-helper `ydknN9`: 178/178 Bats. Deadlines unchanged.
+Full [source reports](preview-timing-source-check-2026-10-13.md) retain draft findings and corrections.
+**Scope:** Two Phase 9 source/test paths plus existing API/bug/roadmap docs; no cross-preview cache.
+Finished helper-cost text moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
+Next: diagnose retained output failures and verify focus color freshness/remaining review leads.
+H1 input and physical Ghostty acceptance remain open; 2/7/8 Blocked and 9 active.
+
+### Phase 9 replacement cleanup ordering: 2026-10-13 17:28 CEST
+
+`a5c6549` adds per-physical completion/waits; `927a746` orders preview cleanup within the same budget.
+`KMqaUW`: real finite cleanup produced EBUSY and eight failures. `ZTqHdl`: serial batches failed B.
+`KelinG`: three failures proved a timed-out successor hid older work. Completion now waits on both.
+`ZEIU1L`/`oLoWRh` retained a wrong physical-only fixture path; corrected to the native binding.
+Five new tests cover own cleanup, cross-run progress, cancel, timeout ancestry and alias callbacks.
+Final `a54Lpn`: 142 focused; `40ORys`: 561/561 Swift, 11.028 s; release `aqws2z`: 14.02 s.
+Current-helper `7WAkIc`: 178/178 Bats. Source [reports](preview-timing-source-check-2026-10-13.md) saved.
+**Scope:** Four source/test paths; recovery support extends Phase 9's file list. No retry/deadline change.
+Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
+Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
+Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.
+Goal service returned Blocked twice; this agent did not request that transition. No reason supplied.

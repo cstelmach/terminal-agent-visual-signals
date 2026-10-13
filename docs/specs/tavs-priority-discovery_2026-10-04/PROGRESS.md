@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 19:26 CEST
-**Version:** 4.17
+**Last Updated:** 2026-10-13 19:51 CEST
+**Version:** 4.18
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | a08ed0e, b66e332; earlier below/appendix | 184 Bats; Swift reruns failed, details below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 33fadb1; earlier below/appendix | 561 Swift; prior 184 Bats below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -834,35 +834,10 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 
 > Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 preview preparation timing: 2026-10-13 16:28 CEST
+### Phase 9 preview preparation and replacement cleanup
 
-`a710d9f` starts the preview lease after preparation; one timestamp feeds record, predicate and timer.
-Every accepted start queues cleanup before the paint-age guard. Canceled preparation paints nothing.
-Five tests cover slow queries, replacement, explicit failure, late setup and expired accepted starts.
-Red `l1Vq3t`: 11 failures; draft review reproduced no-timer cleanup in `CDAsJf` (three failures).
-Corrected clock/drain fixtures pass. `RoXBKk` retained old-timer and managed-reset output failures;
-root cause unproven. Diagnostic `4vjXjB`: 2/2; final `1SEz4e`: 556/556 Swift, 10.803 s.
-Release `o2l0ps`: 22.08 s; current-helper `ydknN9`: 178/178 Bats. Deadlines unchanged.
-Full [source reports](preview-timing-source-check-2026-10-13.md) retain draft findings and corrections.
-**Scope:** Two Phase 9 source/test paths plus existing API/bug/roadmap docs; no cross-preview cache.
-Finished helper-cost text moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
-Next: diagnose retained output failures and verify focus color freshness/remaining review leads.
-H1 input and physical Ghostty acceptance remain open; 2/7/8 Blocked and 9 active.
-
-### Phase 9 replacement cleanup ordering: 2026-10-13 17:28 CEST
-
-`a5c6549` adds per-physical completion/waits; `927a746` orders preview cleanup within the same budget.
-`KMqaUW`: real finite cleanup produced EBUSY and eight failures. `ZTqHdl`: serial batches failed B.
-`KelinG`: three failures proved a timed-out successor hid older work. Completion now waits on both.
-`ZEIU1L`/`oLoWRh` retained a wrong physical-only fixture path; corrected to the native binding.
-Five new tests cover own cleanup, cross-run progress, cancel, timeout ancestry and alias callbacks.
-Final `a54Lpn`: 142 focused; `40ORys`: 561/561 Swift, 11.028 s; release `aqws2z`: 14.02 s.
-Current-helper `7WAkIc`: 178/178 Bats. Source [reports](preview-timing-source-check-2026-10-13.md) saved.
-**Scope:** Four source/test paths; recovery support extends Phase 9's file list. No retry/deadline change.
-Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
-Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
-Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.
-Goal service returned Blocked twice; this agent did not request that transition. No reason supplied.
+> Finished source checkpoints: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+> Historical managed-reset failure attribution remains unproven; current suite evidence is below.
 
 ### Phase 9 standalone metadata correction: 2026-10-13 19:26 CEST
 
@@ -890,3 +865,27 @@ The operator availability question remains unanswered; dedicated visible checks 
 No real install/sync, personal preferences/schedules or existing terminal sessions were changed.
 H1 rendering, prior failure attribution, color freshness and native acceptance remain open.
 Phases 2/7/8 stay Blocked on acceptance; 9 stays In Progress. The full goal is incomplete.
+
+### Phase 9 preview fixture correction: 2026-10-13 19:51 CEST
+
+`33fadb1` corrects two fixture ordering/lifetime assumptions and strengthens an error diagnostic.
+Replacement color preparation now waits for the held old cleanup; gates release explicitly.
+Exit cancels queued preview and drains the start and supplied cleanup queue through a barrier.
+This replaces a draft entered-call counter, which could miss cleanup not yet started. The
+controller initializer accepts that existing queue; its production concurrent default is preserved.
+Failed prerequisites stop dependent no-paint assertions. The mock injected-error check now reports
+actual error/time rather than accepting a timeout as the intended failure. The 100 ms bound stays.
+`pifCjn`: 2/2; `4TXmzt`: 49 cases, one unexpected EPERM teardown failure; `fBD2nj`: 49/49.
+Intermediate full `g3tYba`/`6a3v7E`: 561/561. Final `Xl7xhB`: 561/561 in 10.782 seconds;
+release `MT5Cjf`: 22.11 seconds. Prior 184 Bats passed at the metadata checkpoint.
+Verified source findings and all new failure diagnostics are retained in
+[preview source checks](preview-timing-source-check-2026-10-13.md). Source-only reports describe
+specified drafts; final queue-barrier revision is parent-checked, not a refreshed provider verdict.
+**Scope:** Two tests, one existing controller initializer and API/bug docs. No output-policy change,
+real native target, install/sync, personal setting/schedule or existing session action.
+The exact earlier-run interleaving, teardown failure cause and healthy deadline stalls remain
+unproven. Passing current suites does not establish those causes or physical native acceptance.
+Next: implement the safe portable process-identity/writer/synthetic lifecycle and validate macOS
+and Linux owned PTYs. Metadata-only support does not close H1. Later verify color freshness and
+remaining source review leads. Ghostty access still needs direct operator acceptance; no retry ran.
+Phases 2/7/8 remain Blocked on native cases, 9 In Progress. The full goal remains active/incomplete.

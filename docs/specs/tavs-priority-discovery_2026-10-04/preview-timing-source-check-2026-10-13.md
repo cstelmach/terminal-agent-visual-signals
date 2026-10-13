@@ -710,3 +710,104 @@ Test Suite 'All tests' failed at 2026-10-13 19:20:52.357.
 	 Executed 561 tests, with 7 failures (0 unexpected) in 22.660 (22.839) seconds
 ◇ Test run started.
 ```
+
+## Preview fixture source check and correction (2026-10-13)
+
+# Two-file preview fixture and error diagnostic check
+
+Source-only review of the current focus-controller-tests.swift and
+process-runner-tests.swift diff. No edits, builds/tests, apps/devices, web or
+parent-goal access. No new production or barrier-accounting defect found.
+
+## Remaining concrete limitations
+
+1. Cancellation fixture does not explicitly drain its old cleanup worker.
+   testCancelReplacementWaitingForPriorCleanupCannotPaintLate registers defer
+   release.signal(), which prevents the controlled semaphore from remaining held
+   after an early throw. However, it does not wait for that old native call to
+   return. Its drained expectation is enqueued on the preview START queue, not
+   clearQueue. An early failure can therefore release a worker and immediately
+   proceed to fixture teardown while that worker still accesses its PTY/root.
+   Add the transitive fixture's started-aware oldDone signal/wait if claiming
+   complete retirement. This drain limitation predates the current barrier change.
+
+2. The transitive fixture's defer waits oldDone even if failure happened before
+   any second runner call existed. That can add a misleading two-second cleanup
+   failure to an initial-paint failure. Gate the oldDone wait on recorded start
+   of ordinal 2; signal release regardless. Its normal explicit-release path
+   already waits oldDone and marks retired. This is a fixture reporting limitation,
+   not a leaked semaphore hold or a new output-policy defect.
+
+3. The stricter managed-mock diagnostic reports actual error, elapsed wall time
+   and callback count, but does not distinguish worker dispatch from work after
+   dispatch. It correctly stops treating a timeout as the injected device error;
+   phase timing remains necessary before assigning a scheduling/I/O cause.
+
+## Narrow checks that passed in source
+
+- After initial paint completes, replacement's second color lookup cannot call
+  the runner until the broadcast entered DispatchGroup is complete. Only the old
+  cleanup can then own ordinal 2 and leave that group. Main and worker can both
+  observe the same group without consuming a single semaphore signal.
+- Both old-cleanup gates now wait for EXPLICIT release. They no longer self-release
+  after two/three seconds during delayed assertions. Defer is installed before
+  first preview and releases on throwing exits; successful paths release explicitly.
+- Color-barrier timeout throws before replacement native work. The transitive
+  fixture's three guarded XCTWaiter outcomes return through defer instead of
+  checking no-paint invariants after failed prerequisite expectations.
+- The injected-error test changes only its assertion/diagnostic. It still uses
+  the same completeDeviceWrite and original 100 ms deadline, preserves one
+  beforeOpen invocation on the successful injected-error path, and forbids prepare.
+  Neither the two-file diff nor its assertions extend the production writer budget.
+
+## Revised drain follow-up
+
+Inspected the revised source only. The parent reports a focused run's EPERM root
+removal failure and retained writer lock. Neither that correlation nor this
+review establishes the teardown failure's cause.
+
+Cancellation fixture now invalidates current/queued preview in defer, releases
+the hold, waits for old-clear entry when replacement was queued, waits ordinal 4
+entry when final clear was queued, then drains all entered mock/native calls.
+The captured completion group is balanced with enter/defer-leave on every handler
+return/error. No new imbalance was found. Known entry waits prevent its group
+from being mistaken for quiescence before those queued handlers enter.
+
+One remaining concrete early-failure gap is in the TRANSITIVE fixture's defer.
+It conditionally waits oldDone only if entered is already complete, then waits
+completed. It does not cancel queued preview, and completed.enter happens only
+when a mock handler actually starts. After a failed one-second prerequisite, a
+replacement or old-clear handler can still be queued but not entered; completed
+can be zero and return before that work starts. Releasing the old clear can also
+allow a still-current queued replacement to paint after the failed test returns.
+
+Use the cancellation fixture's same small boundary: invalidate preview on defer,
+record whether replacement/its old clear was queued, await that known old-clear
+entry before claiming the entered-calls group is drained, then wait oldDone only
+for an actually started old call. No clear queued means no oldDone obligation.
+This concerns test quiescence, not production output policy or the 100 ms budget.
+A bounded drain failure must remain a reported failure rather than a claim that
+all workers retired. No runtime check was performed in this follow-up.
+
+### Parent resolution and verification
+
+The final revision replaces entered-call counting with a supplied existing cleanup queue.
+Both fixtures cancel queued preview, release the hold, drain the start queue and then enqueue
+one cleanup-queue barrier before teardown. This covers cleanup scheduled but not yet entered.
+The production default remains the same concurrent queue. This final change was source-checked
+by the parent; the retained explorer report above describes earlier drafts, not a fresh verdict.
+Focused `pifCjn`: 2/2; `4TXmzt`: 49 cases, one unexpected teardown failure; `fBD2nj`: 49/49.
+Intermediate full `g3tYba` and `6a3v7E`: 561/561. Final `Xl7xhB`: 561/561, 10.782 seconds;
+release `MT5Cjf`: 22.11 seconds. All use the private wrapper and owned scratch build.
+Actual prior-run ordering, EPERM causality and other historical deadline stalls remain unproven.
+No production output-policy or deadline change is inferred from fixture repairs.
+
+### Retained teardown failure (4TXmzt)
+
+```text
+Test Case '-[TAVSAppTests.FocusControllerTests testCancelReplacementWaitingForPriorCleanupCannotPaintLate]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:0: error: -[TAVSAppTests.FocusControllerTests testCancelReplacementWaitingForPriorCleanupCannotPaintLate] : failed: caught error: "Error Domain=NSCocoaErrorDomain Code=513 "“controller-0AD10FC9-B09A-40FB-9343-767B4F525936” couldn’t be removed because you don’t have permission to access it." UserInfo={NSUserStringVariant=(
+    Remove
+), NSFilePath=/var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T//tavs-isolated.4TXmzt/controller-0AD10FC9-B09A-40FB-9343-767B4F525936, NSURL=file:///var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T//tavs-isolated.4TXmzt/controller-0AD10FC9-B09A-40FB-9343-767B4F525936, NSUnderlyingError=0x8618f8390 {Error Domain=NSPOSIXErrorDomain Code=1 "Operation not permitted"}}"
+Test Case '-[TAVSAppTests.FocusControllerTests testCancelReplacementWaitingForPriorCleanupCannotPaintLate]' failed (0.374 seconds).
+```

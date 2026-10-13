@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 27 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 35 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 28 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 36 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3311,3 +3311,63 @@ promotion suggestions remain proposals; no additional capability editing was per
 
 **Confidence.** Actions, test counts and source contracts are observed. Internal motives, host
 causality and the failing run's request ordering are reconstructed or explicitly unproven.
+
+## 2026-10-13 · gpt-6 (self-reported; variant unverified) · preview-fixture-lifetime
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported [R], system identity; served variant unobserved
+  interface: codex-desktop
+  thinking: unknown
+  session: 01a10879
+  trace: reconstructed from visible tool results; no dominant-turn transcript export
+
+**Framing [O].** This continuation followed committed metadata restoration. The checkout was
+clean, and the SPEC-owned progress entry named failed Swift runs as the next diagnostic work.
+Their preserved source investigation identified an ambiguous mock-call order and timed fixture
+gates. The full goal remained active, with portable output and physical Ghostty acceptance open.
+The scope was test reliability and diagnostic precision, preserving production output policy.
+
+**Strategy [O/R].** The observed correction established old-cleanup entry before replacement
+color preparation. A broadcast group supported both main and worker observations without consuming
+one semaphore signal. Controlled holds changed to explicit release. Guarded prerequisite waits
+prevented later no-paint checks from running after their setup failed. The reconstructed tradeoff
+was to make the test exercise its named interleaving rather than accept any convenient schedule.
+
+**Action trace [O].**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient | Current Git, SPEC/PLAN/PROGRESS/GOAL | Clean Phase 9 checkpoint |
+| Correct | Two preview fixture gates | Two focused checks pass |
+| Investigate | Broader focused run and source review | Teardown failure and missing drains |
+| Simplify | Existing cleanup queue dependency | Barrier covers queued work |
+| Verify | Full Swift suite and release | 561/561; 22.11-second build |
+| Commit | Five connected source/test/doc paths | 33fadb1 |
+
+**Failure arcs [O/R].** A 49-case focused run passed the ordering checks but failed removing a
+private fixture directory with EPERM. Read-only inspection found only its writer lock remaining.
+A source review showed that the preview-start queue drain did not establish cleanup completion.
+The correlation did not prove EPERM's cause. Entered-call counting was tried next and passed the
+focused suite, but review found that queued, unstarted work could evade that count on early exit.
+The final remedy supplied the existing concurrent cleanup queue to tests, invalidated preview,
+released holds and barrier-drained scheduled cleanup after the start queue. Production retains
+its prior concurrent default. This reduced reliance on call-count bookkeeping.
+
+**Decision points [O].** No writer deadline was raised. The injected-error test now checks the
+actual device error and prints elapsed time/callback count when another error occurs. That adds
+evidence without assigning dispatch or filesystem causality. Historical deadline failures and
+actual prior-run interleavings remain unproven; passing new checks did not erase their records.
+
+**Verification [O].** Final full Swift ran 561 tests successfully in 10.782 seconds. The release
+build passed in 22.11 seconds. Earlier failing and intermediate passing runs are retained with
+source reports. Shell sources did not change in this slice; their prior 184-case checkpoint
+remains recorded separately. No real app deployment, native target action, preferences, schedules
+or existing terminal sessions changed. The goal is incomplete and continues with portable output.
+
+**Heuristics.** P8: verify a source-review remedy against the actual queue boundary. P9: use the
+SPEC-owned progress entry to choose the next slice. Distinguish work already entered from work
+still queued before claiming fixture quiescence. Existing promotion proposals stay proposals.
+
+**Confidence.** Edits, checks and source relationships are observed. Internal motives, EPERM
+causality and historical timeout causes are reconstructed or explicitly unresolved.
