@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.17
+Version: 1.18
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -102,3 +102,7 @@ the effect and remaining-delay expiry; cancellation/replacement stay effective w
 Expired accepted starts still receive cleanup. Configuration failures retain explicit unavailable
 status. Each multiselection keeps one fresh validated query; no cross-preview cache is introduced.
 Physical duration and aggregate fanout tolerance still require native acceptance.
+Replacement previews now follow only their own physical target's cleanup before admission, inside
+the unchanged writer budget. Cross-target batches progress independently. Timeout failures retain
+older unfinished dependencies; cancellation cannot paint after waiting, and recovery stays separate.
+Owned-PTY regressions verify these paths. Historical intermittent failure attribution remains open.

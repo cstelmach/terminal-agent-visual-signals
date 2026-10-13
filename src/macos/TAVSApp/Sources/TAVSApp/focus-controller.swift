@@ -20,11 +20,12 @@ final class FocusController: ObservableObject {
     private let clock: Clock
     private let colors: (ProcessGeneration) throws -> TerminalRenderer.Colors
     private let queue: DispatchQueue
-    private let clearQueue = DispatchQueue(label: "tavs.preview-clear")
+    private let clearQueue = DispatchQueue(label: "tavs.preview-clear", attributes: .concurrent)
     private let focusClearQueue = DispatchQueue(label: "tavs.focus-clear")
     private let lock = NSLock()
     private var current: Run?
     private var pendingClear: [Run] = []
+    private var previewClears: [TerminalTargetBinding: DispatchGroup] = [:]
     private var manual: Run?
     private var focusLeases: [TerminalTargetBinding: FocusLease] = [:]
     private var manualPending: ([GhosttySurface], Set<GhosttySurfaceID>, Double)?
@@ -78,7 +79,16 @@ final class FocusController: ObservableObject {
                 }
                 guard self.isCurrent(run) else { return }
                 let request = TerminalPreviewRequest(effectID: run.id, startedAt: startedAt,
-                    colors: colors, revision: run.revision, isCurrent: { [weak self] in self?.isCurrent(run) == true })
+                    colors: colors, revision: run.revision, isCurrent: { [weak self] in self?.isCurrent(run) == true },
+                    awaitPriorClear: { [weak self] target, deadline in
+                        guard let self = self, self.isCurrent(run) else { throw VisualRecoveryError.policyChanged }
+                        self.lock.lock(); let clear = self.previewClears[target.physicalTarget]; self.lock.unlock()
+                        if let clear = clear,
+                           clear.wait(timeout: DispatchTime(uptimeNanoseconds: deadline)) != .success {
+                            throw TerminalVisualStateError.deadlineExceeded
+                        }
+                        guard self.isCurrent(run) else { throw VisualRecoveryError.policyChanged }
+                    })
                 let items = self.recovery.apply(.preview(request), to: targets)
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, self.isCurrent(run) else { return }
@@ -111,10 +121,40 @@ final class FocusController: ObservableObject {
         for run in runs {
             lock.lock(); let targets = run.targets; lock.unlock()
             guard !targets.isEmpty else { continue }
+            var clears: [TerminalTargetBinding: DispatchGroup] = [:]
+            var prior: [TerminalTargetBinding: DispatchGroup] = [:]
+            lock.lock()
+            for target in Set(targets.map(\.physicalTarget)) {
+                prior[target] = previewClears[target]
+                let clear = DispatchGroup()
+                clear.enter(); previewClears[target] = clear; clears[target] = clear
+            }
+            lock.unlock()
+            let completions = clears, predecessors = prior
             clearQueue.async { [weak self] in
-                guard let self = self else { return }
-                let failed = self.recovery.apply(.clearPreview(effectID: run.id, revision: run.revision), to: targets)
-                    .contains { $0.status == .failed }
+                guard let self = self else { for clear in completions.values { clear.leave() }; return }
+                let operation = ManagedVisualOperation.clearPreview(effectID: run.id, revision: run.revision,
+                    awaitPriorClear: { target, deadline in
+                        if let prior = predecessors[target.physicalTarget],
+                           prior.wait(timeout: DispatchTime(uptimeNanoseconds: deadline)) != .success {
+                            throw TerminalVisualStateError.deadlineExceeded
+                        }
+                    })
+                let items = self.recovery.apply(operation,
+                    to: targets, didComplete: { target in
+                        guard let clear = completions[target] else { return }
+                        let finish = {
+                            self.lock.lock()
+                            clear.leave()
+                            if self.previewClears[target] === clear {
+                                self.previewClears.removeValue(forKey: target)
+                            }
+                            self.lock.unlock()
+                        }
+                        if let prior = predecessors[target] { prior.notify(queue: self.clearQueue, execute: finish) }
+                        else { finish() }
+                    })
+                let failed = items.contains { $0.status == .failed }
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     if failed {

@@ -1,7 +1,21 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.40
+Version: 1.41
+
+## Replacement preview races its own cleanup
+
+The start and clear queues could contend for ordinary admission on the same healthy target.
+An owned PTY with finite cleanup reproduced `EBUSY`, no replacement paint and unchanged effect ID.
+Per-physical completion now orders replacement before admission, within the original writer budget.
+Different targets and successive cleanup batches progress independently; aliases retain grouping.
+
+A serial-batch draft blocked healthy B behind unrelated A. A corrected fixture reproduced that gap.
+A further timeout case showed a failed successor discarding its still-running predecessor. Completion
+now retains that dependency through notification, while returning the bounded failure immediately.
+Four controller regressions plus a fanout callback test cover finite cleanup, cross-run independence,
+cancellation, timeout ancestry and fresh operation after drainage. Historical failure attribution
+remains unproven; this corrects reproduced mechanisms without general retries or deadline changes.
 
 ## Preview preparation consumes its display lifetime
 
