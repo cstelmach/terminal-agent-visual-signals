@@ -411,6 +411,184 @@ final class ProcessRunnerTests: XCTestCase {
         XCTAssertEqual(try readPTY(tty.master, count: 1), Data([0x61]))
     }
 
+    func testWedgedDeviceRetriesDoNotAmplifyOpenWorkersAndKeepLatestIntent() throws {
+        let blocked = try openPTY(), healthy = try openPTY()
+        defer { close(blocked.master); close(blocked.slave); close(healthy.master); close(healthy.slave) }
+        let (state, target, initial) = try publicationFixture(blocked)
+        let lockURL = try state.lockURL(forTTY: blocked.path)
+        let counterLock = NSLock(), entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        var opens = 0
+        let openDevice: (String, Int32) -> Int32 = { path, flags in
+            if path == blocked.path {
+                counterLock.lock(); opens += 1; counterLock.unlock()
+                entered.signal(); release.wait()
+                return Darwin.open(path, flags)
+            }
+            return Darwin.open(path, flags)
+        }
+        defer {
+            counterLock.lock(); let count = opens; counterLock.unlock()
+            for _ in 0..<count { release.signal() }
+            waitForAdmissionRelease(path: blocked.path, lockURL: lockURL, target: target)
+            assertNoPTYBytes(blocked.master)
+        }
+        let runner = SystemProcessRunner(openDevice: openDevice)
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: blocked.path, lockURL: lockURL,
+            beforeOpen: { deadline in
+                try state.publishIntent(initial, to: target, synthetic: false, intakeAt: 999, deadline: deadline)
+            }, target: target) { _, _ in XCTFail("Timed-out open must not prepare output"); return Data([0x61]) })
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        for color in ["#112233", "#445566", "reset"] {
+            var next = initial; next.background = color
+            let started = DispatchTime.now().uptimeNanoseconds
+            XCTAssertThrowsError(try SystemProcessRunner(openDevice: openDevice).writeManagedToDevice(
+                path: blocked.path, lockURL: lockURL, beforeOpen: { deadline in
+                    try state.publishIntent(next, to: target, synthetic: false, intakeAt: 999, deadline: deadline)
+                }, target: target) { _, _ in XCTFail("Busy target must not prepare output"); return Data([0x61]) })
+            XCTAssertLessThan(Double(DispatchTime.now().uptimeNanoseconds-started)/1e9, 0.5)
+            XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), color)
+        }
+        XCTAssertThrowsError(try SystemProcessRunner(openDevice: openDevice).writeToDevice(
+            path: blocked.path, data: Data([0x62])))
+        counterLock.lock(); let count = opens; counterLock.unlock()
+        XCTAssertEqual(count, 1)
+        XCTAssertTrue(try SystemProcessRunner(openDevice: openDevice).writeManagedToDevice(
+            path: healthy.path, lockURL: root.appendingPathComponent("healthy.lock")) { _, _ in Data([0x63]) })
+        XCTAssertEqual(try readPTY(healthy.master, count: 1), Data([0x63]))
+        assertNoPTYBytes(blocked.master)
+    }
+
+    func testAdmissionSharesPhysicalAliasesAndKeepsReusedLifetimesIndependent() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let (_, original, _) = try publicationFixture(tty)
+        let replacement = TerminalTargetBinding(tty: original.tty, device: original.device,
+            ttyOwner: ProcessGeneration(pid: 10, startSeconds: 101, startMicroseconds: 1), nativeSurface: nil)
+        let alias = TerminalTargetBinding(tty: original.tty, device: original.device, ttyOwner: original.ttyOwner,
+            nativeSurface: GhosttySurfaceID(application: original.ttyOwner, terminalID: "alias"))
+        let oldRelease = DispatchSemaphore(value: 0), newRelease = DispatchSemaphore(value: 0)
+        let counterLock = NSLock()
+        var opens = 0
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            counterLock.lock(); opens += 1; let count = opens; counterLock.unlock()
+            if count == 1 { oldRelease.wait() }
+            if count == 2 { newRelease.wait() }
+            return Darwin.open(path, flags)
+        })
+        let lockURL = root.appendingPathComponent("writer.lock")
+        defer {
+            oldRelease.signal(); newRelease.signal()
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL, target: original)
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL, target: replacement)
+            assertNoPTYBytes(tty.master)
+        }
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, target: original) { _, _ in XCTFail("Expired original must not prepare"); return nil })
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, target: alias) { _, _ in XCTFail("Alias shares the original slot"); return nil }) { error in
+            guard case ProcessRunnerError.deviceIOFailed(_, EBUSY) = error else { return XCTFail("Expected busy alias") }
+        }
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, target: replacement) { _, _ in XCTFail("Expired replacement must not prepare"); return nil })
+        counterLock.lock(); let count = opens; counterLock.unlock()
+        XCTAssertEqual(count, 2)
+        oldRelease.signal()
+        waitForAdmissionRelease(path: tty.path, lockURL: lockURL, target: original)
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, target: replacement) { _, _ in XCTFail("Old completion must not release new lifetime"); return nil }) { error in
+            guard case ProcessRunnerError.deviceIOFailed(_, EBUSY) = error else { return XCTFail("Expected busy replacement") }
+        }
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testPostOpenPreparationRetainsAdmissionAfterCallerTimeout() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let release = DispatchSemaphore(value: 0), entered = DispatchSemaphore(value: 0)
+        let runner = SystemProcessRunner(), lockURL = root.appendingPathComponent("writer.lock")
+        defer {
+            release.signal()
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL)
+            assertNoPTYBytes(tty.master)
+        }
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL) { _, _ in
+            entered.signal(); release.wait(); return Data([0x61])
+        })
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        var publications = 0
+        XCTAssertThrowsError(try SystemProcessRunner().writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: { _ in publications += 1 }) { _, _ in XCTFail("Busy preparation cannot prepare twice"); return nil }) { error in
+            guard case ProcessRunnerError.deviceIOFailed(_, EBUSY) = error else { return XCTFail("Expected busy preparation") }
+        }
+        XCTAssertEqual(publications, 1)
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testEmergencyAdmissionIsIndependentAndDoesNotAmplifyRetries() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let (_, target, _) = try publicationFixture(tty)
+        let lockURL = root.appendingPathComponent("writer.lock")
+        let release = DispatchSemaphore(value: 0), counterLock = NSLock()
+        var opens = 0
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            counterLock.lock(); opens += 1; counterLock.unlock()
+            release.wait(); return Darwin.open(path, flags)
+        })
+        defer {
+            counterLock.lock(); let count = opens; counterLock.unlock()
+            for _ in 0..<count { release.signal() }
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL, target: target)
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL, target: target, emergency: true)
+            assertNoPTYBytes(tty.master)
+        }
+        for emergency in [false, true] {
+            XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+                beforeOpen: nil, target: target, emergency: emergency) { _, _ in nil }) { error in
+                guard case ProcessRunnerError.deviceWriteTimedOut = error else {
+                    return XCTFail("The first attempt in each lane must reach open: \(error)")
+                }
+            }
+            for _ in 0..<3 {
+                XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
+                    beforeOpen: nil, target: target, emergency: emergency) { _, _ in nil }) { error in
+                    guard case ProcessRunnerError.deviceIOFailed(_, EBUSY) = error else {
+                        return XCTFail("Repeated attempts must be busy: \(error)")
+                    }
+                }
+            }
+        }
+        counterLock.lock(); let count = opens; counterLock.unlock()
+        XCTAssertEqual(count, 2)
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testRawSyntacticPathAliasesShareAdmission() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let release = DispatchSemaphore(value: 0), lockURL = root.appendingPathComponent("writer.lock")
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            release.wait(); return Darwin.open(path, flags)
+        })
+        defer {
+            release.signal()
+            waitForAdmissionRelease(path: tty.path, lockURL: lockURL)
+            assertNoPTYBytes(tty.master)
+        }
+        XCTAssertThrowsError(try runner.writeToDevice(path: tty.path, data: Data([0x61])))
+        let name = URL(fileURLWithPath: tty.path).lastPathComponent
+        for alias in ["/dev//\(name)", "/dev/./\(name)"] {
+            XCTAssertThrowsError(try SystemProcessRunner(openDevice: { _, _ in
+                XCTFail("An alias must not open another worker"); return -1
+            }).writeToDevice(path: alias, data: Data([0x61]))) { error in
+                guard case ProcessRunnerError.deviceIOFailed(_, EBUSY) = error else {
+                    return XCTFail("Expected busy alias: \(error)")
+                }
+            }
+        }
+        assertNoPTYBytes(tty.master)
+    }
+
     func testBeforeOpenFailureNeverOpensOrCallsOutputPreparation() throws {
         let lockURL = root.appendingPathComponent("writer.lock")
         let runner = SystemProcessRunner(openDevice: { _, _ in
@@ -587,6 +765,22 @@ final class ProcessRunnerTests: XCTestCase {
             }) { _, _ in XCTFail("Injected failure cannot reach prepare"); return nil })
         XCTAssertEqual(calls, 2)
         assertNoPTYBytes(tty.master)
+    }
+
+    private func waitForAdmissionRelease(path: String, lockURL: URL,
+                                         target: TerminalTargetBinding? = nil, emergency: Bool = false,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        let until = DispatchTime.now().uptimeNanoseconds + 1_000_000_000
+        while DispatchTime.now().uptimeNanoseconds < until {
+            do {
+                let painted = try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL,
+                    beforeOpen: nil, target: target, emergency: emergency) { _, _ in nil }
+                XCTAssertFalse(painted, file: file, line: line)
+                return
+            } catch ProcessRunnerError.deviceIOFailed(_, EBUSY) { usleep(1_000) }
+            catch { XCTFail("Admission cleanup failed: \(error)", file: file, line: line); return }
+        }
+        XCTFail("Worker did not release admission", file: file, line: line)
     }
 
     private func publicationFixture(_ tty: (master: Int32, slave: Int32, path: String)) throws

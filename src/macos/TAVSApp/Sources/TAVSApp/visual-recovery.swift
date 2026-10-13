@@ -191,8 +191,11 @@ final class VisualRecovery {
                 }
             }
         }
+        let emergency: Bool
+        if case .emergencyReset = operation { emergency = true } else { emergency = false }
         return try processRunner.writeManagedToDevice(path: target.tty,
-            lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen) { fd, deadline in
+            lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen,
+            target: target.physicalTarget, emergency: emergency) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
             if render != nil || resetTitle != nil {
                 guard let revision = renderRevision,

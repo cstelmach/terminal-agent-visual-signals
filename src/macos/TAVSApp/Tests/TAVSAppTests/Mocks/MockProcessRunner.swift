@@ -13,6 +13,11 @@ final class MockProcessRunner: ProcessRunner {
     private let lock = NSLock()
     private var _writtenDevices: [(String, Data)] = []
     private var _managedCallLog: [(String, URL)] = []
+    private var _managedTargets: [TerminalTargetBinding?] = []
+    var managedTargets: [TerminalTargetBinding?] {
+        lock.lock(); defer { lock.unlock() }
+        return _managedTargets
+    }
     var managedCallLog: [(String, URL)] {
         lock.lock()
         defer { lock.unlock() }
@@ -55,9 +60,11 @@ final class MockProcessRunner: ProcessRunner {
     }
 
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              target: TerminalTargetBinding?, emergency: Bool = false,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         lock.lock()
         _managedCallLog.append((path, lockURL))
+        _managedTargets.append(target)
         lock.unlock()
         if let error = writeError {
             guard let beforeOpen = beforeOpen else { throw error }

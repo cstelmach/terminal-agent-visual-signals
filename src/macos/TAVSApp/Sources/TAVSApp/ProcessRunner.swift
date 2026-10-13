@@ -19,10 +19,17 @@ protocol ProcessRunner: AnyObject {
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
     // beforeOpen may publish metadata under the same original deadline, then release its lock.
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              target: TerminalTargetBinding?, emergency: Bool,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
 }
 
 extension ProcessRunner {
+    func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
+        try writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: beforeOpen, target: nil,
+                                 emergency: false, prepare: prepare)
+    }
+
     func writeManagedToDevice(path: String, lockURL: URL,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: nil, prepare: prepare)
@@ -31,6 +38,14 @@ extension ProcessRunner {
 
 final class SystemProcessRunner: ProcessRunner {
     private let openDevice: (String, Int32) -> Int32
+    private static let admissionLock = NSLock()
+    private static var inFlight = Set<DeviceWriteKey>()
+
+    private struct DeviceWriteKey: Hashable {
+        let path: String
+        let target: TerminalTargetBinding?
+        let emergency: Bool
+    }
 
     init(openDevice: @escaping (String, Int32) -> Int32 = { Darwin.open($0, $1) }) {
         self.openDevice = openDevice
@@ -142,11 +157,14 @@ final class SystemProcessRunner: ProcessRunner {
     }
 
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              target: TerminalTargetBinding?, emergency: Bool = false,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try Self.completeDeviceWrite(path: path) { deadline in
             try self.checkDeviceDeadline(path: path, deadline: deadline)
             try beforeOpen?(deadline)
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            let admission = try Self.admitDevice(path: path, target: target, emergency: emergency)
+            defer { Self.releaseDevice(admission) }
             let device = try self.openNonblockingDevice(path: path, deadline: deadline)
             defer { Darwin.close(device) }
             guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
@@ -211,9 +229,31 @@ final class SystemProcessRunner: ProcessRunner {
     }
 
     private func writeNonblockingToDevice(path: String, data: Data, deadline: UInt64) throws {
+        let admission = try Self.admitDevice(path: path, target: nil, emergency: false)
+        defer { Self.releaseDevice(admission) }
         let descriptor = try openNonblockingDevice(path: path, deadline: deadline)
         defer { Darwin.close(descriptor) }
         try writeToDescriptor(descriptor, path: path, data: data, deadline: deadline)
+    }
+
+    private static func admitDevice(path: String, target: TerminalTargetBinding?,
+                                    emergency: Bool) throws -> DeviceWriteKey {
+        guard target == nil || target?.tty == path else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
+        let key = DeviceWriteKey(path: URL(fileURLWithPath: path).standardizedFileURL.path,
+                                 target: target?.physicalTarget, emergency: emergency)
+        admissionLock.lock(); defer { admissionLock.unlock() }
+        // Reserve one independent reset attempt so a stuck ordinary open cannot exclude recovery.
+        guard !inFlight.contains(where: {
+            $0.path == key.path && $0.emergency == key.emergency
+                && (key.target == nil || $0.target == nil || $0.target == key.target)
+        }) else { throw ProcessRunnerError.deviceIOFailed(path, EBUSY) }
+        inFlight.insert(key)
+        return key
+    }
+
+    private static func releaseDevice(_ key: DeviceWriteKey) {
+        admissionLock.lock(); defer { admissionLock.unlock() }
+        inFlight.remove(key)
     }
 
     private func checkDeviceDeadline(path: String, deadline: UInt64) throws {

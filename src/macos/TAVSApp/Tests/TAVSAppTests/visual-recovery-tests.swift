@@ -959,6 +959,16 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertEqual(restrictions.read(), .suspended)
     }
 
+    func testManagedWriterReceivesPhysicalTargetForSharedAdmission() throws {
+        let plain = try terminal(10), alias = nativeAlias(plain)
+        let runner = MockProcessRunner()
+        runner.writeError = ProcessRunnerError.deviceNotWritable(plain.tty)
+        XCTAssertThrowsError(try recovery(runner: runner).write(.register, to: alias))
+        XCTAssertEqual(runner.managedTargets.count, 1)
+        XCTAssertEqual(runner.managedTargets.first!, plain.physicalTarget)
+        try noBytes(plain)
+    }
+
     func testVanishedCachedOwnerCannotHideLiveUnverifiedRegistryHint() throws {
         let target = try terminal(10)
         try cache(target)
@@ -1162,7 +1172,9 @@ final class VisualRecoveryTests: XCTestCase {
                 producer: target.ttyOwner, deliveryID: "new-standalone", updatedAt: 1_001, background: "#778899")
             do {
                 _ = try self.recovery().write(.ordinary(fresh, synthetic: false, intakeAt: 1_001), to: target)
-                _ = try self.read(target)
+                XCTFail("A busy target must preserve intent without opening another ordinary worker")
+            } catch ProcessRunnerError.deviceIOFailed(_, EBUSY) {
+                XCTAssertEqual(try? self.state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#778899")
             } catch {
                 XCTFail("Standalone publication failed: \(error)"); errno = EIO; return -1
             }
