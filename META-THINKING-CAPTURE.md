@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 15 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 23 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 16 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification  device admission |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 24 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification  device admission |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2428,3 +2428,73 @@ shutdown occurred. The 35-line prior checkpoint moved unchanged; current progres
 covers the first draft and is retained with that scope stated. Resource growth, scheduler
 recomposition, compatibility and required visible/native acceptance remain unresolved. The full
 goal stays active and is not complete.
+
+## 2026-10-13 · gpt-6 (self-reported; variant unverified) · bound-native-device-retries
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported [R]; exact served variant not observed
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879
+  trace: observed tool actions; causal interpretation reconstructed
+
+**Framing [O].** Continue the approved nine-phase organizer/focus goal from its dated package.
+The current slice addressed a verified final-review concern: caller timeout did not stop a stuck
+native open, so each retry could create another worker for the same terminal. The acceptance
+constraint included independent recovery and healthy-target fanout. A deadline alone was not
+accepted as a resource bound. Native Ghostty access remained denied, so dedicated owned PTYs
+and injected open seams supplied source-level verification without controlling user terminals.
+
+**Strategy [O/R].** Source exploration located admission after metadata publication and before
+native I/O. The implementation reused physical bindings and an NSLock-protected process-wide
+set. Metadata retained the original deadline. The design report distinguished repeated same-life
+I/O from a literal global thread cap. No arbitrary capacity value, service or persistent registry
+was added. [R] This choice addresses the demonstrated retry amplification while avoiding a cap
+that could exclude an otherwise healthy terminal after unrelated stuck calls consumed all slots.
+
+**Action trace [O].**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Orient/read | dated SPEC/PLAN/PROGRESS/GOAL and source | Phase 9, not complete |
+| 2 | Red regression | repeated stuck open | five native opens instead of one |
+| 3 | Implement and test | shared physical admission | focused pass, full suite failed |
+| 4 | Inspect failure/source | queued recovery and retained intent | recovery needed its own slot |
+| 5 | Repair tests | exact-slot cleanup, aliases, late bytes | source findings verified |
+| 6 | Verify | 519 Swift, release, 172 isolated Bats | completed before commit |
+| 7 | Commit/record | ca27873, API/bug docs, retained reports | bounded checkpoint |
+
+**Decision points [O].** Admission before metadata would discard newer ordinary background
+intent when output was busy. The callback therefore still runs before admission, within the same
+100 ms budget. Native surface aliases normalize to the physical binding; a newly validated owner
+generation may use a separate lifetime key. Old completion removes only its own key. An initial
+single lane excluded emergency recovery, so the corrected API reserves exactly one reset lane.
+Only emergencyReset selects it, and both lanes retain the same output serialization and fresh
+policy checks. Busy standalone output now explicitly asserts metadata retention and stale-reset
+rejection instead of expecting an additional concurrent ordinary open.
+
+**Failure arcs [O/R].** F1, wrong concurrency model: initial full ZbTOkp reported 14 failures,
+including eight unexpected errors, after focused writer tests passed. The next move was to read
+the affected queued-recovery tests and shared writer rather than hide failures with retries.
+The reserved recovery slot corrected the conflict; final uWrBWe passed all 519 cases. A write
+already holding the output lock can still make recovery partial. That limitation is explicit.
+F2, test synchronization: the source checker showed that an injected open-return semaphore did
+not prove descriptor closure or admission release. A shared token could even belong to another
+open. Cleanup now releases every blocked seam, probes the exact lane until a zero-output request
+succeeds, and checks no late bytes before closing the PTY. The emergency regression releases
+its actual counted opens even when amplification regresses, so failure does not strand workers.
+
+**Verification [O].** Final Swift completed in 9.179 seconds without warnings, release built in
+13.54 seconds, and the rebuilt helper passed 172 isolated shell cases. The source checker ran no
+tests or devices; its report is preserved with that scope. Both production paths were committed
+only after terminal test results returned. Credential scanning and .env ignore passed. No real
+installation, preferences, schedules or user sessions changed. This is not evidence of visible
+Ghostty salience, navigation, arbitrary symlink identity, or a total process worker cap.
+
+**Heuristics and residue [O/R].** P8 adjudicated each source finding and its proposed remedy.
+P9 kept the active dated package authoritative. The finished classification block moved verbatim
+to its existing appendix, with reconstruction equality checked. Retained focus cleanup and other
+material source leads remain open. No new skill promotion is proposed: existing review and
+execution instructions already describe these checks. [R] A reusable candidate is to test the
+recovery path against a resource guard before treating bounded normal-path tests as convergence.

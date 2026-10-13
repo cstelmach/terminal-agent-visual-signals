@@ -282,3 +282,40 @@ growth, wedged-worker admission, scheduler recomposition and compatibility still
 Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the full goal remains active.
 
 > Current work remains in [PROGRESS.md](PROGRESS.md).
+
+
+### Phase 9 recovery classification: 2026-10-13 06:41 CEST
+
+Previous turn was progress: delayed restore correction `47fdf9b`, records `298230a`.
+`5696f4c` resolves the registry reporting defects in Claude M3. Concrete registry hints become
+vanished only after both nil device inspection and positive device-loss evidence. Live, unknown
+or contradictory inspection remains failed and cannot authorize output. Malformed entries have
+individual failures without raw filename retention; whole-registry failure describes its directory.
+An unbound native row still fails beside a restored cached TTY, preserving the SPEC's unknown
+binding contract. Reporting suppresses its redundant registry hint without hiding native failure.
+
+Red `7Ws1xF` reproduced six assertions. The focused source check found that vanished cached owners
+could hide live hints; `fR9LLc` reproduced two assertions. Status-sensitive hint deduplication now
+retains the remaining live/unverified failure, while positive device loss avoids duplicate closure.
+A direct owned-PTY case with contradictory missing metadata also stays failed with no output.
+Six new cases cover these paths; cached healthy restoration continues despite malformed candidates.
+
+Final `0ctU5T` passed 513/513 Swift tests in 8.546 seconds without warnings. Current release
+`uPGEcV` passed in 12.41 seconds; current-helper `nitpAv` passed 172/172 isolated Bats. All used
+tests/run-isolated.sh, explicit helpers, private roots and owned PTYs or mocked metadata.
+The product commit message included the Bats total before its final tool result returned. The
+same confirmed live handle completed successfully on the next poll; this sequencing mistake is
+recorded explicitly. Swift functionality and release were already verified before commit.
+No shell source changed. Backups: /tmp/tavs-recovery-classification-20261013/.
+
+**Scope:** two source modules and one existing recovery test from the Phase 6 path, corrected
+during final Phase 9 review, plus API/bug docs and required state/capture. No new schema, helper
+verb, target synthesis or cleanup deletion. SPEC body and PLAN are fixed. The report produced
+one additional source correction. No native request, Computer Use retry, install/settings change,
+personal schedule edit or user-session shutdown. The prior finished delayed-restore entry moves
+unchanged to the existing Phase 9 appendix with reconstruction equality verified.
+
+**Next:** bound wedged device-worker admission and retained focus cleanup without sacrificing
+healthy-target recovery or losing old effect ownership. Scheduler recomposition and compatibility
+remain material source leads. Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the goal active.
+Required visible/native acceptance remains unverified and cannot be replaced by source tests.

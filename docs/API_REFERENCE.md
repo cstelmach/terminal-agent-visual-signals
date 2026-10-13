@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.16
+Version: 1.17
 
 ## Public recovery commands
 
@@ -83,6 +83,23 @@ No descriptor, desired focus mode or extra cancellation token is serialized.
 and caps the process at ten seconds with bounded pipe draining. `runBounded` remains the
 code-zero-only wrapper with its two-second limit for native catalogue/configuration queries.
 The device writer's separate original 100 ms deadline is unchanged.
+
+Native device admission is shared across runner instances. Validated requests supply the current
+physical binding (TTY, device and continuing owner generation); native aliases share that slot.
+One ordinary operation and one separate emergency-reset operation may remain in flight per
+physical lifetime. Only `VisualRecovery`'s `.emergencyReset` uses the reserved lane. Both still
+acquire the same output lock and revalidate policy and identity before painting. A reset blocked
+by that lock or by device I/O reports a partial failure. Other healthy targets remain independent.
+Admission lasts until the worker actually closes/unlocks and exits, including after caller timeout.
+
+Fresh intent publication and exact-ID cancellation precede admission under the original deadline.
+A busy native slot returns `deviceIOFailed` with `EBUSY` after available metadata is published.
+Thus busy ordinary output retains its latest background without creating another stuck open.
+Raw/unresolved overloads conservatively share a path slot with known lifetimes in the ordinary
+lane. Syntactic path aliases are normalized; arbitrary symlink identity is not established.
+This bounds repeated native I/O for the same lifetime, not every callback worker or all lifetimes
+across a process. The internal overload adds `target` and `emergency`; unresolved callers retain
+the existing signature. No helper payload, persisted schema or command changes are required.
 
 `writeManagedToDevice(path:lockURL:beforeOpen:prepare:)` gives both callbacks the original
 absolute 100 ms deadline. Background requests publish validated intent and the exact continuing

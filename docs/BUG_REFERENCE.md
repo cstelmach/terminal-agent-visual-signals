@@ -1,7 +1,25 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.30
+Version: 1.31
+
+## Repeated timeouts accumulate native device workers
+
+The 100 ms writer deadline returned control while a kernel-stalled open continued on its worker.
+Every later retry could start another open for that same terminal. Process-wide admission now
+retains one ordinary slot for the validated physical lifetime until actual worker cleanup. Native
+aliases share a slot, and an old completion cannot free a different owner's slot after TTY reuse.
+Unresolved/raw requests share normalized path admission with known calls. Available metadata
+publishes before busy rejection, preserving the latest ordinary intent and exact-ID cancellation.
+
+The first implementation also excluded same-process recovery while an ordinary open was held.
+Full-suite failures exposed that conflict. A separate single emergency-reset slot preserves an
+independent recovery attempt with the same output lock, target checks and original deadline.
+Repeated recovery retries cannot multiply that slot. Recovery blocked after open remains partial.
+Owned-PTY tests cover repeated opens, metadata updates, healthy fanout, aliases, lifetime reuse,
+blocked preparation, both lanes and late-output rejection. Cleanup waits for actual slot release,
+not the injected open callback's return. Retained focus cleanup and arbitrary callback/global
+worker limits are separate unresolved review concerns; this correction does not claim those fixed.
 
 ## Recovery misclassifies closed registry hints and hides live hints behind vanished owners
 

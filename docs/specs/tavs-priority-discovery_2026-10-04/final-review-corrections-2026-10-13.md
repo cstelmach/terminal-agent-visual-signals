@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `5696f4c`.
+Current product checkpoint: `ca27873`.
 
 ## Review execution status
 
@@ -203,6 +203,35 @@ the same confirmed live handle then completed successfully. Swift functionality/
 already verified before commit. This sequencing error is retained rather than described as a
 fully completed shell audit at commit time. Backups: /tmp/tavs-recovery-classification-20261013/.
 
+## Repeated native I/O correction (Claude M4, partial)
+
+`ca27873` bounds native I/O admission per validated physical terminal lifetime across runners.
+Admission follows available metadata publication and lasts through actual worker cleanup rather
+than caller timeout. Native aliases share ownership; different validated continuing-owner
+generations do not. Raw/unresolved calls conservatively share normalized path admission.
+Only `.emergencyReset` has a separate reserved slot, so ordinary blocked opens cannot exclude
+same-process recovery. Both lanes retain the existing output lock and original 100 ms deadline.
+
+The [design check](device-admission-design-followup-2026-10-13.md) explains placement and the
+global-cap tradeoff. The [implementation check](device-admission-check-followup-2026-10-13.md)
+found test teardown before actual permit release and raw syntactic alias amplification. Its
+initial inspection predates the recovery lane and final test repairs; follow-up scope is explicit.
+The root verified each issue, added path normalization, exact-slot cleanup probes and late-byte
+assertions, and made the busy intent test assert metadata retention without concurrent output.
+No direct mock delegation is claimed as proof of physical lifetime precision.
+
+Initial full `ZbTOkp` failed 14 assertions after admission also blocked recovery. Final `uWrBWe`
+passed 519/519 Swift tests in 9.179 seconds without warnings. Release `fakLJK` built in 13.54
+seconds, and current-helper `KqB4Iq` passed 172/172 isolated Bats. All completed before commit.
+The guard bounds repeated native operations for one lifetime. Arbitrary metadata callbacks,
+unlimited distinct/reused lifetimes and cross-process workers have no new global bound.
+Retained focus cleanup, the other part of M4, is unresolved; no global thread-cap claim is made.
+
+The last three code slices and their staged records added 61 net production lines and 1,125 net
+process-document lines before this note (18.4:1). Source checks produced the live registry-hint
+fix, raw-path admission correction and worker-cleanup test repair. This is useful defect evidence,
+but documentation growth is high. Keep subsequent reports/progress concise; add no process layer.
+
 ## Remaining adjudication and implementation
 
 The following source findings are verified; execution regressions and fixes remain pending:
@@ -214,7 +243,7 @@ The following source findings are verified; execution regressions and fixes rema
    healthy focus and physical restoration rather than accepting a weaker product behavior.
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize wedged-worker growth
+Prioritize retained focus cleanup
 and post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 
