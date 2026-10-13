@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `689203e`.
+Current product checkpoint: `02708b8`.
 
 ## Review execution status
 
@@ -125,16 +125,41 @@ Focused `yuM9HW` passed 4/4; connected `1jV0wk` passed 169/169 Bats; full `E8VXV
 Swift tests in 7.940 seconds without warnings. The existing current release helper was used;
 no product rebuild was needed for this test-only change. Backups: `/tmp/tavs-priority-tests-20261013/`.
 
+## Unknown-cue correction (Claude M1)
+
+Resolved in `02708b8`. Nil/unsupported coverage preserves cue history. Three-way source
+validation uses the exact native surface and optional captured binding; unavailable data rejects
+new paint and retains its cue, while proven lifetime loss resolves only captured occurrences.
+Independent device/owner/application invalidation is not masked by an unknown producer. The worker
+checks sources even with no outside targets, and final callbacks use the original writer deadline.
+Already proven exits still resolve when a later inspection exceeds the common budget.
+
+The post-save `didRenew` callback distinguishes real metadata renewal from rejected/unaffected
+requests. Global masks renew ownership without painting; rejected predicates cannot refresh it.
+After expiry, restored inspection uses a fresh effect ID and the original cue. Missing renewal
+also displays unavailable state rather than a successful emphasis label.
+
+Initial `eADpHC` reproduced 11 assertions across the reducer and controller. The first fixture
+draft `qcCzhn` failed compilation on immutable coverage and PID types; it is retained separately.
+The [source check](unknown-cue-correction-followup-2026-10-13.md) verified the primary change and
+found positive invalidation masked by unknown metadata plus lost partial results on timeout.
+`x40p68` reproduced the first edge. Exact native-instance validation and collecting independent
+evidence fix it; a dictionary-order-independent timeout regression covers the second. `VgzSe6`
+reproduced three misleading status assertions before the unavailable-state correction.
+
+Final `EhjKGL` passed 507/507 Swift tests in 8.671 seconds without warnings. Current release
+`Zl3ABu` passed in 11.45 seconds; current-helper `LWPlNE` passed 169/169 isolated Bats. New checks
+cover completion/permission gaps, all-High exit resolution, mixed valid/unknown/exited cues,
+prolonged rejected writes, masked renewal, partial deadlines and restored inspection. Heartbeat
+and masked-renewal cases were added after the initial implementation and passed on first execution;
+they are regression coverage, not claimed initial red evidence. Backups: /tmp/tavs-unknown-cues-20261013/.
+No native or visible acceptance is inferred from these source/owned-PTY checks.
+
 ## Remaining adjudication and implementation
 
 The following source findings are verified; execution regressions and fixes remain pending:
 
-1. **Unknown cue data (Claude M1).** The [source follow-up](unknown-coverage-followup-2026-10-13.md)
-   confirms both reducer nil-clearing and final-writer Boolean invalidation. Reuse known-invalid
-   versus unavailable evidence, retaining unknown cues and rejecting uncertain paints. The remedy
-   must also distinguish rejected writes from masked metadata renewal and handle all-High rows
-   where no outside writer predicate executes.
-2. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
+1. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
    proves a finite 24-second sequence with three retired runs and 15 retry jobs. These share one
    revision object, not one descriptor per rollover. Blind replacement by the newest attempted
    ID can lose older ownership. Preserve exact IDs/pins, and verify any bound against partial

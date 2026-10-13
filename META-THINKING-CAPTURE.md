@@ -28,10 +28,10 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 12 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 20 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 13 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 21 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
-| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup |
+| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
 ---
 
@@ -2202,3 +2202,76 @@ reconstruction equality checked. The broader goal remains active.
 
 **Confidence:** Execution results and edits are observed. Strategy and causal interpretation
 are reconstructed. Exact served model attribution and physical terminal acceptance remain unknown.
+
+
+## 2026-10-13 · gpt-6 (variant unverified) · unavailable-cue-correction
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible current tool results
+
+**Framing:** [O] The previous turn completed an isolated test repair. Current state named the
+unknown-cue review finding next, while native acceptance and other source findings remained open.
+The investigation read the reducer, controller, state validator and writer together. Nil coverage
+and a Boolean final check both removed unresolved cues. A reducer-only fix would leave the second
+path intact. The existing target validity enum supplied the required distinction without a new
+availability framework or persisted schema.
+
+**Strategy:** [R] The selected change preserves occurrence history under uncertainty and uses
+positive lifetime evidence to resolve exact captured identities. New painting still requires a
+valid source. Source checks run independently of outside fanout, so all-High catalogues cannot
+bypass exit resolution. The worker has one common inspection deadline; final device checks keep
+the original writer deadline. Metadata renewal is reported at the actual save point because an
+unaffected byte result can mean either rejection or a legitimate global mask.
+
+**Action trace [O]:**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Orient and inspect connected paths | Dated state, retained finding and four source modules | Two loss paths |
+| 2 | Add reducer/controller regressions | Existing tests and owned PTYs | Fixture compile failure |
+| 3 | Repair fixture, run red | Same bounded source tests | Eleven failed assertions |
+| 4 | Implement validity and renewal | Controller, state and writer | Primary checks passed |
+| 5 | Request focused source inspection | Existing explorer, read-only | Two remaining edges found |
+| 6 | Reproduce edges and status | Independent domains and rejected writes | One plus three assertions failed |
+| 7 | Correct and verify | Full Swift, release and current-helper Bats | 507 and 169 passed |
+| 8 | Commit and append records | Product, existing docs and capture | Goal remains incomplete |
+
+**Decision points:** [O] Unknown observations retain both cues and seen-delivery books; restoring
+an old observation therefore cannot rearm acknowledgement or split a permission episode. Valid,
+vanished and unavailable sources coexist: only proven captured snapshots are removed, while a
+valid remaining cue can authorize effects. Checks use the native surface ID even when target
+capture fails, allowing known application lifetime loss to remain distinguishable from missing
+mapping. Renewal callbacks record exact targets under the controller lock and current version.
+Zero fanout never claims renewal. Masked writes retain the effect ID because their metadata
+actually advances; rejected writes rotate after expiry and preserve the cue.
+
+**Failure arcs:** [O] The first fixture tried to mutate immutable coverage and supplied the wrong
+PID type. It failed compilation before product execution. The existing fixture helper gained a
+producer parameter; the repaired tests then reproduced the real reducer/controller failures.
+A read-only source check found that early unknown returns could hide independent lifetime loss,
+and that a later timeout discarded positive results already collected. A runtime assertion
+reproduced the first edge. Validation now accumulates uncertainty while allowing proven loss to
+win; the timeout path retains previously established invalidation. A further regression reproduced
+misleading success text after final-source rejection. Status now exposes missing renewal.
+
+**Heuristics:** [O] P8 recurred through source adjudication and execution before accepting fixes.
+P9 kept the correction in the dated specification state. P11 kept cue producer, continuing owner
+and native application lifetimes separate. No new skill or comparative model claim is proposed.
+The old record book and existing enum were reused instead of adding a journal or control plane.
+
+**Verification:** [O] Final Swift passed 507/507 in 8.671 seconds without warnings; release build
+passed in 11.45 seconds; current-helper isolated Bats passed 169/169. Cases cover unavailable gaps,
+mixed sources, all-High resolution, prolonged rejection, actual masked renewal and partial
+inspection deadlines. The heartbeat cases were added after implementation and initially passed;
+they are regression coverage, not claimed initial red evidence. A finished 31-line checkpoint
+moved unchanged into its existing appendix, with reconstruction equality verified. No native
+Ghostty request, Computer Use retry, installed setting change or user-session shutdown occurred.
+
+**Confidence:** Execution results and source changes are observed; strategy is reconstructed.
+The source report inspected an earlier draft and is retained with that scope stated. Remaining
+review findings and required visible/native acceptance prevent completion of the full goal.

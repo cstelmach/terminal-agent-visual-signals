@@ -173,3 +173,36 @@ starting with unknown-cue lifetime semantics or isolated priority-suite repair. 
 full specification and native acceptance requirements; the master goal remains active.
 
 > Current corrections and open acceptance remain in [PROGRESS.md](PROGRESS.md).
+
+### Phase 9 priority-suite correction: 2026-10-13 04:58 CEST
+
+Continued clean `f8c0950`. Re-read the retained Codex R2 report and verified all three problems
+in the test and connected writer: removed pending-cache assertions, invalid mute reason and
+child environment dropping the explicit helper. The repaired suite inherits private roots and
+the source-built helper, uses owned PTYs, and keeps both independent targets live together.
+It verifies latest typed intent/delivery, pause precedence, replacement rather than history,
+fresh output after resumption without title/bell replay, and the child's environment/controlling TTY.
+Private byte captures and failed logs survive in the wrapper root. No product source was changed.
+
+After isolation repair, legacy `TKNLLK` failed three removed-cache assertions and rejected its
+regular-file targets. This is obsolete-test evidence, not a newly reproduced product defect.
+Owned-PTY drafts `CZFUqp`, `pKXRWf` and `DLscOe` failed two checks that confused BEL-terminated
+OSC with audible bells. Retained captures identified the mistake; complete OSC sequences are
+now removed before testing for standalone bells. Focused `yuM9HW` passed 4/4. Connected `1jV0wk`
+passed 169/169 Bats across the 15 audited files. Full `E8VXVU` passed 500/500 Swift tests in
+7.940 seconds without warnings. All runs used tests/run-isolated.sh and the current release
+helper. The test-only change needs no new product release build. Backup: /tmp/tavs-priority-tests-20261013/.
+
+**Scope:** one existing integration test named by the isolation plan, plus bug/adjudication docs,
+this appended state and required capture. SPEC body, PLAN, product APIs and production behavior
+remain fixed. Codex R2 / Claude M7 is resolved. No new provider review, live Ghostty request,
+Computer Use retry, installed app change, personal schedule/preference edit or user-session stop.
+The previous finished review/closure block moves unchanged to the existing Phase 9 appendix,
+with a verified round trip, to retain orientation below 900 lines.
+
+**Next:** reproduce and correct Claude M1's unknown-cue loss, rejected-write heartbeat and
+all-High source-resolution paths in one bounded slice. Cleanup growth, delayed synthetic
+side effects, recovery classification and scheduler recomposition still need verification/fixes.
+Phases 2/7/8 remain Blocked on native acceptance; Phase 9 remains In Progress and the goal active.
+
+> Current corrections remain in [PROGRESS.md](PROGRESS.md).

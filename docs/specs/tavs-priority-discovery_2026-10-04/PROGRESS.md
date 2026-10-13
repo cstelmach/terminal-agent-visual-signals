@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 04:58 CEST
-**Version:** 4.1
+**Last Updated:** 2026-10-13 05:29 CEST
+**Version:** 4.2
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 689203e; earlier hashes below/appendix | 500 Swift; 169 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 02708b8; earlier hashes below/appendix | 507 Swift; 169 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -850,33 +850,43 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished review/empty-catalogue checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 priority-suite correction: 2026-10-13 04:58 CEST
+### Phase 9 priority-suite correction
 
-Continued clean `f8c0950`. Re-read the retained Codex R2 report and verified all three problems
-in the test and connected writer: removed pending-cache assertions, invalid mute reason and
-child environment dropping the explicit helper. The repaired suite inherits private roots and
-the source-built helper, uses owned PTYs, and keeps both independent targets live together.
-It verifies latest typed intent/delivery, pause precedence, replacement rather than history,
-fresh output after resumption without title/bell replay, and the child's environment/controlling TTY.
-Private byte captures and failed logs survive in the wrapper root. No product source was changed.
+> Finished isolated-test repair: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-After isolation repair, legacy `TKNLLK` failed three removed-cache assertions and rejected its
-regular-file targets. This is obsolete-test evidence, not a newly reproduced product defect.
-Owned-PTY drafts `CZFUqp`, `pKXRWf` and `DLscOe` failed two checks that confused BEL-terminated
-OSC with audible bells. Retained captures identified the mistake; complete OSC sequences are
-now removed before testing for standalone bells. Focused `yuM9HW` passed 4/4. Connected `1jV0wk`
-passed 169/169 Bats across the 15 audited files. Full `E8VXVU` passed 500/500 Swift tests in
-7.940 seconds without warnings. All runs used tests/run-isolated.sh and the current release
-helper. The test-only change needs no new product release build. Backup: /tmp/tavs-priority-tests-20261013/.
+### Phase 9 unknown-cue correction: 2026-10-13 05:29 CEST
 
-**Scope:** one existing integration test named by the isolation plan, plus bug/adjudication docs,
-this appended state and required capture. SPEC body, PLAN, product APIs and production behavior
-remain fixed. Codex R2 / Claude M7 is resolved. No new provider review, live Ghostty request,
-Computer Use retry, installed app change, personal schedule/preference edit or user-session stop.
-The previous finished review/closure block moves unchanged to the existing Phase 9 appendix,
-with a verified round trip, to retain orientation below 900 lines.
+Previous turn was progress: priority-suite repair `5760baf` passed current isolated checks.
+`02708b8` resolves Claude M1's nil coverage and Boolean-source cue loss. Unknown coverage retains
+cue books, permission episodes and acknowledgement. Exact native/producer/device validation
+distinguishes unavailable from vanished, checks all-High catalogues before fanout, and rejects
+uncertain paints within the original final-writer deadline. Only proven captured snapshots resolve.
+Independent positive lifetime evidence survives unknown metadata and a later inspection timeout.
 
-**Next:** reproduce and correct Claude M1's unknown-cue loss, rejected-write heartbeat and
-all-High source-resolution paths in one bounded slice. Cleanup growth, delayed synthetic
-side effects, recovery classification and scheduler recomposition still need verification/fixes.
-Phases 2/7/8 remain Blocked on native acceptance; Phase 9 remains In Progress and the goal active.
+Real focus metadata renewal now reports through a post-save callback. Rejected/unaffected writes
+cannot claim heartbeat renewal; global masks still renew. After more than six seconds without
+renewal, restored inspection uses a fresh effect ID without inventing a cue. Missing renewal
+displays unavailable status. Multiple sources retain unknown cues and continue through a valid one.
+
+Initial fixture `qcCzhn` did not compile (immutable coverage/PID types); fixed before execution.
+Red `eADpHC` reproduced 11 assertions across 41 reducer/controller tests. Read-only follow-up
+identified positive loss hidden by early unknown returns and partial results dropped on timeout;
+`x40p68` reproduced the first edge. Both are corrected, with an ordering-independent partial-timeout
+case. Status red `VgzSe6` failed three assertions before the unavailable-label correction.
+The prolonged-rejection and global-mask cases passed when added after implementation; they are
+not initial red evidence. Final `EhjKGL` passed 507/507 Swift tests in 8.671 seconds without warnings.
+Release `Zl3ABu` passed in 11.45 seconds; current-helper `LWPlNE` passed 169/169 isolated Bats.
+All used tests/run-isolated.sh, private roots and owned PTYs. No new shell file needed syntax checks.
+Backups: /tmp/tavs-unknown-cues-20261013/. Full source follow-up and adjudication are retained here.
+
+**Scope:** four connected source files, three existing test files and API/bug/roadmap updates.
+The focus request callback is the necessary Phase 9 connection to the existing Phase 8 writer;
+no new persisted schema, helper verb, agent hook or adapter. SPEC body and PLAN remain fixed.
+No installed app/settings change, user-session shutdown, live Ghostty request or Computer Use retry.
+The finished priority-suite checkpoint moves unchanged into the existing Phase 9 appendix with
+a reconstruction check. Required capture is appended; native acceptance remains unverified.
+
+**Next:** reproduce and remove delayed synthetic processing side effects after a newer Stop.
+Cleanup growth, wedged-worker admission, recovery classification and post-recovery scheduler
+recomposition remain source leads to verify/fix. Phases 2/7/8 stay Blocked, Phase 9 In Progress.
+The complete goal remains active; source tests do not replace required visible/native acceptance.
