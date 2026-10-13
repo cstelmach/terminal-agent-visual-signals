@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 23:21 CEST
-**Version:** 4.22
+**Last Updated:** 2026-10-13 23:36 CEST
+**Version:** 4.23
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 7600aed, 5cdf49b; earlier below/appendix | 64 portable; 561 Swift; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 1a914a7, b805282; earlier below/appendix | 76 portable; 561 Swift; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -879,3 +879,5 @@ Earlier historical failure causes, color freshness, actual Linux and native acce
 Phases 2/7/8 remain Blocked on native cases; Phase 9 and the full goal remain active/incomplete.
 
 > [Intent publication checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
+
+> [Ordinary transaction checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.

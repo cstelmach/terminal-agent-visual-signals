@@ -654,3 +654,30 @@ integration. Preserve operation-specific stale versus storage failures at the he
 Actual Linux/namespace-device proof and native acceptance remain unverified. Earlier historical
 failure attribution and color freshness are still open. Phases 2/7/8 stay Blocked; 9 and the full
 goal remain active/incomplete.
+
+### Phase 9 portable ordinary transaction: 2026-10-13 23:36 CEST
+
+`1a914a7` shares the original lock/deadline with pre-open publication and post-write completion;
+`b805282` assembles ordinary rendering. Before open it pins recovery revision and retains intent
+under the per-TTY lock. Under that same lock after open it revalidates/re-publishes frozen context,
+checks actual target/ownership, recomposes current background and emits only finite current style.
+Residual global effects reset legacy palette/foreground first. Live native control refuses paint.
+Obsolete snapshots cancel after complete output, preserving retry work on failed writes. This is
+a deliberate difference from native pre-output cancellation, verified by retry and changed-record
+cases. Callback failure preserves known delivered-byte counts and the original 100 ms budget.
+Initial reds UeqMyv/pu6NAN: missing interfaces/module. CBXR3V: 10 worker checks; NeBG2B: six actual
+owned Mac PTY cases. 226r9z: 74/74; final yXsIbe: 76/76 in 1.912 seconds after two source-review
+suggestions. mssSCZ: 561/561 Swift tests, 10.455 seconds. Syntax/staged checks pass. PTY cases prove
+before-open retention, current bytes, live-preview refusal, global/preview restoration, retry,
+synthetic identity/bell handling, recovery during open and changed-record protection. They do
+not establish Ghostty visual salience, Spaces or native pane navigation.
+Full review and parent evidence are retained in
+[transaction source checks](portable-render-transaction-source-check-2026-10-13.md).
+**Scope:** Approved H1 extension, worker lock/completion reuse, one renderer and shared owned-PTY
+fixture. No new runtime schema, control plane, capability or hook routing. No app/VM/container
+launch, production install or personal-state action. All terminated actors/workers were owned.
+Next: forced-reset orphan authority, reconcile and remaining helper context/intake/observation
+verbs, then resolver/delivery/sync integration. Keep native selection preferred and never switch
+after a failed selected native operation. Validate Linux namespace/device scope before support.
+Native physical acceptance, prior failure attribution and color freshness remain open. Phases
+2/7/8 stay Blocked; Phase 9 and the full goal remain active/incomplete.
