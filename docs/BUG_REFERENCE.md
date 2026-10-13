@@ -1,7 +1,21 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.27
+Version: 1.28
+
+## Automatic focus loses cues when coverage is temporarily unavailable
+
+The reducer cleared nil coverage, and a Boolean final-source check acknowledged every captured
+cue when none could be verified. Unavailable process data therefore erased unresolved attention.
+An all-High catalogue skipped the writer predicate entirely, retaining known exits. Unaffected
+write results also advanced the heartbeat without proving metadata renewal, risking expired-ID
+reuse after recovery. The reducer now preserves unknown cues and occurrence history. Source
+validation distinguishes unavailable from positively vanished lifetimes, checks before fanout
+and at final output, and resolves only exact proven snapshots. Independent positive evidence
+survives uncertainty or a later inspection timeout. A post-save callback reports real renewal,
+including globally masked focus; rejected writes do not extend ownership. Status exposes missing
+renewal. Regressions cover gaps, permission episodes, mixed sources, all-High catalogues,
+prolonged rejection, masked renewal and deadline ordering with private roots and owned PTYs.
 
 ## Priority integration tests select the installed helper and require removed replay files
 

@@ -37,7 +37,7 @@ struct AttentionState {
             guard let record = sample.observation, record.verifiedAgent,
                   ["claude", "codex"].contains(record.provider),
                   let producer = record.producer, let device = record.device else {
-                cues[surface] = nil
+                // Missing coverage is not evidence of resolution; the controller checks exact cue lifetimes.
                 continue
             }
             var book: Book

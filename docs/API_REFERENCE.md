@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.13
+Version: 1.14
 
 ## Public recovery commands
 
@@ -126,13 +126,26 @@ Sessions/menu expose Automatic Focus, per-row cue counts and completion-only ack
 
 `TerminalFocusRequest.isCurrent` receives the original writer deadline at each final guard.
 Automatic revalidates at least one actual cue producer and its captured native binding through
-`isCurrentAttentionSource`, without taking another TTY's coverage lock. Producer generation,
-controlling device and target lifetime must still match. Currency is checked again after lookup.
-If no source is valid, queued painting is rejected and exact-ID cleanup releases prior effects
-while Automatic stays armed. Deadline failure rejects output without resolving a cue.
+`validateAttentionSource`, without taking another TTY's coverage lock. This returns valid,
+vanished or unavailable for the exact cue, native surface and optional captured target. Missing
+inspection preserves its cue; known process/device/application reuse or exit resolves only the
+captured occurrences. Positive loss in one domain is not hidden by uncertainty in another.
+Currency and the original deadline are checked again after lookup. If no source is valid, new
+painting is rejected while unavailable cues remain. Already proven exits are resolved even if
+a later source inspection times out. An independent worker preflight checks all-High catalogues,
+with one shared 100 ms inspection deadline; it creates no nested device-writer allowance.
+Restoring an unchanged observation cannot replay an acknowledged occurrence or end its episode.
+
+`TerminalFocusRequest.didRenew` reports actual metadata publication under the writer lock.
+The controller advances its common heartbeat only after every intended mapped target renews
+and no write fails. Rejected predicates and zero-target fanout do not renew. A global mask may
+hide bytes while still renewing metadata. More than six seconds without renewal rotates the
+effect ID on the next catalogue, preserving the attention cue. Unrenewed effects are reported
+as unavailable instead of being described as successfully emphasized.
 Persisted focus recipes contain no cue actor; later ordinary composition relies on the accepted
 lease and controller refresh/cleanup. No new cue registry or event journal was added.
-Native automatic salience and active-cue UI acceptance remain unverified; final reviews are due.
+Native automatic salience and active-cue UI acceptance remain unverified. Final source reviews
+are complete; their remaining material corrections are tracked in the dated research package.
 
 ## Manual focus (Phase 8 source verified)
 

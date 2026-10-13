@@ -168,14 +168,41 @@ final class TerminalVisualStateStore {
         return .valid
     }
 
-    func isCurrentAttentionSource(_ cue: AttentionOccurrence, target: TerminalTargetBinding,
-                                  deadline: UInt64) throws -> Bool {
+    func validateAttentionSource(_ cue: AttentionOccurrence, surface: GhosttySurfaceID,
+                                 target: TerminalTargetBinding?, deadline: UInt64) throws -> TerminalTargetValidation {
         try checkDeadline(deadline)
-        guard target.nativeSurface != nil, target.tty == cue.tty, target.device == cue.device else { return false }
-        let valid = validateTarget(target) == .valid
-            && validProducer(tty: cue.tty, device: cue.device, producer: cue.producer)
+        let status: TerminalTargetValidation = {
+            guard Self.concreteTTY(cue.tty) else { return .unavailable }
+            var unavailable = false
+            if let producer = lookup(cue.producer.pid) {
+                guard producer.generation == cue.producer, producer.device == cue.device else { return .vanished }
+            } else {
+                if processMissing(cue.producer.pid) { return .vanished }
+                unavailable = true
+            }
+            if let number = device(cue.tty) {
+                guard number == cue.device else { return .vanished }
+            } else {
+                if deviceMissing(cue.tty) { return .vanished }
+                unavailable = true
+            }
+            if let application = lookup(surface.application.pid) {
+                guard application.generation == surface.application else { return .vanished }
+            } else {
+                if processMissing(surface.application.pid) { return .vanished }
+                unavailable = true
+            }
+            guard let target = target, target.nativeSurface == surface else { return .unavailable }
+            guard target.tty == cue.tty, target.device == cue.device else { return .vanished }
+            switch validateTarget(target) {
+            case .vanished: return .vanished
+            case .unavailable: unavailable = true
+            case .valid: break
+            }
+            return unavailable ? .unavailable : .valid
+        }()
         try checkDeadline(deadline)
-        return valid
+        return status
     }
 
     // Global lock/mute policy must be recomputed separately; it is not a selective lease.

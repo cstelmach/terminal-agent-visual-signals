@@ -10,6 +10,7 @@ final class FocusControllerTests: XCTestCase {
     private var restrictions: VisualRestrictionsStateStore!
     private var recovery: VisualRecovery!
     private var identities: [Int32: ProcessIdentity] = [:]
+    private var missingProcesses = Set<Int32>()
     private var ptys: [(master: Int32, slave: Int32, path: String)] = []
     private var subscriptions = Set<AnyCancellable>()
     private func generation(_ pid: Int32) -> ProcessGeneration {
@@ -25,8 +26,13 @@ final class FocusControllerTests: XCTestCase {
             identities[pid] = ProcessIdentity(generation: generation(pid), parentPID: 1,
                 group: UInt32(pid), device: UInt32.max, foregroundGroup: UInt32(pid))
         }
-        state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock, lookup: { self.identities[$0] })
         restrictions = VisualRestrictionsStateStore(url: root.appendingPathComponent("visual-restrictions.state"))
+        configureState()
+    }
+
+    private func configureState(lookup: ((Int32) -> ProcessIdentity?)? = nil) {
+        state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock,
+            lookup: lookup ?? { self.identities[$0] }, processMissing: { self.missingProcesses.contains($0) })
         recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
                 lockURL: root.appendingPathComponent("lock.state"), clock: clock),
@@ -85,9 +91,9 @@ final class FocusControllerTests: XCTestCase {
         wait(for: [done], timeout: 2)
     }
 
-    private func attention(_ row: GhosttySurface, _ delivery: String) -> TerminalVisualCoverage {
+    private func attention(_ row: GhosttySurface, _ delivery: String, producer: Int32? = nil) -> TerminalVisualCoverage {
         TerminalVisualCoverage(observation: TerminalObservation(tty: row.tty!,
-            device: identities[row.foregroundPID!]!.device, producer: generation(row.foregroundPID!),
+            device: identities[row.foregroundPID!]!.device, producer: generation(producer ?? row.foregroundPID!),
             provider: "claude", verifiedAgent: true, state: "complete", event: "Stop",
             deliveryID: delivery, observedAt: clock.now().timeIntervalSince1970),
             intent: nil, attentionEligible: true, status: "Test correlated completion")
@@ -264,6 +270,7 @@ final class FocusControllerTests: XCTestCase {
         let cleared = expectation(description: "Invalid source cleanup completed")
         focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
         identities.removeValue(forKey: 10)
+        missingProcesses.insert(10)
         XCTAssertEqual(state.validateTarget(binding), .valid)
         release.signal()
         let drained = expectation(description: "Cue source checked after lookup")
@@ -273,6 +280,186 @@ final class FocusControllerTests: XCTestCase {
         var ready = pollfd(fd: ptys[2].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
         focus.focusOff()
+    }
+
+    func testUnavailableCueSourceRetainsSnapshotAndCannotAuthorizeDimming() throws {
+        let a = try surface(10), b = try surface(20)
+        let producer = ProcessIdentity(generation: generation(11), parentPID: 10,
+            group: 10, device: identities[10]!.device, foregroundGroup: 10)
+        identities[11] = producer
+        let focus = controller(MockTimerScheduler())
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        let sample = attention(a,"cue", producer: 11)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        _ = try read(1)
+        let captured = focus.cueSnapshot(for: a.id)
+        identities[11] = nil
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [:]); awaitManual(focus)
+        XCTAssertEqual(focus.cueSnapshot(for: a.id), captured)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        identities[11] = producer
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        XCTAssertEqual(focus.cueSnapshot(for: a.id), captured)
+        _ = try read(1)
+        focus.focusOff(); _ = try read(1)
+    }
+
+    func testAllHighCatalogueResolvesOnlyConfirmedExitedCueWithoutDeviceFanout() throws {
+        let a = try surface(10), b = try surface(20)
+        for (pid,owner) in [(Int32(11),Int32(10)),(Int32(21),Int32(20))] {
+            identities[pid] = ProcessIdentity(generation: generation(pid), parentPID: UInt32(owner),
+                group: UInt32(owner), device: identities[owner]!.device, foregroundGroup: UInt32(owner))
+        }
+        let queue = DispatchQueue(label: "automatic.all-high")
+        let focus = controller(MockTimerScheduler(), queue: queue)
+        focus.enableAutomatic(rows: [a,b], high: [a.id,b.id], coverage: [:]); clock.advance(by: 1)
+        let first = attention(a,"one", producer: 11), second = attention(b,"two", producer: 21)
+        focus.acceptCatalogue([a,b], high: [a.id,b.id], coverage: [a.id: first,b.id: second]); awaitManual(focus)
+        let retained = focus.cueSnapshot(for: b.id)
+        identities[11] = nil; missingProcesses.insert(11); identities[21] = nil
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id,b.id], coverage: [a.id: first,b.id: second])
+        let drained = expectation(description: "All-High source checks and resolution returned")
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }; wait(for: [drained], timeout: 2)
+        XCTAssertTrue(focus.cueSnapshot(for: a.id).isEmpty)
+        XCTAssertEqual(focus.cueSnapshot(for: b.id), retained)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        for tty in ptys {
+            var ready = pollfd(fd: tty.master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        focus.focusOff()
+        let finished = expectation(description: "Unknown retained source worker drained")
+        queue.async { DispatchQueue.main.async { finished.fulfill() } }; wait(for: [finished], timeout: 2)
+    }
+
+    func testRejectedFinalSourceChecksCannotRenewHeartbeatOrReuseExpiredEffect() throws {
+        let a = try surface(10), b = try surface(20)
+        identities[11] = ProcessIdentity(generation: generation(11), parentPID: 10,
+            group: 10, device: identities[10]!.device, foregroundGroup: 10)
+        var rejectFinal = false, inspections = 0
+        configureState(lookup: { pid in
+            if pid == 11 {
+                inspections += 1
+                if rejectFinal && inspections > 1 { return nil }
+            }
+            return self.identities[pid]
+        })
+        let focus = controller(MockTimerScheduler())
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        let sample = attention(a,"cue", producer: 11)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        _ = try read(1)
+        let captured = focus.cueSnapshot(for: a.id), target = try XCTUnwrap(state.captureTarget(for: b))
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        rejectFinal = true
+        for _ in 1...3 {
+            inspections = 0; clock.advance(by: 2)
+            focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+            XCTAssertEqual(focus.cueSnapshot(for: a.id), captured)
+            XCTAssertTrue(focus.focusStatus.contains("unavailable"))
+            XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max), original)
+            var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        rejectFinal = false; inspections = 0; clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        let fresh = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(fresh.effectID, original.effectID)
+        XCTAssertEqual(fresh.heartbeatAt, clock.now().timeIntervalSince1970)
+        XCTAssertEqual(focus.cueSnapshot(for: a.id), captured)
+        XCTAssertTrue(focus.focusStatus.contains("0 failed"))
+        _ = try read(1); focus.focusOff(); _ = try read(1)
+    }
+
+    func testMixedCueSourcesRemoveOnlyKnownExitAndContinueThroughAnotherValidSource() throws {
+        let a = try surface(10), b = try surface(20), c = try surface(30), d = try surface(40)
+        for owner: Int32 in [10,20,30] {
+            identities[owner+1] = ProcessIdentity(generation: generation(owner+1), parentPID: UInt32(owner),
+                group: UInt32(owner), device: identities[owner]!.device, foregroundGroup: UInt32(owner))
+        }
+        let focus = controller(MockTimerScheduler()), rows = [a,b,c,d], high: Set = [a.id,b.id,c.id]
+        focus.enableAutomatic(rows: rows, high: high, coverage: [:]); clock.advance(by: 1)
+        let coverage = [a.id: attention(a,"one", producer: 11), b.id: attention(b,"two", producer: 21),
+            c.id: attention(c,"three", producer: 31)]
+        focus.acceptCatalogue(rows, high: high, coverage: coverage); awaitManual(focus); _ = try read(3)
+        let second = focus.cueSnapshot(for: b.id), third = focus.cueSnapshot(for: c.id)
+        identities[11] = nil; missingProcesses.insert(11); identities[21] = nil
+        clock.advance(by: 2)
+        focus.acceptCatalogue(rows, high: high, coverage: coverage); awaitManual(focus)
+        XCTAssertTrue(focus.cueSnapshot(for: a.id).isEmpty)
+        XCTAssertEqual(focus.cueSnapshot(for: b.id), second)
+        XCTAssertEqual(focus.cueSnapshot(for: c.id), third)
+        _ = try read(3)
+        focus.acknowledge(third, for: c.id); awaitManual(focus)
+        XCTAssertEqual(focus.cueSnapshot(for: b.id), second)
+        var ready = pollfd(fd: ptys[3].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.focusOff(); _ = try read(3)
+    }
+
+    func testInspectionDeadlineStillResolvesAlreadyProvenExitAndRetainsOtherCue() throws {
+        let a = try surface(10), b = try surface(20)
+        for owner: Int32 in [10,20] {
+            identities[owner+1] = ProcessIdentity(generation: generation(owner+1), parentPID: UInt32(owner),
+                group: UInt32(owner), device: identities[owner]!.device, foregroundGroup: UInt32(owner))
+        }
+        var exited: Int32?, expired = false
+        configureState(lookup: { pid in
+            if pid == 11 || pid == 21 {
+                if exited == nil {
+                    exited = pid; self.missingProcesses.insert(pid); return nil
+                }
+                if pid == exited { return nil }
+                if !expired { expired = true; Thread.sleep(forTimeInterval: 0.11) }
+            }
+            return self.identities[pid]
+        })
+        let queue = DispatchQueue(label: "automatic.partial-deadline"), focus = controller(MockTimerScheduler(), queue: queue)
+        focus.enableAutomatic(rows: [a,b], high: [a.id,b.id], coverage: [:]); clock.advance(by: 1)
+        let resolved = expectation(description: "Only previously proven exit was resolved")
+        focus.$attentionCues.first { $0.count == 1 }.sink { _ in resolved.fulfill() }.store(in: &subscriptions)
+        focus.acceptCatalogue([a,b], high: [a.id,b.id], coverage: [a.id: attention(a,"one", producer: 11),
+            b.id: attention(b,"two", producer: 21)])
+        wait(for: [resolved], timeout: 2)
+        XCTAssertTrue(expired)
+        let dead = exited == 11 ? a : b, retained = exited == 11 ? b : a
+        XCTAssertTrue(focus.cueSnapshot(for: dead.id).isEmpty)
+        XCTAssertEqual(focus.cueSnapshot(for: retained.id).count, 1)
+        focus.focusOff()
+        let drained = expectation(description: "Deadline and follow-up workers drained")
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }; wait(for: [drained], timeout: 2)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+    }
+
+    func testGlobalMaskedFocusRenewsItsMetadataWithoutRotatingTheEffect() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        let sample = attention(a,"cue")
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        try "MUTED=\"true\"\nREASON=\"quiet_period\"\nUNTIL_EPOCH=\"0\"\nWRITTEN_EPOCH=\"1001\"\nAPP_PID=\"\(getpid())\"\nSCHEMA_VERSION=\"1\"\n"
+            .write(to: root.appendingPathComponent("mute.state"), atomically: true, encoding: .utf8)
+        for _ in 1...4 {
+            clock.advance(by: 2)
+            focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+            let renewed = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+            XCTAssertEqual(renewed.effectID, original.effectID)
+            XCTAssertEqual(renewed.heartbeatAt, clock.now().timeIntervalSince1970)
+            var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        try "MUTED=\"false\"\nSCHEMA_VERSION=\"1\"\n".write(to: root.appendingPathComponent("mute.state"),
+            atomically: true, encoding: .utf8)
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.effectID, original.effectID)
+        _ = try read(1); focus.focusOff(); _ = try read(1)
     }
 
     func testFocusOffDuringFinalCueMetadataCheckPreventsLatePaint() throws {

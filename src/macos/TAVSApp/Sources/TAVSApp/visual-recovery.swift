@@ -15,6 +15,7 @@ struct TerminalFocusRequest {
     let colors: TerminalRenderer.Colors
     let revision: VisualRestrictionsRevision
     let isCurrent: (UInt64) -> Bool
+    var didRenew: (TerminalTargetBinding) -> Void = { _ in }
 }
 
 enum ManagedVisualOperation {
@@ -268,6 +269,7 @@ final class VisualRecovery {
                 try self.cancelEffects(effects.filter { $0.kind == .focus
                     && ($0.effectID != effect.effectID || $0.controller != effect.controller) }, deadline: deadline)
                 try self.state.saveEffectUnlocked(effect, deadline: deadline)
+                request.didRenew(target)
                 if rule != nil { return nil }
                 effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }

@@ -115,12 +115,32 @@ final class AttentionStateTests: XCTestCase {
         XCTAssertEqual(state.cues.count, 1)
     }
 
-    func testInvalidBindingAndClosureClearCuesWithoutReplayingAnOldRecord() {
+    func testUnavailableCoveragePreservesCueAndAcknowledgementWithoutReplay() {
         var state = AttentionState(coverage: [:], high: [surface()], enabledAt: 1_000)
         let done = observation("done", time: 1_001)
-        update(&state, done); update(&state, nil); update(&state, done)
+        update(&state, done); let captured = state.snapshot(for: surface())
+        update(&state, nil)
+        XCTAssertEqual(state.snapshot(for: surface()), captured)
+        update(&state, done)
+        XCTAssertEqual(state.snapshot(for: surface()), captured)
+        state.acknowledge(captured, for: surface())
+        update(&state, nil); update(&state, done)
         XCTAssertTrue(state.cues.isEmpty)
         update(&state, observation("new", time: 1_002)); state.update([:], high: [])
+        XCTAssertTrue(state.cues.isEmpty)
+    }
+
+    func testUnavailablePermissionCoverageDoesNotEndOrRearmItsEpisode() {
+        var state = AttentionState(coverage: [:], high: [surface()], enabledAt: 1_000)
+        update(&state, observation("request", time: 1_001, state: "permission", event: "PermissionRequest"))
+        let captured = state.snapshot(for: surface())
+        update(&state, nil)
+        XCTAssertEqual(state.snapshot(for: surface()), captured)
+        update(&state, observation("companion", time: 1_002, state: "permission", event: "permission_prompt"))
+        XCTAssertEqual(state.snapshot(for: surface()), captured)
+        state.acknowledge(captured, for: surface())
+        update(&state, nil)
+        update(&state, observation("late", time: 1_003, state: "permission", event: "PermissionRequest"))
         XCTAssertTrue(state.cues.isEmpty)
     }
 

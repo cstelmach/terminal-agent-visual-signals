@@ -249,19 +249,24 @@ final class FocusController: ObservableObject {
         focusStatus = mode == .automatic ? "Preparing automatic focus." : "Preparing manual focus."
         queue.async { [weak self] in
             guard let self = self else { return }
-            let result: Result<(Int, Int, [VisualRecoveryItem]), Error> = Result {
+            let result: Result<(Int, Int, [VisualRecoveryItem], Bool), Error> = Result {
                 guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else {
                     throw VisualRecoveryError.policyChanged
                 }
+                let sourceDeadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
+                let sources = rows.reduce(into: [GhosttySurfaceID: TerminalTargetBinding]()) { targets, row in
+                    if cues?[row.id] != nil, let target = self.state.captureTarget(for: row) { targets[row.id] = target }
+                }
+                if let cues = cues,
+                   !self.automaticSourcesCurrent(cues, targets: sources, run: run, version: version,
+                       deadline: sourceDeadline) {
+                    throw VisualRecoveryError.targetUnavailable
+                }
+                let outside = rows.filter { !ids.contains($0.id) }
+                guard !outside.isEmpty else { return (0, 0, [], false) }
                 guard rows.contains(where: { ids.contains($0.id) && self.state.captureTarget(for: $0) != nil }) else {
                     throw VisualRecoveryError.targetUnavailable
                 }
-                let sources = cues?.flatMap { id, values -> [(AttentionOccurrence, TerminalTargetBinding)] in
-                    guard let row = rows.first(where: { $0.id == id }), let target = self.state.captureTarget(for: row) else { return [] }
-                    guard let cue = values.first else { return [] }
-                    return [(cue, target)]
-                }
-                let outside = rows.filter { !ids.contains($0.id) }
                 guard Set(rows.map { $0.id.application }).count == 1, let instance = rows.first?.id.application else {
                     throw VisualRecoveryError.targetUnavailable
                 }
@@ -270,32 +275,37 @@ final class FocusController: ObservableObject {
                 let targets = outside.compactMap { self.state.captureTarget(for: $0) }
                 self.lock.lock()
                 let accepted = self.manual === run && run.version == version
-                if accepted { run.targets = Array(Set(run.targets + targets)) }
+                if accepted {
+                    run.targets = Array(Set(run.targets + targets))
+                    run.renewedTargets.removeAll()
+                }
                 self.lock.unlock()
                 guard accepted else { throw VisualRecoveryError.policyChanged }
                 let request = TerminalFocusRequest(effectID: run.id, heartbeatAt: at, colors: colors,
                     revision: run.revision, isCurrent: { [weak self] deadline in
                         guard let self = self else { return false }
                         guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else { return false }
-                        if let sources = sources, let cues = cues {
-                            do {
-                                if try !sources.contains(where: { try self.state.isCurrentAttentionSource($0.0, target: $0.1, deadline: deadline) }) {
-                                    self.invalidateAutomaticSources(cues, run: run, version: version)
-                                    return false
-                                }
-                            } catch { return false }
+                        if let cues = cues,
+                           !self.automaticSourcesCurrent(cues, targets: sources, run: run,
+                               version: version, deadline: deadline) {
+                            return false
                         }
                         return self.matchesManual(run, version: version)
                             && self.clock.now().timeIntervalSince1970 <= at + 6
+                    }, didRenew: { [weak self] target in
+                        guard let self = self else { return }
+                        self.lock.lock(); defer { self.lock.unlock() }
+                        if self.manual === run && run.version == version { run.renewedTargets.insert(target) }
                     })
                 let items = self.recovery.apply(.focus(request), to: targets)
                 self.lock.lock()
-                if self.manual === run && run.version == version && targets.count == outside.count
+                let renewed = !targets.isEmpty && targets.count == outside.count && Set(targets) == run.renewedTargets
+                if self.manual === run && run.version == version && renewed
                     && !items.contains(where: { $0.status == .failed }) {
                     run.lastHeartbeat = at
                 }
                 self.lock.unlock()
-                return (targets.count, outside.count, items)
+                return (targets.count, outside.count, items, renewed)
             }
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
@@ -304,14 +314,20 @@ final class FocusController: ObservableObject {
                     let pending = self.pendingFocusClear; self.pendingFocusClear.removeAll()
                     self.clearManual(pending)
                     switch result {
-                    case .success(let (mapped, count, items)):
+                    case .success(let (mapped, count, items, renewed)):
                         let failures = items.filter { $0.status == .failed }.count
+                        if count > 0 && !renewed && failures == 0 {
+                            self.focusStatus = self.mode == .automatic
+                                ? "Automatic unavailable: background effects were not renewed; cues retained."
+                                : "Manual unavailable: background effects were not renewed; captured set retained."
+                            break
+                        }
                         let label = self.mode == .automatic ? "Automatic: \(ids.count) High emphasized"
                             : "Manual: \(self.workingSet.count) captured"
                         self.focusStatus = "\(label); \(mapped) of \(count) outside mapped; \(failures) failed. Preview/global rules may mask dimming."
                     case .failure:
                         self.focusStatus = self.mode == .automatic
-                            ? "Automatic unavailable: configured colors or emphasized binding cannot be verified."
+                            ? "Automatic unavailable: cue sources, configured colors or native bindings cannot be verified."
                             : "Manual unavailable: configured colors or working binding cannot be verified."
                     }
                 }
@@ -323,6 +339,28 @@ final class FocusController: ObservableObject {
     private func matchesManual(_ run: Run, version: Int) -> Bool {
         lock.lock(); defer { lock.unlock() }
         return manual === run && run.version == version
+    }
+
+    private func automaticSourcesCurrent(_ cues: [GhosttySurfaceID: Set<AttentionOccurrence>],
+                                         targets: [GhosttySurfaceID: TerminalTargetBinding],
+                                         run: Run, version: Int, deadline: UInt64) -> Bool {
+        var valid = false
+        var vanished: [GhosttySurfaceID: Set<AttentionOccurrence>] = [:]
+        do {
+            for (id, values) in cues {
+                guard let cue = values.first else { continue }
+                switch try state.validateAttentionSource(cue, surface: id, target: targets[id], deadline: deadline) {
+                case .valid: valid = true
+                case .vanished: vanished[id] = values
+                case .unavailable: break
+                }
+            }
+        } catch {
+            if !vanished.isEmpty { invalidateAutomaticSources(vanished, run: run, version: version) }
+            return false
+        }
+        if !vanished.isEmpty { invalidateAutomaticSources(vanished, run: run, version: version) }
+        return valid
     }
 
     private func invalidateAutomaticSources(_ cues: [GhosttySurfaceID: Set<AttentionOccurrence>],
@@ -374,6 +412,7 @@ final class FocusController: ObservableObject {
         var version = 0
         var invalidSourcesVersion: Int?
         var lastHeartbeat: Double
+        var renewedTargets = Set<TerminalTargetBinding>()
         init(startedAt: Double, revision: VisualRestrictionsRevision) {
             self.startedAt = startedAt; self.revision = revision; self.lastHeartbeat = startedAt
         }

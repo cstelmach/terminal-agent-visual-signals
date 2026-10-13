@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.8
+Version: 1.9
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -68,6 +68,11 @@ explicit mode switching, accessible retained working labels, recovery from Manua
 Off after explicit resumption. It reported all three simulated bindings unavailable accurately.
 After owned quit/relaunch, the process remains alive and suspension is saved, but CUA attachment
 timed out. Active-cue UI, relaunch UI and physical salience/navigation cases remain unverified.
-Independent final reviews are next; source completion does not complete native acceptance.
+Independent final source reviews completed and their material corrections remain in progress.
+Unavailable cue coverage now preserves occurrences and permission history. Exact source checks
+separate unknown data from proven exit/reuse, including all-High catalogues and mixed sources.
+Only actual metadata renewal advances the focus heartbeat; global masks still renew, while
+rejected paints expose unavailable state and recover with a fresh effect ID after expiry.
+Source completion does not complete native acceptance.
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.
