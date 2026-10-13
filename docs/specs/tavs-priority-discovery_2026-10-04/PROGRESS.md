@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 16:03 CEST
-**Version:** 4.13
+**Last Updated:** 2026-10-13 16:28 CEST
+**Version:** 4.14
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 70e5e74; earlier hashes below/appendix | 551 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | a710d9f; earlier hashes below/appendix | 556 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -866,22 +866,9 @@ The [source check](helper-compatibility-check-2026-10-13.md) confirms H1; compat
 No rendering bypass or contract change. Prior entry moved unchanged; SPEC/PLAN fixed. Next: M5 cost checks
 while awaiting compatibility choice. Phases 2/7/8 Blocked, 9 active; native/UI acceptance unverified.
 
-### Phase 9 measured helper cost: 2026-10-13 15:38 CEST
+### Phase 9 measured helper cost
 
-`aa85072` reduces normal Claude/Codex helper launches from six to five through existing positive
-cache transfer, original script exec and import validation. Three new tests cover probe count,
-argv/child privacy and inherited cache. `295f107` fixes test cleanup polling, not production deadlines.
-Owned-PTY baseline `jMKTOQ`: hook median 194.317 ms, shell 44.602 ms, counts six/three (three each).
-Draft `rqnbi5`: five/three, medians 187.517/46.913 ms. Small samples do not prove general latency.
-Bash-c/source was rejected after timer failures `AuuWTa`/`bwQdro`. Original exec restored liveness.
-Full Swift `l1OpGN` and `SmKc4f` retained deadline/cleanup failures; final `0ribbd`: 548/548, 10.300 s.
-Bats `lJxcb9` retained three managed-output/recovery/intent failures with insufficient diagnostics;
-focused `u0AVQq` passed 3/3. Final retained-fixture `AVKcmZ`: 178/178. No deadline was relaxed.
-Syntax checks passed; helper/adapters ShellCheck passed. No native source rebuild was needed.
-Reports/measurements are in [helper cost](helper-cost-check-2026-10-13.md); failed cases are retained.
-H1 input remains pending. M5 cached-record scaling/configuration cost remain separate next work.
-The historical Phase 8 source block moved unchanged with reconstruction verified; open cases stay above.
-SPEC/PLAN fixed, 2/7/8 Blocked and 9 active. No real app/native control, install/sync or user-state changes.
+> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
 ### Phase 9 per-TTY cached lookup: 2026-10-13 16:03 CEST
 
@@ -896,3 +883,18 @@ The [source check](tty-cache-scope-check-2026-10-13.md) found no new defect; pri
 **Scope:** Two source/two test paths; shared lookup correction extends Phase 9's original file list.
 No retirement/index or latency claim. Same-TTY history and preview config cost remain M5 work.
 H1 input and native acceptance stay open. SPEC/PLAN fixed; goal active, 2/7/8 Blocked, 9 active.
+
+### Phase 9 preview preparation timing: 2026-10-13 16:28 CEST
+
+`a710d9f` starts the preview lease after preparation; one timestamp feeds record, predicate and timer.
+Every accepted start queues cleanup before the paint-age guard. Canceled preparation paints nothing.
+Five tests cover slow queries, replacement, explicit failure, late setup and expired accepted starts.
+Red `l1Vq3t`: 11 failures; draft review reproduced no-timer cleanup in `CDAsJf` (three failures).
+Corrected clock/drain fixtures pass. `RoXBKk` retained old-timer and managed-reset output failures;
+root cause unproven. Diagnostic `4vjXjB`: 2/2; final `1SEz4e`: 556/556 Swift, 10.803 s.
+Release `o2l0ps`: 22.08 s; current-helper `ydknN9`: 178/178 Bats. Deadlines unchanged.
+Full [source reports](preview-timing-source-check-2026-10-13.md) retain draft findings and corrections.
+**Scope:** Two Phase 9 source/test paths plus existing API/bug/roadmap docs; no cross-preview cache.
+Finished helper-cost text moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
+Next: diagnose retained output failures and verify focus color freshness/remaining review leads.
+H1 input and physical Ghostty acceptance remain open; 2/7/8 Blocked and 9 active.

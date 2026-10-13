@@ -446,3 +446,20 @@ The [source check](scheduler-failures-check-2026-10-13.md) found misleading hist
 now corrected. No-output registration/retry cannot certify repaint. Prior entry moved unchanged.
 **Next:** verify helper-required ordinary-signaling compatibility (Claude H1), then other source leads.
 SPEC/PLAN fixed; 2/7/8 Blocked, 9 active. Menu/native UI unverified; no personal state changes.
+
+### Phase 9 measured helper cost: 2026-10-13 15:38 CEST
+
+`aa85072` reduces normal Claude/Codex helper launches from six to five through existing positive
+cache transfer, original script exec and import validation. Three new tests cover probe count,
+argv/child privacy and inherited cache. `295f107` fixes test cleanup polling, not production deadlines.
+Owned-PTY baseline `jMKTOQ`: hook median 194.317 ms, shell 44.602 ms, counts six/three (three each).
+Draft `rqnbi5`: five/three, medians 187.517/46.913 ms. Small samples do not prove general latency.
+Bash-c/source was rejected after timer failures `AuuWTa`/`bwQdro`. Original exec restored liveness.
+Full Swift `l1OpGN` and `SmKc4f` retained deadline/cleanup failures; final `0ribbd`: 548/548, 10.300 s.
+Bats `lJxcb9` retained three managed-output/recovery/intent failures with insufficient diagnostics;
+focused `u0AVQq` passed 3/3. Final retained-fixture `AVKcmZ`: 178/178. No deadline was relaxed.
+Syntax checks passed; helper/adapters ShellCheck passed. No native source rebuild was needed.
+Reports/measurements are in [helper cost](helper-cost-check-2026-10-13.md); failed cases are retained.
+H1 input remains pending. M5 cached-record scaling/configuration cost remain separate next work.
+The historical Phase 8 source block moved unchanged with reconstruction verified; open cases stay above.
+SPEC/PLAN fixed, 2/7/8 Blocked and 9 active. No real app/native control, install/sync or user-state changes.

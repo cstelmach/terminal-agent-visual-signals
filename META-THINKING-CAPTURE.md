@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 24 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 32 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 25 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 33 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3072,3 +3072,85 @@ remains pending. Only the bounded slice completed, and the master goal remains a
 **Confidence:** Action facts and test outcomes are observed. The strategy rationale is
 reconstructed;
 exact served model attribution and native acceptance remain unverified.
+
+## 2026-10-13 · gpt-6 · preview-preparation-timing
+
+meta:
+  model: gpt-6
+  model_source: self-reported; exact served variant unobserved
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879
+  trace: observed tool calls; no independent transcript model extraction
+
+**Framing [O]:** The goal continuation followed the committed per-TTY lookup improvement.
+Current SPEC, PLAN, GOAL, progress and Git identified Phase 9 as active. The next concern was
+configuration-query cost. Source showed one query per multiselection and existing focus-run reuse,
+so the actual defect was preparation consuming the preview lifetime. The slice addressed that
+observable contract and kept configuration latency, focus color freshness and native acceptance
+open.
+
+**Strategy [R]:** A persistent color cache would require evidence about effective configuration
+invalidation that this repository did not supply. Correcting the lifetime anchor avoided introducing
+stale cross-preview colors. Selection retained its original restriction revision and cancellation
+identity while preparation ran. A successful current preparation established one timestamp before
+bounded paint, shared by the record, predicate and remaining-delay timer. Manual focus retained its
+independent revision/version/heartbeat semantics; the unused shared creation timestamp was removed.
+
+**Action trace [O]:**
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Orient | Current SPEC package and Git | Last turn was progress; clean baseline |
+| 2 | Inspect | Renderer, factory, controller and tests | Derive lost display duration |
+| 3 | Delegate | Source-only explorer | Compare cache/reuse/timing remedies |
+| 4 | Reproduce | Three initial tests | Slow preparation prevented painting |
+| 5 | Correct | Controller timestamp and expiry | Fresh queries and immediate cancellation |
+| 6 | Review | Accepted-expired start | Reproduce missing timer, then fix ordering |
+| 7 | Strengthen | Test clock and main drain | Remove fixture race; add expiry coverage |
+| 8 | Verify | Focused/full Swift, release, Bats | Preserve intermittent failure evidence |
+| 9 | Commit | a710d9f | Five owned source/test/API/bug/roadmap paths |
+
+**Decision points [O/R]:** Preparation was separated from display age rather than granted a
+renewable effect lease. Every accepted start queues cleanup before its paint-age check, even if
+already expired; cancellation still prevents timer registration and output. Late main-queue setup
+uses the remaining interval, not a new two seconds. Configuration exceptions leave inactive,
+explicit unavailable status. Five regressions cover slow preparation, superseded selections,
+failure, delayed timer setup and expired acceptance. Existing blocked-query cancellation now drains
+main callbacks before asserting that no timer remains.
+
+**Failure arcs [O]:** Initial l1Vq3t produced eleven failures across three tests. The draft passed
+focused and full checks, but source review found a window between start publication and timer
+enqueue.
+CDAsJf reproduced missing ScheduledTimer and active UI. Moving the paint-age guard after timer
+enqueue
+closed that path without extending the timestamp. The reviewer then identified an unsynchronized
+counter in the deterministic Clock fixture. An NSLock now serializes counter update, boundary
+advance
+and return. A main-queue drain strengthens the cancellation assertion rather than relying on
+callback
+scheduling luck. These findings were checked against source before fixes.
+
+A later full run, RoXBKk, failed an old-timer preview case and an unrelated managed-reset output
+case.
+The logs did not establish the cause. The preview wait now reports controller status on failure.
+Targeted diagnostic 4vjXjB passed both cases, followed by final full 1SEz4e. No system-load
+explanation
+or product deadline relaxation was inferred. The failure remains available for focused
+investigation.
+
+**Verification [O]:** Final Swift passed 556/556 in 10.803 seconds; release o2l0ps built in 22.08
+seconds; current-helper ydknN9 passed 178/178 Bats. Builds and suites ran sequentially in private
+roots, using owned PTYs and an explicit source-built helper. The completed helper-cost block moved
+unchanged to the existing appendix, with byte reconstruction checked. SPEC/PLAN bodies stayed fixed.
+No Ghostty invocation, real installation, personal preference/schedule change or app control ran.
+Controller/byte checks do not establish physical duration, contrast or native navigation.
+
+**Heuristics [O]:** P8 recurred through verification of review findings; P9 through SPEC-owned
+continuation. The transferable lesson is to anchor all representations of an effect lifetime to
+one accepted event, and preserve cleanup even when permission to paint has expired. Existing
+promotion proposals remain unchanged; no new workflow or control plane was introduced.
+
+**Confidence:** Action facts, tests and diffs are observed. Strategy rationale is reconstructed.
+Model variant, intermittent failure cause and physical acceptance remain unverified. The bounded
+slice completed; the full goal remains active with compatibility input and other review work open.

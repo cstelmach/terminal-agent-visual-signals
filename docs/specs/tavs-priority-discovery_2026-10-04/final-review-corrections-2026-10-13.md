@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.14
+Version: 1.15
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `70e5e74`.
+Current product checkpoint: `a710d9f`.
 
 ## Review execution status
 
@@ -415,3 +415,20 @@ The [source review](tty-cache-scope-check-2026-10-13.md) found no introduced def
 pre-existing policy/enumeration limits. The initial investigation's requirement to skip link
 descendants was corrected by the probe. No latency or native acceptance claim follows these checks.
 Next: preview configuration cost and retained history within one TTY; H1 input remains pending.
+
+## Preview preparation lifetime (Claude M5/L6, partial)
+
+`a710d9f` fixes the proven duration defect while retaining one fresh validated query per selection.
+One display-start anchor, established after successful preparation, feeds the effect heartbeat,
+paint-age predicate and remaining-delay timer. Preparing selections remain immediately cancellable.
+Failure reports explicit unavailable state without active preview. No cross-preview cache is added.
+The [investigation and follow-up](preview-timing-source-check-2026-10-13.md) retain source-only limits.
+A draft gap allowed an accepted start to expire before timer enqueue. `CDAsJf` reproduced missing
+cleanup; accepted starts now queue expiry before the paint-age guard, including zero remaining time.
+The clock counter is synchronized and the cancellation fixture drains queued main callbacks.
+Five new tests cover the timing paths. Final `1SEz4e`: 556/556 Swift, 10.803 s; release `o2l0ps`:
+22.08 s; current-helper `ydknN9`: 178/178 isolated Bats. No deadline or parser validation was relaxed.
+`RoXBKk` retained old-timer and unrelated managed-reset output failures after earlier full passes.
+Their cause is unproven; targeted diagnostic `4vjXjB` passed both, followed by the final full pass.
+Preview query cost is not reduced or measured. Existing long-lived focus colors and effective-config
+invalidation require separate verification. Native duration/contrast acceptance remains incomplete.
