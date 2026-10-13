@@ -102,11 +102,107 @@ final class VisualRecoveryTests: XCTestCase {
             try before?(DispatchTime.now().uptimeNanoseconds + 100_000_000)
             throw ProcessRunnerError.processTimedOut
         }
+        var canceled: TerminalTargetBinding?
         XCTAssertThrowsError(try recovery(runner: failed).write(.clearFocus(effectID: value.effectID,
-            revision: value.revision), to: target))
+            revision: value.revision, didCancel: { canceled = $0 }), to: target))
+        XCTAssertEqual(canceled, target)
         XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
         _ = try recovery().write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target)
         XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+    }
+
+    func testFocusCancellationEvidenceIsAbsentBeforeMetadataFailure() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        let failed = MockProcessRunner()
+        failed.managedBeforeOpenHandler = { _, _, _, _ in throw ProcessRunnerError.processTimedOut }
+        var canceled = false
+        XCTAssertThrowsError(try recovery(runner: failed).write(.clearFocus(effectID: value.effectID,
+            revision: value.revision, didCancel: { _ in canceled = true }), to: target))
+        XCTAssertFalse(canceled)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try noBytes(target)
+    }
+
+    func testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788"), to: root.appendingPathComponent("lock.state"))
+        var canceled: TerminalTargetBinding?
+        XCTAssertFalse(try recovery().write(.clearFocus(effectID: value.effectID,
+            revision: value.revision, didCancel: { canceled = $0 }), to: target))
+        XCTAssertEqual(canceled, target)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try noBytes(target)
+    }
+
+    func testFocusCancellationEvidenceSurvivesMarkerReplacementWithoutRepainting() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        try restrictions.write(suspended: true)
+        var canceled: TerminalTargetBinding?
+        XCTAssertFalse(try recovery().write(.clearFocus(effectID: value.effectID,
+            revision: value.revision, didCancel: { canceled = $0 }), to: target))
+        XCTAssertEqual(canceled, target)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try noBytes(target)
+    }
+
+    func testUnknownAliasMetadataCannotReportFocusCancellation() throws {
+        let plain = try terminal(10), native = nativeAlias(plain), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: native); _ = try read(plain)
+        var alias = try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max))
+        alias.target = plain
+        try state.withLock(plain.tty) { try state.saveEffectUnlocked(alias, deadline: .max) }
+        let files = try XCTUnwrap(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil))
+            .allObjects.compactMap { $0 as? URL }
+        let url = try XCTUnwrap(files.first { $0.lastPathComponent == "focus.json"
+            && $0.deletingLastPathComponent().lastPathComponent == "plain" })
+        try Data("invalid owned fixture".utf8).write(to: url)
+        var canceled = false
+        XCTAssertThrowsError(try recovery().write(.clearFocus(effectID: value.effectID,
+            revision: value.revision, didCancel: { _ in canceled = true }), to: native))
+        XCTAssertFalse(canceled)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max)).active)
+        try noBytes(plain)
+    }
+
+    func testExpiredCancellationDeadlineCannotReportOwnershipResolved() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        let failed = MockProcessRunner()
+        failed.managedBeforeOpenHandler = { _, _, before, _ in
+            try before?(DispatchTime.now().uptimeNanoseconds - 1)
+            XCTFail("An expired metadata stage must not continue")
+            throw ProcessRunnerError.processTimedOut
+        }
+        var canceled = false
+        XCTAssertThrowsError(try recovery(runner: failed).write(.clearFocus(effectID: value.effectID,
+            revision: value.revision, didCancel: { _ in canceled = true }), to: target))
+        XCTAssertFalse(canceled)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try noBytes(target)
+    }
+
+    func testOneCancellationAcknowledgementCoversAllValidatedPhysicalAliases() throws {
+        let plain = try terminal(10), native = nativeAlias(plain), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: native); _ = try read(plain)
+        var alias = try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max))
+        alias.target = plain
+        try state.withLock(plain.tty) { try state.saveEffectUnlocked(alias, deadline: .max) }
+        let lock = NSLock()
+        var acknowledgements: [TerminalTargetBinding] = []
+        let items = recovery().apply(.clearFocus(effectID: value.effectID, revision: value.revision,
+            didCancel: { target in
+                XCTAssertFalse(Thread.isMainThread)
+                lock.lock(); acknowledgements.append(target); lock.unlock()
+            }), to: [plain, native])
+        XCTAssertEqual(items.map(\.status), [.restored])
+        XCTAssertEqual(acknowledgements, [native])
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(native, kind: .focus, deadline: .max)).active)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(plain, kind: .focus, deadline: .max)).active)
+        XCTAssertEqual(try read(plain), Data("\u{1B}]111\u{1B}\\".utf8))
     }
 
     func testMaskedFocusCachesItsRecipeAndReportsNoDimming() throws {
@@ -139,7 +235,10 @@ final class VisualRecoveryTests: XCTestCase {
         let first = try focusRequest(), next = try focusRequest("next")
         _ = try recovery().write(.focus(first), to: native); _ = try read(plain)
         _ = try recovery().write(.focus(next), to: native); _ = try read(plain)
-        XCTAssertFalse(try recovery().write(.clearFocus(effectID: first.effectID, revision: first.revision), to: native))
+        var canceled: TerminalTargetBinding?
+        XCTAssertFalse(try recovery().write(.clearFocus(effectID: first.effectID, revision: first.revision,
+            didCancel: { canceled = $0 }), to: native))
+        XCTAssertEqual(canceled, native)
         try noBytes(plain)
         XCTAssertEqual(try state.currentEffectUnlocked(native, kind: .focus, deadline: .max)?.effectID, "next")
         _ = try recovery().write(.ordinary(intent(plain, color: "#AA2200"), synthetic: false, intakeAt: 1_000), to: plain)

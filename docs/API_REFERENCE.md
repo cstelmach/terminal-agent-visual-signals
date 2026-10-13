@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.18
+Version: 1.19
 
 ## Public recovery commands
 
@@ -193,6 +193,13 @@ Only a guarded controller request advances the six-second heartbeat. Global paus
 retain precedence without replacing the dynamic record; clearing or expiry recomposes fresh
 intent. Alias agreement compares inputs, revision, run and controller, not last computed color.
 Exact-ID clear cancels metadata before device open and emits no stale repaint after replacement.
+Internal `.clearFocus` accepts a defaulted `didCancel(target)` acknowledgement. It runs under the
+existing TTY lock after validated alias enumeration, exact-ID/controller/revision cancellation
+and an original-deadline check. It confirms point-in-time ownership cancellation, absence or
+supersession; it does not confirm device repaint. Failed/incomplete metadata produces no callback.
+Marker replacement still permits old metadata cancellation but suppresses old repaint. Consumers
+must invalidate the old lease predicate before clearing, acknowledge briefly/thread-safely and
+never invoke another writer/coverage operation from this callback. Absent IDs get no tombstone.
 Preview and focus cleanup use independent background queues. An unrelated blocked focus clear
 cannot queue ahead of a healthy preview clear. Both retain the existing per-TTY serialization
 and original device deadline; conflicting writes to the same terminal remain serialized.

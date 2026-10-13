@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.9
+Version: 1.10
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -74,5 +74,7 @@ separate unknown data from proven exit/reuse, including all-High catalogues and 
 Only actual metadata renewal advances the focus heartbeat; global masks still renew, while
 rejected paints expose unavailable state and recover with a fresh effect ID after expiry.
 Source completion does not complete native acceptance.
+Focus clear now exposes locked exact-ownership cancellation separately from physical output.
+This is a tested prerequisite for bounded per-target retirement; the controller bound is pending.
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.

@@ -27,7 +27,8 @@ enum ManagedVisualOperation {
     case preview(TerminalPreviewRequest)
     case clearPreview(effectID: String, revision: VisualRestrictionsRevision)
     case focus(TerminalFocusRequest)
-    case clearFocus(effectID: String, revision: VisualRestrictionsRevision)
+    case clearFocus(effectID: String, revision: VisualRestrictionsRevision,
+                    didCancel: (TerminalTargetBinding) -> Void = { _ in })
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -175,7 +176,7 @@ final class VisualRecovery {
         }
         let clear: (String, VisualRestrictionsRevision, TerminalEffectKind)?
         switch operation {
-        case .clearFocus(let id, let revision): clear = (id, revision, .focus)
+        case .clearFocus(let id, let revision, _): clear = (id, revision, .focus)
         case .clearPreview(let id, let revision): clear = (id, revision, .preview)
         default: clear = nil
         }
@@ -188,6 +189,13 @@ final class VisualRecovery {
                             && ($0.revision == revision.identity || ($0.kind == .preview && $0.revision == nil))
                     }
                     try self.cancelEffects(matches, deadline: deadline)
+                    if case .clearFocus(_, _, let didCancel) = operation {
+                        guard DispatchTime.now().uptimeNanoseconds < deadline else {
+                            throw TerminalVisualStateError.deadlineExceeded
+                        }
+                        // Exact ownership is resolved here; device output remains a separate result.
+                        didCancel(target)
+                    }
                 }
             }
         }
@@ -276,7 +284,7 @@ final class VisualRecovery {
                 if rule != nil { return nil }
                 effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }
-            if case .clearFocus(let id, let revision) = operation {
+            if case .clearFocus(let id, let revision, _) = operation {
                 guard effects.contains(where: { $0.kind == .focus && $0.effectID == id
                     && $0.controller == self.controller && $0.revision == revision.identity }),
                     try self.restrictions.matches(revision, deadline: deadline) else { return nil }

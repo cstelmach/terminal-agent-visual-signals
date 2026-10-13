@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.32
+Version: 1.33
 
 ## Unrelated focus cleanup delays a healthy preview clear
 
@@ -11,6 +11,11 @@ Dedicated queues now separate those batches while the shared per-TTY writer stil
 conflicting output. The regression holds one focus cleanup, clears a preview on another owned
 PTY before releasing it, and checks exact background reset plus canceled preview metadata.
 Retired focus ownership growth remains a separate open issue; this fix does not drop old IDs.
+The internal clear callback now distinguishes successful locked metadata cancellation from
+failed or suppressed physical repaint. Tests cover failures before/after that stage, marker
+replacement, global masking, unknown aliases, the original deadline and physical deduplication.
+The controller's per-target retirement bound still needs implementation; callback absence cannot
+prove no save, because record rename precedes a final deadline check.
 
 ## Repeated timeouts accumulate native device workers
 
