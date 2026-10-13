@@ -245,3 +245,40 @@ recomposition remain source leads to verify/fix. Phases 2/7/8 stay Blocked, Phas
 The complete goal remains active; source tests do not replace required visible/native acceptance.
 
 > Current work remains in [PROGRESS.md](PROGRESS.md).
+
+### Phase 9 delayed restore correction: 2026-10-13 06:12 CEST
+
+Previous turn was progress: unknown-cue correction `02708b8`, records `bd89fe3`.
+`47fdf9b` resolves Claude M2's race after successful context precheck. Synthetic processing and
+subagent restores skip timer cancellation, meaningful session-state writes, counter increments
+and new-prompt identity work. Normal hooks still take the prior branches. Rendering retains
+its original context and final native validation; no new helper verb or raw-output path.
+
+Real-helper barriers reproduce the interval before dispatch: two-case red `WuVtc2` changed the
+new Stop DB and raised the newer subagent count from 1 to 2. Guarded source passed. A focused
+read-only report found no guard regression, but identified helper-result and timer-liveness
+test limits. Tests now assert stale code 3, current code 0 and actual later graduated bytes
+from the same timer PID. A third case proves current restoration still paints subagent styling
+without another spawn. The helper marker covers the dangerous writes, not whole-trigger exit.
+
+Final `knbxNp` passed 172/172 Bats across 15 audited files; focused `OiEX9s` passed all three
+strengthened cases. Full `3T8M2E` passed 507/507 Swift tests in 8.379 seconds without warnings.
+All used tests/run-isolated.sh, explicit current helpers, private roots and owned PTYs. The Swift
+release helper is unchanged; no rebuild was needed. Bash syntax and whitespace checks passed.
+Earlier `aZZ9pp`/`t5Iyfs` fixture runs and a rejected patch attempt remain separate evidence.
+Backups: /tmp/tavs-synthetic-restore-20261013/. Full report and adjudication are retained here.
+
+**Scope:** one core script and one existing integration test from the Phase 4 signal path,
+corrected during Phase 9's final review, plus API/bug docs and required state/capture. SPEC body
+and PLAN remain fixed. The source report produced two test-strengthening decisions; one source
+defect is corrected. No new runtime control machinery, native request, Computer Use retry,
+installed setting change, personal schedule edit or user-session shutdown occurred.
+The finished unknown-cue checkpoint moves unchanged into the existing Phase 9 appendix with
+reconstruction equality checked. Required native/visible acceptance remains unverified.
+
+**Next:** verify and correct recovery classification for closed registry candidates and malformed
+entries while preserving real unavailable-target failures and healthy partial recovery. Cleanup
+growth, wedged-worker admission, scheduler recomposition and compatibility still require work.
+Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the full goal remains active.
+
+> Current work remains in [PROGRESS.md](PROGRESS.md).

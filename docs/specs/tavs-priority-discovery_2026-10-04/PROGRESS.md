@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 06:12 CEST
-**Version:** 4.3
+**Last Updated:** 2026-10-13 06:41 CEST
+**Version:** 4.4
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 47fdf9b; earlier hashes below/appendix | 507 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 5696f4c; earlier hashes below/appendix | 513 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -858,37 +858,42 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished availability/renewal correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 delayed restore correction: 2026-10-13 06:12 CEST
+### Phase 9 delayed restore correction
 
-Previous turn was progress: unknown-cue correction `02708b8`, records `bd89fe3`.
-`47fdf9b` resolves Claude M2's race after successful context precheck. Synthetic processing and
-subagent restores skip timer cancellation, meaningful session-state writes, counter increments
-and new-prompt identity work. Normal hooks still take the prior branches. Rendering retains
-its original context and final native validation; no new helper verb or raw-output path.
+> Finished synthetic-restore correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-Real-helper barriers reproduce the interval before dispatch: two-case red `WuVtc2` changed the
-new Stop DB and raised the newer subagent count from 1 to 2. Guarded source passed. A focused
-read-only report found no guard regression, but identified helper-result and timer-liveness
-test limits. Tests now assert stale code 3, current code 0 and actual later graduated bytes
-from the same timer PID. A third case proves current restoration still paints subagent styling
-without another spawn. The helper marker covers the dangerous writes, not whole-trigger exit.
+### Phase 9 recovery classification: 2026-10-13 06:41 CEST
 
-Final `knbxNp` passed 172/172 Bats across 15 audited files; focused `OiEX9s` passed all three
-strengthened cases. Full `3T8M2E` passed 507/507 Swift tests in 8.379 seconds without warnings.
-All used tests/run-isolated.sh, explicit current helpers, private roots and owned PTYs. The Swift
-release helper is unchanged; no rebuild was needed. Bash syntax and whitespace checks passed.
-Earlier `aZZ9pp`/`t5Iyfs` fixture runs and a rejected patch attempt remain separate evidence.
-Backups: /tmp/tavs-synthetic-restore-20261013/. Full report and adjudication are retained here.
+Previous turn was progress: delayed restore correction `47fdf9b`, records `298230a`.
+`5696f4c` resolves the registry reporting defects in Claude M3. Concrete registry hints become
+vanished only after both nil device inspection and positive device-loss evidence. Live, unknown
+or contradictory inspection remains failed and cannot authorize output. Malformed entries have
+individual failures without raw filename retention; whole-registry failure describes its directory.
+An unbound native row still fails beside a restored cached TTY, preserving the SPEC's unknown
+binding contract. Reporting suppresses its redundant registry hint without hiding native failure.
 
-**Scope:** one core script and one existing integration test from the Phase 4 signal path,
-corrected during Phase 9's final review, plus API/bug docs and required state/capture. SPEC body
-and PLAN remain fixed. The source report produced two test-strengthening decisions; one source
-defect is corrected. No new runtime control machinery, native request, Computer Use retry,
-installed setting change, personal schedule edit or user-session shutdown occurred.
-The finished unknown-cue checkpoint moves unchanged into the existing Phase 9 appendix with
-reconstruction equality checked. Required native/visible acceptance remains unverified.
+Red `7Ws1xF` reproduced six assertions. The focused source check found that vanished cached owners
+could hide live hints; `fR9LLc` reproduced two assertions. Status-sensitive hint deduplication now
+retains the remaining live/unverified failure, while positive device loss avoids duplicate closure.
+A direct owned-PTY case with contradictory missing metadata also stays failed with no output.
+Six new cases cover these paths; cached healthy restoration continues despite malformed candidates.
 
-**Next:** verify and correct recovery classification for closed registry candidates and malformed
-entries while preserving real unavailable-target failures and healthy partial recovery. Cleanup
-growth, wedged-worker admission, scheduler recomposition and compatibility still require work.
-Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the full goal remains active.
+Final `0ctU5T` passed 513/513 Swift tests in 8.546 seconds without warnings. Current release
+`uPGEcV` passed in 12.41 seconds; current-helper `nitpAv` passed 172/172 isolated Bats. All used
+tests/run-isolated.sh, explicit helpers, private roots and owned PTYs or mocked metadata.
+The product commit message included the Bats total before its final tool result returned. The
+same confirmed live handle completed successfully on the next poll; this sequencing mistake is
+recorded explicitly. Swift functionality and release were already verified before commit.
+No shell source changed. Backups: /tmp/tavs-recovery-classification-20261013/.
+
+**Scope:** two source modules and one existing recovery test from the Phase 6 path, corrected
+during final Phase 9 review, plus API/bug docs and required state/capture. No new schema, helper
+verb, target synthesis or cleanup deletion. SPEC body and PLAN are fixed. The report produced
+one additional source correction. No native request, Computer Use retry, install/settings change,
+personal schedule edit or user-session shutdown. The prior finished delayed-restore entry moves
+unchanged to the existing Phase 9 appendix with reconstruction equality verified.
+
+**Next:** bound wedged device-worker admission and retained focus cleanup without sacrificing
+healthy-target recovery or losing old effect ownership. Scheduler recomposition and compatibility
+remain material source leads. Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the goal active.
+Required visible/native acceptance remains unverified and cannot be replaced by source tests.

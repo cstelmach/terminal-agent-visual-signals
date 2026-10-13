@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 14 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 22 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 15 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 23 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2350,3 +2350,81 @@ change, personal schedule edit or user-session shutdown occurred.
 **Confidence:** Execution and edits are observed; strategy is reconstructed. The exact served
 model remains unobserved. Recovery classification, resource growth, other source findings and
 required visible/native acceptance still prevent completion of the full goal.
+
+
+## 2026-10-13 · gpt-6 (variant unverified) · recovery-classification-correction
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible current tool results
+
+**Framing:** [O] The previous turn completed the delayed restore correction. Current state named
+recovery classification next. The retained review grouped closed registry hints, malformed entries
+and native capture failures. Reading the recovery union and the SPEC separated actual defects
+from a risky suggested remedy: an unknown native binding must remain failed even when a cached
+physical TTY was independently restored. A pathname alone cannot prove their native lifetimes
+match. The implementation therefore improves reporting without turning hints into authority.
+
+**Strategy:** [R] The smallest correction reuses the state store's injected device inspection and
+positive missing-device evidence. A nil lookup alone is not closure. Registry parsing reports
+entry problems individually, reserving directory failure for directory inspection. Arbitrary
+invalid filenames stay out of serialized diagnostics. Existing failed/current handled items can
+cover duplicate hints, but vanished historical ownership needs separate device-loss evidence.
+No new target resolver, native fallback or registry format is necessary.
+
+**Action trace [O]:**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient and inspect | Dated state, retained finding, recovery union | Two defects and unsafe suggestion separated |
+| 2 | Add isolated regressions | Existing recovery tests | Six assertions failed |
+| 3 | Implement classification | Parser and state predicate | Focused cases passed |
+| 4 | Request read-only source check | Existing explorer | Hidden live-hint case identified |
+| 5 | Reproduce connected gap | Vanished owner with live node | Two assertions failed |
+| 6 | Correct deduplication and verify | Full Swift, release and Bats | 513 and 172 passed |
+| 7 | Commit and preserve report | Product and dated records | Remaining work stays open |
+
+**Decision points:** [O] Registry hints are never passed to fanout or synthesized into output
+targets. A concrete hint becomes vanished only after device inspection returns nil and the
+positive missing predicate confirms node loss. Live or contradictory metadata still fails.
+The legacy controlling alias is identified as an individual invalid entry; other arbitrary
+names are omitted. Native nil-capture failure is preserved, while its matching registry hint
+need not duplicate the failure. Tests verify healthy reset bytes alongside damaged candidates.
+
+**Failure arcs:** [O] The initial cases reproduced closed hints being reported failed, malformed
+entries becoming a whole-directory error and duplicate native/hint failures. The first correction
+passed those cases. A focused source check then found a pre-existing edge: broad pathname sets
+included vanished cached owners and could hide a still-live unverified hint. A new regression
+reproduced the false-success report. Deduplication now excludes vanished historical items unless
+current device-loss evidence also establishes closure. A contradictory live-device fixture
+confirms that a positive missing flag alone cannot override an actual device number.
+
+A separate sequencing error occurred at commit. [O] Swift functionality and release had passed,
+but the shell audit's tool handle was still live when its expected total was written in the
+commit message. The next poll resumed the same handle and confirmed 172 passing tests. The final
+result is verified, but the claim was premature when written. This is retained explicitly in
+progress. [R] The transferable correction is to inspect every awaited result before making a
+statement or dependent mutation, rather than treating a nonterminal poll as completion.
+
+**Heuristics:** [O] P8 recurred through verification of the review against source and execution.
+P9 kept ownership of the correction in the dated specification package. The report produced
+one additional source correction, not a new control mechanism. No skill promotion or comparative
+model profile is asserted. Historical records remained append-only; only a finished checkpoint
+moved into its existing appendix with reconstruction equality checked.
+
+**Verification:** [O] Final Swift passed 513/513 in 8.546 seconds without warnings. The current
+release built in 12.41 seconds; the same source helper passed 172/172 isolated Bats. Six new
+cases cover known closure, malformed entries, native binding failure, live hints, owner exit
+and contradictory metadata. Device effects used owned PTYs; other lifetime evidence was injected.
+No shell source changed. No native request, Computer Use retry, real settings edit or user-session
+shutdown occurred. The 35-line prior checkpoint moved unchanged; current progress remains below
+900 lines. Recovery suspension is still saved before candidate reporting and output.
+
+**Confidence:** Execution and edits are observed; strategy is reconstructed. The source report
+covers the first draft and is retained with that scope stated. Resource growth, scheduler
+recomposition, compatibility and required visible/native acceptance remain unresolved. The full
+goal stays active and is not complete.

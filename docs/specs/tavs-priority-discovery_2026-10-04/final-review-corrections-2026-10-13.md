@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.4
+Version: 1.5
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `47fdf9b`.
+Current product checkpoint: `5696f4c`.
 
 ## Review execution status
 
@@ -178,6 +178,31 @@ needed rebuilding. Earlier fixture runs `aZZ9pp` and `t5Iyfs` are retained but a
 two-case red evidence. The first patch attempt was rejected before any edit due to a missing
 diff prefix. Backups: /tmp/tavs-synthetic-restore-20261013/. Native/UI acceptance remains open.
 
+## Recovery classification correction (Claude M3)
+
+Resolved the registry defects in `5696f4c`. Registry-only hints become vanished only when current
+device inspection is nil and positive node-loss evidence confirms absence. Unknown, live and
+contradictory metadata remain failed and never authorize output. Malformed/unreadable entries
+have individual failures; only directory inspection failure describes the whole registry.
+Arbitrary filenames are excluded from serialized diagnostics. Native nil-capture failure remains
+visible beside a cached restoration; suppressing it by a bare TTY string was rejected against
+the SPEC's explicit unknown-binding failure contract. Its matching hint no longer duplicates it.
+
+Initial `7Ws1xF` reproduced six assertions. The [source follow-up](recovery-classification-followup-2026-10-13.md)
+found another reporting gap: a vanished cached owner hid a live unverified hint. `fR9LLc` reproduced
+two assertions. The corrected status-sensitive deduplication retains the live hint's failure;
+device-loss proof suppresses a redundant closed hint. A sixth case verifies a live owned PTY with
+contradictory missing metadata stays failed and receives no output.
+
+Final `0ctU5T` passed 513/513 Swift tests in 8.546 seconds without warnings. Current release
+`uPGEcV` passed in 12.41 seconds; current-helper `nitpAv` passed 172/172 isolated Bats. The first
+draft's 511-test run and 18.29-second release are intermediate evidence only. All state is private;
+tests use owned PTYs or injected metadata, with no native app calls. No shell source changed.
+The Bats total was placed in the product commit message before its final tool result returned;
+the same confirmed live handle then completed successfully. Swift functionality/release were
+already verified before commit. This sequencing error is retained rather than described as a
+fully completed shell audit at commit time. Backups: /tmp/tavs-recovery-classification-20261013/.
+
 ## Remaining adjudication and implementation
 
 The following source findings are verified; execution regressions and fixes remain pending:
@@ -189,7 +214,7 @@ The following source findings are verified; execution regressions and fixes rema
    healthy focus and physical restoration rather than accepting a weaker product behavior.
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize recovery classification, wedged-worker growth
+Prioritize wedged-worker growth
 and post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 
