@@ -114,3 +114,243 @@ dropping all uncontrolled standalone signaling satisfies the SPEC. Extend covera
   installation. On standalone/nonmac hosts it offers an unavailable remedy. Prefer "Hook rendering and
   metadata remain unavailable; sync does not build/install the helper" until creator scope is resolved.
 - Added tests describe missing, unsupported and render-only probes. They were inspected, not executed.
+
+## Approved portability direction and metadata source checks (2026-10-13)
+
+The operator authorized all remaining steps needed for the goal. The implementation chooses
+Python 3 standard-library support for standalone macOS/Linux compatibility. PLAN/SPEC bodies
+remain fixed; PROGRESS records this narrow dependency/file-list exception. Metadata is the first
+verified slice. H1 remains open until the safe writer, lifecycle and platform acceptance pass.
+
+### Retained source report: explorer-tavs-portable-helper-20261013.md
+
+# H1 Python3 portable helper route
+
+Source-only investigation at 3144a88. No edits to project files, builds, tests,
+apps, native/libproc calls, devices, web calls or parent-goal access. Python3
+runtime approval is taken from the parent's brief; installed runtimes were not probed.
+
+## Recommendation and bounded implementation order
+
+Deliver a plugin-relative Python3 standard-library helper with the existing core
+source tree. Keep the native renderer preferred whenever its exact capability
+probe succeeds. The portable route must implement the complete finite ordinary
+render batch, metadata and delivery lifecycle, and prove absence of applicable
+control under the existing output lock. It does not replace native controller
+composition or independent native recovery. Never choose it after a selected
+native managed operation has failed.
+
+First slice: portable allowlisted metadata parser plus capability/resolver wiring
+and delivery preflight. This immediately repairs legacy metadata without needing
+process/TTY inspection. It is useful, but cannot close H1 because it paints nothing.
+Next slice: process identity bridge, compatible delivery/context records and the
+bounded ordinary writer, including synthetic idle/context-check/forced-reset
+paths. Test and commit those slices separately. Do not stop at the metadata slice
+or silently withdraw Linux/standalone signaling to make tests pass.
+
+Suggested small modules: src/core/portable_helper.py (verbs/intake/render parser),
+portable_process_identity.py (macOS/Linux bridge), portable_output.py (records,
+policy, lock and bounded write). No server, generic backend interface, index or
+new persistent protocol is needed. Reuse schema-1 records on macOS. Advertise a
+distinct portable ordinary-output capability until every claimed native verb is
+implemented; do not claim full managed-output semantics for an uncontrolled-only
+writer. Selection remains outside the render operation, not a failure handler.
+
+## Existing contracts to retain
+
+- SPEC:123-164 preserves top-level allowlisted metadata, drops raw bodies, creates
+  one delivery identity at intake, tracks latest ordinary intent even under control,
+  and preserves ordinary signaling when uncontrolled. SPEC:263-272 requires fresh
+  in-lock policy/identity checks, open-before-output-lock and the 100 ms writer bound.
+- helper-compatibility-check-2026-10-13.md proves native-only fixed-path resolution
+  breaks standalone installs. Current plugin/manual/sync delivery does not install
+  TAVS.app. Missing native recovery remains explicit; ordinary output is a different
+  compatibility promise. PLAN:37-45's no-extra-dependency wording needs narrow
+  updating for the newly approved Python runtime, not another approval request.
+- organizer-state.sh:20-140 currently probes exact native organizer/managed tokens,
+  creates contexts, observes, checks synthetic freshness, reconciles and forces
+  reset. Its 23-field NUL queue/flush at 145-214 already carries the whole style.
+  Preserve rendered/restricted/unaffected outcomes and code 3 stale behavior.
+- OrganizerIntake:23-67 is the metadata mapping: Claude permission_mode, session_id,
+  cwd, transcript_path, allowed hook_event_name/notification_type; Codex thread-id,
+  cwd, type and turn-id. Keep exact byte limits, null/empty handling, decoded JSON
+  strings and session-ID control rejection. Unknown/nested payload bodies are not
+  retained. Input is <=1 MiB with a two-second read deadline; no cat/sed/eval route.
+- TerminalRender:12-54 requires <=16 KiB, exactly 23 UTF-8 fields plus final NUL,
+  finite flags/actions, normalized hex/rgb/reset, title/image control rejection.
+  Preserve palette-before-background, title/image-after-background and synthetic
+  BEL suppression. Title persistence happens only after actual rendered outcome.
+- managed-output-entry:78-134 verifies source generation/device/ancestry, then
+  continuing owner, before rendering. TerminalVisualStateStore:695-785 checks
+  synthetic delivery against latest observation and rejects superseded intake.
+  Context/identity is not inferred from provider JSON, title or directory names.
+- VisualRecovery:181-425 publishes typed intent, rechecks policy under serialization,
+  composes native ownership, handles expired ownership and emits finite bytes.
+  Portable code must not parse arbitrary OSC or reuse pending OSC files.
+
+## Minimum identity bridge
+
+macOS: ctypes with system libproc's proc_pidinfo(PROC_PIDTBSDINFO=3), exact returned
+size, matching pbi_pid, pbi_start_tvsec/usec, PPID, PGID, e_tdev and e_tpgid.
+Reject SZOMB=5 and PROC_FLAG_INEXIT=4. Local SDK headers confirm these fields and
+constants (sys/proc_info.h:59-81,105,723; sys/proc.h:153; libproc.h:96).
+The declared struct has 12 uint32 fields, 16+32 char bytes, five uint32 fields,
+one int32 and two uint64 fields: 48+48+20+4+16=136 bytes. Assert that layout and
+returned size; unsupported layout is unavailable, not a ps timestamp fallback.
+proc_pidpath is needed only if porting native provider verification; ordinary
+binding can honestly remain verifiedAgent=false, as OrganizerIntake:198 allows.
+
+Linux: bounded reads of /proc/<pid>/stat, splitting after its final ')' so spaces
+or parentheses in comm cannot shift fields. Required fields are state, PPID,
+process group, tty_nr, foreground group and starttime ticks. Compare device numbers
+through one documented Linux encoding adapter against lstat/fstat character-device
+identity. Support real /dev/pts/N as well as concrete /dev/tty names; the current
+macOS concreteTTY predicate cannot be copied unchanged. Never authorize /dev/tty
+as a lifetime-specific target. Reject zombies, missing/mismatched generations,
+unreadable proc data, absent controlling TTY and ambiguous foreground owners.
+Retain start ticks as the canonical generation; if interoperable seconds/useconds
+are required, derive them with integer btime+ticks/SC_CLK_TCK arithmetic and verify
+stability within the boot. Do not use rounded ps start times or PID-only identity.
+Linux /proc field/device/boot semantics need official or Linux-target verification
+before implementation acceptance; no Linux host or external reference was queried.
+
+For both adapters, repeat generation/device checks, cap ancestry walks at 16,
+reject loops and attest the non-synthetic producer as an actual helper ancestor.
+Follow the existing same-device continuing-owner rule. Synthetic workers use the
+original current delivery and live producer checks, not new agent occurrences.
+Permission denial or kill(0) EPERM does not establish process death. Native surface
+records also require their app generation checks; unsupported/unknown identity
+must reject ownership resolution rather than imply no controller.
+
+## Complete ordinary writer boundary
+
+Use the same organizer/writer-<URL-safe-base64-TTY>.lock (600), target-generation
+paths, observation/intent schemas and bounded regular-file reads. Validate paths,
+file kinds, schemas, canonical placement, aliases and same-TTY owner ambiguity.
+Reject symlinks, malformed/unknown records and uncertain live ownership. Preserve
+stale-delivery checks even for title/palette/BEL-only requests. Publish latest
+normalized ordinary intent under the lock; no active owner means no controller
+currently applicable, not merely an absent helper executable.
+
+Evaluate the exact suspension marker, lock.state and mute.state and target effects
+under the output lock, matching VisualRestrictionPolicy's current rules. Preview
+lease is two seconds, other selective ownership six seconds; controller generation
+must validate. Suspended restrictions can still have an explicit preview. Do not
+mistake an unavailable marker for ordinary-output authorization. If native control
+is applicable, use the already selected compatible native route, or return explicit
+unavailable from portable output while retaining safe typed intent. No raw bypass,
+no stale color/palette replay, no composition guessed from cached background alone.
+
+For output, use os.open O_NONBLOCK/O_NOCTTY/O_NOFOLLOW, fstat device checks,
+fcntl.flock LOCK_EX|LOCK_NB, monotonic deadline checks and bounded select/poll/write.
+A thread alone does not establish the caller deadline if open blocks. A single
+request-local supervisor plus forked worker is a small standard-library route on
+both Unix platforms: one absolute 100 ms deadline starts before worker dispatch;
+parent waits only to that deadline and terminates an overdue worker; child checks
+expiry after late open and before metadata/output. No late paint or fresh budget
+per stage. The worker opens the TTY before acquiring output serialization. Python
+startup/intake are separate from this writer budget, just as native startup/input
+are separate today; do not claim entire hook execution <=100 ms without measurement.
+
+## Delivery and required verification
+
+Resolve portable files relative to organizer-state.sh's own installed location;
+use a declared/preflighted Python3 runtime, without pip/native build/GUI dependency.
+Retain explicit test-helper override isolation and positive native capabilities.
+Do not advertise a portable organizer capability while its context/observe/intent
+verbs are absent. Metadata-only capability can ship earlier without invented cues.
+The full route needs the idle check/reset/reconcile operations used at trigger:191,
+413 and idle-worker-background:129, with existing stale/target-generation safety.
+
+cmd-sync:102-107 currently copies only *.sh and *.txt from core: explicitly copy
+all required Python modules and validate readiness in the destination. Plugin/full
+repository installs naturally receive tracked files; agent install/preflight and
+README prerequisites must acknowledge Python3. OpenCode's npm package ships only
+dist/README and locates an external core tree (signal-bridge.ts:24-46); ensure that
+installed core tree carries the helper. Do not infer delivery from a source checkout.
+
+Acceptance: owned PTYs on macOS AND Linux for absent/old native app, metadata,
+complete ordinary background/palette/title/BEL/image batch, synthetic freshness,
+late/reused TTY, expired/dead owner, active/uncertain controller, suspension/recovery
+race, held lock, blocked open and deadline expiry with no late bytes. Keep healthy
+native cases and failed-native no-bypass tests. Existing hook-observations:50-78,
+165,301-319 tests include metadata/privacy but missing-helper dispatch uses a fake
+core; managed-background:226,370,388 protects no raw fallback. Extend them with
+actual portable bytes, complete deployment copies and platform identity fixtures.
+Passing metadata fixtures or a macOS-only mock does not close H1 portability.
+
+### Retained source report: explorer-tavs-portable-metadata-followup-20261013.md
+
+# Portable metadata-first diff review
+
+Source-only review of current portable_metadata.py, organizer-state.sh, connected
+intake/tests and the latest sync source. No edits to project files, builds/tests,
+apps, native/device/web actions or parent-goal reads. H1 rendering is not solved.
+
+## Findings
+
+No concrete introduced parser, privacy or stale-export defect found in the
+inspected implementation. The brief's initially pending sync copy is now present
+in current source; this review does not claim that its red test has been rerun.
+
+## Checked contracts
+
+- read_input uses nonblocking fd reads and select with one monotonic two-second
+  input deadline. It reads at most 1 MiB plus one rejection byte and restores
+  stdin flags in finally. A pipe withholding EOF expires instead of waiting forever.
+  The bound covers stdin reading, not Python process startup or a separate hard
+  deadline around json.loads, matching the native read/decode distinction.
+- json.loads requires a top-level object and rejects nonstandard constants. The
+  four field mappings match OrganizerIntake: Claude mode/session/cwd/transcript,
+  Codex default mode/thread-id/cwd with empty transcript. Missing/null values clear
+  to empty, unsupported mode clears to default, wrong types are rejected.
+- Field limits are UTF-8 BYTES (128 mode, 512 session, 4096 paths), with NUL rejected.
+  Session/thread IDs reject Cc and Cf. The installed CoreFoundation CFCharacterSet.h
+  defines kCFCharacterSetControl as exactly those two Unicode categories, matching
+  the native CharacterSet.controlCharacters check. Decoded newline in cwd remains
+  data, and terminal/control syntax in metadata is not executed as shell code.
+- Only four fields and TAVS_LEGACY_METADATA_INTAKE are emitted as NUL pairs, after
+  all metadata validation succeeds. Raw JSON, unknown/nested fields and body text
+  are not logged, forwarded or persisted. Malformed UTF-8/surrogates, parse recursion,
+  I/O and validation failures use a generic body-free diagnostic, without traceback.
+- The portable path intentionally does not validate/extract provider event/turn
+  fields because it creates no organizer context or observations. This differs
+  from native event validation, but does not grant observation authority or change
+  the requested four legacy-field contract.
+- organizer-state.sh chooses the native route from its exact capability probe
+  before intake, then executes only that chosen branch. A failed native intake
+  is not reparsed with Python. Unsupported/absent native helper selects Python
+  before reading the payload. Metadata success still returns organizer-unavailable.
+- Every call unsets raw payload, organizer context/intake and helper caches, uses
+  local default/empty legacy fields, then exports the resulting four fields. Missing
+  Python, missing script, malformed input or native failure cannot preserve prior
+  context/intake. Portable success does not export a native helper cache or trusted
+  TAVS_ORGANIZER_INTAKE. The private marker is consumed as a local flag only.
+- command-v failure avoids Python invocation and produces the generic metadata
+  unavailable status. Invocation/parser failures likewise leave safe defaults.
+  Existing adapters intentionally continue fixed signal dispatch, but no portable
+  terminal writer is provided by this slice.
+- Current cmd-sync.sh:104-107 explicitly copies portable_metadata.py and returns
+  nonzero on copy failure. Python invokes the file directly, so executable mode
+  is unnecessary. The comparison test checks both existing installation targets;
+  it does not replace missing-helper render readiness with a success claim.
+
+## Tests inspected and remaining useful coverage
+
+New tests cover missing/old native helpers preserving decoded metadata, Codex
+escapes/newlines, nested-body privacy, invalid types, NUL/session controls, lone
+surrogates, invalid constants, oversized input and an open-pipe deadline. Existing
+native metadata/privacy cases remain; the fixture now copies the Python helper.
+
+Add a supported native capability whose intake consumes stdin then fails, with
+valid portable-readable metadata, and assert empty/default fields, no context and
+no portable reparse. Add missing-runtime and missing-file cases with stale legacy
+fields/context/intake preseeded, asserting clearing and generic failure. Include
+TAVS_ORGANIZER_INTAKE in capture assertions because current portable tests inspect
+context but do not directly assert absence of that trust hint. Exact 512-byte /
+multibyte boundaries would strengthen byte-limit parity without duplicating tests.
+
+Delivery/runtime caveat: installers/docs still need the approved Python3 prerequisite
+and later helper readiness work. The current native-render readiness warning can
+remain explicit during this bounded metadata slice. Neither portable metadata
+success nor source-copy success establishes ordinary OSC output or H1 closure.

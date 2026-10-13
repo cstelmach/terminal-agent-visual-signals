@@ -141,3 +141,43 @@ start Phase 8 or treat fixture controls as physical terminal evidence. The maste
 
 
 > Current execution: [PROGRESS.md](PROGRESS.md).
+
+### Phase 7 source and copied-install checkpoint: 2026-10-12 23:05 CEST
+
+Continued from `185e4d2` with clean source. `0efa3c4` copies the root dispatcher, Claude/Codex
+adapters, both hook JSON files, plugin shell source and Codex installer. Required directories,
+copy operations and execute-bit repairs propagate errors, including conditional Bash callers.
+Core/CLI dependencies still use existing globs. No recursive sync, rollback service or new
+installer mode was added. Earlier successful copies may remain when a later copy fails.
+
+Seven new fake-install tests compare exact bytes and execute copied CLI recovery/help,
+standalone shell installation/readers, Codex installation and disabled-visual Claude/Codex
+intake. Direct scripts start at 0644 to reproduce stale modes. Preferences, schedules and lock
+sentinels are preserved. Missing explicit helpers remain failures after suspension is saved.
+Typed fixture logs contain only fixed provider/session identifiers; no raw payload logging.
+
+Red `Cn3aV3` failed all six initial copy/dispatch/error cases. First green attempt `D33Qwd`
+passed five but failed an expected path containing a double slash: the copied Codex installer
+correctly normalized it. Normalized the test root, not production argv. Final seven cases
+passed in `W0bqBi`. Selected regressions `n3orIs` passed 62/62 (sync, recover, shellrc,
+managed-background and suspension parity). `BQPYDG` repeated seven copied-entry cases against
+the newly rebuilt helper. bash -n and diff whitespace checks passed.
+
+`cc1b515` retires the old Scheduler reset method after the menu replacement left only test
+callers. Four action-only tests are removed; mixed scheduler suspension/unknown-state assertions
+remain, as do current independent recovery/client regressions. Full Swift `Mz8PCt` passed
+439/439 in 7.188 seconds without warnings. The previous 443 count included those four retired
+tests. Release `o4lwtX` passed in 9.97 seconds, using the owned Phase 6 scratch build.
+Read-only follow-up: `/tmp/explorer-tavs-sync-failure-cases-20261012.md`; source findings were
+verified with failure injection and existing-mode fixtures. No native query or real-home sync.
+
+Phase 7 implementation steps 1-5 now have source/owned-PTY/fake-copy/fixture evidence. Required
+physical two-second +/-250 ms highlighting, keyboard focus, real hidden/split targets, ANSI/
+TrueColor and light/dark content, pane/Space navigation and locked-menu use remain unverified.
+Phase 7 is Blocked on these accepted native cases, not DONE. Earlier Ghostty Computer Use
+access denial remains binding; no alternate native automation or unchanged access retry ran.
+The prior staged fixture remains available; production app, schedules and sessions are untouched.
+
+**Next:** Phase 8 manual captured working set may proceed from this verified source foundation.
+Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected state/controller
+callers before tests. One phase per next goal iteration; the master goal remains active.

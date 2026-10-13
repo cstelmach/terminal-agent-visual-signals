@@ -3,10 +3,10 @@
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/PLAN.md
 **Status:** In Progress
-**Mode:** Manual (goal service currently reports Blocked; reason unavailable)
+**Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 17:45 CEST
-**Version:** 4.16
+**Last Updated:** 2026-10-13 19:26 CEST
+**Version:** 4.17
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 927a746; earlier hashes below/appendix | 561 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | a08ed0e, b66e332; earlier below/appendix | 184 Bats; Swift reruns failed, details below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -749,46 +749,11 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 > Finished fixture/client log: [Phase 7 appendix](PROGRESS_appendix_phase-7-renderer-foundation.md).
 > Required physical acceptance remains Blocked in the current Phase 7 checkpoint below.
 
-### Phase 7 source and copied-install checkpoint: 2026-10-12 23:05 CEST
+### Phase 7 source and copied-install checkpoint
 
-Continued from `185e4d2` with clean source. `0efa3c4` copies the root dispatcher, Claude/Codex
-adapters, both hook JSON files, plugin shell source and Codex installer. Required directories,
-copy operations and execute-bit repairs propagate errors, including conditional Bash callers.
-Core/CLI dependencies still use existing globs. No recursive sync, rollback service or new
-installer mode was added. Earlier successful copies may remain when a later copy fails.
-
-Seven new fake-install tests compare exact bytes and execute copied CLI recovery/help,
-standalone shell installation/readers, Codex installation and disabled-visual Claude/Codex
-intake. Direct scripts start at 0644 to reproduce stale modes. Preferences, schedules and lock
-sentinels are preserved. Missing explicit helpers remain failures after suspension is saved.
-Typed fixture logs contain only fixed provider/session identifiers; no raw payload logging.
-
-Red `Cn3aV3` failed all six initial copy/dispatch/error cases. First green attempt `D33Qwd`
-passed five but failed an expected path containing a double slash: the copied Codex installer
-correctly normalized it. Normalized the test root, not production argv. Final seven cases
-passed in `W0bqBi`. Selected regressions `n3orIs` passed 62/62 (sync, recover, shellrc,
-managed-background and suspension parity). `BQPYDG` repeated seven copied-entry cases against
-the newly rebuilt helper. bash -n and diff whitespace checks passed.
-
-`cc1b515` retires the old Scheduler reset method after the menu replacement left only test
-callers. Four action-only tests are removed; mixed scheduler suspension/unknown-state assertions
-remain, as do current independent recovery/client regressions. Full Swift `Mz8PCt` passed
-439/439 in 7.188 seconds without warnings. The previous 443 count included those four retired
-tests. Release `o4lwtX` passed in 9.97 seconds, using the owned Phase 6 scratch build.
-Read-only follow-up: `/tmp/explorer-tavs-sync-failure-cases-20261012.md`; source findings were
-verified with failure injection and existing-mode fixtures. No native query or real-home sync.
-
-Phase 7 implementation steps 1-5 now have source/owned-PTY/fake-copy/fixture evidence. Required
-physical two-second +/-250 ms highlighting, keyboard focus, real hidden/split targets, ANSI/
-TrueColor and light/dark content, pane/Space navigation and locked-menu use remain unverified.
-Phase 7 is Blocked on these accepted native cases, not DONE. Earlier Ghostty Computer Use
-access denial remains binding; no alternate native automation or unchanged access retry ran.
-The prior staged fixture remains available; production app, schedules and sessions are untouched.
-
-**Next:** Phase 8 manual captured working set may proceed from this verified source foundation.
-Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected state/controller
-callers before tests. One phase per next goal iteration; the master goal remains active.
-
+> Finished source log: [Phase 7 appendix](PROGRESS_appendix_phase-7-renderer-foundation.md).
+> Physical two-second timing, keyboard focus, hidden/split targets, light/dark ANSI/TrueColor,
+> pane/Space navigation and locked-menu acceptance remain unverified. Phase 7 stays Blocked.
 
 ### Phase 8 renderer and dynamic writer foundations
 
@@ -898,3 +863,30 @@ Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fix
 Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
 Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.
 Goal service returned Blocked twice; this agent did not request that transition. No reason supplied.
+
+### Phase 9 standalone metadata correction: 2026-10-13 19:26 CEST
+
+The goal service is active after the operator's resumption and approval of remaining steps.
+The chosen portability repair uses Python 3 standard library, shipped with the existing core.
+**Scope:** Narrow dependency/file-list exception to PLAN: portable metadata/helper delivery and
+connected regressions. SPEC/PLAN bodies and D01-D18 remain fixed; no ordinary output bypass.
+`a08ed0e` restores the four legacy fields on absent/older-companion installs without context or
+cue authority. One MiB/two-second input bounds, byte/control limits and body disposal remain.
+A missing runtime clears inherited state; failed native intake is never reparsed. `b66e332`
+copies the reader into both private installation fixtures. Python requirements are documented.
+Initial red runs `uS2cAC` and `Yy6reN` preceded parser and sync changes. Focused `UETj9N`: 34/34;
+broad `i9dEW7`: 184/184 Bats. Changed shell syntax and ShellCheck pass. No Swift source changed.
+Full Swift `vgaabI`: 561 cases, 15 assertion failures (11 unexpected), chiefly real deadlines.
+Focused `4pJWN8`: four representative original failures pass unchanged. Second full `ZzTuJr`:
+seven assertions fail in two different cases; original cases pass. Neither full run is green.
+Host load/compression is observed, not a proven cause. The source check found a concrete fixture
+ambiguity: second mock call need not be cleanup, and a three-second gate can self-release.
+Next: instrument/bind that request role and trace one healthy deadline failure without increasing
+100 ms; then finish the portable writer/process identity/synthetic lifecycle and platform checks.
+Full [compatibility reports](helper-compatibility-check-2026-10-13.md) and
+[deadline investigation](preview-timing-source-check-2026-10-13.md) are retained in this package.
+Computer Use again denied Ghostty for safety reasons. No alternative automation was used.
+The operator availability question remains unanswered; dedicated visible checks remain pending.
+No real install/sync, personal preferences/schedules or existing terminal sessions were changed.
+H1 rendering, prior failure attribution, color freshness and native acceptance remain open.
+Phases 2/7/8 stay Blocked on acceptance; 9 stays In Progress. The full goal is incomplete.

@@ -519,3 +519,194 @@ native worker's post-timeout admission release. Notifications preserve ordering
 without extending an individual writer budget; a fresh request can still report
 partial failure if the chain does not drain within that budget. This source check
 does not establish native timing, device acceptance or an independent test pass.
+
+## Retained full-suite deadline investigation (2026-10-13)
+
+# Full Swift deadline failures: source and retained-log investigation
+
+Read-only inspection at 3144a88. No edits, builds/tests, apps/devices, web or goal
+calls. The inspected Swift tree has no uncommitted diff. Failure logs examined:
+vgaabI/command.log and ZzTuJr/command.log under the supplied isolated-run parent.
+The parent reports four original cases passed unchanged in 4pJWN8 and a load/
+compression snapshot; neither is independently verified here or causal proof.
+
+## Observed failures and deadline boundaries
+
+First full run: 561 tests, 15 assertion failures (11 unexpected), not 15 distinct
+failing cases. One TerminalVisualState case and seven VisualRecovery cases failed.
+
+- testUnresolvedBindingsOnSameTTYRemainSeparateCurrentRecords (state tests:721-732)
+  calls saveEffectUnlocked twice, each with a FRESH real monotonic 100 ms deadline.
+  It uses dictionary identity/device fixtures and no TTY writer, native catalogue
+  or asynchronous GCD dispatch. Saves validate/read, create the cold target path,
+  cache target.json and atomically write effect.json. These steps all consume that
+  deadline. lstat/read/mkdir/open/write/rename are cooperative checked operations;
+  checkDeadline does not interrupt a syscall already executing. The generic throw
+  site at state.swift:602 identifies expiry, not which save/syscall caused it.
+  Test elapsed 2.693 seconds includes fixture/framework work; it does not establish
+  that one store syscall took 2.693 seconds. A writer-queue-only explanation cannot
+  explain this direct synchronous failure.
+- testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint (recovery
+  tests:591-604) intentionally returns EIO from open, verifies published intent and
+  no bytes, then uses a REAL healthy reconcile. Failure at 600 is that reconcile's
+  deviceWriteTimedOut, not the deliberately failed open. The subsequent one-second
+  PTY read timeout is a consequence of no expected paint, not another proof of
+  blocked write. Latest intent inspection uses deadline .max.
+- testFocusRenewalAndExactClearPreserveASeparatePreview (48-59) establishes/renews
+  focus, creates preview metadata, then exact-clears focus. Clear beforeOpen cancels
+  metadata under the stable lock; its post-open prepare recomposes preview. Line 56
+  timed out; line 57 received no bytes; line 59's later same-ID renewal did not throw.
+  That sequence is consistent with cancellation not having become durable before
+  the renewal, but lacks a phase trace identifying where clear stopped.
+- Other first-run failures include global-rule focus cancellation, old-focus clear,
+  ordinary-selective recomposition, queued-preview rejection and missing-focus
+  restoration. Failures show deviceWriteTimedOut or Organizer deadline exceeded.
+  Direct preview requests in these cases have nil prior-clear callbacks; they do
+  not exercise FocusController's new dependency waits. Do not blame those waits
+  merely because they changed recently.
+
+SystemProcessRunner:217-229 starts its absolute 100 ms deadline BEFORE global-queue
+worker dispatch and caller semaphore wait. Inside it are beforeOpen metadata,
+admission, open, lock-file setup/flock acquisition, prepare's validation/policy/
+alias enumeration and JSON reads/writes, then descriptor output. Worker dispatch
+latency consumes the budget too. Error type depends on whether the caller wait
+or worker's deadline check wins. Timeout is not evidence specifically of slow open.
+VirtualClock controls record/policy age only; it never stops this real writer clock.
+
+The recovery fixtures use fresh directories and owned raw PTYs, deterministic
+process/device maps and a fixed mock native snapshot. They still use real filesystem
+I/O, flock, GCD and SystemProcessRunner. Healthy output assertions assume all that
+work fits 100 ms. Some pre-writer target validation lies OUTSIDE the writer budget;
+once writeManagedToDevice starts, its beforeOpen work is inside the original bound.
+
+## Second full run: separate fixture ambiguity
+
+ZzTuJr has SIX assertions in the transitive preview test plus ONE in the managed
+mock test, seven total. The original first-run cases passed in this second log.
+Changing failure locations supports timing variability, not a specific host cause.
+
+The transitive fixture (focus tests:1043-1092) identifies held C1 solely as the
+SECOND MockProcessRunner call. It schedules old cleanup and new preview on different
+queues, without making replacement color preparation wait until old cleanup entered.
+Thus the replacement can take ordinal 2 and be held OUTSIDE its native writer budget,
+while actual old cleanup takes ordinal 3 and finishes. The finite 40 ms regression
+DOES have a second-color-query barrier; this transitive fixture does not.
+
+That alternative interleaving explains a possible pair of missing one-second
+failure callbacks, followed by a new effect and extra bytes after the held request
+returns. It is not proven to be ZzTuJr's actual ordering because roles are not logged.
+This concrete fixture assumption must be tested before diagnosing production chains.
+
+Also, release.wait(timeout: now+3) ignores whether it timed out. The entered wait
+and THREE sequential one-second expectations, plus assertions and a 20 ms poll,
+can reach/exceed its hold duration. C1 can self-release before the supposedly-held
+assertions, making new paint permissible. ZzTuJr's total 3.096 seconds, new ID and
+21-byte versus seven-byte reset are consistent with release timing, not proof of
+chain bypass. After failed prerequisite expectations, later assertions can be a
+cascade of invalid fixture assumptions.
+
+ProcessRunner test:740-766 uses injected writeError, but MockProcessRunner:70-80
+still calls REAL completeDeviceWrite and checks expiry BEFORE beforeOpen. If that
+worker arrives late, the callback correctly does not run, so calls stays 1 rather
+than 2. Generic XCTAssertThrowsError accepts that timeout and then count fails.
+Record the actual caught error and worker-start time before calling this a broken
+forwarding implementation. The source explicitly prohibits callbacks after expiry.
+
+## Smallest discriminating diagnostic to run next
+
+1. Run only the transitive fixture with request-role/ordinal and gate-release
+   reason/timestamps recorded. Reuse the finite test's broadcast DispatchGroup
+   barrier so replacement colors cannot enter the runner before old cleanup is
+   known held. Assert the gate is STILL held immediately before no-paint checks.
+   Keep explicit release/defer cleanup; stop dependent assertions after prerequisite
+   failure. These fixture changes do not change production 100 ms deadlines.
+2. For ONE healthy reconcile and the managed-mock case, collect a small in-memory,
+   thread-safe monotonic trace: deadline creation, actual worker entry, beforeOpen
+   entry/exit, open entry/return, prepare entry/exit, caller return and actual error.
+   Emit labels/times only on failure, outside the timed path. Worker entry before
+   the first deadline check is necessary to distinguish late dispatch from slow
+   metadata. The existing injected open/prepare wrappers supply most other points.
+3. For the pure-store case, label first versus second save and time target-directory
+   preparation and atomic target/effect writes with the SAME supplied deadline.
+   This distinguishes cold filesystem work from worker scheduling without a TTY.
+
+A focused uninstrumented pass is useful but cannot locate the stall. Raising the
+writer deadline, pre-creating all cold paths or replacing actual writes with mocks
+would erase the question rather than answer it. Preserve current failures. No
+functional fix or host-load attribution is justified by these logs alone; the
+next trace should decide queue arrival versus metadata/filesystem/lock/open work.
+
+## Retained assertion diagnostics for the two full reruns
+
+These excerpts include every error and final full-suite count. Full logs remain at the
+isolated paths named in PROGRESS. Later passing checks do not erase these failures.
+
+### Run vgaabI
+
+```text
+Test Case '-[TAVSAppTests.TerminalVisualStateTests testUnresolvedBindingsOnSameTTYRemainSeparateCurrentRecords]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Sources/TAVSApp/terminal-visual-state.swift:602: error: -[TAVSAppTests.TerminalVisualStateTests testUnresolvedBindingsOnSameTTYRemainSeparateCurrentRecords] : failed: caught error: "Organizer deadline exceeded."
+Test Case '-[TAVSAppTests.TerminalVisualStateTests testUnresolvedBindingsOnSameTTYRemainSeparateCurrentRecords]' failed (2.693 seconds).
+Test Case '-[TAVSAppTests.TerminalVisualStateTests testUnverifiedAgentNeverBecomesAttentionEligible]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:600: error: -[TAVSAppTests.VisualRecoveryTests testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint] : XCTAssertTrue failed: threw error "deviceWriteTimedOut("/dev/ttys007")"
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:602: error: -[TAVSAppTests.VisualRecoveryTests testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint] : XCTAssertEqual failed: threw error "Error Domain=NSPOSIXErrorDomain Code=60 "Operation timed out""
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFailedDeviceOpenRetainsOrdinaryColorAndResetWithoutClaimingPaint]' failed (1.189 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFailedPersistenceStartsNeitherDiscoveryNorDeviceOutput]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:133: error: -[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule] : XCTAssertFalse failed: threw error "deviceWriteTimedOut("/dev/ttys007")"
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:135: error: -[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule] : XCTAssertEqual failed: ("nil") is not equal to ("Optional(TAVSApp.TerminalTargetBinding(tty: "/dev/ttys007", device: 268435463, ttyOwner: TAVSApp.ProcessGeneration(pid: 10, startSeconds: 100, startMicroseconds: 1), nativeSurface: nil))")
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:136: error: -[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule] : XCTAssertFalse failed
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceDoesNotClaimPaintUnderGlobalRule]' failed (0.185 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFocusCancellationEvidenceIsAbsentBeforeMetadataFailure]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFocusRenewalAndExactClearPreserveASeparatePreview]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:56: error: -[TAVSAppTests.VisualRecoveryTests testFocusRenewalAndExactClearPreserveASeparatePreview] : XCTAssertTrue failed: threw error "deviceWriteTimedOut("/dev/ttys007")"
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:57: error: -[TAVSAppTests.VisualRecoveryTests testFocusRenewalAndExactClearPreserveASeparatePreview] : XCTAssertEqual failed: threw error "Error Domain=NSPOSIXErrorDomain Code=60 "Operation timed out""
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:59: error: -[TAVSAppTests.VisualRecoveryTests testFocusRenewalAndExactClearPreserveASeparatePreview] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[TAVSAppTests.VisualRecoveryTests testFocusRenewalAndExactClearPreserveASeparatePreview]' failed (1.275 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testForcedResetCannotEraseAStandaloneIntentPublishedDuringOpen]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testInitialPreviewQueuedBeforeRecoveryCannotPaintButNewExplicitPreviewCan]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:687: error: -[TAVSAppTests.VisualRecoveryTests testInitialPreviewQueuedBeforeRecoveryCannotPaintButNewExplicitPreviewCan] : XCTAssertFalse failed: threw error "Organizer deadline exceeded."
+Test Case '-[TAVSAppTests.VisualRecoveryTests testInitialPreviewQueuedBeforeRecoveryCannotPaintButNewExplicitPreviewCan]' failed (0.124 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testKnownMissingRegistryDeviceIsVanishedWithoutAuthorizingOutput]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testOldFocusClearCannotCancelANewerRunAndPlainAliasUsesNativeRecipe]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Sources/TAVSApp/ProcessRunner.swift:228: error: -[TAVSAppTests.VisualRecoveryTests testOldFocusClearCannotCancelANewerRunAndPlainAliasUsesNativeRecipe] : failed: caught error: "deviceWriteTimedOut("/dev/ttys007")"
+Test Case '-[TAVSAppTests.VisualRecoveryTests testOldFocusClearCannotCancelANewerRunAndPlainAliasUsesNativeRecipe]' failed (0.305 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testOneCancellationAcknowledgementCoversAllValidatedPhysicalAliases]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testOrdinaryUpdatesRemainStoredWhileActiveSelectiveBackgroundWins]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:1198: error: -[TAVSAppTests.VisualRecoveryTests testOrdinaryUpdatesRemainStoredWhileActiveSelectiveBackgroundWins] : XCTAssertTrue failed: threw error "deviceWriteTimedOut("/dev/ttys007")"
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:1199: error: -[TAVSAppTests.VisualRecoveryTests testOrdinaryUpdatesRemainStoredWhileActiveSelectiveBackgroundWins] : XCTAssertEqual failed: threw error "Error Domain=NSPOSIXErrorDomain Code=60 "Operation timed out""
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/visual-recovery-tests.swift:1200: error: -[TAVSAppTests.VisualRecoveryTests testOrdinaryUpdatesRemainStoredWhileActiveSelectiveBackgroundWins] : XCTAssertFalse failed
+Test Case '-[TAVSAppTests.VisualRecoveryTests testOrdinaryUpdatesRemainStoredWhileActiveSelectiveBackgroundWins]' failed (1.205 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testPhysicalCompletionReportsAliasesAndFailuresBeforeAStalledPeer]' started.
+Test Case '-[TAVSAppTests.VisualRecoveryTests testRequestedMissingFocusRestorationComposesLatestIntentAndRejectsChangedRevision]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Sources/TAVSApp/ProcessRunner.swift:228: error: -[TAVSAppTests.VisualRecoveryTests testRequestedMissingFocusRestorationComposesLatestIntentAndRejectsChangedRevision] : failed: caught error: "Organizer deadline exceeded."
+Test Case '-[TAVSAppTests.VisualRecoveryTests testRequestedMissingFocusRestorationComposesLatestIntentAndRejectsChangedRevision]' failed (0.108 seconds).
+Test Case '-[TAVSAppTests.VisualRecoveryTests testResidualGlobalCleanupPreservesCurrentSuspendedPreviewBackground]' started.
+	 Executed 561 tests, with 15 failures (11 unexpected) in 28.951 (29.242) seconds
+Test Suite 'All tests' failed at 2026-10-13 19:18:15.088.
+	 Executed 561 tests, with 15 failures (11 unexpected) in 28.951 (29.250) seconds
+◇ Test run started.
+```
+
+### Run ZzTuJr
+
+```text
+Test Case '-[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1073: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : Asynchronous wait failed: Exceeded timeout of 1 seconds, with unfulfilled expectations: "Replacement reports its bounded predecessor wait".
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1077: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : Asynchronous wait failed: Exceeded timeout of 1 seconds, with unfulfilled expectations: "Newer cleanup reports its bounded predecessor wait".
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1082: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : XCTAssertTrue failed
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1083: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : XCTAssertEqual failed: ("Optional("6703FE28-DEF7-476B-B28D-6E2332B60A71")") is not equal to ("Optional("984C3026-10CC-416A-B12B-FD26446B7653")")
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1085: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : XCTAssertEqual failed: ("1") is not equal to ("0")
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/focus-controller-tests.swift:1087: error: -[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor] : XCTAssertEqual failed: ("21 bytes") is not equal to ("7 bytes")
+Test Case '-[TAVSAppTests.FocusControllerTests testTimedOutCleanupCannotHideItsOutstandingPredecessor]' failed (3.096 seconds).
+Test Case '-[TAVSAppTests.FocusControllerTests testUnavailableCueSourceRetainsSnapshotAndCannotAuthorizeDimming]' started.
+Test Case '-[TAVSAppTests.ProcessRunnerTests testManagedMockForwardsBeforeOpenAndRunsItOnceBeforeInjectedError]' started.
+/Users/cs/local/code/apps/terminal-agent-visual-signals/src/macos/TAVSApp/Tests/TAVSAppTests/process-runner-tests.swift:766: error: -[TAVSAppTests.ProcessRunnerTests testManagedMockForwardsBeforeOpenAndRunsItOnceBeforeInjectedError] : XCTAssertEqual failed: ("1") is not equal to ("2")
+Test Case '-[TAVSAppTests.ProcessRunnerTests testManagedMockForwardsBeforeOpenAndRunsItOnceBeforeInjectedError]' failed (0.240 seconds).
+Test Case '-[TAVSAppTests.ProcessRunnerTests testManagedMockNeedsExplicitOwnedDescriptorAndExecutesFreshPolicy]' started.
+	 Executed 561 tests, with 7 failures (0 unexpected) in 22.660 (22.837) seconds
+Test Suite 'All tests' failed at 2026-10-13 19:20:52.357.
+	 Executed 561 tests, with 7 failures (0 unexpected) in 22.660 (22.839) seconds
+◇ Test run started.
+```
