@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.18
+Version: 1.19
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -88,8 +88,11 @@ survives cancellation, masking and revision changes. Focus restoration changes o
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.
 Sync now warns when managed render or metadata capabilities are unavailable after source copying.
-Standalone ordinary-signaling compatibility remains a confirmed open regression; portable transport
-delivery needs creator input. No raw bypass or change to D01-D18 has been made.
+Standalone ordinary rendering remains a confirmed open regression. With approval to complete the
+remaining goal work, the chosen repair uses a plugin-relative Python 3 standard-library helper.
+The metadata slice now preserves legacy hook fields on absent/older-companion installations,
+with explicit unavailable organizer coverage. Sync delivers that reader. Terminal output and
+platform acceptance remain pending; no raw bypass or change to D01-D18 has been made.
 Normal Claude/Codex hooks now reuse validated organizer support across the original script exec,
 reducing helper launches from six to five while preserving argv disposal and independent rendering.
 Shell startup still uses three helpers; its cost descriptions no longer promise submillisecond work.

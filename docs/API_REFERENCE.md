@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.27
+Version: 1.28
 
 ## Public recovery commands
 
@@ -61,6 +61,14 @@ After copying, sync checks both managed-render and organizer-metadata capabiliti
 existing validation branches, excluding isolated GUI launch keys. Missing/unsupported capability
 warns separately from source-copy success and does not claim hooks are ready. Probe output is not
 echoed. This diagnostic does not repair the pending standalone ordinary-signaling regression.
+Sync also copies `src/core/portable_metadata.py`. When native organizer capability is absent or
+unsupported, intake selects this Python 3 reader before consuming input. It preserves the four
+legacy metadata fields, returns unavailable organizer coverage and exports no context/trust hint.
+It accepts a top-level JSON object, caps input at 1 MiB with a two-second read deadline, rejects
+invalid field types and enforces the native byte/control limits. Conversation bodies and nested
+metadata do not reach core. A missing runtime or invalid payload clears inherited fields and
+reports metadata unavailable. A selected native intake failure never invokes a second parser.
+This path supplies metadata only; ordinary rendering without the native companion remains open.
 Successful Claude/Codex intake transfers the existing positive organizer capability cache across
 the unchanged core script exec. Core accepts an imported cache only with the existing intake/context
 hint, matching selected helper and executable presence, then removes its export attributes. Intake

@@ -37,7 +37,8 @@ sync_fixture() {
     sync_fixture
     local target file
     for target in "$CACHE" "$MARKET"; do
-        for file in "${FILES[@]}" src/core/organizer-state.sh src/core/visual-restrictions-state.sh src/cli/cmd-recover.sh; do
+        for file in "${FILES[@]}" src/core/organizer-state.sh src/core/visual-restrictions-state.sh \
+            src/core/portable_metadata.py src/cli/cmd-recover.sh; do
             cmp "$REPO_ROOT/$file" "$target/$file"
         done
         for file in tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh src/core/trigger.sh; do
@@ -65,6 +66,22 @@ sync_fixture() {
     run "$CACHE/tavs" recover --resume
     [ "$status" -eq 1 ]
     grep -q '^SUSPENDED="false"$' "$HOME/.tavs/visual-restrictions.state"
+}
+
+@test "copied metadata helper works without an installed native companion" {
+    sync_fixture
+    local target
+    for target in "$CACHE" "$MARKET"; do
+        run env TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper" bash -c '
+source "$1/src/core/organizer-state.sh"
+_tavs_organizer_intake claude "$$" || result=$?
+[[ "$result" == 1 && "$TAVS_PERMISSION_MODE" == plan ]]
+[[ "$TAVS_SESSION_ID" == copied-43 && "$TAVS_CWD" == /fixture/copied ]]
+[[ -z "${TAVS_ORGANIZER_CONTEXT+x}${TAVS_ORGANIZER_INTAKE+x}" ]]
+' _ "$target" <<< '{"session_id":"copied-43","cwd":"/fixture/copied","permission_mode":"plan","prompt":"BODY_SENTINEL"}'
+        [ "$status" -eq 0 ]
+        [ "$output" = 'tavs: organizer coverage unavailable' ]
+    done
 }
 
 @test "copied shell installer keeps a standalone current shellrc and idempotent fences" {
