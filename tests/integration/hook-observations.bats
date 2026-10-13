@@ -200,6 +200,83 @@ if e["TAVS_ORGANIZER_CONTEXT"]:
 PY
 }
 
+@test "valid adapter intake reuses one private organizer probe after discarding raw argv" {
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/counting-helper" CALLS="$BATS_TEST_TMPDIR/calls"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+if [[ "$1" == --validate-config ]]; then
+    printf '%s\n' "$2" >> "$CALLS"
+    case "$2" in
+        --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+        --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+        *) exit 1 ;;
+    esac
+else
+    printf '%s\n' "$1" >> "$CALLS"
+    case "$1" in
+        --organizer-intake) cat >/dev/null; printf 'TAVS_ORGANIZER_INTAKE\0%s\0TAVS_ORGANIZER_CONTEXT\0%s\0' 1 fixture-context ;;
+        --organizer-observe) ;;
+        --managed-render) cat >/dev/null; printf 'rendered\n' ;;
+        *) exit 1 ;;
+    esac
+fi
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
+    cat > "$FIXTURE/src/core/trigger.sh" <<'CORE'
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/organizer-state.sh"
+[[ -z "$(cat)" ]] || exit 43
+case "$1:${2:-}" in processing:new-prompt|complete:) ;; *) exit 44 ;; esac
+[[ "$(/bin/ps -o command= -p $$)" != *BODY_SENTINEL* ]] || exit 45
+(sleep 0.3; :) & child=$!
+[[ "$(/bin/ps -o command= -p "$child")" != *BODY_SENTINEL* ]] || exit 46
+wait "$child"
+_tavs_organizer_begin "$1"
+_tavs_render_begin
+_tavs_render_queue background '#123456'
+_tavs_render_flush
+env | /usr/bin/grep '^_TAVS_.*HELPER' > "$CAPTURE.private" || :
+CORE
+    printf '{"prompt":"BODY_SENTINEL"}' > "$BATS_TEST_TMPDIR/payload.json"
+    local adapter
+    for adapter in "$CLAUDE" "$CODEX"; do
+        : > "$CALLS"
+        if [[ "$adapter" == "$CODEX" ]]; then
+            run bash "$adapter" complete '{"type":"agent-turn-complete","prompt":"BODY_SENTINEL"}' BODY_SENTINEL
+        else
+            run bash "$adapter" processing new-prompt BODY_SENTINEL < "$BATS_TEST_TMPDIR/payload.json"
+        fi
+        [ "$status" -eq 0 ]
+        [ "$(grep -c '^--organizer-capabilities$' "$CALLS")" -eq 1 ]
+        [ "$(wc -l < "$CALLS")" -eq 5 ]
+        [ ! -s "$CAPTURE.private" ]
+    done
+}
+
+@test "adapter intake ignores forged inherited organizer capability cache" {
+    export _TAVS_ORGANIZER_HELPER_CHECKED=1 _TAVS_ORGANIZER_HELPER="$BATS_TEST_TMPDIR/forged-helper"
+    export FORGED_LOG="$BATS_TEST_TMPDIR/forged-calls"
+    cat > "$_TAVS_ORGANIZER_HELPER" <<'HELPER'
+#!/bin/bash
+printf 'called\n' >> "$FORGED_LOG"
+printf 'TAVS_ORGANIZER_INTAKE\0%s\0TAVS_ORGANIZER_CONTEXT\0%s\0' 1 forged-context
+HELPER
+    chmod +x "$_TAVS_ORGANIZER_HELPER"
+    printf '{"session_id":"fixture-43"}' > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude processing
+    [ "$status" -eq 0 ]
+    [ ! -e "$FORGED_LOG" ]
+    _assert_private_dispatch processing
+}
+
+@test "core rejects an imported capability cache without a matching intake hint" {
+    export _TAVS_ORGANIZER_HELPER_CHECKED=1 _TAVS_ORGANIZER_HELPER="$BATS_TEST_TMPDIR/forged-helper"
+    unset TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_CONTEXT
+    run bash -c 'source "$1/src/core/organizer-state.sh"; _tavs_organizer_helper; printf "%s" "$_TAVS_ORGANIZER_HELPER"' _ "$REPO_ROOT"
+    [ "$status" -eq 0 ]
+    [ "$output" = "$TAVS_TEST_HELPER_BIN" ]
+}
+
 @test "Shell syntax stays metadata data without execution" {
     python3 - "$BATS_TEST_TMPDIR" <<'PY' > "$BATS_TEST_TMPDIR/payload.json"
 import json,sys

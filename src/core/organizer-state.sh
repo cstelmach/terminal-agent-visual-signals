@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Import only a matching executable cache with the existing intake/context hint.
+if [[ "$(declare -p _TAVS_ORGANIZER_HELPER_CHECKED 2>/dev/null)" == 'declare -x '* ]]; then
+    if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then
+        _tavs_import_helper="$TAVS_TEST_HELPER_BIN"
+    else
+        _tavs_import_helper=/Applications/TAVS.app/Contents/MacOS/TAVSApp
+    fi
+    if [[ "${_TAVS_ORGANIZER_HELPER_CHECKED:-0}" != 1 || "${TAVS_ORGANIZER_INTAKE:-0}" != 1 \
+        || -z "${TAVS_ORGANIZER_CONTEXT:-}" || "${_TAVS_ORGANIZER_HELPER:-}" != "$_tavs_import_helper" \
+        || ! -x "$_tavs_import_helper" ]]; then
+        unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
+    fi
+    unset _tavs_import_helper
+fi
+# A verified adapter cache is used in this shell, not inherited by later children.
+export -n _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
+
 _tavs_organizer_helper() {
     if [[ "${_TAVS_ORGANIZER_HELPER_CHECKED:-0}" != 1 ]]; then
         _TAVS_ORGANIZER_HELPER_CHECKED=1
@@ -27,6 +44,7 @@ _tavs_organizer_call() {
 _tavs_organizer_intake() {
     local provider="$1" caller="$2" key value valid=0
     local mode="default" transcript="" session="" cwd="" context=""
+    unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
     unset _TAVS_HOOK_PAYLOAD TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_CONTEXT
     if _tavs_organizer_helper; then
         while IFS= read -r -d '' key && IFS= read -r -d '' value; do
@@ -44,6 +62,7 @@ _tavs_organizer_intake() {
     export TAVS_SESSION_ID="$session" TAVS_CWD="$cwd"
     if [[ "$valid" == 1 && -n "$context" ]]; then
         export TAVS_ORGANIZER_CONTEXT="$context" TAVS_ORGANIZER_INTAKE=1
+        export _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
         return 0
     fi
     printf 'tavs: organizer metadata unavailable\n' >&2
