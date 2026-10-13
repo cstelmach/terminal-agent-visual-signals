@@ -557,6 +557,82 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: recordURL("observation").path))
     }
 
+    func testScopedCachedRecordsRetainEveryOwnerAndEffectOnlyBindingOnRequestedTTY() throws {
+        let store = makeStore()
+        records[12] = identity(12); records[43] = identity(43, device: UInt32.max)
+        let first = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        let second = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(12)))
+        let native = TerminalTargetBinding(tty: tty, device: first.device, ttyOwner: first.ttyOwner,
+            nativeSurface: surface().id)
+        try store.cacheTargetUnlocked(first, deadline: .max)
+        try store.cacheTargetUnlocked(second, deadline: .max)
+        let bucket = organizer.appendingPathComponent("targets/\(key(tty))")
+        let effectURL = bucket.appendingPathComponent("11-100-1/43-100-1/\(key("terminal-43"))/effect.json")
+        try FileManager.default.createDirectory(at: effectURL.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        try JSONEncoder().encode(effect(native)).write(to: effectURL)
+
+        let otherTTY = "/dev/ttys044"
+        devices[otherTTY] = 124; records[13] = identity(13, device: 124)
+        let other = try XCTUnwrap(store.captureTarget(tty: otherTTY, owner: generation(13)))
+        try store.cacheTargetUnlocked(other, deadline: .max)
+        let otherBucket = organizer.appendingPathComponent("targets/\(key(otherTTY))")
+        let malformed = otherBucket.appendingPathComponent("target.json")
+        try Data("invalid".utf8).write(to: malformed)
+        let link = otherBucket.appendingPathComponent("linked-records")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: bucket)
+
+        let scoped = store.cachedRecords(tty: tty)
+        XCTAssertEqual(Set(scoped.bindings), Set([first, second]))
+        XCTAssertEqual(scoped.effects.map(\.target), [native])
+        XCTAssertTrue(scoped.unreadable.isEmpty)
+        let full = store.cachedRecords()
+        XCTAssertEqual(Set(full.bindings), Set([first, second, other]))
+        XCTAssertEqual(full.effects.map(\.target), [native])
+        XCTAssertEqual(Set(full.unreadable.map { $0.standardizedFileURL.path }),
+                       Set([malformed, link].map { $0.standardizedFileURL.path }))
+        XCTAssertTrue(store.cachedRecords(tty: "/dev/ttys999").bindings.isEmpty)
+        XCTAssertTrue(store.cachedRecords(tty: "/dev/ttys999").unreadable.isEmpty)
+    }
+
+    func testScopedCachedRecordsRejectSymlinkedParentAndTTYBucket() throws {
+        let store = makeStore(), binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        try store.cacheTargetUnlocked(binding, deadline: .max)
+        let targets = organizer.appendingPathComponent("targets")
+        for parentLink in [true, false] {
+            let isolated = root.appendingPathComponent(parentLink ? "parent-link" : "tty-link")
+            let linkedTargets = isolated.appendingPathComponent("organizer/targets")
+            let link = parentLink ? linkedTargets : linkedTargets.appendingPathComponent(key(tty))
+            try FileManager.default.createDirectory(at: link.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            try FileManager.default.createSymbolicLink(at: link,
+                withDestinationURL: parentLink ? targets : targets.appendingPathComponent(key(tty)))
+            let scoped = makeStore(directory: isolated).cachedRecords(tty: tty)
+            XCTAssertTrue(scoped.bindings.isEmpty)
+            XCTAssertTrue(scoped.effects.isEmpty)
+            XCTAssertEqual(scoped.unreadable.map { $0.standardizedFileURL.path },
+                           [link.standardizedFileURL.path])
+        }
+    }
+
+    func testScopedCachedRecordsKeepPlacementAndDescendantValidation() throws {
+        let store = makeStore(), binding = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        try store.cacheTargetUnlocked(binding, deadline: .max)
+        let bucket = organizer.appendingPathComponent("targets/\(key(tty))")
+        let misplaced = bucket.appendingPathComponent("effect.json")
+        try JSONEncoder().encode(effect(binding)).write(to: misplaced)
+        let malformed = bucket.appendingPathComponent("preview.json")
+        try Data("invalid".utf8).write(to: malformed)
+        let link = bucket.appendingPathComponent("linked-records")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: bucket)
+        let scoped = store.cachedRecords(tty: tty)
+        XCTAssertEqual(scoped.bindings, [binding])
+        XCTAssertTrue(scoped.effects.isEmpty)
+        XCTAssertEqual(Set(scoped.unreadable.map { $0.standardizedFileURL.path }),
+                       Set([misplaced, malformed, link].map { $0.standardizedFileURL.path }))
+        XCTAssertEqual(store.cachedRecords().bindings, [binding])
+    }
+
     func testFreshNativeBindingUsesContinuingParentAndRetainsBackgroundedOwner() throws {
         records[10] = ProcessIdentity(generation: generation(10), parentPID: 11, group: 10,
                                       device: 123, foregroundGroup: 10)

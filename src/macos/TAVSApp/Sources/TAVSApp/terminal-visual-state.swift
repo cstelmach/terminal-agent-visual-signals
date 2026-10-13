@@ -411,14 +411,23 @@ final class TerminalVisualStateStore {
         return intent
     }
 
-    func cachedRecords() -> TerminalCachedVisualRecords {
-        let root = directory.appendingPathComponent("targets", isDirectory: true)
+    func cachedRecords(tty: String? = nil) -> TerminalCachedVisualRecords {
+        var root = directory.appendingPathComponent("targets", isDirectory: true)
         var info = stat()
         if lstat(root.path, &info) != 0 {
             return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: errno == ENOENT ? [] : [root])
         }
         guard info.st_mode & S_IFMT == S_IFDIR else {
             return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root])
+        }
+        if let tty = tty {
+            root.appendPathComponent(key(tty), isDirectory: true)
+            if lstat(root.path, &info) != 0 {
+                return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: errno == ENOENT ? [] : [root])
+            }
+            guard info.st_mode & S_IFMT == S_IFDIR else {
+                return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root])
+            }
         }
         var bindings: [TerminalTargetBinding] = [], effects: [TerminalEffectRecord] = [], unreadable: [URL] = []
         let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil,
@@ -429,7 +438,8 @@ final class TerminalVisualStateStore {
         for case let url as URL in enumerator {
             guard lstat(url.path, &info) == 0 else { unreadable.append(url); continue }
             if info.st_mode & S_IFMT == S_IFLNK {
-                enumerator.skipDescendants(); unreadable.append(url); continue
+                // Enumeration does not follow links; skipping here can prune the next real directory.
+                unreadable.append(url); continue
             }
             guard ["target.json", "effect.json", "preview.json", "focus.json", "bound-intent.json"].contains(url.lastPathComponent) else { continue }
             do {

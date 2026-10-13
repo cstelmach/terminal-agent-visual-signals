@@ -490,7 +490,7 @@ final class VisualRecovery {
 
     func target(tty: String, owner: ProcessGeneration) throws -> TerminalTargetBinding {
         guard let plain = state.captureTarget(tty: tty, owner: owner) else { throw VisualRecoveryError.targetUnavailable }
-        let cached = state.cachedRecords()
+        let cached = state.cachedRecords(tty: tty)
         let bindings = Set(cached.bindings + cached.effects.map(\.target)).filter {
             $0.tty == tty && state.validateTarget($0) == .valid
         }
@@ -515,7 +515,7 @@ final class VisualRecovery {
     }
 
     func cachedTarget(tty: String) throws -> TerminalTargetBinding {
-        let cached = state.cachedRecords()
+        let cached = state.cachedRecords(tty: tty)
         let matches = Set(cached.bindings + cached.effects.map(\.target)).filter {
             $0.tty == tty && state.validateTarget($0) == .valid
         }

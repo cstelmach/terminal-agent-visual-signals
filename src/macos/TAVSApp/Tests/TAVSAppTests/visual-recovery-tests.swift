@@ -1676,6 +1676,7 @@ final class VisualRecoveryTests: XCTestCase {
             XCTFail("Conflicting cached aliases must not trigger native guessing"); return []
         })
         XCTAssertThrowsError(try service.target(tty: plain.tty, owner: plain.ttyOwner))
+        XCTAssertThrowsError(try service.cachedTarget(tty: plain.tty))
         let report = recovery(allowed: [try XCTUnwrap(first.nativeSurface)]).recover()
         XCTAssertTrue(report.hasFailures)
         XCTAssertEqual(report.items.count, 1)
@@ -1711,6 +1712,7 @@ final class VisualRecoveryTests: XCTestCase {
         let second = try XCTUnwrap(state.captureTarget(tty: first.tty, owner: generation(11)))
         try cache(first); try cache(second)
         XCTAssertThrowsError(try recovery().target(tty: first.tty, owner: first.ttyOwner))
+        XCTAssertThrowsError(try recovery().cachedTarget(tty: first.tty))
         let report = recovery().recover()
         XCTAssertTrue(report.hasFailures)
         XCTAssertEqual(report.items.count, 2)
