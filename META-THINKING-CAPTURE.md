@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 25 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 33 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 26 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 34 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3154,3 +3154,88 @@ promotion proposals remain unchanged; no new workflow or control plane was intro
 **Confidence:** Action facts, tests and diffs are observed. Strategy rationale is reconstructed.
 Model variant, intermittent failure cause and physical acceptance remain unverified. The bounded
 slice completed; the full goal remains active with compatibility input and other review work open.
+
+## 2026-10-13 · gpt-6 · replacement-cleanup-ordering
+
+meta:
+  model: gpt-6
+  model_source: self-reported; exact served variant unobserved
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879
+  trace: observed tool calls; no independent transcript model extraction
+
+**Framing [O]:** Current Git and SPEC-owned progress identified retained output failures and
+focus-color freshness as next work. The bounded slice investigated preview replacement versus
+its own prior cleanup. The separate managed-reset failure remained unassigned. Source exposed
+independent start/clear queues sharing one ordinary physical admission slot. A finite owned-PTY
+gate then reproduced EBUSY and absent replacement output; this did not prove the older failure's
+cause.
+
+**Strategy [R]:** Local ordering addressed the reproduced collision without changing admission
+or adding retries. Dependencies were keyed by the existing physical lifetime, shared by native/plain
+aliases. Waits were placed before admission through the original writer callback and deadline.
+Per-physical fanout completion preserved alias/conflicting-owner checks while allowing a healthy
+target to progress independently. Cleanup groups stayed in memory; no schema, dependency or daemon
+was added. The design retained exact-ID cancellation and the separate emergency reset path.
+
+**Action trace [O]:**
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Orient | SPEC/PLAN/GOAL/progress and Git | Previous turn made progress |
+| 2 | Inspect | Controller, fanout and admission | Identify own-clear contention |
+| 3 | Reproduce | KMqaUW | Finite admission hold, one EBUSY, no replacement |
+| 4 | Implement | Physical completion and original-budget wait | Single-target green |
+| 5 | Review/test | ZTqHdl | Serial batches blocked unrelated B |
+| 6 | Correct | Concurrent batches plus predecessors | Keep same-target ordering |
+| 7 | Reproduce | KelinG | Timed-out successor hid older unfinished work |
+| 8 | Correct | Notify-based completion | Retain dependency without delaying failure report |
+| 9 | Verify/commit | 561 Swift, release, 178 Bats | a5c6549 and 927a746 |
+
+**Decision points [O/R]:** Waiting occurs outside controller and record locks and before ordinary
+admission. Distinct cleanup batches progress concurrently, while successive same-target requests
+retain older dependencies. Each completion signal is separate from the bounded result returned
+to the UI. A timed-out successor cannot advertise that its predecessor finished. Cancellation checks
+before and after waiting prevent late paint; a new explicit preview can proceed when the chain
+drains.
+The source review compared these choices with skipping cleanup and broad busy retries; neither was
+needed. Direct requests omit the new optional callbacks, preserving their existing behavior.
+
+**Failure arcs [O]:** KMqaUW failed eight assertions and captured EBUSY in the real bounded writer.
+KGHoBu passed after adding per-target ordering. The first cross-run fixture then looked for a native
+effect under a physical-only path, producing ZEIU1L/oLoWRh failures before reaching its intended
+case. Correcting that lookup exposed five serial-queue failures in ZTqHdl. Concurrent dispatch fixed
+cross-target blockage while predecessor waits retained same-target order.
+
+The follow-up initially found no remaining defect, then a parent counterexample identified lost
+transitive ordering after a successor's wait timed out. KelinG reproduced three assertions: paint,
+a new effect ID and bytes while the ancestor remained held. The completion closure now runs through
+predecessor notification after both results exist. The new test also releases the ancestor, verifies
+its reset and demonstrates a fresh explicit preview afterward. Superseded review conclusions remain
+visible beside their corrections rather than being silently replaced.
+
+**Verification [O]:** Five new tests cover finite own cleanup, unrelated successive batches,
+cancellation during waiting, transitive timeout retention and callback deduplication/progress for
+aliases and failed peers. Final focused a54Lpn passed 142 checks; full 40ORys passed 561/561 in
+11.028 seconds. Release aqws2z built in 14.02 seconds; rebuilt-helper 7WAkIc passed 178/178 Bats.
+All runs used private roots and owned PTYs, sequential builds/suites and the original 100 ms budget.
+The narrow final source review found no remaining concrete defect in this correction. It ran no
+tests.
+
+Two finished progress blocks moved unchanged into the existing appendix, with reconstruction
+checked.
+SPEC/PLAN bodies stayed fixed. No real app, Ghostty request, install, personal state or agent
+process
+was changed. Native duration/readability and historical failure attribution remain unverified.
+
+**Heuristics [O]:** P8 recurred through source adjudication and discriminating regressions; P9
+through
+SPEC-owned continuation. The transferable rule is to separate an operation's bounded result from
+completion of the work it depended on. Existing promotion proposals remain unchanged; no new skill
+or process framework was introduced.
+
+**Confidence:** Tool actions, diffs and checks are observed. Strategy rationale is reconstructed;
+exact model variant and the earlier intermittent causes remain unknown. This slice completed, while
+the full goal remains active with managed-reset investigation, color freshness, H1 and native
+acceptance open.

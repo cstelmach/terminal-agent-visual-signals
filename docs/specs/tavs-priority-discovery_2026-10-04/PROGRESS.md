@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 16:28 CEST
-**Version:** 4.14
+**Last Updated:** 2026-10-13 17:28 CEST
+**Version:** 4.15
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | a710d9f; earlier hashes below/appendix | 556 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 927a746; earlier hashes below/appendix | 561 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -857,32 +857,17 @@ callers before tests. One phase per next goal iteration; the master goal remains
 
 > Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 helper compatibility diagnostic: 2026-10-13 14:31 CEST
+### Phase 9 helper compatibility diagnostic
 
-`4b6abf6` separates sync-copy success from render/metadata readiness; three red cases: `0epna4`.
-Final `DIM1gt`: 548 Swift, 9.892 seconds; `5eFk7R`: 175 Bats; final sync `DQcM7q`: 10/10.
-Bash syntax passed; followed ShellCheck has only pre-existing SC2012. No Swift rebuild needed.
-The [source check](helper-compatibility-check-2026-10-13.md) confirms H1; compatibility input is pending.
-No rendering bypass or contract change. Prior entry moved unchanged; SPEC/PLAN fixed. Next: M5 cost checks
-while awaiting compatibility choice. Phases 2/7/8 Blocked, 9 active; native/UI acceptance unverified.
+> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md). H1 remains open.
 
 ### Phase 9 measured helper cost
 
 > Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 per-TTY cached lookup: 2026-10-13 16:03 CEST
+### Phase 9 per-TTY cached lookup
 
-`70e5e74` scopes two resolution callers to one TTY while retaining every owner/alias/effect branch.
-Full recovery/relaunch scans remain global. Three new cases and two extended conflict checks pass.
-Red `NJBAjY`: missing API; `Q521S1`: scope failures plus path assertions and lost sibling records.
-Normalize fixture paths; `vGkCtp` retained one lost-record failure. A local Foundation probe proved
-`skipDescendants()` on links pruned the next directory; link rejection now preserves valid peers.
-Final `1cYi6l`: 9/9 focused; `i9FV5n`: 551/551 Swift, 10.631 s; release `OGadCV`: 19.97 s.
-Current-helper `jP9fYJ`: 178/178 isolated Bats, fixtures retained. Builds/suites ran sequentially.
-The [source check](tty-cache-scope-check-2026-10-13.md) found no new defect; prior limits stay.
-**Scope:** Two source/two test paths; shared lookup correction extends Phase 9's original file list.
-No retirement/index or latency claim. Same-TTY history and preview config cost remain M5 work.
-H1 input and native acceptance stay open. SPEC/PLAN fixed; goal active, 2/7/8 Blocked, 9 active.
+> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
 ### Phase 9 preview preparation timing: 2026-10-13 16:28 CEST
 
@@ -898,3 +883,17 @@ Full [source reports](preview-timing-source-check-2026-10-13.md) retain draft fi
 Finished helper-cost text moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
 Next: diagnose retained output failures and verify focus color freshness/remaining review leads.
 H1 input and physical Ghostty acceptance remain open; 2/7/8 Blocked and 9 active.
+
+### Phase 9 replacement cleanup ordering: 2026-10-13 17:28 CEST
+
+`a5c6549` adds per-physical completion/waits; `927a746` orders preview cleanup within the same budget.
+`KMqaUW`: real finite cleanup produced EBUSY and eight failures. `ZTqHdl`: serial batches failed B.
+`KelinG`: three failures proved a timed-out successor hid older work. Completion now waits on both.
+`ZEIU1L`/`oLoWRh` retained a wrong physical-only fixture path; corrected to the native binding.
+Five new tests cover own cleanup, cross-run progress, cancel, timeout ancestry and alias callbacks.
+Final `a54Lpn`: 142 focused; `40ORys`: 561/561 Swift, 11.028 s; release `aqws2z`: 14.02 s.
+Current-helper `7WAkIc`: 178/178 Bats. Source [reports](preview-timing-source-check-2026-10-13.md) saved.
+**Scope:** Four source/test paths; recovery support extends Phase 9's file list. No retry/deadline change.
+Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
+Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
+Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.

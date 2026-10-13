@@ -463,3 +463,26 @@ Reports/measurements are in [helper cost](helper-cost-check-2026-10-13.md); fail
 H1 input remains pending. M5 cached-record scaling/configuration cost remain separate next work.
 The historical Phase 8 source block moved unchanged with reconstruction verified; open cases stay above.
 SPEC/PLAN fixed, 2/7/8 Blocked and 9 active. No real app/native control, install/sync or user-state changes.
+
+### Phase 9 helper compatibility diagnostic: 2026-10-13 14:31 CEST
+
+`4b6abf6` separates sync-copy success from render/metadata readiness; three red cases: `0epna4`.
+Final `DIM1gt`: 548 Swift, 9.892 seconds; `5eFk7R`: 175 Bats; final sync `DQcM7q`: 10/10.
+Bash syntax passed; followed ShellCheck has only pre-existing SC2012. No Swift rebuild needed.
+The [source check](helper-compatibility-check-2026-10-13.md) confirms H1; compatibility input is pending.
+No rendering bypass or contract change. Prior entry moved unchanged; SPEC/PLAN fixed. Next: M5 cost checks
+while awaiting compatibility choice. Phases 2/7/8 Blocked, 9 active; native/UI acceptance unverified.
+
+### Phase 9 per-TTY cached lookup: 2026-10-13 16:03 CEST
+
+`70e5e74` scopes two resolution callers to one TTY while retaining every owner/alias/effect branch.
+Full recovery/relaunch scans remain global. Three new cases and two extended conflict checks pass.
+Red `NJBAjY`: missing API; `Q521S1`: scope failures plus path assertions and lost sibling records.
+Normalize fixture paths; `vGkCtp` retained one lost-record failure. A local Foundation probe proved
+`skipDescendants()` on links pruned the next directory; link rejection now preserves valid peers.
+Final `1cYi6l`: 9/9 focused; `i9FV5n`: 551/551 Swift, 10.631 s; release `OGadCV`: 19.97 s.
+Current-helper `jP9fYJ`: 178/178 isolated Bats, fixtures retained. Builds/suites ran sequentially.
+The [source check](tty-cache-scope-check-2026-10-13.md) found no new defect; prior limits stay.
+**Scope:** Two source/two test paths; shared lookup correction extends Phase 9's original file list.
+No retirement/index or latency claim. Same-TTY history and preview config cost remain M5 work.
+H1 input and native acceptance stay open. SPEC/PLAN fixed; goal active, 2/7/8 Blocked, 9 active.

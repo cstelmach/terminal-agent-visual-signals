@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.15
+Version: 1.16
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `a710d9f`.
+Current product checkpoint: `927a746`.
 
 ## Review execution status
 
@@ -432,3 +432,21 @@ Five new tests cover the timing paths. Final `1SEz4e`: 556/556 Swift, 10.803 s; 
 Their cause is unproven; targeted diagnostic `4vjXjB` passed both, followed by the final full pass.
 Preview query cost is not reduced or measured. Existing long-lived focus colors and effective-config
 invalidation require separate verification. Native duration/contrast acceptance remains incomplete.
+
+## Replacement preview cleanup ordering
+
+`a5c6549` adds optional bounded waits and per-physical completion; `927a746` uses them for previews.
+`KMqaUW` reproduced EBUSY against finite prior cleanup, no replacement paint and an unchanged ID.
+The original `RoXBKk` cause remains unproven. A serial-batch draft then blocked B behind A;
+`ZTqHdl` reproduced five failures after fixing the fixture's physical/native storage-path mistake
+(`ZEIU1L`/`oLoWRh`). Cleanup batches now progress concurrently while each target retains its predecessor.
+`KelinG` reproduced a timeout successor dropping that older dependency. Completion notification now
+requires both its own result and predecessor completion; bounded failure reporting still returns.
+Waits occur before admission under the original 100 ms budget, outside controller/record locks.
+Exact-ID cancellation, alias/conflicting-owner checks, current-run predicates and emergency recovery
+are preserved. No generic busy retry, admission change, new schema or persistent state is introduced.
+Five new tests include cancellation, alias/failed callbacks, timeout retention and a fresh post-drain
+preview. `a54Lpn`: 142/142 focused; `40ORys`: 561/561 Swift, 11.028 seconds; release `aqws2z`:
+14.02 seconds; current-helper `7WAkIc`: 178/178 isolated Bats. No warnings or deadline relaxation.
+The [full source checks](preview-timing-source-check-2026-10-13.md) retain superseded draft findings.
+Separate managed-reset failures, focus-color freshness, H1 and physical/native acceptance remain open.
