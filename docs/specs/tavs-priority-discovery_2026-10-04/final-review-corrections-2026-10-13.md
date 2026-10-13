@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.8
+Version: 1.9
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `372e1f0`.
+Current product checkpoint: `dc2671c`.
 
 ## Review execution status
 
@@ -257,19 +257,31 @@ seconds; current-helper `tehdJQ` passed 172/172 isolated Bats. All completed bef
 Controller retention is still unimplemented. Use this narrow evidence in the per-target bound,
 and retain outstanding physical responsibility through failures, masking and recovery revisions.
 
+## Per-target retirement correction (Claude M4)
+
+`dc2671c` replaces catalogue-wide rollover with one lease per physical target and one coalesced
+clear per lease. Twelve two-second refreshes with a failed peer preserve the healthy ID/heartbeat;
+six explicit mode changes cannot replace unresolved ownership. Cancellation and repaint work
+remain separate, with transfer only to an explicit current request. This fixes the reproduced
+growth without pruning uncertain IDs or changing the captured working set.
+
+The [source check and follow-up](focus-lease-check-2026-10-13.md) verified the narrow lease bound,
+revision retention and balanced clear joins. Its ended-global-rule finding reproduced in `kUhdWq`;
+requested focus restoration now emits only background bytes, while ordinary reconciliation still
+resets legacy colors. Factory regressions preserve alias and cross-lifetime TTY conflict rejection.
+The proposed additional race/debt cases in that report are coverage suggestions, not observed bugs.
+
+Red `z38y9h` reproduced healthy rollover and timeout. Draft timing failures exposed clear ordering
+and unnecessary completion retries; the shared join and wanted/blocked retry checks corrected them.
+Intermittent `HO4JDM` is retained; corrected `5ksHzD` passed 124 focused tests. Final `yuaDn0` passed
+534/534 Swift tests in 10.024 seconds without warnings; release `B0b4DB` built in 17.61 seconds;
+current-helper `BTL5Xg` passed 172/172 isolated Bats tests. All returned before commit.
+The change bounds retained controller leases, not every distinct native lifetime or global worker.
+
 ## Remaining adjudication and implementation
 
-The following source findings are verified; execution regressions and fixes remain pending:
-
-1. **Cleanup growth (Claude M4).** The [source follow-up](focus-cleanup-bound-followup-2026-10-13.md)
-   proves a finite 24-second sequence with three retired runs and 15 retry jobs. These share one
-   revision object, not one descriptor per rollover. Blind replacement by the newest attempted
-   ID can lose older ownership. Preserve exact IDs/pins, and verify any bound against partial
-   healthy focus and physical restoration rather than accepting a weaker product behavior.
-
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize retained focus cleanup
-and post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
+Prioritize post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 
 Helper-required compatibility must be reconciled with the original supported scope and direct
@@ -278,7 +290,7 @@ make current tests easier to satisfy or introduce an unsafe raw fallback. Mainta
 performance, UI and other lower-ranked recommendations remain visible in the complete report;
 they are not accepted defects merely because the provider assigned them a rank.
 
-## Current UI evidence
+## Pre-crash UI evidence
 
 PID 68022 remained the same running private Automatic Acceptance process. Computer Use timed
 out through both its path and registered bundle ID. Enabled-app inventory confirmed its ID.
@@ -286,6 +298,8 @@ A one-second sample observed the normal AppKit event loop, not a demonstrated de
 not prove visible UI or responsiveness. The documented native launch capability is absent on
 this Mac provider. No activation workaround or process restart occurred. The sample remains at
 `/tmp/tavs-ui-observation-20261013/sample-68022.txt`. Native Ghostty access remains denied.
+These process IDs and staged paths describe the earlier snapshot; the crash invalidated them.
+The lease correction used owned PTYs and private roots without app or native control.
 
 The source freeze was released after confirming that remaining provider inputs were immutable
 `71e0f60` packets. Every completed review stays labeled with that target; `689203e` is a separately

@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 08:12 CEST
-**Version:** 4.7
+**Last Updated:** 2026-10-13 13:10 CEST
+**Version:** 4.8
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 372e1f0; earlier hashes below/appendix | 526 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | dc2671c; earlier hashes below/appendix | 534 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -874,22 +874,25 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished queue correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 focus cancellation evidence: 2026-10-13 08:12 CEST
+### Phase 9 focus cancellation evidence
 
-Previous turn progressed through preview fix `eeed5cb`, recorded in `4d1d194`.
-`372e1f0` adds defaulted didCancel(target) to internal clearFocus after complete validated alias
-cancellation and the original deadline check under the existing TTY lock. Unknown metadata gives
-no callback; acknowledged ownership and physical repaint remain separate. Existing output is fixed.
-Red `YT5mXu` reproduced four missing acknowledgements after `wiTdOP` exposed the missing API.
-Green `9oOhYE` passed 83 recovery tests. Six new and two strengthened cases cover stage failures,
-masking, marker changes, unknown aliases, expiry and physical deduplication.
-Final `28SNKq`: 526/526 Swift, 9.340 seconds, no warnings. Release `lhIshL`: 12.93 seconds.
-Current-helper `tehdJQ`: 172/172 isolated Bats. All returned before commit, using private roots
-and owned PTYs/mocked identities. No shell change. The 64-line source report is retained.
-**Next:** implement per-target retirement with old predicates invalidated, healthy renewal and
-separate repaint responsibility. Retention remains unimplemented; partial alias writes and
-post-rename errors need integration regressions. The preview entry moved verbatim to its appendix
-with reconstruction verified. Oversize append attempts stopped before state writes; this shorter
-entry passes the limit. SPEC body/PLAN remain fixed; phases 2/7/8 stay Blocked, Phase 9 active.
-No native/app control, install, personal settings/schedules or session shutdown; native acceptance
-is unverified. Backups: /tmp/tavs-focus-cancellation-20261013/backup/.
+> Finished prerequisite: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+
+### Phase 9 per-target focus retirement: 2026-10-13 13:10 CEST
+
+Crash recovery found clean `3b69d1d`; reports survived locally and in the October 13 archive.
+`dc2671c` keeps one lease per physical target and one clear in flight per lease. Healthy IDs
+renew independently; unresolved cancellation blocks replacement, with repaint work retained.
+The shared fanout rejects aliases before creating requests; requested clearing is background-only.
+Red `z38y9h` reproduced healthy rollover/timeout. Draft timing failures led to shared clear joins
+and blocked-target-only retries. `kUhdWq` reproduced legacy resets; the source finding was fixed.
+`HO4JDM` retained an intermittent timeout. Corrected `5ksHzD` passed 124 focused tests.
+Final `yuaDn0`: 534/534 Swift, 10.024 seconds, no warnings. Release `B0b4DB`: 17.61 seconds.
+Current-helper `BTL5Xg`: 172/172 Bats. All terminal results preceded commit; private roots/PTYs only.
+The full [source check](focus-lease-check-2026-10-13.md) and its follow-up are retained, not native proof.
+Scope: two production and two test files; no shell change. The finished prerequisite moved unchanged
+with reconstruction checked; SPEC body/PLAN are fixed. Phases 2/7/8 remain Blocked, Phase 9 active.
+**Next:** verify post-recovery scheduler recomposition, then other source leads. Proposed race/debt
+cases remain in the source report; no global worker cap or full material-review closure is claimed.
+Native acceptance remains unverified. No app/native control, install, personal settings/schedules
+or session shutdown. Scratch/backups: /tmp/tavs-focus-leases-84v8mqbc/.

@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.33
+Version: 1.34
+
+## One failed focus target rotates healthy ownership and grows cleanup
+
+Focus renewal used one heartbeat for the entire catalogue. A failed target prevented it from
+advancing, so healthy targets acquired new IDs and old cleanup accumulated every six seconds.
+The controller now keeps one lease per physical target, invalidates retiring predicates and
+coalesces each lease's clear. Unknown cancellation blocks replacement; acknowledged cancellation
+can transfer remaining repaint work to a current request. Healthy IDs and heartbeats continue.
+Regressions cover twelve two-second refreshes with a failed peer, six explicit mode changes,
+recovery and preserved working membership. Alias conflicts are rejected before request creation.
+Focus restoration emits only background bytes, including after a global rule ends; ordinary
+reconciliation still resets legacy foreground/palette. Suppressed restoration cancels without paint.
 
 ## Unrelated focus cleanup delays a healthy preview clear
 
@@ -10,12 +22,12 @@ prevented a healthy terminal's preview clear from starting, despite independent 
 Dedicated queues now separate those batches while the shared per-TTY writer still orders actual
 conflicting output. The regression holds one focus cleanup, clears a preview on another owned
 PTY before releasing it, and checks exact background reset plus canceled preview metadata.
-Retired focus ownership growth remains a separate open issue; this fix does not drop old IDs.
+The later per-target lease correction above bounds retained ownership without dropping old IDs.
 The internal clear callback now distinguishes successful locked metadata cancellation from
 failed or suppressed physical repaint. Tests cover failures before/after that stage, marker
 replacement, global masking, unknown aliases, the original deadline and physical deduplication.
-The controller's per-target retirement bound still needs implementation; callback absence cannot
-prove no save, because record rename precedes a final deadline check.
+Callback absence cannot prove no save, because record rename precedes a final deadline check.
+The controller retains uncertain cancellation until a later locked acknowledgement or recovery.
 
 ## Repeated timeouts accumulate native device workers
 

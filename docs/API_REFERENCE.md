@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.19
+Version: 1.20
 
 ## Public recovery commands
 
@@ -200,6 +200,12 @@ supersession; it does not confirm device repaint. Failed/incomplete metadata pro
 Marker replacement still permits old metadata cancellation but suppresses old repaint. Consumers
 must invalidate the old lease predicate before clearing, acknowledge briefly/thread-safely and
 never invoke another writer/coverage operation from this callback. Absent IDs get no tombstone.
+The optional `restoreBackground` predicate separates cancellation from outstanding repaint work.
+Omitting it retains exact-effect clear behavior. False acknowledges cancellation without output;
+true recomposes the current background even when the old ID is absent. Both restoration paths
+preserve foreground/palette and check the pinned revision. Legacy color reset remains ordinary
+reconciliation's responsibility. `applyFocus(to:request:)` creates one request per validated
+physical target, retaining native-alias and cross-lifetime TTY conflict rejection before creation.
 Preview and focus cleanup use independent background queues. An unrelated blocked focus clear
 cannot queue ahead of a healthy preview clear. Both retain the existing per-TTY serialization
 and original device deadline; conflicting writes to the same terminal remain serialized.
@@ -214,9 +220,13 @@ At least one captured surface needs a verified binding before any outside backgr
 
 Manual updates reuse the serialized preview worker and coalesce to the latest catalogue.
 Requests revalidate run identity, catalogue version, six-second age and pinned recovery revision.
-An expired run gets a fresh effect ID; unmapped or failed outside targets cannot refresh its
-common heartbeat. Retired IDs are cleared after replacement, so old cleanup cannot repaint a
-new run. Failed exact-ID cleanup retains its targets and revision pin for retry or recovery.
+Each physical target has its own effect ID and saved heartbeat; unrelated failures cannot rotate
+healthy IDs. Retirement invalidates its publication predicate before clearing. Only one clear
+can be in flight per lease, and unresolved ownership blocks replacement for that target alone.
+Locked cancellation permits transfer of remaining repaint responsibility to an explicit current
+request; failed physical restoration retains it. Removal requires restoration, confirmed vanishing,
+or canceled ownership with no possible focus paint. The preparation join has a shared 100 ms
+limit; each device call separately retains its original 100 ms deadline.
 
 Sessions keeps one two-second catalogue timer while its window is open or Manual is active.
 Focus Off preserves browsing selection and preview. Restore Visibility cancels both in-memory

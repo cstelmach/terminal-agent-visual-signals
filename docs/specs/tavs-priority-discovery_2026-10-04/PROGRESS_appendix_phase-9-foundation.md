@@ -377,3 +377,23 @@ retained-run growth remains open. The previous finished admission block moved un
 existing appendix with reconstruction verified. SPEC body/PLAN remain fixed. Phases 2/7/8 remain
 Blocked, Phase 9 In Progress, and the goal active. No native/app-control call, install, personal
 settings/schedule change or user-session shutdown occurred. Required native acceptance is unverified.
+
+### Phase 9 focus cancellation evidence: 2026-10-13 08:12 CEST
+
+Previous turn progressed through preview fix `eeed5cb`, recorded in `4d1d194`.
+`372e1f0` adds defaulted didCancel(target) to internal clearFocus after complete validated alias
+cancellation and the original deadline check under the existing TTY lock. Unknown metadata gives
+no callback; acknowledged ownership and physical repaint remain separate. Existing output is fixed.
+Red `YT5mXu` reproduced four missing acknowledgements after `wiTdOP` exposed the missing API.
+Green `9oOhYE` passed 83 recovery tests. Six new and two strengthened cases cover stage failures,
+masking, marker changes, unknown aliases, expiry and physical deduplication.
+Final `28SNKq`: 526/526 Swift, 9.340 seconds, no warnings. Release `lhIshL`: 12.93 seconds.
+Current-helper `tehdJQ`: 172/172 isolated Bats. All returned before commit, using private roots
+and owned PTYs/mocked identities. No shell change. The 64-line source report is retained.
+**Next:** implement per-target retirement with old predicates invalidated, healthy renewal and
+separate repaint responsibility. Retention remains unimplemented; partial alias writes and
+post-rename errors need integration regressions. The preview entry moved verbatim to its appendix
+with reconstruction verified. Oversize append attempts stopped before state writes; this shorter
+entry passes the limit. SPEC body/PLAN remain fixed; phases 2/7/8 stay Blocked, Phase 9 active.
+No native/app control, install, personal settings/schedules or session shutdown; native acceptance
+is unverified. Backups: /tmp/tavs-focus-cancellation-20261013/backup/.

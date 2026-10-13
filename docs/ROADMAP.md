@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.10
+Version: 1.11
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -44,8 +44,9 @@ Captured native IDs now stay independent of browsing and priority edits. New sur
 outside the set; confirmed last-member closure ends Manual. One Sessions refresh timer remains
 active while the window is open or Manual is active. Missing coverage invalidates queued updates
 without dropping logical membership; no verified working binding means no outside paint.
-Manual runs retain revision pins through cleanup and replace expired IDs, including after an
-unmapped target returns. Focus Off clears only manual styling; recovery and restart leave Off.
+Per-target focus leases retain revision pins through cleanup and replace expired IDs only after
+ownership resolution. Healthy targets renew independently; unmapped targets retain cleanup work.
+Focus Off clears only manual styling; recovery and restart leave Off.
 Sessions/menu controls and working-set labels are connected. The private fixture verified
 captured membership while browsing, but current Computer Use attachment attempts time out.
 Physical dimming/readability, recovery controls in Manual and window close/reopen acceptance
@@ -74,7 +75,9 @@ separate unknown data from proven exit/reuse, including all-High catalogues and 
 Only actual metadata renewal advances the focus heartbeat; global masks still renew, while
 rejected paints expose unavailable state and recover with a fresh effect ID after expiry.
 Source completion does not complete native acceptance.
-Focus clear now exposes locked exact-ownership cancellation separately from physical output.
-This is a tested prerequisite for bounded per-target retirement; the controller bound is pending.
+Focus clear exposes locked exact-ownership cancellation separately from physical output. The
+controller now retains one lease per physical target and coalesces its cleanup. Failed peers do
+not rotate healthy IDs; unresolved ownership prevents replacement, and outstanding repaint work
+survives cancellation, masking and revision changes. Focus restoration changes only background.
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.

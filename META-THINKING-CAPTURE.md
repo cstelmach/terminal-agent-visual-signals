@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 18 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 26 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 19 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 27 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2633,3 +2633,75 @@ preview entry moved unchanged to its existing appendix; prior capture history is
 No new skill promotion or process layer is proposed. [R] Use this evidence to separate ownership
 resolution from repaint responsibility in the next controller change, without dropping unknown
 IDs or allowing one failed target to stop healthy renewals.
+
+## 2026-10-13 · gpt-6 (self-reported) · focus-target-retirement
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported from runtime instructions [R]
+  interface: Codex desktop
+  thinking: unknown; extended requested
+  session: 01a10879
+  trace: observed tool results plus labeled carried-context reconstruction
+  delegate: gpt-6.1-sol/high requested for read-only explorer; served variant unobserved
+
+**Framing:** [O] The operator requested continuation after a computer crash. Git established
+`3b69d1d` as the clean starting checkpoint. Existing reports were present in the repository
+and October 13 external archive; the old temporary build was absent. The active goal still
+required all nine phases, including native acceptance. Recovery of development continuity did
+not authorize installation or control of user terminals. [R] The carried context identified
+per-target retirement as the current bounded slice rather than a new discovery round.
+
+**Strategy:** [O] A private release helper was rebuilt before test execution. The controller
+moved from shared run heartbeat and accumulated retired runs to one lease per physical target.
+Publication predicates retire before cancellation. Acknowledged metadata ownership and possible
+physical paint remain distinct facts. Existing fanout was reused for request creation, preserving
+alias and TTY-lifetime validation. [R] This limited the change to the demonstrated coupling
+between failed and healthy targets without introducing another durable registry or worker system.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient | Git, archive, goal and dated progress | Resume existing Phase 9 scope |
+| 2 | Red/green | Owned PTYs and failed target | Healthy identity preserved after correction |
+| 3 | Source check | Read-only explorer report | Background-only clear gap confirmed |
+| 4 | Focused checks | Lease/factory/restoration tests | 124 passed after draft corrections |
+| 5 | Final checks | Swift, release helper, isolated Bats | 534, build, 172 passed |
+| 6 | Commit and record | Source, existing docs and progress | `dc2671c`; native cases remain open |
+
+**Decision points:** [O] Healthy targets keep their IDs independently of failed peers.
+Unresolved cancellation blocks a new ID only for that physical target. Resolved cancellation
+can transfer outstanding repaint work to an explicit current request, retaining its recovery
+revision. Clear completion retries only a wanted target that was actually blocked, rather than
+replaying a successful refresh. Requested focus clearing emits only background bytes; ordinary
+reconciliation retains responsibility for resetting legacy foreground and palette. These choices
+were verified against connected writer predicates and tests rather than inferred from status text.
+
+**Failure arcs:** [O] `z38y9h` reproduced healthy ID rotation and a PTY timeout. Draft runs
+also exposed ordering assumptions: the first output after renewal could be an old clear, so the
+catalogue test now awaits completed refresh. Shared clear joins retain one preparation deadline.
+A later timeout in `HO4JDM` prompted review of completion-triggered replay; wanted/blocked checks
+removed unnecessary retries, and the failure log remains. The explorer identified foreground and
+palette resets after a global rule ended; `kUhdWq` confirmed the wrong byte count. Background-only
+restoration fixed that branch, while a separate assertion preserves ordinary legacy reconciliation.
+A commit body initially contained literal newline escapes; the immediately owned, unpublished
+commit message was corrected from a file. [R] These arcs support checking execution boundaries
+and exact bytes rather than treating a cancellation callback as evidence of restored visibility.
+
+**Verification:** [O] Final `yuaDn0` passed 534 Swift tests in 10.024 seconds without warnings.
+Release `B0b4DB` built in 17.61 seconds; source-helper `BTL5Xg` passed 172 isolated Bats tests.
+Only dedicated PTYs and private paths were used. Source review found no additional confirmed
+lease/debt/join defect; proposed race cases remain suggestions. Native Ghostty salience, navigation,
+Spaces and relaunch acceptance are unverified. No personal preference, schedule, install or user
+session operation occurred. PROGRESS stayed below its limit after moving a finished entry unchanged;
+reconstruction equality and retained Session Log bytes were checked.
+
+**Heuristics and candidates:** [O] P8 and P9 recur: adjudicate reviewer remedies from source and
+resume from SPEC-owned state. Keep cancellation, renewal and physical repaint as separate facts.
+Existing high-count patterns remain candidates for reusable guidance; no new skill or control
+plane was created. [R] The candidate lesson is to coalesce cleanup by the resource whose ownership
+is uncertain, preserving progress for independent resources.
+
+**Confidence:** [O] Results, edits and limits above are observable. Model attribution, rationale
+and carried-context interpretation are explicitly reconstructed; none describes hidden computation.
