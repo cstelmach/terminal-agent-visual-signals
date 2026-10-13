@@ -1,7 +1,21 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.32
+Version: 1.33
+
+## Portable record decoder (integration pending)
+
+`portable_records.decode` validates native schema-1 target, effect, observation, intent and
+adoption records, including nested allowlists, required fields, scalar types, generation bounds,
+timestamps, focus recipes and suspension revisions. Focus colors are canonicalized as native
+`Colors` does. Unknown/duplicate keys, boolean integers and nonfinite timestamps are rejected.
+Integer identity fields require canonical JSON integer tokens; exponent or decimal forms are
+outside this internal reader's accepted subset. Linux scope-bearing generations are rejected.
+
+`read_record` uses bounded 8 KiB regular-file reads and checks the original deadline after JSON
+decoding. Missing data is distinct from invalid or unreadable data. `target_path` reproduces
+native base64/owner/surface placement; decoding does not establish liveness or attention authority.
+Live ownership, placement checks and writer integration are still required before backend use.
 
 ## Portable policy reader (integration pending)
 
