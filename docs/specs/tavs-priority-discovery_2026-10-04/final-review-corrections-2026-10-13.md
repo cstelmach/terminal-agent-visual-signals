@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.3
+Version: 1.4
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `02708b8`.
+Current product checkpoint: `47fdf9b`.
 
 ## Review execution status
 
@@ -155,6 +155,29 @@ and masked-renewal cases were added after the initial implementation and passed 
 they are regression coverage, not claimed initial red evidence. Backups: /tmp/tavs-unknown-cues-20261013/.
 No native or visible acceptance is inferred from these source/owned-PTY checks.
 
+## Delayed synthetic restore correction (Claude M2)
+
+Resolved in `47fdf9b`. A real-helper barrier pauses after successful context validation, then
+delivers a newer Stop or SubagentStart before releasing the restore. `WuVtc2` reproduced changed
+Stop state and a subagent count of 1 becoming 2. Synthetic processing/subagent handlers now skip
+timer cancellation, session-state writes, count increments and new-prompt identity work. Normal
+hooks preserve their prior branches, while final managed validation still controls all output.
+
+The [focused source report](synthetic-restore-followup-2026-10-13.md) found no source defect in
+those guards, but identified test limits. The corrected fixture records exact helper results:
+3 for stale restoration, 0 for successful current stages. It also observes later graduated
+background bytes and the same timer PID, rather than relying on PID existence alone. A positive
+case verifies current subagent restoration paints without another spawn or meaningful state write.
+The helper-return marker is intentionally not claimed as a whole-trigger exit handshake; the
+named state/timer/count mutations all precede that marker in the inspected source.
+
+Final `knbxNp` passed 172/172 isolated Bats across the 15 audited files. Focused `OiEX9s` passed
+the three corrected cases; `3T8M2E` passed 507/507 Swift tests in 8.379 seconds without warnings.
+Shell syntax and whitespace passed. The current release helper is unchanged; no Swift source
+needed rebuilding. Earlier fixture runs `aZZ9pp` and `t5Iyfs` are retained but are not the final
+two-case red evidence. The first patch attempt was rejected before any edit due to a missing
+diff prefix. Backups: /tmp/tavs-synthetic-restore-20261013/. Native/UI acceptance remains open.
+
 ## Remaining adjudication and implementation
 
 The following source findings are verified; execution regressions and fixes remain pending:
@@ -166,7 +189,7 @@ The following source findings are verified; execution regressions and fixes rema
    healthy focus and physical restoration rather than accepting a weaker product behavior.
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize the synthetic check-to-dispatch race, recovery classification, wedged-worker growth
+Prioritize recovery classification, wedged-worker growth
 and post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 

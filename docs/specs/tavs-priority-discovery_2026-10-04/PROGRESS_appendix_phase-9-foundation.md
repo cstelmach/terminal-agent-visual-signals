@@ -206,3 +206,42 @@ side effects, recovery classification and scheduler recomposition still need ver
 Phases 2/7/8 remain Blocked on native acceptance; Phase 9 remains In Progress and the goal active.
 
 > Current corrections remain in [PROGRESS.md](PROGRESS.md).
+
+### Phase 9 unknown-cue correction: 2026-10-13 05:29 CEST
+
+Previous turn was progress: priority-suite repair `5760baf` passed current isolated checks.
+`02708b8` resolves Claude M1's nil coverage and Boolean-source cue loss. Unknown coverage retains
+cue books, permission episodes and acknowledgement. Exact native/producer/device validation
+distinguishes unavailable from vanished, checks all-High catalogues before fanout, and rejects
+uncertain paints within the original final-writer deadline. Only proven captured snapshots resolve.
+Independent positive lifetime evidence survives unknown metadata and a later inspection timeout.
+
+Real focus metadata renewal now reports through a post-save callback. Rejected/unaffected writes
+cannot claim heartbeat renewal; global masks still renew. After more than six seconds without
+renewal, restored inspection uses a fresh effect ID without inventing a cue. Missing renewal
+displays unavailable status. Multiple sources retain unknown cues and continue through a valid one.
+
+Initial fixture `qcCzhn` did not compile (immutable coverage/PID types); fixed before execution.
+Red `eADpHC` reproduced 11 assertions across 41 reducer/controller tests. Read-only follow-up
+identified positive loss hidden by early unknown returns and partial results dropped on timeout;
+`x40p68` reproduced the first edge. Both are corrected, with an ordering-independent partial-timeout
+case. Status red `VgzSe6` failed three assertions before the unavailable-label correction.
+The prolonged-rejection and global-mask cases passed when added after implementation; they are
+not initial red evidence. Final `EhjKGL` passed 507/507 Swift tests in 8.671 seconds without warnings.
+Release `Zl3ABu` passed in 11.45 seconds; current-helper `LWPlNE` passed 169/169 isolated Bats.
+All used tests/run-isolated.sh, private roots and owned PTYs. No new shell file needed syntax checks.
+Backups: /tmp/tavs-unknown-cues-20261013/. Full source follow-up and adjudication are retained here.
+
+**Scope:** four connected source files, three existing test files and API/bug/roadmap updates.
+The focus request callback is the necessary Phase 9 connection to the existing Phase 8 writer;
+no new persisted schema, helper verb, agent hook or adapter. SPEC body and PLAN remain fixed.
+No installed app/settings change, user-session shutdown, live Ghostty request or Computer Use retry.
+The finished priority-suite checkpoint moves unchanged into the existing Phase 9 appendix with
+a reconstruction check. Required capture is appended; native acceptance remains unverified.
+
+**Next:** reproduce and remove delayed synthetic processing side effects after a newer Stop.
+Cleanup growth, wedged-worker admission, recovery classification and post-recovery scheduler
+recomposition remain source leads to verify/fix. Phases 2/7/8 stay Blocked, Phase 9 In Progress.
+The complete goal remains active; source tests do not replace required visible/native acceptance.
+
+> Current work remains in [PROGRESS.md](PROGRESS.md).

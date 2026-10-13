@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 13 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 21 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 14 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 22 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2275,3 +2275,78 @@ Ghostty request, Computer Use retry, installed setting change or user-session sh
 **Confidence:** Execution results and source changes are observed; strategy is reconstructed.
 The source report inspected an earlier draft and is retained with that scope stated. Remaining
 review findings and required visible/native acceptance prevent completion of the full goal.
+
+
+## 2026-10-13 · gpt-6 (variant unverified) · synthetic-restore-correction
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unobserved)
+  model_source: self-reported
+  interface: api (Codex desktop)
+  thinking: unknown
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: reconstructed from visible current tool results
+
+**Framing:** [O] Durable state named the delayed synthetic restore race as the next bounded
+correction. The earlier context precheck was already present, so simply adding another precheck
+would not establish safety across dispatch. The retained review described a newer Stop arriving
+between successful validation and the processing handler. Reading both reachable restore branches
+showed timer cancellation, state publication and a subagent increment before final managed output.
+The task was to remove those meaningful-state effects from synthetic restoration while preserving
+current visual restoration and real hook behavior.
+
+**Strategy:** [R] The smallest remedy separates synthetic paint from real hook bookkeeping.
+The tool-error hook has already cancelled its preceding timer; a later live timer belongs to
+newer work. Incrementing a counter during a visual return similarly invents another spawn.
+Guarding those operations avoids needing another shared lock or state transaction. The existing
+native writer remains responsible for final delivery validation. A proxy around the real helper
+provides the test barrier after successful validation, using existing interfaces rather than
+introducing a product-only testing hook.
+
+**Action trace [O]:**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient and inspect | Dated SPEC state, review and core handlers | Race confirmed in source |
+| 2 | Build owned-PTY barrier fixture | Real helper and private state | Initial patch rejected |
+| 3 | Run two-case red | New Stop and SubagentStart | State changed; count 1 became 2 |
+| 4 | Guard synthetic bookkeeping | Existing processing/subagent branches | Connected checks passed |
+| 5 | Independent source inspection | Existing explorer, read only | No source defect; test limits |
+| 6 | Strengthen runtime evidence | Exact result and graduated bytes | Three focused cases passed |
+| 7 | Verify and commit | Bats, Swift and shell syntax | 172 and 507 passed |
+| 8 | Preserve findings and append state | Existing package and capture | Native acceptance stays open |
+
+**Decision points:** [O] The regression pauses the old worker after the real context check
+succeeds, delivers the newer hook, then releases dispatch. This covers the historical gap that
+the older before-precheck test did not. Completion-stage readiness is observed before copying
+the legacy DB, avoiding a legitimate first-stage timestamp update being mistaken for stale work.
+The synthetic guards skip only timer/state/count and new-prompt identity actions on the relevant
+branches. Normal hooks keep those actions. Final native stale rejection is still required.
+A positive case keeps the current tool-error context and verifies configured subagent bytes
+without counting another spawn, so suppressing every restore would not satisfy the tests.
+
+**Failure arcs:** [O] A missing diff prefix caused the first patch to be rejected before mutation;
+it was corrected directly. The first fixture marker accepted any managed-render result, and a
+plain PID existence check did not prove continued work. The source report raised these limits.
+The fixture now records result 3 for stale restoration and result 0 for current stage work. It
+waits for a later graduated color, checks actual owned-PTY bytes and retains the same timer PID.
+That is stronger evidence than a longer arbitrary sleep. A whole-trigger exit handshake remains
+outside the claim: the inspected timer/state/count mutations all occur before helper return.
+
+**Heuristics:** [O] P8 recurred through source verification of the review finding and execution
+before accepting the remedy. P9 kept the current phase and remaining native blocks in the dated
+state. One source defect was fixed. The focused report produced two test-strengthening decisions;
+it did not produce another runtime mechanism. No new pattern, skill promotion or comparative
+model profile is asserted from this slice.
+
+**Verification:** [O] Final isolated Bats passed 172/172 across the 15 audited files. The three
+focused cases passed; full Swift passed 507/507 in 8.379 seconds without warnings. Bash syntax and
+whitespace passed. Swift source was unchanged, so the current release helper required no rebuild.
+All device work used owned PTYs and private roots. The report is retained with its earlier test
+version stated. A finished 37-line checkpoint moved unchanged into the existing appendix, with
+reconstruction equality verified. No live Ghostty request, Computer Use retry, installed app
+change, personal schedule edit or user-session shutdown occurred.
+
+**Confidence:** Execution and edits are observed; strategy is reconstructed. The exact served
+model remains unobserved. Recovery classification, resource growth, other source findings and
+required visible/native acceptance still prevent completion of the full goal.
