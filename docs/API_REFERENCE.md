@@ -1,7 +1,16 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.35
+Version: 1.36
+
+## Portable record replacement (integration pending)
+
+`portable_record_io` reads and replaces bounded typed records through held parent descriptors.
+Writes create private directories and an exclusive 0600 sibling temporary, then atomically
+replace the destination. Linked ancestors/destinations and paths outside the runtime reject.
+Reads do not create directories. Encoding, reads, writes and replacement share the original
+deadline. Cleanup attempts removal of only the owned temporary even when closing it fails.
+A failure after replacement may mean the record committed; it never authorizes raw output.
 
 ## Portable ownership guard (integration pending)
 

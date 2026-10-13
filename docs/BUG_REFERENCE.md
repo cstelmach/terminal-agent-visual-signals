@@ -1,7 +1,14 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.45
+Version: 1.46
+
+## Portable record draft skips cleanup after close error
+
+An exception from closing an aborted record write skipped removal of its own sibling temporary.
+Native cleanup attempts both operations. A nested finally now attempts unlink after close failure.
+The regression injects write and close failures, proves the previous record survives and checks
+that only the owned temporary is removed. No production backend used this draft.
 
 ## Portable ownership draft reopens directory paths
 
