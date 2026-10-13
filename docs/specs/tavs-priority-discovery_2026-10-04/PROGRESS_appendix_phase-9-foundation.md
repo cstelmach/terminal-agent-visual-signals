@@ -40,3 +40,48 @@ owned-PTY/model regressions before controls; all physical acceptance and final r
 The master goal stays active; Phase 9 remains In Progress. No automatic UI activation is claimed.
 
 > Current execution: [PROGRESS.md](PROGRESS.md).
+
+### Phase 9 controller and controls: 2026-10-13 01:40 CEST
+
+Previous turn was progress; continued clean `817f411` from the dated SPEC/PLAN/GOAL. `a0937e8`
+keeps Automatic armed at zero cues, emphasizes all High rows while any cue remains, retires
+old dimming on membership changes and uses a fresh run for later activation. Manual/Automatic
+switch explicitly; previews stay independent. Committed priority saves reconcile immediately.
+Go To captures its target cue IDs before dispatch, acknowledges only verified success and
+preserves later arrivals. Failure changes no cue. Recovery and restart leave Off.
+
+A read-only liveness follow-up found that a valid High shell did not prove a cue producer was
+still valid after queued lookup. `hZE1x5` reproduced three assertions: new effect, retained cue
+and emitted bytes after producer exit, while its continuing owner remained valid. The metadata
+check now validates actual cue producer and own binding inside the original writer deadline.
+No nested coverage lock or new budget. Zero valid sources release old effects; deadline failure
+preserves cues. Post-lookup run/version checks reject Focus Off during the final source check.
+Persisted recipes contain no cue actors; ordinary composition relies on lease plus controller cleanup.
+
+Missing APIs red `n5iV0P`, `d1oS7k` and `XI2zss` preceded controller/state/model wiring. Initial
+controller `Gj2y9S` passed 22; focused `IRiXPh` passed 157; model/reducer `jNyF21` passed. Full
+`DIx6uo` passed 490/490 in 7.822 seconds without warnings. Release `Ugs9Cj` passed in 11.95
+seconds. Current-release managed/parity/recover/sync/hook/intent Bats `mqd7EP` passed 70/70.
+All used tests/run-isolated.sh and owned Phase 6 scratch. Final metadata-cancellation/deadline
+cases were added after the draft guards; they were green checks, not claimed initial red runs.
+
+`9fd98d3` exposes Automatic controls, cue counts, three mode labels and Go To coverage copy.
+CUA on the signed private TAVS Automatic Acceptance fixture verified armed mode, independent
+browsing, explicit Manual switching, accessible retained working membership, recovery from both
+modes, accurate three-binding failure feedback and Off after explicit resumption. Screenshot
+verified default layout. These unavailable fixture bindings cannot establish actual dimming.
+After owned UI quit, PID 9280 was confirmed gone. Private relaunch PID 68022 is confirmed live,
+with suspension still saved; CUA attachment timed out, so relaunch UI remains unverified. No
+restart occurred solely for that timeout. Scratch/backups: /tmp/tavs-phase9-integration-20261013.
+
+**Scope:** planned controller/model/view/menu and allowed metadata module, plus connected
+VisualRecovery callback and state/recovery tests needed for the original deadline. Updated API,
+bug, roadmap and capture. Preserved the liveness report with adjudication in this package.
+Finished reducer foundation moved unchanged into its linked appendix with verified round trip.
+No real Ghostty query, install/sync, settings/schedule change or user-session shutdown occurred.
+SPEC body and PLAN remain fixed. Source steps are implemented; Phase 9 stays In Progress.
+
+**Next:** independent final reviews against `9fd98d3`, verify findings against source and fix
+material defects. Inspect current reviewer contracts before provider dispatch; do not retry the
+unchanged AGY fingerprint-policy conflict without a changed contract. Active-cue UI and all
+required physical/native cases in Phases 2/7/8/9 remain incomplete. The goal stays active.

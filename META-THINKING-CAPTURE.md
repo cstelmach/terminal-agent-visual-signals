@@ -28,10 +28,10 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 9 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 17 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 10 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 18 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
-| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 2 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections |
+| P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 3 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup |
 
 ---
 
@@ -1980,3 +1980,81 @@ appendix with verified round trip; P9 kept execution state owned by the dated SP
 captures remain intact. [R] Existing execution/review skills cover the recurring rules; no
 new process machinery was warranted. Active-cue UI, physical/native acceptance and independent
 final reviews remain due. Motives marked [R] are reconstructions, not introspective evidence.
+
+
+## 2026-10-13 · gpt-6 · tavs-final-review-corrections
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unobserved)
+  model_source: self-reported from runtime instructions
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879
+  trace: observed tool actions; causal interpretation reconstructed
+
+**Framing [O].** Continued the authorized nine-phase goal from dated SPEC/PLAN/PROGRESS and
+clean Git source. Phase 9 was in progress; native acceptance in four phases was incomplete.
+The work addressed material source defects exposed by final-review attempts. It did not install
+TAVS or treat the earlier private fixture as physical Ghostty evidence.
+
+**Strategy [R].** A review lead can be useful even when its containing report fails acceptance.
+The chosen approach kept provider execution status separate from source falsification. Each
+lead received a connected isolated reproducer, then a small shared-code correction and commit.
+The draft cleanup's independent inspection targeted the actual two-publication seam rather than
+asking for a generic second opinion. Reusing existing bindings and output serialization kept
+the fix inside the requested product instead of adding a recovery service or token protocol.
+
+**Action trace [O].**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient | Active goal, dated state, Git and current callers | Phase 9 resumed |
+| 2 | Read review outputs | Original Codex/Claude invocation artifacts | Neither was an accepted review |
+| 3 | Red/green | Queued render, delayed error and idle handoff | Three verified atomic fixes |
+| 4 | Red/green | Exited producer, live continuing owner | Cached-binding cleanup |
+| 5 | Independent inspection | Both metadata publications around open | Found a draft race |
+| 6 | Reproduce and correct | New standalone intent, then producer exit | Guard moved before first mutation |
+| 7 | Verify | Swift, release, Bats and audited Python | Passing isolated checks |
+| 8 | Dispatch | Fresh corrected source, explicit native review routes | Final reports pending |
+
+**Decision points [O/R].** Native process exit zero was insufficient for the required review
+schema. The original failed threads were not resumed. After material source changes, fresh
+provider calls received the full corrected Git target and scope, without peer reports or partial
+findings in their prompts. AGY remained unavailable because its fingerprint requirement still
+conflicted with the user's instructions. No unchanged dispatch was retried. The independent
+cleanup check was intentionally narrower than a final implementation review.
+
+**Failure arcs [O].** The original queued-render barrier emitted bytes after reset, both with
+and without resume. Typed observation validation alone could not identify that obsolete style;
+a pinned marker comparison under serialization corrected it. Tool-error restoration changed
+legacy state and killed a newer completion timer before stale output validation; checking before
+launch removed those early side effects. Idle notifications published a new delivery without
+transferring it to the existing timer; a current-context idle start restored progression.
+
+The first cleanup draft accepted newer standalone intent through its live path, then treated
+its own newly bound reset as orphan authority after producer exit. Independent inspection gave
+a concrete sequence, and a corrected fixture reproduced three failing assertions. Existing
+intent identity now checks before either branch and again after open. No further counterexample
+was found in that focused source check; this is not a universal proof.
+
+Fixture mistakes were also preserved: immutable context fields, simulated ancestry through an
+exited parent, a future virtual timestamp and a throwing closure in a nonthrowing seam. Those
+failures were corrected as fixtures, not attributed to production. The default Python lacked
+pytest, a problem already documented in Phase 3; reading that record recovered the installed
+pytest command without adding a dependency. Earlier orientation should have consulted it.
+
+**Verification [O].** Final Swift passed 497 tests in 8.040 seconds; release passed in 11.86.
+Broad Bats passed 165 before the final common-intent guard; 50 connected release-helper tests
+passed afterward. Six audited Python modules passed 230. All checks used private roots and
+owned PTYs. The final during-open regression was a green check, not initial red evidence.
+Actual salience, pane navigation, active-cue UI and relaunch acceptance remain unverified.
+
+**Heuristics and candidates [R].** P8 applies to verified review remedies; P9 keeps execution
+bound to dated state; P11 separates an exited producer from the live owner authorized to clean
+up its output. P11 now has three examples and may merit a small reusable checklist, subject to
+operator interest. No skill, memory, control plane or policy was created. Git and focused
+regressions already carry the current evidence.
+
+**Confidence.** Tool actions, diffs, failures and verification above are observed. The claimed
+reason for choosing this strategy and reusable lessons are reconstructions. Exact model variant
+and physical acceptance remain unknown. The master goal and final provider reviews are open.
