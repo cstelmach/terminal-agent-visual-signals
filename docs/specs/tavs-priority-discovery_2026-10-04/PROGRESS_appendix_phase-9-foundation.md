@@ -758,3 +758,34 @@ resolver/delivery/sync and explicit Linux scope/runtime checks. Preserve selecte
 do not switch to portable after a failed native operation. Earlier historical failure attribution,
 configured-color freshness and physical acceptance remain open. Phases 2/7/8 stay Blocked;
 Phase 9 and the full goal remain active/incomplete.
+
+### Phase 9 portable caller and no-output operations: 2026-10-14 00:44 CEST
+
+`e938da6` adds helper-PID ancestry proof with 16 visits, unchanged deadline and final caller
+birth/device recheck. `dfd00a1` adds register/current/check-context through existing bounded open,
+lock and descriptor validation. Register preserves existing cache; check publishes/caches nothing.
+Both bypass policy/lease liveness and malformed regular control/bound data. Current strictly
+checks its exact effect slots but preserves effects/pending output. Unavailable suspension disables
+this no-paint branch; active rule storage/deadline failure does not. Native rule composition is
+explicitly unavailable in the ordinary backend. Ordinary/reconcile policy admission stays strict.
+Confirmed source P2 against native target selection: valid effect-only native bindings must retain
+preference/ambiguity evidence. ZUN61m reproduced two failures; identity-hint lookup corrected them
+without making malformed regular effects a register/check dependency. j94ivS: 15 no-output cases.
+A5OER6/C6uOKG initial reds lacked methods; 6QwIK3/1St1Rj passed initial operation/identity cases.
+Final Koqo6I: 139/139 portable in 4.213 seconds. IGAoZf: 561/561 Swift in 10.323 seconds; native
+source unchanged by later Python correction. Syntax and staged ownership/secrets/whitespace checks
+passed. Owned Mac PTYs verify zero device bytes, cache/alias boundaries, live child exclusion from
+caller ancestry, unavailable-marker rule bypass and active-rule FIFO failure. Synthetic native IDs
+are data fixtures, not Ghostty physical acceptance. Full reports and parent disposition are in
+[no-output source checks](portable-no-output-source-check-2026-10-14.md).
+**Scope:** Approved H1 extension, existing process/renderer/policy/ownership interfaces, focused
+identity/PTY tests and API/bug/roadmap docs. No new capability, dispatch/routing, runtime schema or
+control plane. No app/VM/container launch, production install/settings/schedules or existing session
+termination. SPEC body and PLAN remain unchanged. Phase 9 and full goal remain active/incomplete.
+Next: finite helper dispatcher and isolated-root validation, then failure categories and delivery/
+resolver/sync. Authenticate caller before writer fork so its extra ancestry hop changes no bound.
+Do not blanket-map target ESTALE to CLI stale 3. Synthetic invalid observation file shape needs
+stale-delivery classification while actual storage/deadline errors remain unavailable; current
+errno/IPC does not fully preserve this yet. Linux versioned scope/runtime proof, historical failure
+attribution, configured-color freshness and physical native acceptance remain open. Phases 2/7/8
+stay Blocked on required native cases.
