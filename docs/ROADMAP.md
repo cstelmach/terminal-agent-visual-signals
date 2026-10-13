@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.21
+Version: 1.22
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -19,8 +19,10 @@ Portable compatibility has tested process/device, policy/record and bounded ordi
 primitives. Owned macOS PTYs verify rendering, bound forced reset, one-time suspended reconcile,
 current-preview refusal, pending-alert invalidation and failed-write retry. Linux parser proofs
 avoid mutable wall-clock birth estimates; actual Linux runtime and namespace/device checks remain
-pending. These modules are unwired and expose no capability. Helper context/intake/observation
-verbs and hook delivery remain necessary to restore standalone output and close H1.
+pending. Finite context capture and observation publication now have native interoperability,
+identity/privacy, ordering and storage checks. These modules remain unwired and expose no
+capability. Caller ancestry, no-output managed verbs, helper dispatch and hook delivery remain
+necessary to restore standalone output and close H1.
 
 ## Phase 7 source verified; native acceptance pending
 

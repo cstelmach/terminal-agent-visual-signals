@@ -2,8 +2,6 @@
 
 import errno
 import json
-import os
-import stat
 
 from portable_ownership import _binding
 from portable_policy import check_deadline
@@ -68,19 +66,10 @@ class Intents:
     def _latest(self, tty, synthetic, deadline):
         path = self._path("intent", tty)
         try:
-            return records.read(self.store.directory, path, "intent", self.store.clock(), deadline)
-        except OSError as error:
-            if synthetic or error.errno not in {errno.EINVAL, errno.EFBIG}:
-                raise
+            return records.read_latest(self.store.directory, path, "intent", self.store.clock(), deadline,
+                                       recover_invalid=not synthetic)
         except ValueError as error:
-            if synthetic:
-                raise OSError(errno.EINVAL, "Latest intent unavailable") from error
-        # Native ordinary intake repairs invalid regular intent data, never links or unavailable storage.
-        with records.parent_directory(self.store.directory, path, deadline) as parent:
-            if parent is None or not stat.S_ISREG(os.stat(path.name, dir_fd=parent, follow_symlinks=False).st_mode):
-                raise OSError(errno.EINVAL, "Latest intent unavailable")
-            check_deadline(deadline)
-        return None
+            raise OSError(errno.EINVAL, "Latest intent unavailable") from error
 
     def _check_observation(self, observation, record, synthetic, intake_at, deadline):
         if observation is not None and observation["observedAt"] > intake_at:

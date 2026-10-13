@@ -68,6 +68,23 @@ def read(root, path, kind, now, deadline):
         return read_record(Path(path).name, kind, now, deadline, dir_fd=fd)
 
 
+def read_latest(root, path, kind, now, deadline, recover_invalid):
+    try:
+        return read(root, path, kind, now, deadline)
+    except OSError as error:
+        if not recover_invalid or error.errno not in {errno.EINVAL, errno.EFBIG}:
+            raise
+    except ValueError:
+        if not recover_invalid:
+            raise
+    # Invalid data can be repaired, but links and unavailable storage cannot.
+    with parent_directory(root, path, deadline) as parent:
+        if parent is None or not stat.S_ISREG(os.stat(Path(path).name, dir_fd=parent, follow_symlinks=False).st_mode):
+            raise OSError(errno.EINVAL, "Latest visual record unavailable")
+        check_deadline(deadline)
+    return None
+
+
 def write(root, path, record, kind, now, deadline):
     check_deadline(deadline)
     try:

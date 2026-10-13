@@ -1,7 +1,21 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.43
+Version: 1.44
+
+## Portable observation publication (integration pending)
+
+`publish_observation(store, context, tty, state)` creates only a strict typed observation, under
+the existing per-TTY output lock. It rejects older observation times, accepts equal times and
+atomically replaces the bounded record. No live/device or verified-agent authority is inferred
+by publication; later output and attention checks must establish that evidence separately.
+Body, display metadata, intent, target and effects are not published by this operation.
+
+`portable_record_io.read_latest` shares ordinary-intent and observation repair behavior: invalid
+regular data can be replaced; links, nonregular paths, storage errors and timeouts cannot. Strict
+synthetic intent reads do not recover invalid data. Observation validation/lock/read/write share
+one 100 ms metadata deadline. Owned/private tests verify ordering, regular repair, FIFO/link
+refusal and lock timeout. Helper entry points and routing remain pending.
 
 ## Portable organizer context (integration pending)
 
