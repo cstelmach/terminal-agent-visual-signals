@@ -755,6 +755,7 @@ final class ProcessRunnerTests: XCTestCase {
         XCTAssertEqual(calls, 1)
         XCTAssertEqual(try readPTY(tty.master, count: 1), Data([0x61]))
         runner.writeError = ProcessRunnerError.deviceNotWritable(tty.path)
+        let submittedAt = DispatchTime.now().uptimeNanoseconds
         XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lockURL,
             beforeOpen: { deadline in
                 XCTAssertFalse(Thread.isMainThread)
@@ -762,7 +763,12 @@ final class ProcessRunnerTests: XCTestCase {
                 XCTAssertGreaterThan(deadline, now)
                 if deadline > now { XCTAssertLessThanOrEqual(deadline - now, 100_000_000) }
                 calls += 1
-            }) { _, _ in XCTFail("Injected failure cannot reach prepare"); return nil })
+            }) { _, _ in XCTFail("Injected failure cannot reach prepare"); return nil }) { error in
+            guard case ProcessRunnerError.deviceNotWritable = error else {
+                let elapsed = (DispatchTime.now().uptimeNanoseconds - submittedAt) / 1_000_000
+                return XCTFail("Expected injected error, received \(error) after \(elapsed) ms; beforeOpen calls: \(calls)")
+            }
+        }
         XCTAssertEqual(calls, 2)
         assertNoPTYBytes(tty.master)
     }

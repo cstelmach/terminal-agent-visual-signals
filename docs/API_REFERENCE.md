@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.28
+Version: 1.29
 
 ## Public recovery commands
 
@@ -298,6 +298,9 @@ value is unchanged; later accepted writes are discoverable by recovery. Exact-ID
 same revision so an old clear cannot reapply ordinary color after emergency reset.
 
 GUI replacement previews wait only for their physical target's prior cleanup.
+`FocusController` accepts its existing concurrent cleanup queue as an initializer dependency.
+The production default is preserved. Isolated tests supply the queue to barrier-drain cleanup
+that was scheduled but not yet entered, after invalidating preview and releasing their gates.
 `apply(_:to:didComplete:)`
 reports each physical fanout result once, including failed/vanished/unaffected groups and aliases.
 Distinct cleanup batches progress concurrently; same-target clears retain predecessor ordering.

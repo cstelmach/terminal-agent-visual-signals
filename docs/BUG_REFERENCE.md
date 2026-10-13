@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.42
+Version: 1.43
 
 ## Standalone hooks discard legacy metadata without the native companion
 
@@ -30,6 +30,14 @@ now retains that dependency through notification, while returning the bounded fa
 Four controller regressions plus a fanout callback test cover finite cleanup, cross-run independence,
 cancellation, timeout ancestry and fresh operation after drainage. Historical failure attribution
 remains unproven; this corrects reproduced mechanisms without general retries or deadline changes.
+
+Two preview fixtures also identified held cleanup solely by call order across concurrent queues.
+A color-preparation barrier now establishes that role before replacement native work. Gates wait
+for explicit release, rather than expiring during assertions. A supplied cleanup queue lets tests
+barrier-drain queued work before teardown; failed prerequisites stop dependent no-paint assertions.
+A teardown failure was observed before adding those drains. Its exact cause and the earlier
+deadline failures remain unproven. Injected-error checks now identify the actual error and elapsed
+time instead of accepting every thrown error as the intended device failure. Writer limits stay fixed.
 
 ## Preview preparation consumes its display lifetime
 

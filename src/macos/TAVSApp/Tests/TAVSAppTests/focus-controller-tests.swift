@@ -63,9 +63,10 @@ final class FocusControllerTests: XCTestCase {
     }
 
     private func controller(_ timers: MockTimerScheduler, queue: DispatchQueue = DispatchQueue(label: "test.preview"),
+                            clearQueue: DispatchQueue = DispatchQueue(label: "test.preview-clear", attributes: .concurrent),
                             colors: ((ProcessGeneration) throws -> TerminalRenderer.Colors)? = nil) -> FocusController {
         FocusController(state: state, recovery: recovery, restrictions: restrictions, timers: timers,
-            clock: clock, queue: queue, colors: colors ?? { _ in
+            clock: clock, queue: queue, clearQueue: clearQueue, colors: colors ?? { _ in
                 TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
             })
     }
@@ -1009,25 +1010,46 @@ final class FocusControllerTests: XCTestCase {
 
     func testCancelReplacementWaitingForPriorCleanupCannotPaintLate() throws {
         let row = try surface(10), target = try XCTUnwrap(state.captureTarget(for: row))
-        let entered = DispatchSemaphore(value: 0), attempted = DispatchSemaphore(value: 0)
+        let entered = DispatchGroup(), attempted = DispatchSemaphore(value: 0)
+        entered.enter()
         let release = DispatchSemaphore(value: 0), lock = NSLock()
         let runner = MockProcessRunner(), native = SystemProcessRunner()
-        var calls = 0
+        var calls = 0, queries = 0
         runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
             lock.lock(); calls += 1; let ordinal = calls; lock.unlock()
-            if ordinal == 2 { entered.signal(); _ = release.wait(timeout: .now() + 2) }
+            if ordinal == 2 { entered.leave(); release.wait() }
             if ordinal == 3 { attempted.signal() }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
                 beforeOpen: beforeOpen, target: target.physicalTarget, prepare: prepare)
         }
         configureState(runner: runner)
         let queue = DispatchQueue(label: "preview.cancel-cleanup-wait")
-        let focus = controller(MockTimerScheduler(), queue: queue)
-        defer { release.signal() }
+        let clearQueue = DispatchQueue(label: "preview.cancel-clear", attributes: .concurrent)
+        let focus = controller(MockTimerScheduler(), queue: queue, clearQueue: clearQueue, colors: { _ in
+            queries += 1
+            // Hold replacement preparation until the old cleanup owns the second call.
+            if queries == 2, entered.wait(timeout: .now() + 1) != .success {
+                throw VisualRecoveryError.targetUnavailable
+            }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer {
+            focus.cancelForRecovery(); release.signal()
+            let done = expectation(description: "Canceled preview and all queued cleanup returned")
+            queue.async {
+                clearQueue.async(flags: .barrier) { DispatchQueue.main.async { done.fulfill() } }
+            }
+            wait(for: [done], timeout: 2)
+        }
         focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
         let old = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
-        focus.preview([row]); XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
-        XCTAssertEqual(attempted.wait(timeout: .now() + 1), .success)
+        focus.preview([row])
+        guard entered.wait(timeout: .now() + 1) == .success else {
+            XCTFail("Old cleanup did not enter"); return
+        }
+        guard attempted.wait(timeout: .now() + 1) == .success else {
+            XCTFail("Replacement did not attempt its bounded wait"); return
+        }
         focus.clearPreview(); release.signal()
         let drained = expectation(description: "Canceled replacement and main callbacks returned")
         queue.async { DispatchQueue.main.async { drained.fulfill() } }
@@ -1042,48 +1064,67 @@ final class FocusControllerTests: XCTestCase {
 
     func testTimedOutCleanupCannotHideItsOutstandingPredecessor() throws {
         let row = try surface(10), target = try XCTUnwrap(state.captureTarget(for: row))
-        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
-        let oldDone = DispatchSemaphore(value: 0), lock = NSLock()
+        let entered = DispatchGroup(), release = DispatchSemaphore(value: 0)
+        entered.enter()
+        let lock = NSLock()
         let runner = MockProcessRunner(), native = SystemProcessRunner()
-        var calls = 0
+        var calls = 0, queries = 0
         runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
             lock.lock(); calls += 1; let ordinal = calls; lock.unlock()
             if ordinal == 2 {
-                entered.signal(); _ = release.wait(timeout: .now() + 3)
+                entered.leave(); release.wait()
             }
-            defer { if ordinal == 2 { oldDone.signal() } }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
                 beforeOpen: beforeOpen, target: target.physicalTarget, prepare: prepare)
         }
         configureState(runner: runner)
-        let focus = controller(MockTimerScheduler())
-        var retired = false
-        defer {
-            if !retired {
-                release.signal()
-                XCTAssertEqual(oldDone.wait(timeout: .now() + 2), .success)
+        let queue = DispatchQueue(label: "preview.transitive-start")
+        let clearQueue = DispatchQueue(label: "preview.transitive-clear", attributes: .concurrent)
+        let focus = controller(MockTimerScheduler(), queue: queue, clearQueue: clearQueue, colors: { _ in
+            queries += 1
+            // Hold replacement preparation until the old cleanup owns the second call.
+            if queries == 2, entered.wait(timeout: .now() + 1) != .success {
+                throw VisualRecoveryError.targetUnavailable
             }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer {
+            focus.cancelForRecovery(); release.signal()
+            let done = expectation(description: "Transitive preview and all queued cleanup returned")
+            queue.async {
+                clearQueue.async(flags: .barrier) { DispatchQueue.main.async { done.fulfill() } }
+            }
+            wait(for: [done], timeout: 2)
         }
         focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
         let old = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
         let firstFailure = expectation(description: "Replacement reports its bounded predecessor wait")
         focus.$previewStatus.first { $0.contains("0 of 1") }
             .sink { _ in firstFailure.fulfill() }.store(in: &subscriptions)
-        focus.preview([row]); XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
-        wait(for: [firstFailure], timeout: 1)
+        focus.preview([row])
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        guard XCTWaiter.wait(for: [firstFailure], timeout: 1) == .completed else {
+            XCTFail("Replacement did not report its bounded predecessor wait"); return
+        }
         let failedClear = expectation(description: "Newer cleanup reports its bounded predecessor wait")
         focus.$cleanupError.first { $0 != nil }
             .sink { _ in failedClear.fulfill() }.store(in: &subscriptions)
-        focus.clearPreview(); wait(for: [failedClear], timeout: 1)
+        focus.clearPreview()
+        guard XCTWaiter.wait(for: [failedClear], timeout: 1) == .completed else {
+            XCTFail("Newer cleanup did not report its bounded predecessor wait"); return
+        }
         let retried = expectation(description: "Fresh selection reports its outcome")
         focus.$previewStatus.first { $0.contains("terminals previewed") }
             .sink { _ in retried.fulfill() }.store(in: &subscriptions)
-        focus.preview([row]); wait(for: [retried], timeout: 1)
+        focus.preview([row])
+        guard XCTWaiter.wait(for: [retried], timeout: 1) == .completed else {
+            XCTFail("Fresh selection did not report its outcome"); return
+        }
         XCTAssertTrue(focus.previewed.isEmpty)
         XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.effectID, old.effectID)
         var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
-        release.signal(); XCTAssertEqual(oldDone.wait(timeout: .now() + 1), .success); retired = true
+        release.signal()
         XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
         focus.preview([row]); awaitPaint(focus, count: 1)
         XCTAssertNotEqual(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.effectID, old.effectID)

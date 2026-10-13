@@ -20,7 +20,7 @@ final class FocusController: ObservableObject {
     private let clock: Clock
     private let colors: (ProcessGeneration) throws -> TerminalRenderer.Colors
     private let queue: DispatchQueue
-    private let clearQueue = DispatchQueue(label: "tavs.preview-clear", attributes: .concurrent)
+    private let clearQueue: DispatchQueue
     private let focusClearQueue = DispatchQueue(label: "tavs.focus-clear")
     private let lock = NSLock()
     private var current: Run?
@@ -41,9 +41,11 @@ final class FocusController: ObservableObject {
     init(state: TerminalVisualStateStore, recovery: VisualRecovery,
          restrictions: VisualRestrictionsStateStore, timers: TimerScheduler = SystemTimerScheduler(),
          clock: Clock = SystemClock(), queue: DispatchQueue = DispatchQueue(label: "tavs.preview-start"),
+         clearQueue: DispatchQueue = DispatchQueue(label: "tavs.preview-clear", attributes: .concurrent),
          colors: @escaping (ProcessGeneration) throws -> TerminalRenderer.Colors) {
         self.state = state; self.recovery = recovery; self.restrictions = restrictions
-        self.timers = timers; self.clock = clock; self.queue = queue; self.colors = colors
+        self.timers = timers; self.clock = clock; self.queue = queue
+        self.clearQueue = clearQueue; self.colors = colors
     }
 
     func preview(_ rows: [GhosttySurface]) {
