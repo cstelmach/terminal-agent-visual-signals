@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 13:10 CEST
-**Version:** 4.8
+**Last Updated:** 2026-10-13 13:32 CEST
+**Version:** 4.9
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | dc2671c; earlier hashes below/appendix | 534 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 15fb863; earlier hashes below/appendix | 543 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -878,21 +878,23 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished prerequisite: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 per-target focus retirement: 2026-10-13 13:10 CEST
+### Phase 9 per-target focus retirement
 
-Crash recovery found clean `3b69d1d`; reports survived locally and in the October 13 archive.
-`dc2671c` keeps one lease per physical target and one clear in flight per lease. Healthy IDs
-renew independently; unresolved cancellation blocks replacement, with repaint work retained.
-The shared fanout rejects aliases before creating requests; requested clearing is background-only.
-Red `z38y9h` reproduced healthy rollover/timeout. Draft timing failures led to shared clear joins
-and blocked-target-only retries. `kUhdWq` reproduced legacy resets; the source finding was fixed.
-`HO4JDM` retained an intermittent timeout. Corrected `5ksHzD` passed 124 focused tests.
-Final `yuaDn0`: 534/534 Swift, 10.024 seconds, no warnings. Release `B0b4DB`: 17.61 seconds.
-Current-helper `BTL5Xg`: 172/172 Bats. All terminal results preceded commit; private roots/PTYs only.
-The full [source check](focus-lease-check-2026-10-13.md) and its follow-up are retained, not native proof.
-Scope: two production and two test files; no shell change. The finished prerequisite moved unchanged
-with reconstruction checked; SPEC body/PLAN are fixed. Phases 2/7/8 remain Blocked, Phase 9 active.
-**Next:** verify post-recovery scheduler recomposition, then other source leads. Proposed race/debt
-cases remain in the source report; no global worker cap or full material-review closure is claimed.
-Native acceptance remains unverified. No app/native control, install, personal settings/schedules
-or session shutdown. Scratch/backups: /tmp/tavs-focus-leases-84v8mqbc/.
+> Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+
+### Phase 9 recovery-stable reconciliation: 2026-10-13 13:32 CEST
+
+Previous turn progressed through `dc2671c`/`5adf241`. `15fb863` fixes Claude L4 in the shared writer.
+Disabled reconciliation leaves canceled ownership/fresh hooks alone and clears active residue to
+defaults; valid suspended previews retain background-only composition, expiry and current-intent clear.
+Corrected red `oO97Qq` reproduced 12 assertions. `PY19Ka` retained stale byte/no-effect expectations.
+The [source investigation](recovery-scheduler-check-2026-10-13.md) found two draft errors;
+`vEcOjq`/`NOFptk` reproduced unavailable-inode and current-preview-clear gaps before correction.
+Final `B7MIEA`: 543/543 Swift, 10.556 seconds, no warnings. Release `uoUGOC`: 17.66 seconds.
+Current-helper `Mv6nxc`: 172/172 Bats. All terminal results preceded commit, using private roots/PTYs.
+Scope: one production writer, two test files, nine new tests; no shell or scheduler-routing change.
+Failed emergency repaint remains explicitly retryable; canceled metadata cannot prove restoration.
+The finished lease checkpoint moved unchanged with reconstruction checked; SPEC body/PLAN stay fixed.
+**Next:** verify scheduler partial-failure reporting/retry (Claude M6), then remaining source leads.
+Phases 2/7/8 remain Blocked and Phase 9 active. Native acceptance is unverified; no app/native control,
+install, personal settings/schedules or user session shutdown. Backup: /tmp/tavs-suspended-reconcile-cxof04o5/.

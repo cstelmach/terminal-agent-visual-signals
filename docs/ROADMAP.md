@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.11
+Version: 1.12
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -75,6 +75,9 @@ separate unknown data from proven exit/reuse, including all-High catalogues and 
 Only actual metadata renewal advances the focus heartbeat; global masks still renew, while
 rejected paints expose unavailable state and recover with a fresh effect ID after expiry.
 Source completion does not complete native acceptance.
+Disabled scheduler/startup reconciliation now preserves emergency defaults until a permitted hook
+or preview action. Canceled records do not repaint themes or reset fresh colors. Remaining active
+restrictions clear to defaults; valid suspended previews still restore latest intent on clear.
 Focus clear exposes locked exact-ownership cancellation separately from physical output. The
 controller now retains one lease per physical target and coalesces its cleanup. Failed peers do
 not rotate healthy IDs; unresolved ownership prevents replacement, and outstanding repaint work

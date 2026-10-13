@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.34
+Version: 1.35
+
+## Scheduler reconciliation undoes emergency recovery defaults
+
+After suspension, scheduler release and startup cleanup recomposed retained ordinary backgrounds.
+Canceled global records and caller reset flags also reset freshly restored hook colors. Disabled
+reconciliation now distinguishes remaining active paint from canceled ownership under the shared
+writer lock. Canceled records alone produce no output; residual restrictions clear to defaults.
+Current suspended previews retain normal background-only composition and clearing. An unavailable
+marker cannot exempt preview ownership merely because its inode still matches. Active-mode release
+and legitimate hook renders keep their existing behavior. Regressions cover repeated/delayed clears,
+startup, fresh complete renders, preview expiry, unavailable markers and post-open suspension.
+Canceled ownership is not proof of repaint; failed emergency recovery still needs explicit retry.
 
 ## One failed focus target rotates healthy ownership and grows cleanup
 

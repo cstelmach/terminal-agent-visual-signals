@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.20
+Version: 1.21
 
 ## Public recovery commands
 
@@ -14,6 +14,12 @@ Recovery saves persistent visual suspension before resolving the native helper. 
 survives TAVS restart and overrides pauses, locks and selective focus without a challenge.
 Saved schedules, grants and session processes are preserved. Resume permits current rules again
 and leaves selective focus Off. Neither operation replays historical alerts, titles or bells.
+While restrictions are disabled, scheduler/startup reconciliation emits nothing for canceled
+ownership or retained ordinary intent alone. Remaining active global paint resets to defaults;
+remaining focus or stale preview paint resets background only. A current suspended preview still
+recomposes and clears/expires to latest intent, without unrelated foreground/palette reset.
+Fresh ordinary hook renders remain allowed. Generic reconciliation cannot prove a failed emergency
+repaint succeeded from canceled metadata; reported failures remain retryable with `tavs recover`.
 
 The helper returns JSON with `stateSaved`, `catalogueAvailable` and `items`. Each item contains
 an optional validated `target` or `tty`, `status` and optional `reason`. Status is `restored`,

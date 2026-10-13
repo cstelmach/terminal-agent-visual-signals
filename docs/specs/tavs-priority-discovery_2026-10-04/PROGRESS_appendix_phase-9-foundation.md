@@ -397,3 +397,22 @@ with reconstruction verified. Oversize append attempts stopped before state writ
 entry passes the limit. SPEC body/PLAN remain fixed; phases 2/7/8 stay Blocked, Phase 9 active.
 No native/app control, install, personal settings/schedules or session shutdown; native acceptance
 is unverified. Backups: /tmp/tavs-focus-cancellation-20261013/backup/.
+
+### Phase 9 per-target focus retirement: 2026-10-13 13:10 CEST
+
+Crash recovery found clean `3b69d1d`; reports survived locally and in the October 13 archive.
+`dc2671c` keeps one lease per physical target and one clear in flight per lease. Healthy IDs
+renew independently; unresolved cancellation blocks replacement, with repaint work retained.
+The shared fanout rejects aliases before creating requests; requested clearing is background-only.
+Red `z38y9h` reproduced healthy rollover/timeout. Draft timing failures led to shared clear joins
+and blocked-target-only retries. `kUhdWq` reproduced legacy resets; the source finding was fixed.
+`HO4JDM` retained an intermittent timeout. Corrected `5ksHzD` passed 124 focused tests.
+Final `yuaDn0`: 534/534 Swift, 10.024 seconds, no warnings. Release `B0b4DB`: 17.61 seconds.
+Current-helper `BTL5Xg`: 172/172 Bats. All terminal results preceded commit; private roots/PTYs only.
+The full [source check](focus-lease-check-2026-10-13.md) and its follow-up are retained, not native proof.
+Scope: two production and two test files; no shell change. The finished prerequisite moved unchanged
+with reconstruction checked; SPEC body/PLAN are fixed. Phases 2/7/8 remain Blocked, Phase 9 active.
+**Next:** verify post-recovery scheduler recomposition, then other source leads. Proposed race/debt
+cases remain in the source report; no global worker cap or full material-review closure is claimed.
+Native acceptance remains unverified. No app/native control, install, personal settings/schedules
+or session shutdown. Scratch/backups: /tmp/tavs-focus-leases-84v8mqbc/.

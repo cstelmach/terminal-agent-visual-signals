@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.9
+Version: 1.10
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `dc2671c`.
+Current product checkpoint: `15fb863`.
 
 ## Review execution status
 
@@ -278,10 +278,34 @@ Intermittent `HO4JDM` is retained; corrected `5ksHzD` passed 124 focused tests. 
 current-helper `BTL5Xg` passed 172/172 isolated Bats tests. All returned before commit.
 The change bounds retained controller leases, not every distinct native lifetime or global worker.
 
+## Recovery-stable reconciliation (Claude L4 / Pass C L1)
+
+`15fb863` fixes the source-verified emergency-recovery contract breach in shared reconciliation,
+covering scheduler calls, delayed native work and startup cleanup. Disabled reconciliation emits
+nothing for canceled ownership or retained ordinary intent alone. Active global residue resets
+defaults; focus/stale preview residue resets only background. Current suspended previews preserve
+composition, expiry and current-intent clearing. Normal active release and fresh hooks still work.
+
+The [source investigation and draft follow-up](recovery-scheduler-check-2026-10-13.md) found two
+additional draft errors: unavailable marker contents could preserve an inode-matching preview,
+and startup selective clearing reset a current suspended preview to defaults. Parent regressions
+reproduced both in `vEcOjq`/`NOFptk` before correcting the preview exemption. This report describes
+the baseline and first draft, not a final provider readiness verdict for `15fb863`.
+Canceled metadata is not a physical-success receipt. A failed emergency reset remains reported
+and explicitly retryable through recovery; generic disabled reconciliation does not certify it.
+
+Corrected red `oO97Qq` reproduced 12 assertions; `PZHEA5` used an older preview fixture first.
+Draft `PY19Ka` exposed stale emergency-terminator and no-effect output expectations, corrected to
+the existing reset sequence and preservation of unowned backgrounds. Final `B7MIEA` passed
+543/543 Swift tests in 10.556 seconds without warnings. Release `uoUGOC` built in 17.66 seconds;
+current-helper `Mv6nxc` passed 172/172 isolated Bats. All returned before commit, using private
+roots and owned PTYs. Nine new tests cover the contract; native visual acceptance remains open.
+
 ## Remaining adjudication and implementation
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize post-recovery scheduler recomposition. Do not suppress an unbound native-row failure based
+Prioritize scheduler partial-failure reporting/retry (Claude M6). Do not suppress an unbound
+native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 
 Helper-required compatibility must be reconciled with the original supported scope and direct

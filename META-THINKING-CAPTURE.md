@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 19 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 27 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 20 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 28 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2705,3 +2705,76 @@ is uncertain, preserving progress for independent resources.
 
 **Confidence:** [O] Results, edits and limits above are observable. Model attribution, rationale
 and carried-context interpretation are explicitly reconstructed; none describes hidden computation.
+
+## 2026-10-13 · gpt-6 (self-reported) · recovery-stable-reconciliation
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported from runtime instructions [R]
+  interface: Codex desktop
+  thinking: unknown; extended requested
+  session: 01a10879
+  trace: observed current-turn tool results
+  delegate: read-only explorer, inherited model configuration; served variant unobserved
+
+**Framing:** [O] The active goal continuation followed a verified focus-lease checkpoint.
+Git showed clean `5adf241`; dated SPEC/PLAN/PROGRESS preserved Phase 9 and pending native cases.
+The next source lead was Claude final-review L4, also labeled Pass C L1. The SPEC explicitly
+requires emergency recovery to restore defaults without immediately reapplying ordinary themes.
+Existing scheduler suspension tests routed through ordinary release, so their passing state
+assertions did not establish that subsequent terminal bytes respected this contract.
+
+**Strategy:** [O] Root traced scheduler projection, broadcaster coalescing and shared writer
+composition. A read-only explorer independently followed the same contract through startup and
+queued work. The repair stayed in one production writer, retaining scheduler definitions, routing,
+normal pause release and permitted hook renders. [R] A scheduler-only branch would have left
+already queued releases and startup reconciliation able to undo recovery, making the shared
+serialization point the smaller complete repair. No new persistent freshness record was added.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient | Git and dated execution files | Prior turn classified as progress |
+| 2 | Trace and delegate | Recovery/reconcile paths | Baseline contract breach confirmed |
+| 3 | Red/green | PTY release, startup and preview cases | 12 baseline assertions reproduced |
+| 4 | Adjudicate | Two draft findings | Both reproduced before guard corrections |
+| 5 | Verify | Full Swift, release, isolated Bats | 543, successful build, 172 passed |
+| 6 | Commit and record | Shared writer and nine regressions | `15fb863`; acceptance remains open |
+
+**Decision points:** [O] Retained intent and canceled ownership alone no longer prompt output
+while restrictions are disabled. Remaining global restriction ownership resets full defaults;
+remaining background-only ownership resets background. A preview created in the current valid
+suspension retains normal composition and current-intent clearing. Marker identity alone cannot
+exempt a preview when contents are unavailable. Explicit failed recovery remains retryable:
+canceled metadata cannot distinguish completed physical reset from failure after cancellation.
+This limitation is recorded rather than solved with another registry or completion mechanism.
+
+**Failure arcs:** [O] The initial regression used an older preview fixture; the corrected real
+request still reproduced all 12 assertions in `oO97Qq`. Draft `PY19Ka` exposed tests expecting
+an ST terminator instead of the existing emergency BEL sequence and a reset for an unowned
+native shell. Expectations were corrected to actual canonical bytes and no guessed output.
+The source follow-up identified two actual draft gaps: malformed in-place marker contents could
+retain inode identity and preserve preview tint, and `clearSelective:true` reset a valid suspended
+preview to defaults. `vEcOjq` and `NOFptk` reproduced both. The exemption now requires a valid
+suspended status, while current-preview classification remains available for explicit clearing.
+A progress size preflight used a wrong expected block length and stopped before writes; actual
+line counts produced a valid 900-line update. [R] These arcs show why status, identity, ownership
+and completed paint need separate interpretation rather than one generic success assumption.
+
+**Verification:** [O] Final `B7MIEA` passed 543 Swift tests in 10.556 seconds without warnings.
+Release `uoUGOC` completed in 17.66 seconds; current-helper `Mv6nxc` passed 172 isolated Bats.
+The tests include delayed native completion preserving a fresh full render, suspension during
+owned device open, stale focus/preview defaults, current preview expiry and residual global
+cleanup alongside a preview. No real app or native Ghostty control, installation, personal
+settings, schedule changes or user-session shutdown occurred. Native visible acceptance remains
+unverified. SPEC and PLAN are fixed; previous Session Log bytes and moved progress text remain
+preserved. The goal remains active with other source leads, including scheduler partial failures.
+
+**Heuristics and candidates:** [O] P8 and P9 recur through source adjudication and SPEC-owned
+execution state. The report produced two verified draft corrections rather than a readiness seal.
+Keep future investigation bounded by a concrete invariant and executable counterexample.
+Existing reusable-pattern promotion remains a suggestion; no new skill or control plane was made.
+
+**Confidence:** [O] Checks, edits and limitations are observable. Model attribution and causal
+strategy rationale are reconstructed, not claims about hidden computation.
