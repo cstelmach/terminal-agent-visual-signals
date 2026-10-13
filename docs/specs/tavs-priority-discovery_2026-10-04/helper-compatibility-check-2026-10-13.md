@@ -670,3 +670,88 @@ failed in `mir9tF`; the dedicated `bytes_written` attribute fixes it. Test teard
 polls/reaps owned children before closing PTYs, without increasing the writer deadline.
 The final primitives are unwired; this review does not establish controlled policy or Linux
 kernel acceptance. Producer/owner validation remains required in the typed preparation layer.
+
+## Retained portable reader comparison: 2026-10-13
+
+# Portable policy/render and record source comparison
+
+Read-only comparison against native VisualRestrictionPolicy, VisualRestrictionsState,
+TerminalRender, Colors Codable and terminal-visual-state record validation.
+No repository changes, helper tests, apps, device output, web or goal calls.
+Two parent-authorized pure Swift/Foundation string/JSON probes ran through stdout;
+they touched no application or terminal target. No file/report fingerprinting.
+
+## Findings and latest-source disposition
+
+1. Hex normalization parity was incorrect initially and is now SOURCE-VERIFIED FIXED.
+   Python default strip excludes U200B and includes U001C..001F, while installed
+   Foundation behaves oppositely. Native also uppercases BEFORE validating the six
+   canonical hex digits. The string '#abcdﬀ' therefore becomes '#ABCDFF' (seven
+   total characters), while the original portable code rejected it. Latest source
+   uses the exact probed trim set, uppercases first and shares normalization from
+   normalized_background instead of using its former pre-normalization regex.
+
+   Exact installed Foundation trim set, verified by querying all Unicode scalars:
+   U0009..U000D, U0020, U0085, U00A0, U1680, U2000..U200B,
+   U2028, U2029, U202F, U205F, U3000.
+   Equivalent Python literals:
+   '\t\n\v\f\r \u0085\u00a0\u1680\u2000\u2001\u2002\u2003'
+   '\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u2028'
+   '\u2029\u202f\u205f\u3000'
+
+2. Focus-color record normalization was discarded initially and is now
+   SOURCE-VERIFIED FIXED. Native Colors.init(from:) stores canonical background/
+   foreground values. Portable decode originally validated normalized_hex but
+   returned raw case/whitespace strings, changing alias recipe equality. Current
+   decode assigns colors[component] = normalized_hex(color), matching native value
+   semantics. Other effect/intent background strings are validated but need not
+   be rewritten at decode: native normalizes those when publishing, not in Codable.
+
+3. Post-decode deadline check was absent initially and is now SOURCE-VERIFIED FIXED.
+   Native state.read checks the supplied deadline AFTER JSONDecoder returns.
+   Portable read_record originally returned decode directly. Current code saves
+   the result, calls existing check_deadline(deadline), then returns. JSON parsing
+   or validation cannot grant a fresh deadline or return an expired record as valid.
+   The parent reports red u5OOFR and 31 passing portable checks in 011F9n; those
+   helper tests were not run or independently verified during this review.
+
+4. Numeric lexical acceptance is an intentional COMPATIBILITY SUBSET.
+   The pure Foundation JSONDecoder probe accepted 1.0/1e0 in Int/UInt64 fields and
+   rejected Boolean-as-number and numeric-as-Boolean. Portable _integer rejects
+   integral floats/exponent-decoded floats, while accepting canonical JSONEncoder
+   integer fields and correctly rejecting bool. Parent explicitly retains that
+   strict canonical-record contract and will document it. Do not describe the
+   decoder as accepting every JSON lexical representation native Codable accepts.
+   This is not an ownership bypass or a reason to expand numeric coercion blindly.
+
+5. Leading-zero epoch handling was an initial SAFETY MISMATCH, already corrected
+   during review. Native Int64 accepted 32 zeros+'2000' in the string probe.
+   The initial portable raw-length<=19 gate could treat that valid active lock or
+   pause as inactive. Current _epoch strips leading zeros before digit-length/
+   Int64-range checks. Existing all-digit validation, nonnegative range and overflow
+   rejection remain. No runtime policy result was inferred from the string probe.
+
+## Other requested checks
+
+Policy file bounds, regular-file/no-follow/inode checks, exact suspension bytes,
+missing searchable-parent behavior, pinned revision identity, hard-lock boundaries,
+unlock grants, soft pause reasons/level/requested state and liveness/120-second
+freshness match the inspected native decisions. Portable unavailable marker raises
+an internal exception, while native exposes unavailable/disabled status; that is
+intentional conservative ordinary-output handling, not an accidental active-state
+conversion. Policy.restricted returns a Boolean because portable code identifies
+native control rather than synthesizing its visual colors.
+
+Render field count/final NUL/16 KiB cap, UTF-8 byte limits, title/image control
+rejection, palette-before-background ordering, reset distinctions, iTerm base64/BEL
+framing and suppression of only the synthetic audible bell match source.
+
+Record decoding rejects missing/unknown nested keys, duplicate keys, wrong types,
+invalid IDs, future/non-finite timestamps, bad generation ranges and invalid focus/
+revision combinations. No malformed-record path was found that gains authority.
+Duplicate-key rejection and canonical numeric restriction are conservative parsing
+choices. Linux scope-bearing generation records remain outside native schema1.
+
+No remaining concrete unintended safety or ordinary-render mismatch found in the
+latest inspected code. Integration must still consume these APIs correctly; this
+review does not establish complete H1 rendering or Linux/device acceptance.

@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 29 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 37 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 30 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 38 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3434,3 +3434,69 @@ scope visible. Existing promotion proposals remain proposals; no capability asse
 
 **Confidence.** Actions, source contracts and test outcomes are observed. Motives and the
 cross-namespace proof are reconstructed or conditional; live Linux evidence remains missing.
+
+## 2026-10-13 · gpt-6 self-report · portable-reader-compatibility
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unverified)
+  model_source: self-reported from environment; no observed executor model field
+  interface: codex-desktop
+  thinking: extended requested; runtime mode unobserved
+  session: 01a10879
+  trace: observed tool calls in current conversation; internal motives reconstructed
+
+**Framing [O]:** The operator authorized every remaining goal step. Current Git, goal service and
+SPEC-owned progress showed an active incomplete goal, three draft files and committed identity/
+device foundations. The slice completed finite render, policy and record readers needed for H1
+standalone output. Passing these internal readers could not complete hook routing or native
+acceptance, so no capability was advertised. The existing native implementation supplied the
+contract; Linux generation scope was kept separate from macOS schema 1.
+
+**Strategy [R]:** Reading exact native predicates before connecting a backend appears to reduce
+unsafe assumptions about missing control. Tests isolated policy and JSON boundaries, followed
+by a narrow independent source comparison. Reusing standard-library file reads, deadlines and
+normalization avoided a service or opaque OSC parser. Three logical implementation commits kept
+rendering, policy and records independently reviewable. Completed detail went to the existing
+appendix with a short progress pointer; the main log stayed at its 900-line limit.
+
+**Action trace [O]**
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Read | Git, goal, SPEC/PLAN/PROGRESS and skills | Reconciled crash continuation |
+| 2 | Test/edit | Policy reader | Zero-padding red case corrected |
+| 3 | Test/edit | Record decoder | Strict malformed-type and path checks |
+| 4 | Explorer | Native reader compatibility | Pure Foundation probes; report retained |
+| 5 | Test/edit | Color canonicalization and decode deadline | Review findings reproduced first |
+| 6 | Verify/commit | 31 portable and 561 Swift tests | Three owned source commits |
+| 7 | Append | API, progress, source report and capture | Full goal remains incomplete |
+
+**Decision points [O]:** Native trim/uppercase behavior was reproduced instead of treating Python
+string defaults as equivalent. Focus colors were stored canonically, because validating without
+assignment changes recipe equality. The record decoder retains canonical JSON integer tokens
+only, an explicitly documented subset of native numeric lexical acceptance. Unavailable marker
+state raises inside ordinary routing preparation rather than being interpreted as absence of
+control. These decisions concern internal readers; live ownership remains a separate obligation.
+
+**Failure arcs:** F1, wrong mental model [O]: a raw timestamp-length gate classified a zero-padded
+active lock as inactive. A new regression failed, then stripping leading zeros before the Int64
+bound fixed it. F2, boundary gaps [O]: malformed structured fields raised type errors, a huge
+integer overflowed float conversion, and a normalized generic TTY escaped rejection. Specific
+red cases drove type guards, comparison ordering and path normalization. F3, compatibility gap
+[O]: Foundation probes exposed trim/uppercase differences and discarded normalized focus colors.
+Both fixes received regressions. F4, timing gap [O]: decoding could return past the original
+budget. A clock-expiry test failed before the final deadline check. A broad temporary-directory
+filename search also produced unrelated deep-path errors; exact report paths replaced it.
+
+**Verification [O]:** Final portable checks passed 31/31 in 1.297 seconds; full existing Swift
+suite passed 561/561 in 10.533 seconds. Owned modules compiled and staged additions were checked
+for secrets. The source reviewer verified fixes without exercising devices. No Linux kernel,
+Ghostty visual, app installation, personal runtime or scheduling acceptance is claimed.
+
+**Heuristics:** P8/P9 recur. Test the representation at a trust boundary, not merely an expected
+value. Preserve the original deadline across parsing. No new skill promotion is proposed: those
+moves are already covered by existing execution and review instructions.
+
+**Confidence:** Actions and failures are observed. Strategy motives are reconstructed. Source
+compatibility is scoped to the inspected implementation; backend and physical acceptance remain
+unverified.

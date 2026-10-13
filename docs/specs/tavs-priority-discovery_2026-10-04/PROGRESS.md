@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 21:21 CEST
-**Version:** 4.19
+**Last Updated:** 2026-10-13 21:52 CEST
+**Version:** 4.20
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 764e22b, 1029d4e; earlier below/appendix | 14 primitive; 561 Swift; prior Bats below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | dd8bafd, c94e978, 1e55ac1; earlier below/appendix | 31 portable; 561 Swift; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -896,3 +896,5 @@ observation/intent, synthetic/reset/reconcile, resolver and install/sync integra
 owned PTYs when an authorized runtime is available. Keep Mac schema unchanged and no failed-native
 bypass. Prior failure causes, color freshness and required physical acceptance remain open.
 Phases 2/7/8 remain Blocked on native cases; 9 and the full goal remain active/incomplete.
+
+> [Portable reader checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.

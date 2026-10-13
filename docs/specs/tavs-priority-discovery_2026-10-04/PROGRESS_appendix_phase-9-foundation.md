@@ -543,3 +543,34 @@ The operator availability question remains unanswered; dedicated visible checks 
 No real install/sync, personal preferences/schedules or existing terminal sessions were changed.
 H1 rendering, prior failure attribution, color freshness and native acceptance remain open.
 Phases 2/7/8 stay Blocked on acceptance; 9 stays In Progress. The full goal is incomplete.
+
+### Phase 9 portable render/policy/record readers: 2026-10-13 21:52 CEST
+
+`dd8bafd` adds finite render decoding; `c94e978` adds policy reading; `1e55ac1` adds strict
+native schema-1 record validation. These internal modules advertise no capability and are
+not routed into hooks. H1 standalone ordinary output remains open.
+Render decoding preserves native palette/background/title/image ordering and suppresses only
+synthetic alert bells. Policy parsing shares existing lock/mute/suspension predicates, holds
+marker descriptors across transactions and rejects unavailable state. Records enforce nested
+shapes, bounds and recipe rules; focus colors normalize before alias comparisons. Read/parse
+work rechecks the original deadline, without renewing the 100 ms device budget.
+Policy initial green `VYTkfK`: 4/4. New zero-padding regression failed `HaF8VP`, then `eGBbjJ`:
+6/6. Records initial red `IWUpA0`: missing module. `XqnLom` exposed bad-type exceptions,
+huge timestamp conversion and generic-TTY normalization; all corrected. Review regressions
+`47ylt1`/`chyIkZ` exposed Foundation trim/uppercase and stored focus-color normalization.
+Deadline regression `u5OOFR` failed before the post-decode check. Final `011F9n`: 31/31 portable
+checks, 1.297 seconds. Full Swift `VUsiZg`: 561/561, 10.533 seconds. Syntax checks pass.
+Read-only source review found and verified these corrections against current native code.
+Its pure Foundation probes establish current trim and number parsing. Canonical JSON integer
+fields only are an intentional subset: decimal/exponent lexical forms remain rejected. Duplicate
+keys also reject. Linux scope-bearing identities remain outside native schema 1, not stripped.
+Full source report is retained in [compatibility checks](helper-compatibility-check-2026-10-13.md).
+**Scope:** Approved H1 portability extension, three modules/tests plus existing API documentation.
+No native target, Docker startup, production install, personal setting/schedule or existing
+session action. The first broad `/tmp` filename search produced unrelated path-length errors;
+subsequent report access used only the known exact path. No data was changed by that search.
+Next: implement current physical-owner/alias proof and durable intent handling under the shared
+output lock, then context/observe, synthetic/reset/reconcile, resolver and delivery integration.
+Validate Linux owned PTYs in an authorized runtime; native Ghostty acceptance still needs access
+or direct operator evidence. Earlier historical failure attribution and color freshness remain open.
+Phases 2/7/8 remain Blocked on native cases; Phase 9 and the full goal remain active/incomplete.
