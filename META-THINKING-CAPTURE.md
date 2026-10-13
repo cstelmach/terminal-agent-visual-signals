@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 33 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 41 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 34 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 42 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3706,3 +3706,72 @@ so no new skill promotion is proposed.
 **Confidence:** Actions and outcomes are observed, while strategy motives are reconstructed.
 A parent timeout can still leave output unknown. The implementation supplies an internal
 ordinary transaction, not the complete release or its required native acceptance.
+
+## 2026-10-13 · gpt-6 self-report · portable-forced-reset
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unverified)
+  model_source: self-reported from environment; no observed executor model field
+  interface: codex-desktop
+  thinking: extended requested; runtime mode unobserved
+  session: 01a10879
+  trace: observed tool calls; internal motives reconstructed
+
+**Framing [O]:** The continuation resumed clean ff0406b and the SPEC-owned Phase 9 source fixes.
+Ordinary rendering was implemented, but orphan cleanup still lacked the native authority rules.
+This slice implemented forced reset through unchanged retained delivery and current target proof.
+Reconcile was left explicit for the next slice. Missing process metadata was not treated as a
+standalone permission to reset another terminal, and no capability or hook integration was claimed.
+
+**Strategy [R]:** Implementing publication authority first, then writer entry selection, appears
+to keep two distinct obligations visible. Native direct publication has a broader invalid-producer
+branch than the managed entry exposes. Testing actual producer exit separately from mocked device
+movement helped distinguish those obligations. The existing worker and transaction supplied the
+same lock, pinned recovery revision, byte ordering and original deadline. A shared owned-PTY
+fixture was extended with an owned producer child while preserving its live parent terminal.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Read | SPEC-owned state and native reset methods | Reoriented from previous progress |
+| 2 | Test/edit | Bound reset authority | Missing-method red, 17 intent cases green |
+| 3 | Test/edit | Cached target selector | No invented lifetime, ambiguity rejection |
+| 4 | Test/edit | Forced transaction and child producer | Real exit with live parent PTY |
+| 5 | Review/read | Native entry versus publisher | Device-movement route discrepancy |
+| 6 | Test/edit | Same-generation other-device case | Reproduced unsafe reset and fixed route |
+| 7 | Verify/commit | Full portable and Swift sets | 85/85 and 561/561 |
+| 8 | Preserve | Review, progress and capture | Full goal remains incomplete |
+
+**Decision points [O]:** A live producer uses synthetic observation matching. An invalid producer
+requires unchanged latest/observation delivery and a bound copy equal in every field, plus a valid
+current target. Cached selection cannot create a plain lifetime without retained evidence. The
+renderer chooses the orphan route only when the recorded generation is missing or replaced.
+Reset title is bounded and control-free; palette reset precedes background and title, while
+foreground reset remains limited to residual global presentation. No old alert or image is added.
+
+**Failure arcs:** F1, missing implementation [O]: publisher, cached selection and reset writer
+regressions failed before the methods existed, then passed their focused sets. F2, entry-contract
+mismatch [O]: the first renderer also classified a live same-generation producer on another device
+as orphaned. The source reviewer identified the broader route. The parent read native managed
+entry, created matching retained records and reproduced unintended reset output. Removing device
+mismatch from orphan selection made the no-output case pass while preserving actual exited-child
+reset. This correction changed the entry predicate, not the direct publication contract or the
+full objective. Failure evidence and the draft report remain preserved with parent dispositions.
+
+**Verification [O]:** Final dRWtI2 passed 85 portable checks in 2.250 seconds. 7hZtMI passed
+561 Swift tests in 11.947 seconds. The physical owned-PTY case terminated only its producer child,
+kept its parent terminal live and verified the reset bytes. Other cases refused changed delivery,
+new observation, changed bound copy, owner reuse and title controls. Syntax, staged diffs and
+secret checks passed. Source review did not execute tests. No personal runtime, app/VM/container
+launch, production install or existing terminal session action occurred. Ghostty visible behavior,
+Linux scope, reconcile and installed hook delivery remain unverified.
+
+**Heuristics:** P8/P9 recur. Compare public entry selection with the internal publication method;
+a valid internal branch is not automatically a valid externally reachable route. Preserve both
+reproduced failure and corrected successful case. Existing execution/review guidance covers these
+moves, so no new skill promotion is proposed.
+
+**Confidence:** Actions and results are observed; strategy motives are reconstructed. Current
+bound orphan authority is implemented and tested. The complete backend and native acceptance
+remain incomplete, and a missing PID alone remains insufficient.

@@ -681,3 +681,26 @@ verbs, then resolver/delivery/sync integration. Keep native selection preferred 
 after a failed selected native operation. Validate Linux namespace/device scope before support.
 Native physical acceptance, prior failure attribution and color freshness remain open. Phases
 2/7/8 stay Blocked; Phase 9 and the full goal remain active/incomplete.
+
+### Phase 9 portable forced reset: 2026-10-13 23:52 CEST
+
+`9ab0446` adds live/bound orphan reset publication and current cached target selection;
+`b600128` connects reset palette/background/title to the existing bounded transaction.
+Missing producer alone authorizes nothing: orphan reset requires unchanged latest/observation
+identity, a full matching bound copy and a current continuing target. Live producers retain
+synthetic freshness checks. A live same-generation producer on another device cannot use the
+orphan route, matching native entry; reset title rejects controls and remains bounded.
+Initial reds gthkkC/2sYAE5/kfS4v1: absent methods. D3h7vy: 17 intent cases; GeRYQu: 16 ownership
+cases. Source P2 was checked against native entry and reproduced by 9nuDC1, then corrected.
+WhWDhg passed 12 renderer cases including actual exited owned producer with live parent PTY.
+Final dRWtI2: 85/85 portable in 2.250 seconds; 7hZtMI: 561/561 Swift, 11.947 seconds. Source
+syntax and staged checks passed. Full draft review and parent corrections are retained in
+[forced-reset source checks](portable-forced-reset-source-check-2026-10-13.md).
+**Scope:** Approved H1 extension, reset publication/routing, cached selector and owned child-PTY
+fixture. No new capability, runtime schema, control plane, hook routing or personal-state action.
+No app/VM/container launch, production install or existing session termination occurred.
+Next: reconcile with suspension/no-replay behavior and pending invalidation, remaining helper
+context/intake/observation verbs and resolver/delivery/sync integration. Do not advertise the
+backend until those contracts are complete. Validate Linux namespace/device scope separately.
+Native physical acceptance, earlier failure attribution and color freshness remain open.
+Phases 2/7/8 stay Blocked; Phase 9 and the full goal remain active/incomplete.
