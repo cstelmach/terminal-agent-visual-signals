@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.16
+Version: 1.17
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -97,3 +97,8 @@ Ordinary target lookup now scans only the requested TTY bucket, retaining every 
 effect-only binding. Full recovery still sees all records, including corruption. A symlink scan
 correction preserves healthy neighboring records. Retained history within one TTY and preview
 configuration cost remain separate M5 concerns; no general latency improvement is claimed.
+Preview preparation no longer consumes the two-second display lease. One accepted timestamp feeds
+the effect and remaining-delay expiry; cancellation/replacement stay effective while preparing.
+Expired accepted starts still receive cleanup. Configuration failures retain explicit unavailable
+status. Each multiselection keeps one fresh validated query; no cross-preview cache is introduced.
+Physical duration and aggregate fanout tolerance still require native acceptance.

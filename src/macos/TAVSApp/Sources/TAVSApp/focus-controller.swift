@@ -49,15 +49,10 @@ final class FocusController: ObservableObject {
         clearPreview()
         guard !rows.isEmpty else { return }
         let run: Run
-        do { run = Run(startedAt: clock.now().timeIntervalSince1970,
-                       revision: try restrictions.captureRevision()) }
+        do { run = Run(revision: try restrictions.captureRevision()) }
         catch { previewStatus = "Preview unavailable: suspension state cannot be verified."; return }
         lock.lock(); current = run; lock.unlock()
         isPreviewActive = true; previewStatus = "Preparing preview."
-        timers.scheduleOnce(after: 2, on: .main) { [weak self] in
-            guard let self = self, self.matchesID(run) else { return }
-            self.clearPreview()
-        }
         queue.async { [weak self] in
             guard let self = self, self.isCurrent(run) else { return }
             do {
@@ -67,12 +62,22 @@ final class FocusController: ObservableObject {
                 }
                 let colors = try self.colors(application)
                 let targets = rows.compactMap { self.state.captureTarget(for: $0) }
+                let startedAt = self.clock.now().timeIntervalSince1970
                 self.lock.lock()
                 let accepted = self.current === run
-                if accepted { run.targets = targets }
+                if accepted { run.targets = targets; run.previewStartedAt = startedAt }
                 self.lock.unlock()
-                guard accepted, self.isCurrent(run) else { return }
-                let request = TerminalPreviewRequest(effectID: run.id, startedAt: run.startedAt,
+                guard accepted else { return }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self, self.matchesID(run) else { return }
+                    let remaining = max(0, startedAt + 2 - self.clock.now().timeIntervalSince1970)
+                    self.timers.scheduleOnce(after: remaining, on: .main) { [weak self] in
+                        guard let self = self, self.matchesID(run) else { return }
+                        self.clearPreview()
+                    }
+                }
+                guard self.isCurrent(run) else { return }
+                let request = TerminalPreviewRequest(effectID: run.id, startedAt: startedAt,
                     colors: colors, revision: run.revision, isCurrent: { [weak self] in self?.isCurrent(run) == true })
                 let items = self.recovery.apply(.preview(request), to: targets)
                 DispatchQueue.main.async { [weak self] in
@@ -90,6 +95,7 @@ final class FocusController: ObservableObject {
                 } else { reason = "Preview unavailable: configured colors or native mapping cannot be resolved." }
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, self.isCurrent(run) else { return }
+                    self.isPreviewActive = false
                     self.previewStatus = reason
                 }
             }
@@ -140,7 +146,7 @@ final class FocusController: ObservableObject {
         guard !ids.isEmpty else { return }
         focusOff()
         do {
-            let run = Run(startedAt: clock.now().timeIntervalSince1970, revision: try restrictions.captureRevision())
+            let run = Run(revision: try restrictions.captureRevision())
             lock.lock(); manual = run; lock.unlock()
             workingSet = ids; mode = .manual
             acceptCatalogue(catalogue)
@@ -197,7 +203,7 @@ final class FocusController: ObservableObject {
                 retireFocus(); focusStatus = "Automatic armed: no unacknowledged cues."; return
             }
             lock.lock()
-            if manual == nil { manual = Run(startedAt: now, revision: revision) }
+            if manual == nil { manual = Run(revision: revision) }
             lock.unlock()
         }
         lock.lock(); let old = manual; lock.unlock()
@@ -513,21 +519,21 @@ final class FocusController: ObservableObject {
     }
 
     private func isCurrent(_ run: Run) -> Bool {
-        matchesID(run) && clock.now().timeIntervalSince1970 < run.startedAt + 2
+        lock.lock(); defer { lock.unlock() }
+        guard current === run else { return false }
+        return run.previewStartedAt.map { clock.now().timeIntervalSince1970 < $0 + 2 } ?? true
     }
 
     private final class Run {
         let id = UUID().uuidString
-        let startedAt: Double
+        var previewStartedAt: Double?
         let revision: VisualRestrictionsRevision
         var targets: [TerminalTargetBinding] = []
         var colors: TerminalRenderer.Colors?
         var version = 0
         var invalidSourcesVersion: Int?
         var renewedTargets = Set<TerminalTargetBinding>()
-        init(startedAt: Double, revision: VisualRestrictionsRevision) {
-            self.startedAt = startedAt; self.revision = revision
-        }
+        init(revision: VisualRestrictionsRevision) { self.revision = revision }
     }
 
     private final class FocusLease {

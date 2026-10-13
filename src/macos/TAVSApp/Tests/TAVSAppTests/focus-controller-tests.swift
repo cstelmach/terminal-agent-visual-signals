@@ -74,6 +74,7 @@ final class FocusControllerTests: XCTestCase {
         let ready = expectation(description: "Selected targets painted")
         controller.$previewed.first { $0.count == count }.sink { _ in ready.fulfill() }.store(in: &subscriptions)
         wait(for: [ready], timeout: 1)
+        XCTAssertEqual(controller.previewed.count, count, controller.previewStatus)
     }
 
     private func read(_ index: Int, file: StaticString = #filePath, line: UInt = #line) throws -> Data {
@@ -796,6 +797,113 @@ final class FocusControllerTests: XCTestCase {
         for index in 0..<2 { XCTAssertEqual(try read(index), Data("\u{1B}]111\u{1B}\\".utf8)) }
     }
 
+    func testSlowColorPreparationDoesNotConsumeTheTwoSecondPreviewLease() throws {
+        let rows = [try surface(10), try surface(20)], timers = MockTimerScheduler()
+        var queries = 0
+        let focus = controller(timers, colors: { _ in
+            queries += 1; self.clock.advance(by: 3)
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.preview(rows); awaitPaint(focus, count: 2)
+        XCTAssertEqual(queries, 1)
+        XCTAssertEqual(timers.scheduledTimers.count, 1)
+        XCTAssertEqual(timers.scheduledTimers.first?.delay, 2)
+        let target = try XCTUnwrap(state.captureTarget(for: rows[0]))
+        let effect = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
+        XCTAssertEqual(effect.heartbeatAt, 1_003)
+        for index in 0..<2 { _ = try read(index) }
+        clock.advance(by: 1.9)
+        XCTAssertTrue(state.isSelectiveLeaseActive(effect))
+        clock.advance(by: 0.1); timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        for index in 0..<2 { XCTAssertEqual(try read(index), Data("\u{1B}]111\u{1B}\\".utf8)) }
+    }
+
+    func testSelectionWaitingBehindSlowPreparationPaintsOnlyTheLatestRows() throws {
+        let first = try surface(10), skipped = try surface(20), latest = try surface(30)
+        let timers = MockTimerScheduler(), queue = DispatchQueue(label: "preview.preparation-replacement")
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        var queries = 0
+        let focus = controller(timers, queue: queue, colors: { _ in
+            queries += 1
+            if queries == 1 { entered.signal(); release.wait() }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer { release.signal() }
+        focus.preview([first]); XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        XCTAssertTrue(timers.scheduledTimers.isEmpty)
+        focus.preview([skipped]); focus.preview([latest])
+        clock.advance(by: 3); release.signal()
+        awaitPaint(focus, count: 1)
+        XCTAssertEqual(focus.previewed, [latest.id])
+        XCTAssertEqual(queries, 2)
+        XCTAssertEqual(timers.scheduledTimers.count, 1)
+        for index in 0..<2 {
+            var ready = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        _ = try read(2)
+        focus.clearPreview(); _ = try read(2)
+    }
+
+    func testFailedColorPreparationReportsUnavailableWithoutAnExpiryOrPaint() throws {
+        let row = try surface(10), timers = MockTimerScheduler()
+        let focus = controller(timers, colors: { _ in
+            self.clock.advance(by: 3)
+            throw TerminalConfigurationError.unresolvedAppearance
+        })
+        let failed = expectation(description: "Preparation failure is visible")
+        focus.$previewStatus.first { $0.contains("dual-theme") }
+            .sink { _ in failed.fulfill() }.store(in: &subscriptions)
+        focus.preview([row]); wait(for: [failed], timeout: 1)
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertTrue(timers.scheduledTimers.isEmpty)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.clearPreview()
+    }
+
+    func testLatePreviewTimerSchedulingUsesTheRemainingDisplayLifetime() throws {
+        let row = try surface(10), timers = MockTimerScheduler()
+        let entered = DispatchSemaphore(value: 0), advance = DispatchSemaphore(value: 1)
+        configureState(runner: SystemProcessRunner(openDevice: { path, flags in
+            if advance.wait(timeout: .now()) == .success {
+                self.clock.advance(by: 1.25); entered.signal()
+            }
+            return Darwin.open(path, flags)
+        }))
+        let focus = controller(timers)
+        focus.preview([row])
+        // Keep main-queue timer setup pending until the writer has consumed part of the lease.
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        awaitPaint(focus, count: 1); _ = try read(0)
+        XCTAssertEqual(try XCTUnwrap(timers.scheduledTimers.first).delay, 0.75, accuracy: 0.001)
+        clock.advance(by: 0.75); timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testExpiredPreparedStartStillSchedulesCleanupWithoutPainting() throws {
+        let row = try surface(10), timers = MockTimerScheduler()
+        let queue = DispatchQueue(label: "preview.expired-start")
+        let delayedClock = PreviewExpiryBoundaryClock(clock)
+        let focus = FocusController(state: state, recovery: recovery, restrictions: restrictions,
+            timers: timers, clock: delayedClock, queue: queue, colors: { _ in
+                TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+            })
+        focus.preview([row])
+        let drained = expectation(description: "Expired start and main-queue timer setup returned")
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }
+        wait(for: [drained], timeout: 1)
+        XCTAssertEqual(try XCTUnwrap(timers.scheduledTimers.first).delay, 0)
+        timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
     func testExpiryRestoresIntentChangedDuringPreview() throws {
         let row = try surface(10), timers = MockTimerScheduler(), focus = controller(timers)
         focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
@@ -833,8 +941,9 @@ final class FocusControllerTests: XCTestCase {
         focus.preview([row]); XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
         focus.clearPreview(); release.signal()
         let done = expectation(description: "Canceled lookup worker returned")
-        queue.async { done.fulfill() }; wait(for: [done], timeout: 1)
+        queue.async { DispatchQueue.main.async { done.fulfill() } }; wait(for: [done], timeout: 1)
         XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertTrue(timers.scheduledTimers.isEmpty)
         XCTAssertTrue(state.cachedRecords().effects.isEmpty)
         var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
@@ -917,5 +1026,18 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(model.visualRestrictionsStatus, .suspended)
         XCTAssertTrue(try XCTUnwrap(model.recoveryStatus).contains("1 failed"))
         XCTAssertTrue(try XCTUnwrap(model.recoveryStatus).contains("Native catalogue unavailable"))
+    }
+}
+
+private final class PreviewExpiryBoundaryClock: Clock {
+    private let clock: VirtualClock
+    private let lock = NSLock()
+    private var reads = 0
+    init(_ clock: VirtualClock) { self.clock = clock }
+    func now() -> Date {
+        lock.lock(); defer { lock.unlock() }
+        reads += 1
+        if reads == 2 { clock.advance(by: 3) }
+        return clock.now()
     }
 }

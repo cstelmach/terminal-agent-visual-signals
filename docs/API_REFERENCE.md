@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.25
+Version: 1.26
 
 ## Public recovery commands
 
@@ -277,8 +277,13 @@ Emergency recovery discovers and cancels both records through the existing bound
 Controller and GUI wiring are source-tested and checked in an isolated fixture. Use matching
 source-built components for acceptance; old executables do not understand the preview record.
 
-`TerminalPreviewRequest` captures the explicit selection's original time, colors and suspension
-file revision. The revision holds a read-only descriptor until requests leave scope, preventing
+Selection immediately pins the suspension revision and remains cancellable while colors/targets
+prepare. A successful current preparation establishes one display-start timestamp immediately
+before bounded paint. `TerminalPreviewRequest`, its record and the expiry timer use that timestamp;
+configuration delay does not consume the two-second lease. Late timer setup uses the remaining
+duration, including zero for an already expired accepted start. Failure leaves explicit unavailable
+status without an active preview or expiry timer. Fresh validated colors are queried once per
+multiselection, without reuse between previews. The revision holds a read-only descriptor, preventing
 inode reuse. A preview caches its validated target before comparing that revision inside the
 existing writer lock. Recovery's atomic replacement rejects queued starts even if the Boolean
 value is unchanged; later accepted writes are discoverable by recovery. Exact-ID clear uses the

@@ -1,7 +1,22 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.39
+Version: 1.40
+
+## Preview preparation consumes its display lifetime
+
+Selection started both the timer and effect heartbeat before configuration/target preparation.
+A three-second virtual preparation reproduced no paint, expired replacement selections and lost
+failure reporting. Preparation now stays cancellable by identity; successful acceptance freezes
+one display-start timestamp for the effect and timer immediately before painting. Late timer setup
+uses the remaining duration. Configuration failures stay visibly unavailable without an active cue.
+
+A source follow-up found that an accepted start could expire before its timer was queued, leaving
+the UI active indefinitely. A deterministic clock reproduced missing cleanup. Every accepted start
+now queues exact-ID expiry before the paint-age check. Five new tests cover slow preparation,
+replacement, failure, delayed setup and already expired starts; existing cancellation checks remain.
+The clock fixture serializes its boundary so concurrent worker/main reads cannot defeat the test.
+Fresh configuration validation remains intact. No persistent cache or native timing claim is added.
 
 ## Per-terminal lookup scans unrelated cache records
 
