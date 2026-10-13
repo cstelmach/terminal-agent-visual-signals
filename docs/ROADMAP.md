@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.22
+Version: 1.23
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -21,8 +21,9 @@ current-preview refusal, pending-alert invalidation and failed-write retry. Linu
 avoid mutable wall-clock birth estimates; actual Linux runtime and namespace/device checks remain
 pending. Finite context capture and observation publication now have native interoperability,
 identity/privacy, ordering and storage checks. These modules remain unwired and expose no
-capability. Caller ancestry, no-output managed verbs, helper dispatch and hook delivery remain
-necessary to restore standalone output and close H1.
+capability. Caller ancestry and register/current/check-context now have bounded no-output and
+alias checks. Dispatcher/isolation, error classification and hook delivery remain necessary to
+restore standalone output and close H1.
 
 ## Phase 7 source verified; native acceptance pending
 

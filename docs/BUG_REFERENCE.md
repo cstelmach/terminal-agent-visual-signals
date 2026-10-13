@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.49
+Version: 1.50
+
+## Portable no-output draft omits effect-only native identity
+
+Target-only selection dropped native bindings retained solely in valid effect records. It could
+cache a plain target instead of the preferred native target and accept two ambiguous native IDs.
+Native target selection includes effect targets. The owned-PTY regressions reproduced both gaps.
+Identity-only selection now retains valid canonical effect hints while excluding malformed regular
+effect/bound data from register/check admission. Current rereads selected slots strictly; ordinary
+output guards remain strict. No advertised helper or routing used this draft.
 
 ## Portable context draft rejects native opaque response metadata
 

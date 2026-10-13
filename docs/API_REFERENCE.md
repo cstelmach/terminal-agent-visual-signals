@@ -1,7 +1,24 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.45
+Version: 1.46
+
+## Portable no-output managed operations (integration pending)
+
+`Renderer.register`, `current` and `check_context` open the exact device under the existing
+100 ms writer deadline/lock and validate current binding/descriptor before returning no bytes.
+Register caches a missing target without rewriting a valid cache. Current additionally validates
+the exact effect slots, preserves effects/pending output and returns unaffected when no rule
+applies. Unavailable suspension disables this no-paint branch; active-state rule storage errors
+and timeouts still fail. A current native rule is unavailable in the ordinary portable backend.
+
+Check-context validates frozen synthetic observation/producer without caching or publication.
+Register/check bypass policy and lease liveness; neither requires ordinary bound data. Selection
+retains valid effect-only native identity hints, including preference and ambiguity rejection.
+Invalid regular hints can be ignored for this identity-only operation; files are not repaired.
+Current rereads its slots strictly. Ordinary/reconcile output admission retains full strict reads.
+Actual owned macOS PTYs verify absent device bytes, target-cache ordering/preservation and alias
+boundaries. Dispatcher/isolation, CLI stale-versus-storage classification and routing remain open.
 
 ## Portable helper caller proof (integration pending)
 

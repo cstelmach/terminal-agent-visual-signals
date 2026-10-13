@@ -153,7 +153,7 @@ class Store:
         check_deadline(deadline)
         return "valid"
 
-    def cached(self, tty, deadline, targets_only=False):
+    def cached(self, tty, deadline, targets_only=False, identity_hints=False):
         targets, effects, descriptors = [], [], []
         path = self.directory
         try:
@@ -170,12 +170,25 @@ class Store:
                 parent = fd
             for record_path, parent_fd in _walk(path, fd, deadline):
                 filename = record_path.name
-                if targets_only and filename != "target.json":
+                if targets_only and filename != "target.json" and not (
+                        identity_hints and filename in {"effect.json", "preview.json", "focus.json"}):
                     continue
                 if filename not in {"target.json", "effect.json", "preview.json", "focus.json", "bound-intent.json"}:
                     continue
                 kind = "target" if filename == "target.json" else "intent" if filename == "bound-intent.json" else "effect"
-                record = read_record(filename, kind, self.clock(), deadline, dir_fd=parent_fd)
+                try:
+                    record = read_record(filename, kind, self.clock(), deadline, dir_fd=parent_fd)
+                except ValueError:
+                    if identity_hints and kind == "effect":
+                        check_deadline(deadline)
+                        continue
+                    raise
+                except OSError as error:
+                    if (identity_hints and kind == "effect" and error.errno in {errno.EINVAL, errno.EFBIG}
+                            and stat.S_ISREG(os.stat(filename, dir_fd=parent_fd, follow_symlinks=False).st_mode)):
+                        check_deadline(deadline)
+                        continue
+                    raise
                 if record is None:
                     raise OSError(errno.ESTALE, "Changed visual record")
                 if kind == "intent":
@@ -205,10 +218,11 @@ class Store:
             for _, fd in reversed(descriptors):
                 os.close(fd)
 
-    def _current(self, target, deadline, descriptor=None, targets_only=False):
+    def _current(self, target, deadline, descriptor=None, targets_only=False, identity_hints=False):
         if self.status(target, deadline, descriptor) != "valid":
             raise OSError(errno.ESTALE, "Current visual target unavailable")
-        targets, effects = self.cached(target["tty"], deadline, targets_only=targets_only)
+        targets, effects = self.cached(target["tty"], deadline, targets_only=targets_only,
+                                       identity_hints=identity_hints)
         live = {_binding(target): target}
         for candidate in targets:
             status = self.status(candidate, deadline)
@@ -222,7 +236,7 @@ class Store:
             raise OSError(errno.EBUSY, "Ambiguous native surface")
         return list(live.values()), [(path, effect) for path, effect in effects if _binding(effect["target"]) in live]
 
-    def resolve(self, tty, producer, deadline, targets_only=False):
+    def resolve(self, tty, producer, deadline, targets_only=False, identity_hints=False):
         check_deadline(deadline)
         device = self.device(tty)
         check_deadline(deadline)
@@ -230,7 +244,7 @@ class Store:
         if owner is None:
             raise OSError(errno.ESTALE, "Current TTY owner unavailable")
         plain = {"tty": tty, "device": device, "ttyOwner": owner}
-        aliases, _ = self._current(plain, deadline, targets_only=targets_only)
+        aliases, _ = self._current(plain, deadline, targets_only=targets_only, identity_hints=identity_hints)
         target = next((candidate for candidate in aliases if candidate.get("nativeSurface") is not None), plain)
         if self.status(target, deadline) != "valid":
             raise OSError(errno.ESTALE, "Visual target changed")

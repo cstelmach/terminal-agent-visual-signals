@@ -8,8 +8,9 @@ import stat
 from portable_device_writer import output_lock, write_managed
 from portable_intent import Intents
 from portable_policy import check_deadline
+from portable_ownership import _binding
 import portable_record_io as records
-from portable_records import _text, key
+from portable_records import _text, key, target_path
 from portable_render import Render
 
 
@@ -20,6 +21,55 @@ class Renderer:
 
     def render(self, display, record, synthetic, intake_at):
         return self._execute(display, record, synthetic, intake_at)
+
+    def register(self, tty, producer):
+        return self._no_output(tty, producer, "register")
+
+    def current(self, tty, producer):
+        return self._no_output(tty, producer, "current")
+
+    def check_context(self, record, intake_at):
+        return self._no_output(record["tty"], record.get("producer"), "check", (dict(record), intake_at))
+
+    def _no_output(self, tty, producer, operation, context=None):
+        lock_path = self.store.directory / ("writer-"+key(tty)+".lock")
+        target = {}
+
+        def before_open(deadline):
+            with output_lock(lock_path, deadline):
+                target["binding"] = self.store.resolve(tty, producer, deadline, targets_only=True, identity_hints=True)
+
+        def prepare(fd, deadline):
+            binding = target["binding"]
+            aliases, _ = self.store._current(binding, deadline, fd, targets_only=True, identity_hints=True)
+            if operation == "check":
+                record, intake_at = context
+                self.intents.validate_context_unlocked(binding, record, True, intake_at, deadline)
+            else:
+                path = target_path(self.store.directory, binding, "target.json")
+                cached = records.read(self.store.directory, path, "target", self.store.clock(), deadline)
+                if cached is None:
+                    records.write(self.store.directory, path, {"schema": 1, "target": binding},
+                                  "target", self.store.clock(), deadline)
+                elif _binding(cached["target"]) != _binding(binding):
+                    raise OSError(errno.ESTALE, "Cached target changed")
+                aliases, _ = self.store._current(binding, deadline, fd, targets_only=True, identity_hints=True)
+                if operation == "current":
+                    for alias in aliases:
+                        for filename, kinds in (("effect.json", {"globalRestriction", "selectiveBackground"}),
+                                                ("preview.json", {"preview"}), ("focus.json", {"focus"})):
+                            effect = records.read(self.store.directory, target_path(self.store.directory, alias, filename),
+                                                  "effect", self.store.clock(), deadline)
+                            if effect is not None and (_binding(effect["target"]) != _binding(alias) or effect["kind"] not in kinds):
+                                raise OSError(errno.EINVAL, "Current effect unavailable")
+                    if self.store.policy.restricted(deadline, unavailable_disabled=True):
+                        raise OSError(errno.EBUSY, "Native visual rule owns output")
+            if self.store.status(binding, deadline, fd) != "valid":
+                raise OSError(errno.ESTALE, "No-output target changed")
+            check_deadline(deadline)
+            return None
+
+        return write_managed(tty, lock_path, before_open, prepare)
 
     def forced_reset(self, record, intake_at, title):
         try:

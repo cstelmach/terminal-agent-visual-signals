@@ -176,8 +176,15 @@ class Policy:
             raise OSError(errno.EINVAL, "Unavailable suspension state")
         return data == self._marker(True)
 
-    def restricted(self, deadline):
-        if self.suspended(deadline):
+    def restricted(self, deadline, unavailable_disabled=False):
+        def enabled():
+            try:
+                return not self.suspended(deadline)
+            except OSError as error:
+                if not unavailable_disabled or error.errno == errno.ETIMEDOUT:
+                    raise
+                return False
+        if not enabled():
             return False
         data = read_regular(self.runtime / "lock.state", deadline, 8192)
         fields = _fields(data) if data is not None else None
@@ -194,7 +201,7 @@ class Policy:
             fields = _fields(data) if data is not None else None
             selected = bool(fields and self._soft(fields, deadline))
         check_deadline(deadline)
-        return selected and not self.suspended(deadline)
+        return selected and enabled()
 
     def _soft(self, fields, deadline):
         reason, level = fields.get("REASON", ""), fields.get("MUTE_LEVEL")
