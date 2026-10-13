@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.25
+Version: 1.26
+
+## A successful empty catalogue preserves confirmed closed sessions
+
+The Sessions model treated `.success([])` as unavailable and retained rows, priorities, Manual
+membership and Automatic cues. Enumeration already reports unavailable access as a failure;
+zero surfaces is a valid successful result. Empty success now uses ordinary reconciliation,
+clears previews/selection/priorities, ends the last Manual set and clears closed cues while
+Automatic stays armed. Activation is disabled with no surfaces. Native failures still retain
+last-known display and priorities. Regressions reproduced retained state and disabled-control
+failure; the mock lifetime/writer setup cannot open any real device.
 
 ## Idle timeout cleanup rejects an exited agent despite a live continuing shell
 

@@ -49,7 +49,7 @@ final class SessionsModel: ObservableObject {
     var focusCleanupError: String? { focus?.focusCleanupError }
     func cueCount(for id: GhosttySurfaceID) -> Int { focus?.cueSnapshot(for: id).count ?? 0 }
     var canEnableAutomatic: Bool {
-        focus != nil && !recovering && catalogueAvailable && focusMode != .automatic
+        focus != nil && !recovering && catalogueAvailable && !surfaces.isEmpty && focusMode != .automatic
             && !visualRestrictionsStatus.disablesRestrictions
     }
     private var highPriorities: Set<GhosttySurfaceID> {
@@ -205,8 +205,11 @@ final class SessionsModel: ObservableObject {
         readCatalogue { [weak self] result in
             guard let self = self else { return }
             switch result {
-            case .success(let rows) where !rows.isEmpty:
-                if let visualState = self.visualState {
+            case .success(let rows):
+                if rows.isEmpty {
+                    self.clearPreview()
+                    self.acceptCatalogue([], coverage: [:])
+                } else if let visualState = self.visualState {
                     self.visualQueue.async { [weak self] in
                         var coverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]
                         for row in rows { coverage[row.id] = visualState.coverage(for: row) }
@@ -214,10 +217,6 @@ final class SessionsModel: ObservableObject {
                         DispatchQueue.main.async { self?.acceptCatalogue(rows, coverage: result) }
                     }
                 } else { self.acceptCatalogue(rows, coverage: [:]) }
-            case .success:
-                self.catalogueAvailable = false
-                self.status = "No surfaces reported. Native access may be unavailable; retained priorities are preserved."
-                self.markCoverageStale()
             case .failure(let error):
                 self.catalogueAvailable = false
                 self.status = "Native catalogue unavailable: \(error). Last-known rows are retained."

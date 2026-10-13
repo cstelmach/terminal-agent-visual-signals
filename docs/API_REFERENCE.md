@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.12
+Version: 1.13
 
 ## Public recovery commands
 
@@ -155,8 +155,10 @@ Exact-ID clear cancels metadata before device open and emits no stale repaint af
 Stored revision mismatch cannot revive a lease after partial recovery and explicit resumption.
 `FocusController.focusSelected(_:catalogue:)` captures native surface IDs independently of
 browsing selection and priorities. Accepted catalogues retain that set, add new surfaces only
-to its outside set, and end Manual on confirmed last-member closure. Empty or failed Sessions
-catalogues retain logical membership, invalidate queued updates and authorize no new paint.
+to its outside set, and end Manual on confirmed last-member closure. Successful empty Sessions
+catalogues reconcile confirmed closure, prune selection/priorities and clear closed cues while
+Automatic stays armed. Actual failed catalogues retain logical membership, invalidate queued
+updates and authorize no new paint. No-surface catalogues disable new Automatic activation.
 At least one captured surface needs a verified binding before any outside background is changed.
 
 Manual updates reuse the serialized preview worker and coalesce to the latest catalogue.

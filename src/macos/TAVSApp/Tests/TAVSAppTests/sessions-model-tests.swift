@@ -67,21 +67,84 @@ final class SessionsModelTests: XCTestCase {
         XCTAssertEqual(calls, 1)
     }
 
-    func testEmptyAndFailedRefreshPreserveDataButDisableNavigation() throws {
+    func testFailedRefreshPreservesDataButDisablesNavigation() throws {
         let row = surface("001"); var response: Result<[GhosttySurface], Error> = .success([row])
         var calls = 0
         let model = SessionsModel(prioritiesURL: store, refresh: { $0(response) },
                                   navigate: { _, done in calls += 1; done(.success(())) })
         model.refresh(); model.setPriority(.high, for: [row.id])
         let saved = try Data(contentsOf: store)
-        response = .success([]); model.refresh(); model.goTo(row.id)
+        response = .failure(GhosttyCatalogError.permissionDenied); model.refresh(); model.goTo(row.id)
         XCTAssertEqual(model.rows.count, 1)
         XCTAssertFalse(model.catalogueAvailable)
         XCTAssertEqual(try Data(contentsOf: store), saved)
-        response = .failure(GhosttyCatalogError.permissionDenied); model.refresh()
-        XCTAssertFalse(model.catalogueAvailable)
         XCTAssertEqual(model.priority(for: row.id), .high)
         XCTAssertEqual(calls, 0)
+    }
+
+    func testSuccessfulEmptyCatalogueClearsClosedRowsPrioritiesAndSelection() throws {
+        let row = surface("001"); var response = [row]
+        var navigation = 0
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(.success(response)) },
+            navigate: { _, done in navigation += 1; done(.success(())) })
+        model.refresh(); model.setPriority(.high, for: [row.id]); model.selection = [row.id]
+        response = []; model.refresh(); model.goTo(row.id)
+        XCTAssertTrue(model.catalogueAvailable)
+        XCTAssertTrue(model.rows.isEmpty)
+        XCTAssertTrue(model.selection.isEmpty)
+        XCTAssertTrue(model.priorities.isEmpty)
+        XCTAssertEqual(navigation, 0)
+        let restarted = self.model([row]); restarted.refresh()
+        XCTAssertEqual(restarted.priority(for: row.id), .normal)
+    }
+
+    private func focus(_ clock: VirtualClock) -> FocusController {
+        let restrictions = VisualRestrictionsStateStore(url: directory.appendingPathComponent("visual-restrictions.state"))
+        let state = TerminalVisualStateStore(runtimeDirectory: directory.appendingPathComponent("runtime"),
+            clock: clock, lookup: { _ in nil }, device: { _ in nil })
+        let recovery = VisualRecovery(runtimeDirectory: directory.appendingPathComponent("runtime"),
+            restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions,
+                muteURL: directory.appendingPathComponent("mute.state"),
+                lockURL: directory.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: MockProcessRunner(), clock: clock, controller: instance, nativeSnapshot: { [] })
+        return FocusController(state: state, recovery: recovery, restrictions: restrictions,
+            timers: MockTimerScheduler(), clock: clock,
+            colors: { _ in TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")! })
+    }
+
+    func testSuccessfulEmptyCatalogueEndsLastManualWorkingSet() {
+        let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000)), focus = focus(clock)
+        let row = surface("001"); var response = [row]
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(.success(response)) },
+            navigate: { _, done in done(.success(())) }, timerScheduler: MockTimerScheduler(),
+            clock: clock, focus: focus)
+        model.refresh(); model.selection = [row.id]; model.focusSelected()
+        XCTAssertEqual(model.focusMode, .manual)
+        XCTAssertTrue(model.isInWorkingSet(row.id))
+        response = []; model.refresh()
+        XCTAssertEqual(model.focusMode, .off)
+        XCTAssertFalse(model.isInWorkingSet(row.id))
+        XCTAssertFalse(model.canEnableAutomatic)
+    }
+
+    func testSuccessfulEmptyCatalogueClearsClosedCuesWhileAutomaticStaysArmed() {
+        let clock = VirtualClock(startingAt: Date(timeIntervalSince1970: 1_000)), focus = focus(clock)
+        let row = surface("001"); var response = [row]
+        let model = SessionsModel(prioritiesURL: store, refresh: { $0(.success(response)) },
+            navigate: { _, done in done(.success(())) }, timerScheduler: MockTimerScheduler(),
+            clock: clock, focus: focus)
+        model.refresh(); model.setPriority(.high, for: [row.id]); model.enableAutomatic()
+        clock.advance(by: 1)
+        let record = TerminalObservation(tty: row.tty!, device: 123, producer: instance,
+            provider: "claude", verifiedAgent: true, state: "complete", event: "Stop",
+            deliveryID: "new-completion", responseID: nil, observedAt: 1_001)
+        focus.acceptCatalogue([row], high: [row.id], coverage: [row.id: TerminalVisualCoverage(
+            observation: record, intent: nil, attentionEligible: true, status: "Agent observation.")])
+        XCTAssertEqual(model.cueCount(for: row.id), 1)
+        response = []; model.refresh()
+        XCTAssertEqual(model.cueCount(for: row.id), 0)
+        XCTAssertEqual(model.focusMode, .automatic)
     }
 
     func testConfirmedClosureReconcilesStoredPriorityAndSelection() {
@@ -263,7 +326,8 @@ final class SessionsModelTests: XCTestCase {
                 navigate: { _, done in done(.success(())) }, clock: clock, visualState: visual)
             model.refresh()
             XCTAssertFalse(model.refreshing)
-            XCTAssertFalse(model.catalogueAvailable)
+            if case .success = response { XCTAssertTrue(model.catalogueAvailable) }
+            else { XCTAssertFalse(model.catalogueAvailable) }
             XCTAssertTrue(model.visualCoverage.isEmpty)
             XCTAssertEqual(inspected, 0)
         }
