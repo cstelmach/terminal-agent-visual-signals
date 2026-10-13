@@ -1,7 +1,16 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.39
+Version: 1.40
+
+## Portable bound reset authority (integration pending)
+
+`Intents.publish_forced_reset_unlocked` requires reset intent and a current target. A live
+producer uses the existing synthetic delivery checks. An invalid/exited producer requires exact
+unchanged latest/observation delivery, observation no newer than intake and a bound copy fully
+equal to latest. It retains reset intent and updates binding under the original lock/deadline.
+Missing PID alone grants no authority. `Store.cached_target` selects only current cached lifetimes
+and refuses absent, conflicting, unknown or ambiguous mappings. No plain lifetime is invented.
 
 ## Portable ordinary transaction (integration pending)
 

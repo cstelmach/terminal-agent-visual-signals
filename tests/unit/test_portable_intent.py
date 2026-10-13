@@ -195,6 +195,53 @@ class PortableIntentTests(unittest.TestCase):
         records.write(self.store.directory, path, adoption, "adoption", 1000, self.deadline())
         self.assertEqual(self.intents.ordinary_background_unlocked(native, self.deadline()), "#112233")
 
+    def test_live_forced_reset_requires_original_observation_and_delivery(self):
+        reset = dict(self.record, background="reset", updatedAt=980)
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+        self.observe()
+        self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+        self.assertEqual(self.intents.ordinary_background_unlocked(self.target, self.deadline()), "reset")
+
+    def test_exited_producer_can_reset_only_unchanged_bound_latest(self):
+        self.observe()
+        self.publish()
+        self.identities.pop(43)
+        reset = dict(self.record, background="reset", updatedAt=980)
+        self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+        self.assertEqual(self.intents.ordinary_background_unlocked(self.target, self.deadline()), "reset")
+        self.assertEqual(self.observation_path.read_bytes().count(b'delivery-43'), 1)
+
+    def test_orphan_reset_refuses_other_delivery_or_newer_observation(self):
+        self.observe()
+        self.publish()
+        self.identities.pop(43)
+        reset = dict(self.record, background="reset", updatedAt=980)
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, dict(reset, deliveryID="other"), 900, self.deadline())
+        self.observe(observedAt=901)
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+        self.assertEqual(records.read(self.store.directory, self.path, "intent", 1000, self.deadline())["background"], "#112233")
+
+    def test_orphan_reset_refuses_changed_bound_copy_and_reused_owner(self):
+        self.observe()
+        self.publish()
+        self.identities.pop(43)
+        bound = target_path(self.store.directory, self.target, "bound-intent.json")
+        records.write(self.store.directory, bound, dict(self.record, background="#FFFFFF"),
+                      "intent", 1000, self.deadline())
+        reset = dict(self.record, background="reset", updatedAt=980)
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+        self.identities[100]["generation"] = dict(self.owner, startSeconds=300)
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, reset, 900, self.deadline())
+
+    def test_forced_reset_refuses_nonreset_intent(self):
+        with self.assertRaises(OSError):
+            self.intents.publish_forced_reset_unlocked(self.target, self.record, 900, self.deadline())
+
 
 if __name__ == "__main__":
     unittest.main()

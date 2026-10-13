@@ -163,3 +163,39 @@ class Intents:
         records.write(self.store.directory, bound_path, normalized, "intent", self.store.clock(), deadline)
         check_deadline(deadline)
         return normalized
+
+    def publish_forced_reset_unlocked(self, target, record, intake_at, deadline):
+        normalized = self._normalize(record, True, intake_at, deadline)
+        if (normalized["background"] != "reset" or normalized["tty"] != target["tty"]
+                or normalized.get("device") != target["device"]
+                or self.store.status(target, deadline) != "valid"):
+            raise OSError(errno.ESTALE, "Reset target unavailable")
+        latest = self._latest(normalized["tty"], True, deadline)
+        if latest is not None and _delivery(latest) != _delivery(normalized):
+            raise OSError(errno.ESTALE, "Reset delivery superseded")
+        producer = normalized.get("producer")
+        current = self.store._lookup(producer["pid"], deadline) if producer is not None else None
+        if (current is not None and current["generation"] == producer
+                and current["device"] == target["device"]):
+            return self.publish_unlocked(target, normalized, True, intake_at, deadline)
+        # Orphan authority is the unchanged bound delivery and current target, not missing PID alone.
+        if latest is None:
+            raise OSError(errno.ESTALE, "Bound reset delivery unavailable")
+        observation = self._observation(normalized["tty"], True, False, deadline)
+        self._check_observation(observation, normalized, True, intake_at, deadline)
+        aliases, _ = self.store._current(target, deadline)
+        bound = [records.read(self.store.directory, target_path(self.store.directory, alias, "bound-intent.json"),
+                              "intent", self.store.clock(), deadline) for alias in aliases]
+        if latest not in bound or normalized["updatedAt"] < latest["updatedAt"]:
+            raise OSError(errno.ESTALE, "Bound reset intent changed")
+        if self.store.status(target, deadline) != "valid":
+            raise OSError(errno.ESTALE, "Reset target changed")
+        records.write(self.store.directory, self._path("intent", normalized["tty"]), normalized,
+                      "intent", self.store.clock(), deadline)
+        actual = self._latest(normalized["tty"], True, deadline)
+        if actual != normalized or self.store.status(target, deadline) != "valid":
+            raise OSError(errno.ESTALE, "Reset changed before binding")
+        records.write(self.store.directory, target_path(self.store.directory, target, "bound-intent.json"),
+                      normalized, "intent", self.store.clock(), deadline)
+        check_deadline(deadline)
+        return normalized

@@ -237,6 +237,24 @@ class Store:
         check_deadline(deadline)
         return target
 
+    def cached_target(self, tty, deadline):
+        targets, _ = self.cached(tty, deadline)
+        live = []
+        for target in targets:
+            status = self.status(target, deadline)
+            if status == "unavailable":
+                raise OSError(errno.EAGAIN, "Cached visual binding unavailable")
+            if status == "valid":
+                live.append(target)
+        if not live:
+            raise OSError(errno.ESTALE, "Cached visual target unavailable")
+        aliases, _ = self._current(live[0], deadline)
+        target = next((value for value in aliases if value.get("nativeSurface") is not None), live[0])
+        if self.status(target, deadline) != "valid":
+            raise OSError(errno.ESTALE, "Cached visual target changed")
+        check_deadline(deadline)
+        return target
+
     def ordinary_ownership(self, target, revision, descriptor, deadline):
         """Require the caller's shared output lock; return obsolete active records to cancel."""
         if not self.policy.matches(revision, deadline):

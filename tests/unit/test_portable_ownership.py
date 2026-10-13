@@ -183,6 +183,18 @@ class PortableOwnershipTests(unittest.TestCase):
         self.assertEqual(self.store.status(self.native("closed"), self.deadline()), "vanished")
         self.assertEqual(self.store.status(self.target, self.deadline()), "unavailable")
 
+    def test_cached_target_cannot_invent_an_unbound_lifetime(self):
+        with self.assertRaises(OSError):
+            self.store.cached_target(self.tty, self.deadline())
+        self.save(self.target)
+        self.assertEqual(self.store.cached_target(self.tty, self.deadline()), self.target)
+        native = self.native("pane-43")
+        self.save(native)
+        self.assertEqual(self.store.cached_target(self.tty, self.deadline()), native)
+        self.save(self.native("other-pane"))
+        with self.assertRaises(OSError):
+            self.store.cached_target(self.tty, self.deadline())
+
     def test_residual_global_is_not_a_lease_and_canceled_corruption_is_still_rejected(self):
         path = self.save(self.target, "effect.json", kind="globalRestriction")
         self.identities.pop(80)
@@ -223,6 +235,19 @@ class OwnedPTYFixture:
         self.actor, self.master = pty.fork()
         if self.actor == 0:
             try:
+                if getattr(self, "child_producer", False):
+                    child = os.fork()
+                    if child == 0:
+                        try:
+                            os.read(0, 1)
+                        finally:
+                            os._exit(0)
+                    (self.root / "producer-pid").write_text(str(child))
+                    def retire_child(signum, frame):
+                        os.kill(child, signal.SIGTERM)
+                        os.waitpid(child, 0)
+                        os._exit(0)
+                    signal.signal(signal.SIGTERM, retire_child)
                 os.write(1, (os.ttyname(0) + "\n").encode())
                 os.read(0, 1)
             finally:
@@ -235,7 +260,8 @@ class OwnedPTYFixture:
             self.assertTrue(select.select([self.master], [], [], left)[0])
             data.extend(os.read(self.master, 256))
         self.tty = data.decode().strip()
-        self.producer = inspect(self.actor)["generation"]
+        self.producer_pid = int((self.root / "producer-pid").read_text()) if getattr(self, "child_producer", False) else self.actor
+        self.producer = inspect(self.producer_pid)["generation"]
         self.runtime = self.root / "runtime"
         self.marker = self.root / "home/visual-restrictions.state"
         self.marker.parent.mkdir()
