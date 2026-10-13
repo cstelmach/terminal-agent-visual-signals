@@ -627,3 +627,30 @@ observation/intent, synthetic/reset/reconcile, resolver and install/sync integra
 owned PTYs when an authorized runtime is available. Keep Mac schema unchanged and no failed-native
 bypass. Prior failure causes, color freshness and required physical acceptance remain open.
 Phases 2/7/8 remain Blocked on native cases; 9 and the full goal remain active/incomplete.
+
+### Phase 9 ordinary intent publication: 2026-10-13 23:21 CEST
+
+`7600aed` adds bounded typed atomic replacement; `5cdf49b` adds ordinary intent publication,
+strict context checks and full-record binding/restoration. All methods require the existing
+caller lock/deadline. Synthetic updates retain delivery identity and write no observations.
+Ordinary input repairs only invalid regular latest-intent data; bound corruption is not repaired.
+Latest intent now persists before binding failure, matching native order. Target-only publication
+proof grants no paint permission; strict ordinary admission still reads every control record.
+Initial reds 3YIZiI/LTFTKZ: missing modules. roVsPn: 4 I/O checks; c6B5bz: 8 intent checks.
+2BbMPu exposed a late producer exit; NqTFeL: 10/10 after correction. H2C8Bq: missing getter;
+UjPITn: 12/12. The initial bad-bound test assumed wrong native ordering. Source review identified
+that discrepancy; corrected regression 75gYys failed, then zUg1nE passed. WKdiel reproduced
+skipped temporary cleanup after close failure. Final Lug0O3: 64/64 portable checks in 1.503
+seconds; NmpGpA: 561/561 Swift tests in 10.433 seconds. Syntax/staged checks pass.
+Full source contracts, draft findings and parent corrections are retained in
+[intent source checks](portable-intent-publication-source-check-2026-10-13.md).
+**Scope:** Approved H1 extension, two modules/tests and publication-only guard mode, API/bug docs.
+No hook/capability is advertised. These are fixture publication/getter tests; existing owned-PTY
+guard tests remain included, but no new physical publication or native UI acceptance occurred.
+No production install, schedule/settings change, container/VM/app launch or session termination.
+Next: shared-lock before-open publication, obsolete-record cancellation and residual legacy reset,
+forced-reset orphan authority, then bounded renderer assembly and helper/context/observe/resolver
+integration. Preserve operation-specific stale versus storage failures at the helper boundary.
+Actual Linux/namespace-device proof and native acceptance remain unverified. Earlier historical
+failure attribution and color freshness are still open. Phases 2/7/8 stay Blocked; 9 and the full
+goal remain active/incomplete.
