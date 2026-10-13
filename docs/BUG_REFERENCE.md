@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.37
+Version: 1.38
+
+## Adapter exec repeats an already verified organizer probe
+
+Normal hooks launched six helpers because private capability state disappeared at exec. Successful
+intake now transfers its positive cache through the existing script exec; core validates selection
+and removes export attributes before children run. Incoming adapter cache is cleared. Native managed
+validation and real output calls remain independent. Tests cover one organizer probe, fixed arguments,
+empty stdin, raw OS argv disposal, child privacy and rejected inherited cache. Failed intake still
+reprobes. A Bash-c/source candidate broke timer PID liveness and was rejected before commit.
+Measured owned-terminal helper counts fall from six to five; shell startup remains three calls.
+The old submillisecond/zero-fork claims are corrected. Small samples do not prove general latency.
 
 ## Sync claims hook readiness while the required helper is unavailable
 

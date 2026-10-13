@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.12
+Version: 1.13
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `4b6abf6`.
+Current product checkpoint: `aa85072`.
 
 ## Review execution status
 
@@ -344,6 +344,31 @@ Bash syntax passed. Followed ShellCheck retains only pre-existing SC2012 at the 
 enumeration; its initial dynamic-source warning was resolved by the source directive. Swift
 source/helper is unchanged and was not rebuilt. All terminal results preceded commit, with
 private roots and fixture plugin installations. No real install/sync, app or native operation ran.
+
+## Measured helper launches (Claude M5, partial)
+
+The [source investigation and measurements](helper-cost-check-2026-10-13.md) confirm six helper
+launches per normal hook and three per active shell start. Three owned-PTY baseline samples gave
+medians 194.317 ms and 44.602 ms. Draft samples gave five/three calls and 187.517/46.913 ms;
+the samples do not establish general latency improvement. Shell cost descriptions now reflect
+helper calls rather than an unsupported submillisecond/zero-fork promise.
+
+`aa85072` transfers only the existing positive organizer cache after successful intake. Core
+checks selected path, executable presence and the existing intake/context hint, then unexports it.
+Incoming adapter cache is cleared; original script exec, argv disposal and managed validation stay.
+This is a capability hint, not authenticated environment or executable replacement protection.
+Three new cases cover one probe, fixed argv/empty stdin, parent/worker privacy and rejected cache.
+The fresh-Bash/source candidate failed timer PID liveness in `AuuWTa`/`bwQdro` and was removed.
+
+`295f107` makes test cleanup retry timed-out no-output probes within its existing one-second
+window; production device calls retain 100 ms. `l1OpGN` retained one bounded-record-read failure;
+`SmKc4f` retained two cleanup timeouts. Final `0ribbd` passed 548/548 Swift in 10.300 seconds.
+`lJxcb9` retained three shell failures. The [verification source check](cost-verification-check-2026-10-13.md)
+identified a failed permission render and insufficient diagnostics for the other two cases;
+it did not prove pressure or a cache regression. Targeted `u0AVQq` passed 3/3, and final
+`AVKcmZ` passed 178/178 Bats with fixtures retained. Syntax and helper/adapter ShellCheck passed.
+No Swift source/helper rebuild, real app/native operation or personal installation/state change ran.
+Cached-record scaling and preview configuration cost remain separate M5 work.
 
 ## Remaining adjudication and implementation
 

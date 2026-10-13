@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 14:31 CEST
-**Version:** 4.11
+**Last Updated:** 2026-10-13 15:38 CEST
+**Version:** 4.12
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 4b6abf6; earlier hashes below/appendix | 548 Swift; 175 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | aa85072; earlier hashes below/appendix | 548 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -795,43 +795,10 @@ callers before tests. One phase per next goal iteration; the master goal remains
 > Finished source logs: [Phase 8 appendix](PROGRESS_appendix_phase-8-foundations.md).
 > Current captured-set source and unresolved native acceptance remain below.
 
-### Phase 8 captured-set source checkpoint: 2026-10-13 00:44 CEST
+### Phase 8 captured-set source checkpoint
 
-Continued from clean `52b44a0`. `c7151ff` captures native IDs independently of selection and
-priorities, keeps one Sessions timer alive while open or Manual, and coalesces current catalogue
-updates on the existing worker. New surfaces stay outside; confirmed last closure ends Manual.
-Missing/empty coverage retains membership and rejects queued paint. A verified working binding
-is required before outside styling. Focus Off preserves preview; recovery/restart/resume leave Off.
-Retired pins survive cleanup; expired ownership gets a fresh ID and old cleanup follows replacement.
-`a982b9f` connects Sessions/menu controls, cleanup feedback and accessible working-set labels.
-
-Red logs `c43ZeM`/`kChRMp` lacked controller/model APIs. `ilShW7` exposed old-clear output before
-replacement; deferred cleanup corrected ordering. Review found unmapped rows falsely advanced
-the common heartbeat. Regression `jsee8s` reproduced expired-ID reuse; all-mapped/no-failure
-renewal made `JKIr5M` pass. `RZfoUp` failed on teardown directory recreation by unfinished
-cleanup; waiting for its completion made `ebsONq` pass. No production semantics were relaxed.
-Final `kvH5Sx` passed 17 controller cases, including blocked/coalesced work invalidation. Full
-`Tic2GM` passed 466/466 in 7.593 seconds without warnings. Release `jNZdCo` passed in 10.23
-seconds; selected managed-background/parity/recover/sync Bats `0tzzCW` passed 43/43. All used
-tests/run-isolated.sh, explicit helpers and the owned Phase 6 scratch build. Whitespace checks pass.
-
-CUA initially verified Manual controls and a captured first-row label while browsing selected
-another row. The fixture had unavailable bindings/colors, so no dimming claim follows. Closing
-its sole window ended that fixture. A test menu and WindowGroup experiments stayed alive but
-CUA attachment timed out; the added fixture changes were retired, preserving the simple scene.
-Later attachment still timed out, so close/reopen, accessible-label and recovery-in-Manual UI
-acceptance remain unverified. Only exact owned PIDs were restarted; current fixture PID 76191.
-Scratch/backups: /tmp/tavs-phase8-controller-20261013. The read-only report and adjudication are
-preserved in phase8-controller-followup-2026-10-13.md. Finished Phase 7 GUI text moved unchanged
-to its existing appendix, with a pointer and verified round trip to keep this file below 900 lines.
-
-**Scope:** five Swift source/test paths named by Phase 8 plus API/bug/roadmap documentation.
-No Scheduler change was needed; existing release composition reuses dynamic focus. PLAN and
-SPEC body remain fixed. No real Ghostty call, install/sync, schedule edit or user-process shutdown.
-Phase 8 source steps are complete; required physical salience/readability and window lifecycle
-acceptance remain Blocked. The master goal stays active. Next iteration: Phase 9 pure occurrence
-reducer and explicit Automatic mode, preserving all unresolved native acceptance in Phases 2/7/8.
-
+> Finished source/fixture history: [Phase 8 appendix](PROGRESS_appendix_phase-8-foundations.md).
+> Native salience/readability, close/reopen and recovery-in-Manual acceptance remain unverified.
 
 ### Phase 9 occurrence foundation
 
@@ -898,3 +865,20 @@ Bash syntax passed; followed ShellCheck has only pre-existing SC2012. No Swift r
 The [source check](helper-compatibility-check-2026-10-13.md) confirms H1; compatibility input is pending.
 No rendering bypass or contract change. Prior entry moved unchanged; SPEC/PLAN fixed. Next: M5 cost checks
 while awaiting compatibility choice. Phases 2/7/8 Blocked, 9 active; native/UI acceptance unverified.
+
+### Phase 9 measured helper cost: 2026-10-13 15:38 CEST
+
+`aa85072` reduces normal Claude/Codex helper launches from six to five through existing positive
+cache transfer, original script exec and import validation. Three new tests cover probe count,
+argv/child privacy and inherited cache. `295f107` fixes test cleanup polling, not production deadlines.
+Owned-PTY baseline `jMKTOQ`: hook median 194.317 ms, shell 44.602 ms, counts six/three (three each).
+Draft `rqnbi5`: five/three, medians 187.517/46.913 ms. Small samples do not prove general latency.
+Bash-c/source was rejected after timer failures `AuuWTa`/`bwQdro`. Original exec restored liveness.
+Full Swift `l1OpGN` and `SmKc4f` retained deadline/cleanup failures; final `0ribbd`: 548/548, 10.300 s.
+Bats `lJxcb9` retained three managed-output/recovery/intent failures with insufficient diagnostics;
+focused `u0AVQq` passed 3/3. Final retained-fixture `AVKcmZ`: 178/178. No deadline was relaxed.
+Syntax checks passed; helper/adapters ShellCheck passed. No native source rebuild was needed.
+Reports/measurements are in [helper cost](helper-cost-check-2026-10-13.md); failed cases are retained.
+H1 input remains pending. M5 cached-record scaling/configuration cost remain separate next work.
+The historical Phase 8 source block moved unchanged with reconstruction verified; open cases stay above.
+SPEC/PLAN fixed, 2/7/8 Blocked and 9 active. No real app/native control, install/sync or user-state changes.

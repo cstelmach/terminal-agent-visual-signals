@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.14
+Version: 1.15
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -90,3 +90,7 @@ Other terminal adapters, notifications, analytics and stronger locks remain defe
 Sync now warns when managed render or metadata capabilities are unavailable after source copying.
 Standalone ordinary-signaling compatibility remains a confirmed open regression; portable transport
 delivery needs creator input. No raw bypass or change to D01-D18 has been made.
+Normal Claude/Codex hooks now reuse validated organizer support across the original script exec,
+reducing helper launches from six to five while preserving argv disposal and independent rendering.
+Shell startup still uses three helpers; its cost descriptions no longer promise submillisecond work.
+Cached-record scaling and preview configuration cost remain separate unverified M5 concerns.

@@ -78,3 +78,43 @@ A restored focus request may paint a preview layer; do not label that outcome as
 
 
 > Current execution: [PROGRESS.md](PROGRESS.md).
+
+### Phase 8 captured-set source checkpoint: 2026-10-13 00:44 CEST
+
+Continued from clean `52b44a0`. `c7151ff` captures native IDs independently of selection and
+priorities, keeps one Sessions timer alive while open or Manual, and coalesces current catalogue
+updates on the existing worker. New surfaces stay outside; confirmed last closure ends Manual.
+Missing/empty coverage retains membership and rejects queued paint. A verified working binding
+is required before outside styling. Focus Off preserves preview; recovery/restart/resume leave Off.
+Retired pins survive cleanup; expired ownership gets a fresh ID and old cleanup follows replacement.
+`a982b9f` connects Sessions/menu controls, cleanup feedback and accessible working-set labels.
+
+Red logs `c43ZeM`/`kChRMp` lacked controller/model APIs. `ilShW7` exposed old-clear output before
+replacement; deferred cleanup corrected ordering. Review found unmapped rows falsely advanced
+the common heartbeat. Regression `jsee8s` reproduced expired-ID reuse; all-mapped/no-failure
+renewal made `JKIr5M` pass. `RZfoUp` failed on teardown directory recreation by unfinished
+cleanup; waiting for its completion made `ebsONq` pass. No production semantics were relaxed.
+Final `kvH5Sx` passed 17 controller cases, including blocked/coalesced work invalidation. Full
+`Tic2GM` passed 466/466 in 7.593 seconds without warnings. Release `jNZdCo` passed in 10.23
+seconds; selected managed-background/parity/recover/sync Bats `0tzzCW` passed 43/43. All used
+tests/run-isolated.sh, explicit helpers and the owned Phase 6 scratch build. Whitespace checks pass.
+
+CUA initially verified Manual controls and a captured first-row label while browsing selected
+another row. The fixture had unavailable bindings/colors, so no dimming claim follows. Closing
+its sole window ended that fixture. A test menu and WindowGroup experiments stayed alive but
+CUA attachment timed out; the added fixture changes were retired, preserving the simple scene.
+Later attachment still timed out, so close/reopen, accessible-label and recovery-in-Manual UI
+acceptance remain unverified. Only exact owned PIDs were restarted; current fixture PID 76191.
+Scratch/backups: /tmp/tavs-phase8-controller-20261013. The read-only report and adjudication are
+preserved in phase8-controller-followup-2026-10-13.md. Finished Phase 7 GUI text moved unchanged
+to its existing appendix, with a pointer and verified round trip to keep this file below 900 lines.
+
+**Scope:** five Swift source/test paths named by Phase 8 plus API/bug/roadmap documentation.
+No Scheduler change was needed; existing release composition reuses dynamic focus. PLAN and
+SPEC body remain fixed. No real Ghostty call, install/sync, schedule edit or user-process shutdown.
+Phase 8 source steps are complete; required physical salience/readability and window lifecycle
+acceptance remain Blocked. The master goal stays active. Next iteration: Phase 9 pure occurrence
+reducer and explicit Automatic mode, preserving all unresolved native acceptance in Phases 2/7/8.
+
+
+For current status and native acceptance, see [PROGRESS.md](PROGRESS.md).

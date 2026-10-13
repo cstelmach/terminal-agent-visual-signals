@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.23
+Version: 1.24
 
 ## Public recovery commands
 
@@ -61,6 +61,12 @@ After copying, sync checks both managed-render and organizer-metadata capabiliti
 existing validation branches, excluding isolated GUI launch keys. Missing/unsupported capability
 warns separately from source-copy success and does not claim hooks are ready. Probe output is not
 echoed. This diagnostic does not repair the pending standalone ordinary-signaling regression.
+Successful Claude/Codex intake transfers the existing positive organizer capability cache across
+the unchanged core script exec. Core accepts an imported cache only with the existing intake/context
+hint, matching selected helper and executable presence, then removes its export attributes. Intake
+clears inherited cache before probing. Managed support remains independently validated; actual
+observation/render calls still determine success. These hints do not authenticate hostile complete
+environment tuples or guarantee safety against same-path executable replacement.
 
 The shell queries `--validate-config --managed-output-capabilities` and requires exactly
 `tavs-managed-output-schema=1`. This known validation branch is safe with older executables.

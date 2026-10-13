@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 22 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 30 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 23 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 31 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2914,3 +2914,73 @@ The report established a real compatibility regression rather than an excuse to 
 Further process-cost checks can proceed independently while transport work waits. Existing skill
 promotion remains a suggestion; no new control plane or dependency was created. Observable results
 are marked [O]; attribution and strategy rationale remain reconstructed. The full goal stays active.
+
+## 2026-10-13 · gpt-6 (self-reported) · measured-helper-cost
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported from runtime instructions [R]
+  interface: Codex desktop
+  thinking: unknown; extended requested
+  session: 01a10879
+  trace: observed current-turn tool results
+  delegates: read-only explorers; verification explorer requested gpt-6.1-sol/high
+
+**Framing:** [O] The previous turn made progress through sync diagnostics. The compatibility
+question remained unanswered, so dependent transport work stayed untouched. Dated state selected
+M5's process-cost claims for independent investigation. Review counts were hypotheses until
+measured with a role-only wrapper and private owned terminals. No native Ghostty access was used.
+
+**Strategy:** [O] Three fresh-root samples per path confirmed six helper launches per normal hook
+and three per active shell startup. An explorer traced the duplicate organizer probe after exec.
+Root retained typed rendering, independent managed support and raw payload disposal, reducing only
+redundant positive capability work. [R] Exact call count was a stronger small-sample result than
+elapsed time; hook medians around 194 and 188 ms did not justify a general speed claim.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient/measure | Goal files and private PTYs | Six/three calls confirmed |
+| 2 | Investigate | Exec/cache alternatives | Reject old-shell source for argv privacy |
+| 3 | Red/green | One-probe and privacy test | Duplicate probe reproduced |
+| 4 | Correct draft | Timer liveness regressions | Restore original script exec |
+| 5 | Diagnose verification | Swift/shell logs and retained data | Avoid assuming pressure |
+| 6 | Verify/commit | Final full suites | 548 Swift, 178 Bats; aa85072 and 295f107 |
+
+**Decision points:** [O] Successful intake transfers the existing positive cache; core checks
+selection, executable presence and intake/context hint before removing export attributes. Intake
+clears ambient cache first. No combined capability protocol, binary or new public setting was
+added. Actual observation/render results and current writer policy remain authoritative. Failed
+intake uses normal probing; complete forged environment tuples and same-path replacement remain
+outside any authenticated guarantee. Shell cost text now names helper calls rather than zero forks.
+
+**Failure arcs:** [O] A source-in-original-shell candidate was rejected before implementation:
+Codex JSON would remain in OS argv and forked workers. Root initially suspected a delayed-restore
+$0 issue; the explorer rechecked and corrected that claim to SCRIPT_DIR. Fresh Bash-c/source
+avoided raw argv but failed two timer tests because the recorded PID disappeared while paint
+continued. `AuuWTa` and `bwQdro` preserve the failures; original script exec restored liveness.
+[R] The worker's PPID-based PID discovery is sensitive to execution shape, but no general causal
+claim was proved. Final code puts transfer inside existing intake and needs no handoff function.
+
+[O] Broad verification then had a bounded record-read failure and two admission-cleanup probe
+timeouts. The cleanup helper now retries within its existing one-second window; individual
+calls and semantic assertions retain their deadlines. A lint command used zsh's readonly status
+variable; corrected naming showed ShellCheck clean. Another shell run retained three failures.
+A separate explorer found permission render failure masked by core exit zero; unavailable fixture
+data prevented diagnosing recovery/standalone failures. It explicitly rejected a proven-pressure
+claim. Focused reruns and final retained-fixture full runs passed without semantic weakening.
+
+**Verification:** [O] `0ribbd` passed 548 Swift tests in 10.300 seconds. Final `AVKcmZ` passed
+178 Bats with temporary fixtures retained. Syntax passed for touched shells; helper/adapters
+ShellCheck passed. The unchanged native helper was not rebuilt. Measured helper counts became
+five per normal hook; shell remained three. Three-sample timings are host observations, not
+workload percentiles. Parent/worker argv tests use only owned synthetic processes and never
+publish their command lines. No real app control, install/sync or user-state change occurred.
+
+**Heuristics and confidence:** [O] P8/P9 recur through source adjudication and SPEC-owned state.
+Reports corrected an unsafe candidate, a stale source assumption and unsupported failure causality.
+A historical finished Phase 8 source block moved unchanged while unresolved native cases stayed
+explicit. H1 input, M5 scaling/configuration work and native acceptance remain open; goal active.
+Attribution and strategy explanations are [R], while results and edits are observable. No new skill
+or process control plane was created from the existing reusable-pattern suggestions.
