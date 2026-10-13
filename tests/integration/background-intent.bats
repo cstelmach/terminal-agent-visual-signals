@@ -258,6 +258,41 @@ PY
     [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
 }
 
+@test "a delayed tool-error restore cannot cancel a newer completion timer" {
+    printf 'ENABLE_TITLE_PREFIX=false\nIDLE_CHECK_INTERVAL=0.1\n' > "$HOME/.tavs/user.conf"
+    cat > "$CASE_DIR/tool-error-check.sh" <<'SH'
+set -e
+repo="$1"; case_dir="$2"
+export TAVS_AGENT=claude
+source "$repo/src/core/session-state.sh"
+TTY_SAFE="${TTY_DEVICE//\//_}"
+timer=""
+trap 'if [[ -n "$timer" ]]; then kill "$timer" 2>/dev/null || :; fi' EXIT
+printf '%s' '{"hook_event_name":"PostToolUseFailure"}' |
+    bash "$repo/src/agents/claude/trigger.sh" tool_error
+sleep 0.5
+printf '%s' '{"hook_event_name":"Stop"}' |
+    bash "$repo/src/agents/claude/trigger.sh" complete
+for ((attempt=0; attempt<40; attempt++)); do
+    read_session_state || true
+    [[ "$SESSION_STATE" == complete && -n "$SESSION_TIMER_PID" ]] && break
+    sleep 0.05
+done
+test "$SESSION_STATE" = complete
+timer="$SESSION_TIMER_PID"
+test -n "$timer"
+cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$case_dir/completion.json"
+sleep 2
+read_session_state
+[[ "$SESSION_STATE" == complete ]] || { printf 'Unexpected state: %s\n' "$SESSION_STATE"; exit 1; }
+test "$SESSION_TIMER_PID" = "$timer"
+kill -0 "$timer"
+cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$case_dir/completion.json"
+SH
+    run _owned_pty bash "$CASE_DIR/tool-error-check.sh" "$REPO_ROOT" "$CASE_DIR"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+}
+
 @test "public recovery and resume use owned scoped PTY with current rules and no historical replay" {
     export RECOVERY_REAL_HELPER="$TAVS_TEST_HELPER_BIN"
     cat > "$CASE_DIR/recovery-helper" <<'HELPER'

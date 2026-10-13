@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.22
+Version: 1.23
+
+## A delayed tool-error restore cancels a newer completion timer
+
+The delayed synthetic trigger validated its delivery only during final output, after processing
+had killed the idle timer and changed legacy session state. A newer Stop could therefore lose
+its timer even though stale output was correctly rejected. The delayed task now checks its
+retained delivery before invoking the synthetic trigger. An owned-PTY regression reproduced
+`processing` after a newer completion and now verifies the current timer and observation survive.
 
 ## A queued ordinary render replays titles and bells after recovery
 

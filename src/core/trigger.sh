@@ -413,6 +413,7 @@ case "$STATE" in
         # Use background process to avoid blocking the hook
         (
             sleep 1.5
+            _tavs_managed_check_context || exit 0
             # Return to processing or subagent state
             if has_active_subagents 2>/dev/null; then
                 TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" subagent
