@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.21
+Version: 1.22
 
 ## Public recovery commands
 
@@ -20,6 +20,13 @@ remaining focus or stale preview paint resets background only. A current suspend
 recomposes and clears/expires to latest intent, without unrelated foreground/palette reset.
 Fresh ordinary hook renders remain allowed. Generic reconciliation cannot prove a failed emergency
 repaint succeeded from canceled metadata; reported failures remain retryable with `tavs recover`.
+Scheduler delivery results publish on the main queue. Menu warnings distinguish earlier failed
+updates from unavailable native coverage; count-only logs expose neither titles nor payloads.
+Unresolved exact targets remain until restored or confirmed vanished; registration/no-output success
+does not certify repaint. The existing 60-second heartbeat retries only failed restriction targets
+while a pause/lock remains active, through the coalesced queue and fresh writer policy. Unknown
+bindings, release failures and suspended cleanup use explicit Restore Visibility, preserving fresh
+hook colors. No native query, additional timer or persistent retry registry is added by retries.
 
 The helper returns JSON with `stateSaved`, `catalogueAvailable` and `items`. Each item contains
 an optional validated `target` or `tty`, `status` and optional `reason`. Status is `restored`,

@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.10
+Version: 1.11
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `15fb863`.
+Current product checkpoint: `86d7fe3`.
 
 ## Review execution status
 
@@ -301,10 +301,32 @@ the existing reset sequence and preservation of unowned backgrounds. Final `B7MI
 current-helper `Mv6nxc` passed 172/172 isolated Bats. All returned before commit, using private
 roots and owned PTYs. Nine new tests cover the contract; native visual acceptance remains open.
 
+## Scheduler failure reporting and bounded retry (Claude M6)
+
+`86d7fe3` consumes delivery results on the main queue, exposes earlier failures/native coverage
+in the menu and logs counts only. Unresolved exact targets survive registration and no-output
+results. The existing heartbeat retries only failed restriction targets while muted, using
+targeted fanout and current writer policy. Repeated busy retries coalesce without native queries.
+
+The [source investigation and follow-up](scheduler-failures-check-2026-10-13.md) confirmed M6 and
+the bounded repair. Its historical-wording finding is corrected: independent recovery or fresh
+hooks can repair a target without acknowledging the menu process's older failed delivery.
+Whole-catalogue release retries would reset healthy palettes; even a failed target may receive
+a new hook before retry. Release/suspended cleanup therefore retains explicit Restore Visibility.
+This satisfies reporting and retryability without adopting unsafe automatic reset suggestions.
+
+`fIfs0V` exposed the new API; stub red `CL8Vb2` reproduced absent publication/retry. Its initial
+filter excluded SchedulerLifecycleTests, corrected in subsequent checks. `7nT31J` passed 54 focused
+tests. Final `OrlRQX` passed 548/548 Swift in 12.212 seconds without warnings; release `qwEuRv`
+built in 47.49 seconds; current-helper `8dNSYB` passed 172/172 isolated Bats. All returned before
+commit with private roots and owned PTYs. Five new tests cover main publication, targeted paint,
+failure retention, coalescing/suspension, unknown bindings and scheduler gating. Menu rendering
+and physical Ghostty acceptance remain unverified. Scratch: /tmp/tavs-delivery-retry-_t_d8pfv/.
+
 ## Remaining adjudication and implementation
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize scheduler partial-failure reporting/retry (Claude M6). Do not suppress an unbound
+Prioritize helper-required compatibility (Claude H1). Do not suppress an unbound
 native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 

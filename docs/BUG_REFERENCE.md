@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.35
+Version: 1.36
+
+## Scheduler delivery failures disappear without a visible retry path
+
+Broadcaster results had no production consumer. Unchanged pause/lock evaluations skipped paint
+even after a failed target, and later registration/no-output success could obscure that failure.
+Main-thread callbacks now expose earlier failures and native-coverage limitations in the menu;
+logs contain counts only. Failed exact bindings stay retained until restored or confirmed vanished.
+The existing heartbeat retries active restriction paint on those targets alone, with queue
+coalescing and current policy checked by the bounded writer. Healthy terminals are not repainted.
+Release/suspended failures remain explicit recovery retries: automatic palette resets could erase
+new hook colors. Tests cover publication, targeted recovery, retention, coalescing, suspension and
+unbound targets. Earlier-failure wording avoids asserting a current fault after independent recovery.
 
 ## Scheduler reconciliation undoes emergency recovery defaults
 

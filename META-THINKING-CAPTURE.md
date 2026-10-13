@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 20 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 28 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 21 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 29 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2778,3 +2778,72 @@ Existing reusable-pattern promotion remains a suggestion; no new skill or contro
 
 **Confidence:** [O] Checks, edits and limitations are observable. Model attribution and causal
 strategy rationale are reconstructed, not claims about hidden computation.
+
+## 2026-10-13 · gpt-6 (self-reported) · scheduler-delivery-failures
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported from runtime instructions [R]
+  interface: Codex desktop
+  thinking: unknown; extended requested
+  session: 01a10879
+  trace: observed current-turn tool results
+  delegate: read-only explorer; inherited configuration, served variant unobserved
+
+**Framing:** [O] The previous goal turn changed authoritative source and was progress.
+Clean `525d426` and dated execution files identified Claude M6 as the next Phase 9 lead.
+Broadcaster retained results, but Scheduler consumed neither failures nor coverage. Unchanged
+pause/lock policy skipped later paint despite failed delivery. Existing SPEC requirements called
+for visible uncertain states and retained retryability, preserving normal input and recovery.
+This was a delivery problem, not permission to add another scheduling system or stronger lock.
+
+**Strategy:** [O] Root and a read-only explorer traced result recording, existing heartbeat,
+queue coalescing, writer policy, menu status and tests. The repair reuses those components:
+main-thread publication, exact failed-binding retention, one menu caption, safe count logging
+and active-restriction retry through targeted fanout. [R] Whole-catalogue or stale release resets
+would have expanded the bug by stripping fresh colors from healthy or subsequently updated
+terminals. Explicit Restore Visibility remains the retry for release and suspended cleanup.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient | Git, SPEC, PLAN, PROGRESS and GOAL | Preserve Phase 9 scope |
+| 2 | Inspect/delegate | Scheduler delivery path | M6 confirmed from source |
+| 3 | Red/green | Callback and retry API | Missing publication and paint reproduced |
+| 4 | Extend checks | Retention/coalescing/suspension | Healthy target and fresh policy preserved |
+| 5 | Verify | Swift, release and private Bats | 548, successful build, 172 passed |
+| 6 | Commit | Three production/three test paths | `86d7fe3`; native checks still open |
+
+**Decision points:** [O] Retry applies only to failed exact bindings while Scheduler remains
+muted with restrictions enabled. The existing queue coalesces busy requests, and the shared
+writer chooses current policy after preparation. Unaffected registration or skipped output
+cannot certify a repaint, so it cannot erase an earlier paint failure. Missing native coverage
+is separate from failed-device count. Historical wording avoids asserting current visual damage
+after a different process or hook has repaired a target without notifying this process.
+No extra timer, native-query retry loop, persistent registry or raw payload logging was added.
+
+**Failure arcs:** [O] `fIfs0V` exposed the absent callback/retry API. Compiling minimal stubs
+allowed `CL8Vb2` to reproduce missing main publication and missing retry output, including a
+PTY timeout. That initial filter mistakenly named SchedulerTests instead of the actual
+SchedulerLifecycleTests class; corrected focused runs executed it. The independent follow-up
+found that “incomplete” wording could remain misleading after independent recovery. Source
+inspection confirmed the absent acknowledgement channel; the caption now says earlier updates
+failed. A progress preflight calculated 901 lines and stopped before writes. Removing a repeated
+baseline sentence allowed the unchanged prior checkpoint to move to its existing appendix.
+[R] The transferable lesson is to separate policy, delivery and later repair evidence, rather
+than treating a queue enqueue or no-output result as completion.
+
+**Verification:** [O] Focused `7nT31J` passed 54 tests. Final `OrlRQX` passed 548 Swift tests
+in 12.212 seconds without warnings. Release `qwEuRv` completed in 47.49 seconds; current-helper
+`8dNSYB` passed 172 isolated Bats tests. Tests cover targeted recovery, callback thread, retained
+failures, coalescing, suspension, unknown bindings and scheduler gating. All used private roots
+and owned PTYs. No real app control, install, personal settings/schedules or user-session change
+occurred. Menu rendering and required Ghostty physical/native acceptance remain unverified.
+The source check ran no tests or live calls; its report is not a whole-product readiness verdict.
+
+**Heuristics and confidence:** [O] P8/P9 recur through source adjudication and SPEC-owned state.
+The report produced a concrete historical-wording correction. Existing reusable-pattern promotion
+remains a suggestion; no new skill or control plane was created. Observable checks and edits are
+marked [O]; model attribution and causal rationale remain reconstructed. The full goal stays active,
+with helper compatibility and other source leads still pending.

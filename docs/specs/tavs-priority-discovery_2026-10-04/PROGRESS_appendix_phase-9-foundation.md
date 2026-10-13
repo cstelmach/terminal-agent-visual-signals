@@ -416,3 +416,20 @@ with reconstruction checked; SPEC body/PLAN are fixed. Phases 2/7/8 remain Block
 cases remain in the source report; no global worker cap or full material-review closure is claimed.
 Native acceptance remains unverified. No app/native control, install, personal settings/schedules
 or session shutdown. Scratch/backups: /tmp/tavs-focus-leases-84v8mqbc/.
+
+### Phase 9 recovery-stable reconciliation: 2026-10-13 13:32 CEST
+
+Previous turn progressed through `dc2671c`/`5adf241`. `15fb863` fixes Claude L4 in the shared writer.
+Disabled reconciliation leaves canceled ownership/fresh hooks alone and clears active residue to
+defaults; valid suspended previews retain background-only composition, expiry and current-intent clear.
+Corrected red `oO97Qq` reproduced 12 assertions. `PY19Ka` retained stale byte/no-effect expectations.
+The [source investigation](recovery-scheduler-check-2026-10-13.md) found two draft errors;
+`vEcOjq`/`NOFptk` reproduced unavailable-inode and current-preview-clear gaps before correction.
+Final `B7MIEA`: 543/543 Swift, 10.556 seconds, no warnings. Release `uoUGOC`: 17.66 seconds.
+Current-helper `Mv6nxc`: 172/172 Bats. All terminal results preceded commit, using private roots/PTYs.
+Scope: one production writer, two test files, nine new tests; no shell or scheduler-routing change.
+Failed emergency repaint remains explicitly retryable; canceled metadata cannot prove restoration.
+The finished lease checkpoint moved unchanged with reconstruction checked; SPEC body/PLAN stay fixed.
+**Next:** verify scheduler partial-failure reporting/retry (Claude M6), then remaining source leads.
+Phases 2/7/8 remain Blocked and Phase 9 active. Native acceptance is unverified; no app/native control,
+install, personal settings/schedules or user session shutdown. Backup: /tmp/tavs-suspended-reconcile-cxof04o5/.
