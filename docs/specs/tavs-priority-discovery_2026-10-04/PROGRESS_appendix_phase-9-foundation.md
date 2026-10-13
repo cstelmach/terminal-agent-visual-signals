@@ -516,3 +516,30 @@ Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fix
 Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
 Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.
 Goal service returned Blocked twice; this agent did not request that transition. No reason supplied.
+
+### Phase 9 standalone metadata correction: 2026-10-13 19:26 CEST
+
+The goal service is active after the operator's resumption and approval of remaining steps.
+The chosen portability repair uses Python 3 standard library, shipped with the existing core.
+**Scope:** Narrow dependency/file-list exception to PLAN: portable metadata/helper delivery and
+connected regressions. SPEC/PLAN bodies and D01-D18 remain fixed; no ordinary output bypass.
+`a08ed0e` restores the four legacy fields on absent/older-companion installs without context or
+cue authority. One MiB/two-second input bounds, byte/control limits and body disposal remain.
+A missing runtime clears inherited state; failed native intake is never reparsed. `b66e332`
+copies the reader into both private installation fixtures. Python requirements are documented.
+Initial red runs `uS2cAC` and `Yy6reN` preceded parser and sync changes. Focused `UETj9N`: 34/34;
+broad `i9dEW7`: 184/184 Bats. Changed shell syntax and ShellCheck pass. No Swift source changed.
+Full Swift `vgaabI`: 561 cases, 15 assertion failures (11 unexpected), chiefly real deadlines.
+Focused `4pJWN8`: four representative original failures pass unchanged. Second full `ZzTuJr`:
+seven assertions fail in two different cases; original cases pass. Neither full run is green.
+Host load/compression is observed, not a proven cause. The source check found a concrete fixture
+ambiguity: second mock call need not be cleanup, and a three-second gate can self-release.
+Next: instrument/bind that request role and trace one healthy deadline failure without increasing
+100 ms; then finish the portable writer/process identity/synthetic lifecycle and platform checks.
+Full [compatibility reports](helper-compatibility-check-2026-10-13.md) and
+[deadline investigation](preview-timing-source-check-2026-10-13.md) are retained in this package.
+Computer Use again denied Ghostty for safety reasons. No alternative automation was used.
+The operator availability question remains unanswered; dedicated visible checks remain pending.
+No real install/sync, personal preferences/schedules or existing terminal sessions were changed.
+H1 rendering, prior failure attribution, color freshness and native acceptance remain open.
+Phases 2/7/8 stay Blocked on acceptance; 9 stays In Progress. The full goal is incomplete.

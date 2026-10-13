@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 19:51 CEST
-**Version:** 4.18
+**Last Updated:** 2026-10-13 21:21 CEST
+**Version:** 4.19
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 33fadb1; earlier below/appendix | 561 Swift; prior 184 Bats below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 764e22b, 1029d4e; earlier below/appendix | 14 primitive; 561 Swift; prior Bats below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -839,32 +839,10 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 > Finished source checkpoints: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 > Historical managed-reset failure attribution remains unproven; current suite evidence is below.
 
-### Phase 9 standalone metadata correction: 2026-10-13 19:26 CEST
+### Phase 9 standalone metadata correction
 
-The goal service is active after the operator's resumption and approval of remaining steps.
-The chosen portability repair uses Python 3 standard library, shipped with the existing core.
-**Scope:** Narrow dependency/file-list exception to PLAN: portable metadata/helper delivery and
-connected regressions. SPEC/PLAN bodies and D01-D18 remain fixed; no ordinary output bypass.
-`a08ed0e` restores the four legacy fields on absent/older-companion installs without context or
-cue authority. One MiB/two-second input bounds, byte/control limits and body disposal remain.
-A missing runtime clears inherited state; failed native intake is never reparsed. `b66e332`
-copies the reader into both private installation fixtures. Python requirements are documented.
-Initial red runs `uS2cAC` and `Yy6reN` preceded parser and sync changes. Focused `UETj9N`: 34/34;
-broad `i9dEW7`: 184/184 Bats. Changed shell syntax and ShellCheck pass. No Swift source changed.
-Full Swift `vgaabI`: 561 cases, 15 assertion failures (11 unexpected), chiefly real deadlines.
-Focused `4pJWN8`: four representative original failures pass unchanged. Second full `ZzTuJr`:
-seven assertions fail in two different cases; original cases pass. Neither full run is green.
-Host load/compression is observed, not a proven cause. The source check found a concrete fixture
-ambiguity: second mock call need not be cleanup, and a three-second gate can self-release.
-Next: instrument/bind that request role and trace one healthy deadline failure without increasing
-100 ms; then finish the portable writer/process identity/synthetic lifecycle and platform checks.
-Full [compatibility reports](helper-compatibility-check-2026-10-13.md) and
-[deadline investigation](preview-timing-source-check-2026-10-13.md) are retained in this package.
-Computer Use again denied Ghostty for safety reasons. No alternative automation was used.
-The operator availability question remains unanswered; dedicated visible checks remain pending.
-No real install/sync, personal preferences/schedules or existing terminal sessions were changed.
-H1 rendering, prior failure attribution, color freshness and native acceptance remain open.
-Phases 2/7/8 stay Blocked on acceptance; 9 stays In Progress. The full goal is incomplete.
+> Finished metadata/source-sync checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+> H1 rendering and historical deadline attribution remain open in current entries below.
 
 ### Phase 9 preview fixture correction: 2026-10-13 19:51 CEST
 
@@ -889,3 +867,32 @@ Next: implement the safe portable process-identity/writer/synthetic lifecycle an
 and Linux owned PTYs. Metadata-only support does not close H1. Later verify color freshness and
 remaining source review leads. Ghostty access still needs direct operator acceptance; no retry ran.
 Phases 2/7/8 remain Blocked on native cases, 9 In Progress. The full goal remains active/incomplete.
+
+### Phase 9 portable identity/device foundations: 2026-10-13 21:21 CEST
+
+`764e22b` implements process/device identity; `1029d4e` implements the bounded device primitive.
+These modules are not wired and advertise no capability. H1 ordinary output is still open.
+Mac ABI and exact owned-PTY identity are exercised. Linux avoids mutable epoch estimates:
+held proc reads, mature exact-branch birth ticks, aligned NSpid, namespace pairs/offsets and boot
+scope. Missing evidence refuses. Linux scope needs versioned records at integration, not native
+schema-1 insertion. Actual Linux kernel/namespace acceptance remains unverified.
+One original 100 ms deadline covers child dispatch/open/lock/prepare/write. Child standard channels
+close; late phases recheck expiry. Known partial output retains its count; uncertain output stays
+unknown. Caller timeout requests termination; separate tests drain/reap owned workers.
+Initial red `D90iVU`/`P4rJE5`: missing modules. `PSL0Yj`: missing Linux parser. `D9ku25` exposed
+TTY-name test reuse; tests now use separate directories. `mir9tF` exposed an integer-only Python
+exception property; a custom bytes_written attribute fixes it. `CLpU4A`: two genuine late-phase
+failures without guard checks. Final `b0nPds`: 14/14, 1.294 seconds. Full Swift `mVnI0m`:
+561/561, 10.438 seconds; Swift source unchanged since the preceding verified release.
+Public-web AGY contract/call completed without repository input or fingerprints; its report is
+PARTIAL because PID/device conclusions conflict with source. Native research and exact source
+contracts/review are retained in [compatibility checks](helper-compatibility-check-2026-10-13.md).
+**Scope:** Approved portability extension: two modules/two tests, API/bug/roadmap docs. No normal
+backend selection, global policy bypass, extra agent authority or actual user-target operation.
+Docker daemon is stopped. Startup may resume existing containers; the exact-scope question remains
+pending. Ghostty Computer Use remains denied; no retry, VM/container start or native target action.
+Next: finite render decoder and strict record/policy/ownership guard, then complete context,
+observation/intent, synthetic/reset/reconcile, resolver and install/sync integration. Validate Linux
+owned PTYs when an authorized runtime is available. Keep Mac schema unchanged and no failed-native
+bypass. Prior failure causes, color freshness and required physical acceptance remain open.
+Phases 2/7/8 remain Blocked on native cases; 9 and the full goal remain active/incomplete.

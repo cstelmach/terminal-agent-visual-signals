@@ -354,3 +354,319 @@ Delivery/runtime caveat: installers/docs still need the approved Python3 prerequ
 and later helper readiness work. The current native-render readiness warning can
 remain explicit during this bounded metadata slice. Neither portable metadata
 success nor source-copy success establishes ordinary OSC output or H1 closure.
+
+## Portable primitives: source synopsis (2026-10-13)
+
+`764e22b` adds process/device identity; `1029d4e` adds the bounded device transaction.
+These are foundations, not a working standalone hook backend. They advertise no capability.
+The metadata reader remains the only connected portable path. H1 remains incomplete.
+
+[Native Linux research](portable-linux-identity-research-2026-10-13.md) and
+[partial AGY research](portable-linux-identity-agy-partial-2026-10-13.md) were read and compared.
+Wiki recall found irrelevant passages, so the verdict was proceed. The AGY public-web contract
+passed and its one Flash call completed. No repository was supplied or fingerprinted. Its
+claims about numeric PID reservation and extended-minor device mismatch remain rejected leads.
+The independent native report and retrieved kernel/man-pages support the narrower conclusions.
+
+Linux identity avoids btime conversion, requires aligned proc numbering, compares namespace
+pairs/offsets and accepts only after the full birth tick has passed under the exact conversion
+branch. Two reads use one held proc directory. Live namespace continuity is an explicit proof
+condition; arbitrary restoration/migration and older/masked kernel properties remain unsupported
+until separately evidenced. `linuxScope` is not native schema-1 JSON; future records require
+explicit Linux versioning. No scope field is silently inserted into Mac records.
+
+Current validation: 14 isolated primitive checks, real macOS owned PTYs, parser fixtures and
+full Swift 561/561. Linux runtime remains pending the Docker startup question; its daemon is
+stopped. No container or new VM was started. Complete finite render decoding, policy/ownership,
+publication/binding, synthetic reset/reconciliation, backend selection and install/sync delivery
+remain next work. Interpreter startup and bookkeeping are not counted as device time.
+
+### Retained exact writer contracts
+
+# Exact portable ordinary-writer contracts
+
+Source extraction only. No project edits, builds/tests, native/apps/devices,
+web or goal calls. References below use TAVSApp Sources/TAVSApp filenames.
+`?` means a JSON field may be omitted or null; all other listed keys are required.
+
+## Schema-1 JSON shapes
+
+| Value | Required keys | Optional keys |
+|---|---|---|
+| ProcessGeneration | pid, startSeconds, startMicroseconds | none |
+| Native surface ID | application (generation), terminalID | none |
+| Target binding | tty, device, ttyOwner (generation) | nativeSurface? |
+| Cached target | schema, target | none |
+| Observation | schema, tty, provider, verifiedAgent, state, deliveryID, observedAt | device?, producer?, event?, responseID? |
+| Intent / bound intent | schema, tty, deliveryID, updatedAt, background | device?, producer? |
+| Effect | schema, target, controller, effectID, kind, background, heartbeatAt, active | focusColors?, revision? |
+| Colors | background, foreground | none |
+| Revision identity | device, inode | none |
+| Adoption | schema, tty, device, producer, surface | observationDeliveryID?, intentDeliveryID? |
+| OrganizerContext | schema, deliveryID, observedAt, provider, verifiedAgent | producer?, device?, event?, responseID? |
+
+Records, nested generation/surface/color/revision values reject unknown JSON keys
+(terminal-visual-state:1121-1250, terminal-renderer:19-24). OrganizerContext uses
+synthesized Codable: decodedContext:128-135 checks token<=8192 bytes, base64, schema=1,
+provider allowlist; it does not itself validate authority or reject unknown keys.
+A context encoder must never insert raw payload/legacy display metadata into it.
+
+All schema fields equal integer 1. Python must distinguish JSON bool from integer.
+Process pid is positive Int32; startSeconds>0 UInt64, microseconds UInt64<1,000,000.
+Target device is UInt32 except UINT32_MAX. Revision device is native filesystem
+dev_t and inode ino_t, NOT the target's UInt32 TTY device. Valid revision requires
+inode!=0 OR device==0; missing-file sentinel is exactly {device:0,inode:0}.
+
+## Exact names and paths
+
+Let O=<runtime>/organizer, K(s)=URL-safe base64 of UTF-8 s without '=' padding,
+G(g)=decimal pid-startSeconds-startMicroseconds, P=O/targets/K(tty)/G(owner).
+K replaces '+' with '-' and '/' with '_'; it is reversible, not a digest.
+
+| Object | Canonical path |
+|---|---|
+| Output/metadata lock | O/writer-K(tty).lock |
+| Latest observation / intent | O/observation-K(tty).json / O/intent-K(tty).json |
+| Plain target directory | P/plain/ |
+| Native alias directory | P/G(application)/K(terminalID)/ |
+| Cached / bound records | target.json / bound-intent.json in target directory |
+| globalRestriction or selectiveBackground | effect.json in target directory |
+| Preview / focus | preview.json / focus.json in target directory |
+| Adoption | O/adoption-K(tty)-G(producer).json |
+| Obsolete pending OSC | <runtime>/pending/<tty with '/' replaced by '_'>.osc |
+| Suspension / soft pause | marker path / marker's sibling mute.state |
+| Hard lock | <runtime>/lock.state |
+
+Sources: state:533-550,963-973; recovery:617-631. Canonical placement is validated
+against decoded target, including effect kind. Filename presence alone authorizes
+nothing. Target records are <=8192 bytes; reads require lstat/fstat regular files,
+matching inode/device, O_NOFOLLOW|O_NONBLOCK|O_CLOEXEC and bounded reads. Writes use
+600 temporary sibling files, bounded writes and atomic rename. Stable lock is a
+600 regular file; target directories must be actual directories, not symlinks.
+
+## Validation, selection and ordinary intent
+
+| Contract | Exact existing condition |
+|---|---|
+| Common observation/intent | tty absolute <=128 UTF-8 bytes, no ./../control components, standardized tty != /dev/tty; ID valid; finite timestamp 0<t<=now; optional producer's epoch start<=t; device != UINT32_MAX |
+| ID | Nonempty <=128 UTF-8 bytes; ASCII A-Z,a-z,0-9 or '- . : _' |
+| Observation | provider claude/codex only; fixed state/event sets; optional responseID valid ID |
+| Target shape | Native concrete /dev/tty suffix is ASCII alphanumeric and nonempty; owner generation valid; native terminalID nonempty <=128 bytes without controls |
+| Target live status | Changed owner generation/device or proven owner/device loss => vanished; absent unproven identity, owner-device/descriptor mismatch => unavailable; native app generation also validates |
+| Resolution | Scan requested TTY across ALL owner lifetimes; union cached targets AND effect targets; live conflicting physical owners reject; plain+one native preferred; >one live native rejects |
+| Held-lock aliases | Exact physical lifetime only; validate every target.json/placement; unavailable alias rejects; valid plain+one native allowed; >one live native rejects |
+| Bound intent read | Valid intent plus schema1 exact matching target.json; same tty/device; producer nonnull |
+| Bind intent | Live producer's continuing owner equals target owner; latest intent equals normalized supplied intent in ALL fields; write target and bound copy |
+| Restore intent | Latest same tty/device/non-null producer; exact full equality to ANY equivalent bound copy permits after producer exit; otherwise producer live with same continuing owner; native target additionally needs matching adoption and delivery |
+| Effect shape | Valid target/controller/ID/background; 0<finite heartbeat<=now; kind in globalRestriction,selectiveBackground,preview,focus |
+| Focus/revision | focusColors exists iff kind focus; focus requires revision; revision otherwise only preview; colors normalized hex and revision identity valid |
+| Lease active | active=true; valid record; controller lookup generation equal; preview age<2 seconds; other selective age<=6; globalRestriction never selective |
+| Same-ID save | Controller equal; canceled record cannot revive; preview heartbeat immutable; focus same colors/revision, current lease live, nondecreasing heartbeat |
+
+Sources: state:151-174,214-268,303-411,499-529,880-961; recovery:497-542.
+Native cached resolution ignores unreadable paths/non-valid bindings, but held-lock
+alias/effect reads are stricter. Portable proof must not interpret unreadable or
+unknown live ownership as absence merely by copying that pre-lock filtering.
+
+States: processing,permission,complete,idle,compacting,reset,subagent,tool_error.
+Events: UserPromptSubmit,PreToolUse,PostToolUse,PostToolUseFailure,PermissionRequest,
+Notification,Stop,SessionStart,SessionEnd,PreCompact,SubagentStart,SubagentStop,
+permission_prompt,idle_prompt,agent-turn-complete. verifiedAgent=false can bind
+ordinary intent. It cannot create automatic-focus authority. Claude eligible events
+are complete/Stop or permission/PermissionRequest|permission_prompt; Codex is
+complete/agent-turn-complete WITH responseID (state:891-897).
+
+## Freshness and lifecycle operations
+
+| Operation | Required behavior |
+|---|---|
+| Observe | Validate record, lock TTY, reject observedAt older than latest; recover invalid latest only if a regular file; atomically publish |
+| Publish ordinary | intake finite 0<intake<=updatedAt; reject latest observation observedAt>intake; normalize background; require updatedAt>=current intent unless exact matching current observation proves a superseding delivery/producer/device |
+| Publish synthetic | Same ordinary ordering PLUS latest observation must match tty/device/producer/deliveryID and producer must be live; no new observation/cue |
+| Validate render context | Non-synthetic: valid record, observation not newer than intake, producer live; synthetic: frozen latest observation exact match and observation time<=intake, live producer |
+| Check synthetic context | Validate under existing writer lock, emit no bytes, publish/cache no target/intent/effect; writer/lock open itself still occurs |
+| Forced reset, live producer | background reset only; same target tty/device/live owner; latest intent if present must keep producer/delivery; synthetic observation freshness; producer continuing owner equals target; publish/bind reset |
+| Forced reset, non-live producer | Latest intent REQUIRED and unchanged producer/device/delivery; observation exact match and time<=intake; a validated live target owner; any equivalent bound intent must equal latest FULL record; publish reset and direct bound copy |
+| Reconcile | Resolve cached valid same-TTY bindings, not a raw pending OSC replay; invalidate pending file; compose latest bound/current intent with current policy/leases; cancel requested selective effects; preserve current suspended preview revision |
+
+Sources: state:607-619,632-790; recovery:222-246,301-425. Native forced-reset's
+non-live branch uses validProducer=false, not a separate proof of producer death;
+its safety comes from exact unchanged delivery/bound intent and live continuing
+owner. Do not broaden it to any old intent after missing identity.
+
+Ordinary publish can ignore invalid latest observation and recover invalid REGULAR
+intent, but synthetic cannot. Render-context validation is strict even for style-only
+requests. Deadline/storage errors never become permissive invalid-record recovery.
+Stale delivery/observation/intent/effect returns code 3 in the managed entry; ordinary
+unavailability/storage/policy failure returns nonzero. Do not rewrite stale synthetic
+context into a fresh delivery. Forced reset rechecks before open AND inside output lock.
+
+## Revision, suspension and global policy
+
+| Policy item | Exact rule |
+|---|---|
+| Marker serialization | SCHEMA_VERSION="1" newline SUSPENDED="true" or "false" newline, exactly; <128 bytes regular file |
+| Missing marker | Active only if nearest existing parent is a searchable directory; otherwise unavailable |
+| Disabled restrictions | Status suspended OR unavailable; policy.current returns nil, but this alone does NOT establish safe typed rendering |
+| Capture revision | Reject unavailable marker; hold read-only no-follow FD for existing file until request ends; missing sentinel otherwise |
+| Match revision | Missing path matches only 0/0 sentinel with available parent; existing regular path matches exact filesystem dev/inode and nonzero inode; no Boolean/content equality substitute |
+| Rule files | <=8192 regular no-follow/inode-checked bytes; UTF-8 quoted KEY="VALUE" lines; no NUL/duplicate keys; schema absent defaults1, otherwise1 |
+| Hard lock | Bool LOCKED and decimal Int64 LOCK_UNTIL_EPOCH; optional UNLOCK_UNTIL_EPOCH/WRITTEN_EPOCH default0; effective = locked && now<lockUntil && !(now<unlockUntil) |
+| Soft pause | MUTED bool; (REQUESTED_MUTED??MUTED)==true; recognized REASON; MUTE_LEVEL soft, or absent except hard_lock; hard/unknown level ignored |
+| Pause liveness/time | Decimal UNTIL_EPOCH/WRITTEN_EPOCH/APP_PID; pid>0 Int32 and alive; until==0 or now<=until; written<=now and now-written<=120 |
+| Selection/recheck | Hard lock wins, otherwise soft pause; re-read suspension before returning current rule |
+
+Sources: visual-restrictions-state:5-151; visual-restriction-policy:24-120;
+LockState:30-32. Mute reasons: schedule_window,quiet_period,master_paused,hard_lock,"".
+Native malformed rule TEXT selects no rule; file I/O/type/size errors throw.
+Revision identity is independent of content validity. Typed render/forced reset
+capture revision before publication/open and compare under output lock, so atomic
+recovery replacement invalidates queued output even when SUSPENDED value is unchanged.
+
+Selective precedence: explicit current preview > active focus > selectiveBackground;
+focus/selective suppressed when restrictions disabled, but valid suspended preview
+can remain. Applicable aliases must agree in effectID/controller/revision/colors
+(and background unless focus). Native nil controller lookup yields inactive; Python
+cannot treat an UNKNOWN fresh owner as proven absent to authorize uncontrolled output.
+
+## Finite render protocol and output boundary
+
+| NUL field index | Constraint |
+|---|---|
+| 0 | Empty means no background; otherwise normalized hex/rgb/reset |
+| 1 | Palette action empty/set/reset |
+| 2..17 | Empty or normalized #RRGGBB; nonempty requires palette set |
+| 18 / 19 | Title flag 0/1; title<=8192 UTF-8 bytes; flag0 requires empty |
+| 20 / 21 | Image action empty/iterm2-set/iterm2-clear; path<=4096; set requires absolute; others empty |
+| 22 | Bell flag 0/1 |
+
+TerminalRender:12-96: exactly 23 fields and final NUL, <=16384 bytes, strict UTF-8.
+Title/image reject scalar<32 and 127..159; format characters remain allowed.
+Palette reset OSC104 ST; set OSC4 ;i;rgb:RR/GG/BB ST. Background reset OSC111 ST,
+color OSC11 ;#RRGGBB ST. Then title OSC0 ST, iTerm image with BASE64 path and BEL
+framing, then ordinary audible BEL. Synthetic suppresses only audible bell, not
+image framing. Hex trims whitespace and uppercases; rgb components have 1..4 hex
+digits, scale via (value*255+maximum/2)/maximum integer division, maximum=16^digits-1.
+
+Python minimum under ONE existing writer deadline/lock: validate current lifetime,
+all relevant record shapes/aliases and frozen delivery; compare pinned revision;
+publish/bind current intent; recompute policy and applicable leases. Any applicable
+native control must stay on the selected native path or explicitly fail, never
+fake composed bytes or claim ordinary rendered after suppression.
+
+Once genuinely uncontrolled, clear expired/canceled selective ownership as native
+would and use current bound/latest intent, not an old OSC snapshot. Residual active
+globalRestriction records additionally require finite legacy cleanup OSC104 BEL
+and OSC110 BEL before ordinary background/style; forced reset also emits OSC104 BEL
+when that legacy prefix was unnecessary, then reset background and its safe title.
+Implement that cleanup exactly or leave a stated compatibility gap. Rejecting every
+expired cached owner forever does not preserve ordinary-after-ownership behavior.
+
+Native render result: actual ordinary style write => rendered, actual global rule
+write => restricted, no bytes => unaffected. Selective composition can still render
+ordinary palette/title/image/BEL. These statuses cannot substitute for capability
+support. Reconcile while suspended cancels obsolete active effects, resets legacy
+palette/foreground when needed, and never replays the ordinary theme after a fully
+completed recovery unless an explicit current preview still needs its ordinary base.
+
+### Retained primitive source review
+
+# Portable identity/writer primitive source review
+
+Source-only inspection of portable_process_identity.py, portable_device_writer.py
+and their two unit-test files. No imports/execution, tests/builds, apps/devices,
+web or goal access. These primitives are unwired; no capability or H1 completion
+claim is made. Linux kernel acceptance remains pending.
+
+## Concrete issues found and latest-source disposition
+
+The initial source omitted a deadline check after device_number/lstat and before
+os.open, and omitted a check between successful flock and prepare. An expired
+transaction could therefore open or enter metadata-mutating preparation before
+its next check. Latest source now includes both checks. This restores the native
+writer's explicit checkpoints without resetting the original deadline.
+
+Initial child error serialization defaulted an unannotated error to bytes=0.
+A lock/device close error AFTER successful output could then falsely imply no
+paint. Latest source defaults that field to None (unknown), and normalizes an
+OSError with absent/zero errno to EIO. Known write-loop partial counts are retained.
+No runtime reproduction or test-pass claim is inferred from these source repairs.
+
+No remaining concrete introduced correctness defect found in the latest inspected
+primitives, subject to the explicit lifecycle/platform limitations below.
+
+## Narrow checks
+
+- _BSDInfo mirrors the installed SDK struct: twelve uint32s, 16+32 char bytes,
+  five uint32s, one int32, two uint64s =136 bytes; birth fields at120/128. pidinfo
+  flavor3, returned-size equality, matching PID, positive seconds, microseconds
+  bound, zombie and INEXIT rejection match the Swift bridge. Mac generation keys
+  remain pid/startSeconds/startMicroseconds.
+- Linux parses after the final ') ', bounds stat input and numbers, discards
+  arbitrary comm bytes and rejects exited/zombie/unsupported states. It accepts
+  only after the complete birth tick, derives an injective tick representation
+  for supported rates and avoids wall-clock btime identity. Two reads must agree
+  in returned generation, parent/group/device/foreground fields.
+- Linux requires self NSpid exactly one current PID, target/self PID AND time
+  namespace inode/device equality, a valid boot UUID, complete numeric time
+  offsets, and stable target namespace identity after reads. Missing evidence
+  returns unavailable; no ps/PID-only fallback is introduced.
+- Continuing-owner rejects mismatched seed generation/device, bad parent links,
+  loops and unavailable parents, climbs only same-device parents, then rechecks
+  generation. Its final equality matches the existing native helper; the typed
+  writer must still validate current owner/device under the lock at integration.
+- Parent creates ONE monotonic deadline before pipe/fork. Child receives that same
+  deadline through before_open, open, flock, prepare and write. Late open and
+  preparation now have explicit checks. Child closes inherited fd0/1/2 except
+  an internal result descriptor occupying one of those numbers; it never retains
+  the caller's original stdin/stdout/stderr endpoints via those descriptors.
+- Output checks exact character-device rdev, stable regular private/owned lock,
+  finite bytes payload and partial writes; timeout/malformed/no child result means
+  unknown bytes, not success. Parent signals only its own tracked fork PID; waits
+  use waitpid(pid), not waitpid(-1). No generic retries or native composition exists.
+
+## Lifecycle and acceptance limitations
+
+write_managed's finally performs WNOHANG, requests SIGKILL if still alive, then
+polls again. If termination is not yet observable, the owned PID remains in
+_children until a later reap_completed/write. A final call therefore does NOT
+prove child retirement on return. Current unit tearDown polls once; it likewise
+cannot prove an overdue child exited before PTY teardown. Keep the 100 ms caller
+bound, but add a separate test-owned bounded drain/retirement assertion before
+claiming all children retired. Do not turn unknown output into a retry because
+kill was requested. Kernel-stalled children may delay actual exit despite SIGKILL.
+
+Initial reap_completed occurs before deadline creation; process startup and that
+prior-child bookkeeping are outside the device budget. Parent may also resume
+late after select; source cannot promise hard wall-time scheduling guarantees.
+A captured prepare callback runs in a forked child: in-memory mutations do not
+publish back to the parent. Future outcomes must use typed IPC/durable records.
+
+Linux tests currently include only a parser fixture and platform-conditional
+current/PTY checks. They do not establish actual Linux acceptance until run there.
+Especially verify kernel starttime versus CLOCK_BOOTTIME with nonzero time offsets,
+PID/proc mount namespace evidence, birth-tick boundary, tty_nr/rdev encoding and
+unavailable namespace files. Do not infer these facts from macOS fixture success.
+linuxScope plus boot-relative startSeconds is NOT native schema1 generation JSON;
+future Linux records need explicit versioning, while Mac keys stay unchanged.
+
+## Small concrete regression additions
+
+1. Direct _perform with a clock advancing during device validation: open must not
+   run after expiry. Repeat by advancing at flock acquisition: prepare must not run.
+2. Inject close failure after a completed payload: report known full count or
+   unknown, never zero. Retain the existing three-byte partial-write test.
+3. Hold open/prepare through parent timeout, separately confirm owned child exit
+   and reap, then assert no late bytes and no held caller stdio channels.
+4. Run the real Linux identity/PTY cases and explicit namespace/offset rejection
+   cases on Linux. This is required platform evidence, not another mock substitute.
+
+### Parent review resolution
+
+The two missing phase checkpoints were verified in source and reproduced in `CLpU4A` with
+termination deliberately delayed on owned targets. Restored checks produce passing outcomes.
+Errors carry a known partial count or unknown. A Python integer-only exception-property draft
+failed in `mir9tF`; the dedicated `bytes_written` attribute fixes it. Test teardown now separately
+polls/reaps owned children before closing PTYs, without increasing the writer deadline.
+The final primitives are unwired; this review does not establish controlled policy or Linux
+kernel acceptance. Producer/owner validation remains required in the typed preparation layer.

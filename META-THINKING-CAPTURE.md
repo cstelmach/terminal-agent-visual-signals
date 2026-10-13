@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 28 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 36 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 29 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 37 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3371,3 +3371,66 @@ still queued before claiming fixture quiescence. Existing promotion proposals st
 
 **Confidence.** Edits, checks and source relationships are observed. Internal motives, EPERM
 causality and historical timeout causes are reconstructed or explicitly unresolved.
+
+## 2026-10-13 · gpt-6 (self-reported; variant unverified) · portable-primitives
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported [R], system identity; served variant unobserved
+  interface: codex-desktop
+  thinking: unknown
+  session: 01a10879
+  trace: reconstructed from visible tool results; no dominant-turn transcript export
+
+**Framing [O].** This continuation addressed the standalone-output compatibility gap after the
+metadata and fixture commits. Current Git was clean and SPEC-owned progress named portable
+identity, writing and lifecycle as the next work. The implemented slice supplies prerequisites;
+it does not connect a hook backend or complete H1. That distinction remains explicit in the
+API, roadmap and progress rather than redefining the goal around successful primitive tests.
+
+**Strategy [O/R].** Wiki recall ran first and produced no useful low-level evidence. Distinct
+public AGY/native research and local source extraction ran in parallel. The public-only AGY
+workflow required no repository fingerprint. Its call succeeded, but its PID reservation and
+device-encoding conclusions were marked partial rather than adopted. The native investigation
+and retrieved kernel/man-pages exposed mutable btime, tick quantization and namespace limits.
+The reconstructed choice was to establish the process identity contract before wiring output.
+
+**Action trace [O].**
+
+| Move | Object | Outcome |
+|---|---|---|
+| Recall/research | Wiki, primary Linux sources, local SDK/contracts | Missing evidence identified |
+| Red/green | Process identity module | Owned Mac PTY and parser checks pass |
+| Red/green | Supervised device writer | Lock, expiry, stdio and partial output checked |
+| Source review | Phase checkpoints and output counts | Two late-entry gaps reproduced and fixed |
+| Verify | Isolated primitives and existing Swift suite | 14/14; 561/561 |
+| Commit | Identity and device transaction separately | 764e22b; 1029d4e |
+
+**Failure arcs [O/R].** Missing-module tests failed before implementation. A later stale-output
+check failed because tests reused a TTY-derived lock name after the kernel reused that TTY slot;
+separate private directories corrected the fixture. Assigning unknown output as None to Python's
+integer-only exception property raised TypeError. A dedicated bytes_written attribute now carries
+known counts or unknown values. Source review then found missing checks between device inspection
+and open, and between successful lock acquisition and preparation. Delayed owned-target tests
+failed without those checks and passed after restoring them. The original deadline was unchanged.
+
+**Decision points [O].** Linux generation uses boot-relative tick parts and explicit scope rather
+than invented exact epoch birth time. A complete birth interval, aligned NSpid and matching held
+proc reads are required; unsupported evidence refuses. Linux scope needs versioned records at
+integration. Mac retains its existing generation keys. Worker standard channels close to avoid
+retaining hook pipes; caller timeout requests termination while tests separately prove retirement.
+Known partial writes report their count, and unannotated failures never claim zero output.
+
+**Verification and limits [O].** Fourteen isolated primitive checks passed in 1.294 seconds,
+including actual Mac PTYs. Existing Swift passed 561 tests in 10.438 seconds. Linux parser tests
+are not Linux kernel acceptance. Docker is stopped; starting it might resume other containers,
+so that scope question remains pending. No VM/container or user-target operation occurred.
+Policy/record composition, finite render parsing, synthetic/reset/reconcile and hook delivery
+remain necessary. Namespace restoration and older/masked kernel properties remain unresolved.
+
+**Heuristics.** P8: distinguish a successful provider call from reliable conclusions, and verify
+review remedies with discriminating tests. P9: use SPEC-owned state to keep the full pending
+scope visible. Existing promotion proposals remain proposals; no capability asset was edited.
+
+**Confidence.** Actions, source contracts and test outcomes are observed. Motives and the
+cross-namespace proof are reconstructed or conditional; live Linux evidence remains missing.
