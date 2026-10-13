@@ -1,11 +1,14 @@
 """Process generations and concrete TTY identity for the portable ordinary writer."""
 
 import ctypes
+import errno
 import os
 import re
 import stat
 import sys
 import time
+
+from portable_policy import check_deadline
 
 
 class _BSDInfo(ctypes.Structure):
@@ -229,3 +232,36 @@ def continuing_owner(seed, device, lookup=None):
     generation = owner["generation"].copy()
     again = lookup(generation["pid"])
     return generation if again is not None and again["generation"] == generation else None
+
+
+def caller_ancestor(caller, device=None, lookup=None, start=None, deadline=None):
+    lookup = inspect if lookup is None else lookup
+    current = os.getpid() if start is None else start
+    deadline = time.monotonic_ns()+100_000_000 if deadline is None else deadline
+    if type(caller) is not int or not 0 < caller <= 2**31-1:
+        raise OSError(errno.EINVAL, "Invalid helper caller")
+    seen = set()
+    for _ in range(16):
+        check_deadline(deadline)
+        if current in seen:
+            raise OSError(errno.EINVAL, "Cyclic helper ancestry")
+        seen.add(current)
+        source = lookup(current)
+        check_deadline(deadline)
+        generation = source["generation"] if source is not None else None
+        if (generation is None or generation["pid"] != current
+                or type(generation["startSeconds"]) is not int or not 0 < generation["startSeconds"] < 2**64
+                or type(generation["startMicroseconds"]) is not int or not 0 <= generation["startMicroseconds"] < 1_000_000):
+            raise OSError(errno.EINVAL, "Helper ancestry unavailable")
+        if current == caller:
+            again = lookup(caller)
+            check_deadline(deadline)
+            if (device is not None and source["device"] != device
+                    or again is None or again["generation"] != generation or again["device"] != source["device"]):
+                raise OSError(errno.EINVAL, "Helper caller changed")
+            return generation.copy()
+        parent = source["parentPID"]
+        if type(parent) is not int or not 1 < parent <= 2**31-1:
+            raise OSError(errno.EINVAL, "Helper caller unavailable")
+        current = parent
+    raise OSError(errno.EINVAL, "Helper caller ancestry too deep")

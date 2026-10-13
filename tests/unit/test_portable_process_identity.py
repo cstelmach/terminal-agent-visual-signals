@@ -1,4 +1,5 @@
 import ctypes
+import errno
 import json
 import os
 from pathlib import Path
@@ -8,12 +9,58 @@ import signal
 import sys
 import time
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
 import portable_process_identity as identity
 
 
 class PortableProcessIdentityTests(unittest.TestCase):
+    def test_caller_ancestor_requires_actual_chain_and_current_generation_device(self):
+        def process(pid, parent, device=43):
+            return {"generation": {"pid": pid, "startSeconds": 100, "startMicroseconds": 1},
+                    "parentPID": parent, "group": 10, "device": device, "foregroundGroup": 10}
+        values = {10: process(10, 20), 20: process(20, 30), 30: process(30, 1, 99)}
+        self.assertEqual(identity.caller_ancestor(20, 43, lookup=values.get, start=10), values[20]["generation"])
+        self.assertEqual(identity.caller_ancestor(30, lookup=values.get, start=10), values[30]["generation"])
+        for pid, device in ((99, None), (30, 43), (True, None), (0, None)):
+            with self.assertRaises(OSError):
+                identity.caller_ancestor(pid, device, lookup=values.get, start=10)
+        values[20]["parentPID"] = 10
+        with self.assertRaises(OSError):
+            identity.caller_ancestor(30, lookup=values.get, start=10)
+
+    def test_caller_ancestor_rechecks_device_birth_and_original_deadline(self):
+        generation = {"pid": 43, "startSeconds": 100, "startMicroseconds": 1}
+        process = {"generation": generation, "parentPID": 1, "device": 123}
+        for changed in (dict(process, device=124), dict(process, generation=dict(generation, startSeconds=101))):
+            with patch("portable_process_identity.inspect", side_effect=[process, changed]):
+                with self.assertRaises(OSError):
+                    identity.caller_ancestor(43, 123, start=43)
+        with self.assertRaises(OSError) as failure:
+            identity.caller_ancestor(43, lookup=lambda pid: process, start=43, deadline=time.monotonic_ns()-1)
+        self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
+
+    def test_caller_ancestor_depth_and_late_lookup_do_not_extend_the_budget(self):
+        def process(pid):
+            return {"generation": {"pid": pid, "startSeconds": 100, "startMicroseconds": 1},
+                    "parentPID": pid+1, "device": 123}
+        self.assertEqual(identity.caller_ancestor(25, lookup=process, start=10), process(25)["generation"])
+        with self.assertRaises(OSError):
+            identity.caller_ancestor(26, lookup=process, start=10)
+        deadline = time.monotonic_ns()+5_000_000
+        def late_lookup(pid):
+            time.sleep(0.01)
+            return process(pid)
+        with self.assertRaises(OSError) as failure:
+            identity.caller_ancestor(10, lookup=late_lookup, start=10, deadline=deadline)
+        self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
+
+    @unittest.skipUnless(sys.platform == "darwin", "Current macOS process evidence")
+    def test_real_helper_caller_ancestry_is_distinct_from_unrelated_pty_actor(self):
+        self.assertEqual(identity.caller_ancestor(os.getpid()), identity.inspect(os.getpid())["generation"])
+        self.assertEqual(identity.caller_ancestor(os.getppid()), identity.inspect(os.getppid())["generation"])
+
     def test_linux_stat_keeps_tick_identity_and_discards_arbitrary_comm_bytes(self):
         fields = [b"S", b"1", b"43", b"43", b"34823", b"43"] + [b"0"] * 13 + [b"12345"]
         raw = b"43 (name ) \xff (name) " + b" ".join(fields)

@@ -1,7 +1,17 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.44
+Version: 1.45
+
+## Portable helper caller proof (integration pending)
+
+`portable_process_identity.caller_ancestor(caller, device=None)` starts at the helper's process,
+visits at most 16 parent identities and rechecks the requested caller's generation/device before
+returning. Unrelated callers, cycles, missing identity, changed birth/device and deadline expiry
+refuse. The proof is separate from foreground identity and continuing terminal ownership.
+Its native-style 100 ms ancestry phase precedes the separate original 100 ms device transaction;
+neither promises an aggregate 100 ms command runtime. Dispatch must authenticate before mutation
+and before forking a writer, preserving helper-PID ancestry semantics. Routing remains pending.
 
 ## Portable observation publication (integration pending)
 
