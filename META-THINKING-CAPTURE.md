@@ -3239,3 +3239,7 @@ or process framework was introduced.
 exact model variant and the earlier intermittent causes remain unknown. This slice completed, while
 the full goal remains active with managed-reset investigation, color freshness, H1 and native
 acceptance open.
+
+**Checkpoint status [O]:** Two final goal-service reads returned Blocked, without a reason.
+This agent made no goal-status mutation. The durable mode note now records that external state;
+source/fixture verification remains complete for this slice, while the full objective is unfinished.

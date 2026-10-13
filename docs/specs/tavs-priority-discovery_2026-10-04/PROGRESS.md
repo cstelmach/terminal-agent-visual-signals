@@ -3,10 +3,10 @@
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/PLAN.md
 **Status:** In Progress
-**Mode:** Manual (active Codex goal supplies continuation)
+**Mode:** Manual (goal service currently reports Blocked; reason unavailable)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 17:28 CEST
-**Version:** 4.15
+**Last Updated:** 2026-10-13 17:45 CEST
+**Version:** 4.16
 
 ## Session Metadata
 
@@ -897,3 +897,4 @@ Current-helper `7WAkIc`: 178/178 Bats. Source [reports](preview-timing-source-ch
 Two finished entries moved unchanged with reconstruction verified. SPEC/PLAN fixed; goal active.
 Next: investigate separate managed-reset failure and focus color freshness/remaining review leads.
 Old-failure attribution, H1 input and native acceptance stay open; 2/7/8 Blocked and 9 active.
+Goal service returned Blocked twice; this agent did not request that transition. No reason supplied.
