@@ -13,17 +13,17 @@ def check_deadline(deadline):
         raise OSError(errno.ETIMEDOUT, "Policy deadline exceeded")
 
 
-def open_regular(path, deadline, limit):
+def open_regular(path, deadline, limit, dir_fd=None):
     check_deadline(deadline)
     try:
-        before = os.lstat(path)
+        before = os.lstat(path, dir_fd=dir_fd)
     except FileNotFoundError:
         check_deadline(deadline)
         return None
     if not stat.S_ISREG(before.st_mode) or not 0 <= before.st_size <= limit:
         raise OSError(errno.EINVAL, "Unavailable policy file")
     check_deadline(deadline)
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dir_fd)
     try:
         current = os.fstat(fd)
         check_deadline(deadline)
@@ -52,8 +52,8 @@ def read_fd(fd, deadline, limit):
             raise OSError(errno.EFBIG, "Oversized policy file")
 
 
-def read_regular(path, deadline, limit=1_048_576):
-    fd = open_regular(path, deadline, limit)
+def read_regular(path, deadline, limit=1_048_576, dir_fd=None):
+    fd = open_regular(path, deadline, limit, dir_fd=dir_fd)
     if fd is None:
         return None
     try:

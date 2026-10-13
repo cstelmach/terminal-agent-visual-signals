@@ -173,8 +173,8 @@ def decode(data, kind, now):
     return value
 
 
-def read_record(path, kind, now, deadline):
-    data = read_regular(path, deadline, 8192)
+def read_record(path, kind, now, deadline, dir_fd=None):
+    data = read_regular(path, deadline, 8192, dir_fd=dir_fd)
     result = decode(data, kind, now) if data is not None else None
     check_deadline(deadline)
     return result

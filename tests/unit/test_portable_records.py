@@ -132,6 +132,22 @@ class PortableRecordTests(unittest.TestCase):
                 self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
                 decoder.assert_called_once()
 
+    def test_held_parent_descriptor_does_not_follow_a_replacement_directory(self):
+        root = Path(tempfile.mkdtemp(prefix="held-parent-", dir=os.environ["TAVS_TEST_ROOT"]))
+        directory = root / "records"
+        directory.mkdir()
+        (directory / "target.json").write_text(json.dumps({"schema": 1, "target": TARGET}))
+        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            directory.rename(root / "old")
+            directory.mkdir()
+            (directory / "target.json").write_text('{}')
+            record = read_record("target.json", "target", 1000,
+                                 time.monotonic_ns() + 100_000_000, dir_fd=fd)
+            self.assertEqual(record["target"], TARGET)
+        finally:
+            os.close(fd)
+
 
 if __name__ == "__main__":
     unittest.main()

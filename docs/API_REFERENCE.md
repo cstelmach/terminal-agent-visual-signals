@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.33
+Version: 1.34
 
 ## Portable record decoder (integration pending)
 
@@ -16,6 +16,8 @@ outside this internal reader's accepted subset. Linux scope-bearing generations 
 decoding. Missing data is distinct from invalid or unreadable data. `target_path` reproduces
 native base64/owner/surface placement; decoding does not establish liveness or attention authority.
 Live ownership, placement checks and writer integration are still required before backend use.
+An optional held parent `dir_fd` anchors record and sibling reads during directory enumeration;
+an absolute path is used for canonical placement, not to reopen a previously verified parent.
 
 ## Portable policy reader (integration pending)
 

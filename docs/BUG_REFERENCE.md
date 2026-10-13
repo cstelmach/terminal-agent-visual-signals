@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.44
+Version: 1.45
+
+## Portable ownership draft reopens directory paths
+
+The first ownership scan held directory descriptors but reopened record files through absolute
+paths. A directory replaced only during a read could provide an inactive copy and then return
+to its original inode before the final check, hiding an active preview. No production backend
+used this draft. Record reads now accept the held parent descriptor, including sibling binding
+reads, and final ancestor checks still reject lasting changes. An owned directory replacement
+regression verifies that the original active preview refuses output. A separate reader test
+verifies the held directory after replacement. Keep enumeration and reads in the same namespace.
 
 ## Portable writer draft enters phases after expiry
 
