@@ -1,7 +1,23 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.36
+Version: 1.37
+
+## Portable intent publication (integration pending)
+
+`portable_intent.Intents` requires the existing per-TTY lock and original deadline. Publication
+checks current producer/owner and target aliases, normalizes background intent and rejects stale
+deliveries. Synthetic updates match the frozen latest observation and create no new observation.
+Ordinary intake can repair invalid regular intent data. It retains latest intent before binding
+validation, so a corrupt bound copy reports failure without discarding the requested intent.
+Strict output-context validation refuses unreadable observations and rechecks the live producer.
+
+Binding requires full latest-record equality. A matching bound copy can restore latest background
+after producer exit; unbound native intent additionally requires exact existing adoption.
+`Store.resolve`/`_current` have an internal `targets_only` publication mode that excludes bound
+and effect contents while preserving directory/link checks. It grants no rendering authority:
+`ordinary_ownership` always reads all control records. Cancellation, forced reset, transaction
+assembly, helper verbs, hook routing and Linux scope integration remain pending.
 
 ## Portable record replacement (integration pending)
 

@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.46
+Version: 1.47
+
+## Portable intent draft rejects before retaining latest
+
+The first publisher validated bound state before writing the requested intent. Its test also
+incorrectly expected the previous intent after bound corruption. Native publication retains
+valid latest intent first, then reports binding failure. Publication now uses target-only alias
+proof and writes latest before strict bound validation. Rendering still checks every control
+record. The corrected regression proves retained latest, unchanged corrupt bound state and
+refused rendering. Another regression corrected producer validation to occur after observation
+reads, preventing a late producer exit from authorizing context. These drafts were not routed.
 
 ## Portable record draft skips cleanup after close error
 
