@@ -22,6 +22,8 @@ Usage:
 Copies the CLI, core modules, Claude/Codex adapters, hook definitions,
 Codex installer and shell integration to existing plugin installations.
 Only needed after modifying source code. user.conf changes apply immediately.
+Sync does not build/install the native helper. Missing render/metadata
+capabilities are reported separately from successful source copying.
 
 Sync targets:
   ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/
@@ -68,7 +70,15 @@ EOF
     fi
 
     echo ""
-    cli_success "Plugin cache synced. Submit a prompt to test."
+    # shellcheck source=../core/organizer-state.sh
+    source "$TAVS_ROOT/src/core/organizer-state.sh" || return 1
+    if _tavs_managed_helper && _tavs_organizer_helper; then
+        cli_success "Plugin cache synced. Submit a prompt to test."
+    else
+        cli_warn "Sources copied; native render/metadata helper unavailable or unsupported."
+        cli_info "Sync copies sources only; it does not build/install a compatible helper."
+        cli_success "Plugin cache synced."
+    fi
 }
 
 # Internal: sync source files to a target directory

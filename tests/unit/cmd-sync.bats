@@ -130,6 +130,44 @@ COPY
     [[ "$output" != *'Plugin cache synced'* ]]
 }
 
+@test "sync reports a missing helper without claiming hooks are ready" {
+    export TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper"
+    sync_fixture
+    [[ "$output" == *'native render/metadata helper unavailable or unsupported'* ]]
+    [[ "$output" != *'Submit a prompt to test'* ]]
+    cmp "$REPO_ROOT/src/core/organizer-state.sh" "$CACHE/src/core/organizer-state.sh"
+    [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
+}
+
+@test "sync reports unsupported helper output without echoing its contents" {
+    export TAVS_TEST_HELPER_BIN="$TEST_DIR/old-helper"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+printf 'PROBE_OUTPUT_SENTINEL\n'
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
+    sync_fixture
+    [[ "$output" == *'native render/metadata helper unavailable or unsupported'* ]]
+    [[ "$output" != *PROBE_OUTPUT_SENTINEL* && "$output" != *'Submit a prompt to test'* ]]
+}
+
+@test "sync also checks organizer metadata capability and excludes fixture launch keys" {
+    export TAVS_TEST_HELPER_BIN="$TEST_DIR/render-only-helper" PROBE_LOG="$TEST_DIR/probes"
+    export TAVS_SESSIONS_TEST_ROOT="$TEST_DIR" TAVS_SESSIONS_TEST_FIXTURE="$TEST_DIR/catalogue.json"
+    export TAVS_SESSIONS_TEST_TARGETS='[]'
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+[[ -z "${TAVS_SESSIONS_TEST_ROOT+x}${TAVS_SESSIONS_TEST_FIXTURE+x}${TAVS_SESSIONS_TEST_TARGETS+x}" ]] || exit 43
+printf '%s\n' "$2" >> "$PROBE_LOG"
+[[ "$1:$2" == --validate-config:--managed-output-capabilities ]] || exit 1
+printf 'tavs-managed-output-schema=1\n'
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
+    sync_fixture
+    [[ "$output" == *'native render/metadata helper unavailable or unsupported'* ]]
+    [[ "$(cat "$PROBE_LOG")" == *--organizer-capabilities* ]]
+}
+
 @test "copied readers refuse an explicitly missing helper after saving suspension" {
     sync_fixture
     export TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper"
