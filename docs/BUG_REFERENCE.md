@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.43
+Version: 1.44
+
+## Portable writer draft enters phases after expiry
+
+The unwired Python primitive initially checked after device opening and preparation but not
+immediately before them. Delayed inspection or lock acquisition could therefore start late
+opening or metadata preparation. Owned tests with delayed termination reproduced both actions.
+The same absolute deadline now gates both entries. Child standard channels are closed so a
+wedged worker cannot retain the hook's original pipes. Retirement is checked separately in tests.
+
+Unannotated failures after output could also falsely report zero written bytes. They now report
+unknown, while caught partial writes retain their count. A dedicated `bytes_written` attribute
+avoids assigning None to Python's integer-only OSError `characters_written` property. Full
+policy/record/lifecycle integration and Linux runtime validation remain required before release.
 
 ## Standalone hooks discard legacy metadata without the native companion
 

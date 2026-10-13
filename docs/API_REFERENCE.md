@@ -1,7 +1,26 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.29
+Version: 1.30
+
+## Portable primitives (integration pending)
+
+`portable_process_identity.inspect` reads macOS libproc with the existing generation fields.
+Linux uses boot-relative tick parts with a +1 seconds offset, plus `linuxScope` containing boot
+ID, PID/time namespace device/inode pairs and time offsets. It requires one self NSpid, matching
+candidate namespaces, complete supported tick intervals and two matching reads from a held proc
+directory. Unknown data is unavailable. Linux scope is not native schema-1 generation JSON;
+integration must version its records explicitly. Actual Linux kernel acceptance remains pending.
+
+`portable_device_writer.write_managed` accepts trusted typed-caller callbacks, not an OSC stream.
+One 100 ms deadline covers fork, pre-open work, device open, lock, preparation and output. The
+child closes inherited standard channels and checks expiry before new phases. It opens the TTY
+before output-lock acquisition. The lock is a stable regular owned 0600 file. A timeout requests
+termination without blocking the caller on retirement; tests drain owned children separately.
+Failures expose `bytes_written` as a known partial count or `None` when output is unknown.
+Callbacks run in the child, so parent-memory mutation does not publish outcomes. Interpreter
+startup and prior-child reap bookkeeping precede the device budget; OS scheduling is not hard
+real-time. These modules advertise no capability and are not yet connected to production hooks.
 
 ## Public recovery commands
 
