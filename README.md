@@ -1084,7 +1084,13 @@ All hooks run asynchronously with timeouts (5s processing, 10s idle/complete).
 - A [compatible terminal](#compatible-terminals) with OSC 11/111 support
 - Bash 3.2+ (macOS default works)
 - macOS or Linux
+- Python 3 for Claude/Codex hook metadata when the native TAVS companion is absent or older
 - Optional: [fzf](https://github.com/junegunn/fzf) for interactive pickers
+
+The portable metadata reader preserves permission mode, session/thread ID, directory and
+transcript path without retaining conversation bodies. It does not provide organizer coverage.
+Standalone terminal output without the native helper is still being repaired; metadata support
+alone does not establish working visual signals.
 
 ---
 

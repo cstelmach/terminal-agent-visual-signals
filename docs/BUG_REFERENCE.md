@@ -1,7 +1,21 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.41
+Version: 1.42
+
+## Standalone hooks discard legacy metadata without the native companion
+
+Organizer intake initially returned empty/default metadata when its native capability was absent.
+That removed legitimate permission-mode, session/thread, directory and transcript behavior from
+standalone or older installations. Intake now selects a bounded Python 3 metadata reader before
+consuming the payload. Only four allowlisted fields reach core; no native context or automatic
+cue authority is claimed. Native failure is explicit and is never reparsed by the portable path.
+
+Absent/older-companion regressions failed before this change. Tests cover decoded paths, nested
+body privacy, malformed/oversized/control data, an input pipe withholding EOF, missing runtime,
+inherited-state clearing, failed native intake and copied installations. Sync ships the reader
+and propagates copy failures. Ordinary terminal rendering without the native helper is a separate
+remaining compatibility defect; this metadata correction does not close it.
 
 ## Replacement preview races its own cleanup
 
@@ -63,7 +77,8 @@ Absent or older helpers drop current managed rendering and metadata, so source-c
 not establish hook readiness. Sync now checks both exact capabilities and emits a separate warning
 without exposing probe output or isolated launch keys. Successful copying still returns zero;
 copy failures retain nonzero status. Tests cover missing, unsupported and render-only helpers.
-The broader standalone macOS/Linux compatibility regression remains open pending transport choice.
+The broader standalone macOS/Linux rendering regression remains open. The approved implementation
+uses a Python 3 standard-library helper; this first slice restores legacy metadata only.
 
 ## Scheduler delivery failures disappear without a visible retry path
 

@@ -10,12 +10,15 @@ setup() {
     cp "$REPO_ROOT/src/agents/claude/trigger.sh" "$FIXTURE/src/agents/claude/trigger.sh"
     cp "$REPO_ROOT/src/agents/codex/trigger.sh" "$FIXTURE/src/agents/codex/trigger.sh"
     cp "$REPO_ROOT/src/core/organizer-state.sh" "$FIXTURE/src/core/organizer-state.sh"
+    if [[ -f "$REPO_ROOT/src/core/portable_metadata.py" ]]; then
+        cp "$REPO_ROOT/src/core/portable_metadata.py" "$FIXTURE/src/core/portable_metadata.py"
+    fi
     cp "$REPO_ROOT/src/install/install-codex.sh" "$FIXTURE/src/install/install-codex.sh"
     cat > "$FIXTURE/src/core/trigger.sh" <<'SH'
 #!/bin/bash
 python3 -c 'import json,os,sys
 keys=["TAVS_AGENT","TAVS_PERMISSION_MODE","TAVS_TRANSCRIPT_PATH","TAVS_SESSION_ID",
-      "TAVS_CWD","TAVS_ORGANIZER_CONTEXT","_TAVS_HOOK_PAYLOAD"]
+      "TAVS_CWD","TAVS_ORGANIZER_CONTEXT","TAVS_ORGANIZER_INTAKE","_TAVS_HOOK_PAYLOAD"]
 with open(os.environ["CAPTURE"],"w") as f:
     json.dump({"args":sys.argv[1:],"env":{k:os.environ.get(k) for k in keys},
                "stdin":sys.stdin.read()},f)' "$@"
@@ -294,8 +297,8 @@ assert e["TAVS_SESSION_ID"].startswith("$(touch ") and e["TAVS_CWD"].startswith(
 PY
 }
 
-@test "Absent or legacy helper reports unavailable without losing basic signals" {
-    printf '%s' '{"prompt":"PROMPT_BODY_SENTINEL","permission_mode":"plan"}' \
+@test "Absent or legacy helper preserves allowlisted metadata with unavailable organizer coverage" {
+    printf '%s' '{"prompt":"PROMPT_BODY_SENTINEL","permission_mode":"plan","session_id":"standalone-session","cwd":"/fixture/standalone","transcript_path":"/fixture/transcript.jsonl","tool_input":{"permission_mode":"bypassPermissions","session_id":"BODY_SENTINEL"}}' \
         > "$BATS_TEST_TMPDIR/payload.json"
     local selected="$TAVS_TEST_HELPER_BIN"
     export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing-helper"
@@ -303,6 +306,16 @@ PY
     [ "$status" -eq 0 ]
     [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
     _assert_private_dispatch permission
+    python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_PERMISSION_MODE"] == "plan"
+assert e["TAVS_SESSION_ID"] == "standalone-session"
+assert e["TAVS_CWD"] == "/fixture/standalone"
+assert e["TAVS_TRANSCRIPT_PATH"] == "/fixture/transcript.jsonl"
+assert not e["TAVS_ORGANIZER_CONTEXT"]
+assert e["TAVS_ORGANIZER_INTAKE"] is None
+PY
 
     cat > "$BATS_TEST_TMPDIR/old-helper" <<'SH'
 #!/bin/bash
@@ -317,7 +330,112 @@ SH
     [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
     _assert_private_dispatch permission
     [ "$(cat "$CAPTURE.legacy")" = "known-validation-only" ]
+    python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_PERMISSION_MODE"] == "plan"
+assert e["TAVS_SESSION_ID"] == "standalone-session"
+assert e["TAVS_CWD"] == "/fixture/standalone"
+assert e["TAVS_TRANSCRIPT_PATH"] == "/fixture/transcript.jsonl"
+assert not e["TAVS_ORGANIZER_CONTEXT"]
+assert e["TAVS_ORGANIZER_INTAKE"] is None
+PY
     export TAVS_TEST_HELPER_BIN="$selected"
+}
+
+@test "Portable Codex metadata preserves decoded argv fields without claiming native correlation" {
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing-helper"
+    run bash "$CODEX" complete '{"type":"agent-turn-complete","thread-id":"thread\"\\escaped","cwd":"/fixture/space and\nnewline","last-assistant-message":"BODY_SENTINEL","tool_input":{"thread-id":"BODY_SENTINEL"}}'
+    [ "$status" -eq 0 ]
+    _assert_private_dispatch complete
+    python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_SESSION_ID"] == 'thread"\\escaped'
+assert e["TAVS_CWD"] == "/fixture/space and\nnewline"
+assert not e["TAVS_TRANSCRIPT_PATH"] and not e["TAVS_ORGANIZER_CONTEXT"]
+assert e["TAVS_ORGANIZER_INTAKE"] is None
+PY
+}
+
+@test "Failed native intake is not reparsed by the portable metadata helper" {
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/failing-helper"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+if [[ "$1:$2" == --validate-config:--organizer-capabilities ]]; then
+    printf 'tavs-organizer-schema=1\n'; exit 0
+fi
+[[ "$1" == --organizer-intake ]] || exit 43
+cat >/dev/null
+exit 1
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
+    export TAVS_PERMISSION_MODE=plan TAVS_SESSION_ID=stale TAVS_CWD=/stale \
+        TAVS_TRANSCRIPT_PATH=/stale TAVS_ORGANIZER_CONTEXT=stale TAVS_ORGANIZER_INTAKE=1
+    printf '%s' '{"session_id":"must-not-reparse","permission_mode":"plan","cwd":"/fixture","prompt":"BODY_SENTINEL"}' \
+        > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude processing
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'organizer metadata unavailable'* ]]
+    _assert_private_dispatch processing
+    python3 - "$CAPTURE" <<'PY'
+import json,sys
+e=json.load(open(sys.argv[1]))["env"]
+assert e["TAVS_PERMISSION_MODE"] == "default"
+assert not e["TAVS_SESSION_ID"] and not e["TAVS_CWD"] and not e["TAVS_TRANSCRIPT_PATH"]
+assert e["TAVS_ORGANIZER_CONTEXT"] is None and e["TAVS_ORGANIZER_INTAKE"] is None
+PY
+}
+
+@test "Missing portable runtime clears inherited metadata and organizer authority" {
+    mkdir -p "$BATS_TEST_TMPDIR/no-python"
+    run /usr/bin/env PATH="$BATS_TEST_TMPDIR/no-python" \
+        TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing-helper" /bin/bash -c '
+source "$1/src/core/organizer-state.sh"
+export TAVS_PERMISSION_MODE=plan TAVS_SESSION_ID=stale TAVS_CWD=/stale \
+       TAVS_TRANSCRIPT_PATH=/stale TAVS_ORGANIZER_CONTEXT=stale TAVS_ORGANIZER_INTAKE=1
+_tavs_organizer_intake claude "$$" || result=$?
+[[ "$result" == 1 && "$TAVS_PERMISSION_MODE" == default ]]
+[[ -z "$TAVS_SESSION_ID$TAVS_CWD$TAVS_TRANSCRIPT_PATH" ]]
+[[ -z "${TAVS_ORGANIZER_CONTEXT+x}${TAVS_ORGANIZER_INTAKE+x}" ]]
+' _ "$REPO_ROOT" <<< '{"session_id":"BODY_SENTINEL"}'
+    [ "$status" -eq 0 ]
+    [ "$output" = 'tavs: organizer metadata unavailable' ]
+}
+
+@test "Portable intake rejects invalid oversized and controlled metadata without body diagnostics" {
+    run python3 - "$REPO_ROOT/src/core/portable_metadata.py" <<'PY'
+import json,subprocess,sys
+command=[sys.executable,sys.argv[1],"--legacy-intake","claude"]
+bad=[b"BODY_SENTINEL",b'{"permission_mode":42}',
+     b'{"session_id":"a\\u0007"}',b'{"cwd":"a\\u0000"}',
+     b'{"session_id":"a\\ud800"}',b'{"unused":NaN}',
+     json.dumps({"prompt":"BODY_SENTINEL"+"x"*1048577}).encode()]
+for data in bad:
+    result=subprocess.run(command,input=data,capture_output=True,timeout=3)
+    assert result.returncode == 1 and not result.stdout
+    assert b"BODY_SENTINEL" not in result.stderr
+    assert b"Traceback" not in result.stderr
+PY
+    [ "$status" -eq 0 ]
+}
+
+@test "Portable intake returns within its input deadline when a pipe withholds EOF" {
+    run python3 - "$REPO_ROOT/src/core/portable_metadata.py" <<'PY'
+import subprocess,sys,time
+start=time.monotonic()
+p=subprocess.Popen([sys.executable,sys.argv[1],"--legacy-intake","claude"],
+                   stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+try:
+    p.stdin.write(b'{"prompt":"BODY_SENTINEL');p.stdin.flush()
+    assert p.wait(timeout=2.7) == 1
+    assert time.monotonic()-start < 2.7
+    assert not p.stdout.read() and b"BODY_SENTINEL" not in p.stderr.read()
+finally:
+    p.stdin.close();p.stdout.close();p.stderr.close()
+    if p.poll() is None:p.kill();p.wait()
+PY
+    [ "$status" -eq 0 ]
 }
 
 @test "Oversized input is rejected without raw diagnostics or core propagation" {

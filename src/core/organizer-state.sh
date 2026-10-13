@@ -43,21 +43,29 @@ _tavs_organizer_call() {
 
 _tavs_organizer_intake() {
     local provider="$1" caller="$2" key value valid=0
+    local native=0 legacy=0
     local mode="default" transcript="" session="" cwd="" context=""
     unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
     unset _TAVS_HOOK_PAYLOAD TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_CONTEXT
-    if _tavs_organizer_helper; then
-        while IFS= read -r -d '' key && IFS= read -r -d '' value; do
-            case "$key" in
-                TAVS_PERMISSION_MODE) mode="$value" ;;
-                TAVS_TRANSCRIPT_PATH) transcript="$value" ;;
-                TAVS_SESSION_ID) session="$value" ;;
-                TAVS_CWD) cwd="$value" ;;
-                TAVS_ORGANIZER_CONTEXT) context="$value" ;;
-                TAVS_ORGANIZER_INTAKE) [[ "$value" == 1 ]] && valid=1 ;;
-            esac
-        done < <(_tavs_organizer_call --organizer-intake "$provider" "$caller")
-    fi
+    if _tavs_organizer_helper; then native=1; fi
+    while IFS= read -r -d '' key && IFS= read -r -d '' value; do
+        case "$key" in
+            TAVS_PERMISSION_MODE) mode="$value" ;;
+            TAVS_TRANSCRIPT_PATH) transcript="$value" ;;
+            TAVS_SESSION_ID) session="$value" ;;
+            TAVS_CWD) cwd="$value" ;;
+            TAVS_ORGANIZER_CONTEXT) context="$value" ;;
+            TAVS_ORGANIZER_INTAKE) [[ "$value" == 1 ]] && valid=1 ;;
+            TAVS_LEGACY_METADATA_INTAKE) [[ "$value" == 1 ]] && legacy=1 ;;
+        esac
+    done < <(
+        if [[ "$native" == 1 ]]; then
+            _tavs_organizer_call --organizer-intake "$provider" "$caller"
+        else
+            command -v python3 >/dev/null && \
+                python3 "${BASH_SOURCE[0]%/*}/portable_metadata.py" --legacy-intake "$provider"
+        fi
+    )
     export TAVS_PERMISSION_MODE="$mode" TAVS_TRANSCRIPT_PATH="$transcript"
     export TAVS_SESSION_ID="$session" TAVS_CWD="$cwd"
     if [[ "$valid" == 1 && -n "$context" ]]; then
@@ -65,7 +73,9 @@ _tavs_organizer_intake() {
         export _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
         return 0
     fi
-    printf 'tavs: organizer metadata unavailable\n' >&2
+    if [[ "$legacy" == 1 ]]; then printf 'tavs: organizer coverage unavailable\n' >&2
+    else printf 'tavs: organizer metadata unavailable\n' >&2
+    fi
     return 1
 }
 
