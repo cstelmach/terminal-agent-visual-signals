@@ -1,7 +1,25 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.42
+Version: 1.43
+
+## Portable organizer context (integration pending)
+
+`portable_metadata.decode_intake` parses bounded top-level metadata once, returning legacy
+display fields plus recognized event/response fields. Legacy selection remains available through
+`decode_metadata`. No prompt/tool/output body or payload identity flag enters correlation.
+
+`portable_context.capture` checks current foreground-family generations/device/group and actual
+macOS executable path. Claude/Codex executable evidence is distinct from unverified foreground
+fallback; interpreter basenames cannot verify an agent. Context has a fresh delivery ID/time,
+provider/verification and optional process/device/event/response, encoded as standard Base64 JSON.
+Context decoding rejects malformed types, unknown/duplicate fields, invalid schema/generation and
+future time.
+Optional event/response strings preserve native intake's length/NUL contract; observation ID
+validation remains separate. Context data alone grants no live rendering or attention authority.
+
+Owned macOS PTYs verify native foreground agreement and cross-language context/observation
+compatibility. Linux scope/executable encoding, helper verbs and hook routing remain pending.
 
 ## Portable reconcile transaction (integration pending)
 

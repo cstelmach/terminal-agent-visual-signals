@@ -30,6 +30,8 @@ if sys.platform == "darwin":
             ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_int32
         ]
         _libproc.proc_pidinfo.restype = ctypes.c_int32
+        _libproc.proc_pidpath.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_uint32]
+        _libproc.proc_pidpath.restype = ctypes.c_int32
     except (OSError, AttributeError):
         _libproc = None
 
@@ -55,6 +57,29 @@ def inspect(pid):
         "parentPID": value.pbi_ppid, "group": value.pbi_pgid,
         "device": value.e_tdev, "foregroundGroup": value.e_tpgid,
     }
+
+
+def executable_path(pid):
+    if sys.platform != "darwin" or _libproc is None or type(pid) is not int or not 0 < pid <= 2**31-1:
+        return None
+    path = ctypes.create_string_buffer(4096)
+    if _libproc.proc_pidpath(pid, path, len(path)) <= 0:
+        return None
+    try:
+        return path.value.decode("utf-8")
+    except UnicodeError:
+        return None
+
+
+def foreground_family_contains(producer, foreground, device, lookup=inspect):
+    source, current = lookup(producer["pid"]), lookup(foreground["pid"])
+    return (device != 2**32-1 and source is not None and current is not None
+            and source["generation"] == producer and current["generation"] == foreground
+            and source["device"] == device and current["device"] == device
+            and 0 < current["foregroundGroup"] <= 2**31-1
+            and current["group"] == current["foregroundGroup"]
+            and source["group"] == current["foregroundGroup"]
+            and source["foregroundGroup"] == current["foregroundGroup"])
 
 
 def _parse_linux_stat(data, pid, hz, boot_ns, scope):

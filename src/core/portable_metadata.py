@@ -38,8 +38,13 @@ def reject_constant(_):
     raise ValueError("Invalid metadata")
 
 
-def decode_metadata(data, provider):
-    if provider not in {"claude", "codex", "gemini", "opencode", "unknown"}:
+PROVIDERS = {"claude", "codex", "gemini", "opencode", "unknown"}
+EVENTS = {"UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest",
+          "Stop", "SessionStart", "SessionEnd", "PreCompact", "SubagentStart", "SubagentStop"}
+
+
+def _metadata(data, provider):
+    if provider not in PROVIDERS or len(data) > 1_048_576:
         raise ValueError("Invalid provider")
     values = json.loads(data, parse_constant=reject_constant)
     if not isinstance(values, dict):
@@ -60,12 +65,35 @@ def decode_metadata(data, provider):
     mode = "default" if provider == "codex" else string("permission_mode", 128)
     if mode not in {"default", "plan", "acceptEdits", "dontAsk", "bypassPermissions"}:
         mode = "default"
-    return {
+    fields = {
         "TAVS_PERMISSION_MODE": mode,
         "TAVS_TRANSCRIPT_PATH": "" if provider == "codex" else string("transcript_path"),
         "TAVS_SESSION_ID": string("thread-id" if provider == "codex" else "session_id", 512),
         "TAVS_CWD": string("cwd"),
     }
+    return fields, string
+
+
+def decode_metadata(data, provider):
+    return _metadata(data, provider)[0]
+
+
+def decode_intake(data, provider):
+    fields, string = _metadata(data, provider)
+    event, response = None, None
+    if provider == "codex":
+        if string("type", 128) == "agent-turn-complete":
+            event = "agent-turn-complete"
+        response = string("turn-id", 256) or None
+    else:
+        hook = string("hook_event_name", 128)
+        if hook in EVENTS:
+            event = hook
+        if hook == "Notification":
+            kind = string("notification_type", 128)
+            if kind in {"permission_prompt", "idle_prompt"}:
+                event = kind
+    return fields, event, response
 
 
 def main():

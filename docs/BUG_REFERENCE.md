@@ -1,7 +1,16 @@
 # Bug Reference
 
-Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.48
+Last Updated: 2026-10-14 (Europe/Vienna)
+Version: 1.49
+
+## Portable context draft rejects native opaque response metadata
+
+The first context decoder applied observation control-character policy to optional response IDs.
+Native intake accepts bounded, non-NUL response strings and permits ordinary rendering even when
+later observation ID validation refuses them. The source-built native helper reproduced a token
+with newline/format characters that the draft rejected. Context now preserves the native intake
+string contract; strict typed observation validation still rejects that ID. The interoperability
+regression verifies both boundaries. No advertised helper or hook routing used the draft.
 
 ## Portable forced-reset draft broadens orphan entry
 
