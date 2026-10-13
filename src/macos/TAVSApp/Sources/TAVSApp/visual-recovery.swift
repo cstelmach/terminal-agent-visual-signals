@@ -7,6 +7,7 @@ struct TerminalPreviewRequest {
     let colors: TerminalRenderer.Colors
     let revision: VisualRestrictionsRevision
     let isCurrent: () -> Bool
+    var awaitPriorClear: ((TerminalTargetBinding, UInt64) throws -> Void)?
 }
 
 struct TerminalFocusRequest {
@@ -25,7 +26,8 @@ enum ManagedVisualOperation {
     case checkSynthetic(OrdinaryBackgroundIntent, intakeAt: Double)
     case render(TerminalRender, OrdinaryBackgroundIntent, synthetic: Bool, intakeAt: Double)
     case preview(TerminalPreviewRequest)
-    case clearPreview(effectID: String, revision: VisualRestrictionsRevision)
+    case clearPreview(effectID: String, revision: VisualRestrictionsRevision,
+                      awaitPriorClear: ((TerminalTargetBinding, UInt64) throws -> Void)? = nil)
     case focus(TerminalFocusRequest)
     case clearFocus(effectID: String, revision: VisualRestrictionsRevision,
                     didCancel: (TerminalTargetBinding) -> Void = { _ in },
@@ -178,11 +180,12 @@ final class VisualRecovery {
         let clear: (String, VisualRestrictionsRevision, TerminalEffectKind)?
         switch operation {
         case .clearFocus(let id, let revision, _, _): clear = (id, revision, .focus)
-        case .clearPreview(let id, let revision): clear = (id, revision, .preview)
+        case .clearPreview(let id, let revision, _): clear = (id, revision, .preview)
         default: clear = nil
         }
         if let (id, revision, kind) = clear {
             beforeOpen = { deadline in
+                if case .clearPreview(_, _, let awaitClear) = operation { try awaitClear?(target, deadline) }
                 try self.state.withLock(target.tty, deadline: deadline) {
                     try self.requireValid(target)
                     let matches = try self.effectsUnlocked(for: target, deadline: deadline).filter {
@@ -199,6 +202,9 @@ final class VisualRecovery {
                     }
                 }
             }
+        }
+        if case .preview(let request) = operation, let awaitClear = request.awaitPriorClear {
+            beforeOpen = { deadline in try awaitClear(target, deadline) }
         }
         let emergency: Bool
         if case .emergencyReset = operation { emergency = true } else { emergency = false }
@@ -257,7 +263,7 @@ final class VisualRecovery {
                 try self.state.saveEffectUnlocked(effect, deadline: deadline)
                 return Self.backgroundBytes(color)
             }
-            if case .clearPreview(let id, let revision) = operation {
+            if case .clearPreview(let id, let revision, _) = operation {
                 guard try self.restrictions.matches(revision, deadline: deadline) else { return nil }
                 let matches = effects.filter { $0.kind == .preview && $0.effectID == id && $0.controller == self.controller }
                 guard !matches.isEmpty else { return nil }
@@ -479,8 +485,9 @@ final class VisualRecovery {
         return (catalogueAvailable, items)
     }
 
-    func apply(_ operation: ManagedVisualOperation, to targets: [TerminalTargetBinding]) -> [VisualRecoveryItem] {
-        fanout(targets, operation: operation)
+    func apply(_ operation: ManagedVisualOperation, to targets: [TerminalTargetBinding],
+               didComplete: ((TerminalTargetBinding) -> Void)? = nil) -> [VisualRecoveryItem] {
+        fanout(targets, operation: operation, didComplete: didComplete)
     }
 
     func applyFocus(to targets: [TerminalTargetBinding],
@@ -535,12 +542,14 @@ final class VisualRecovery {
         return target
     }
 
-    private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation) -> [VisualRecoveryItem] {
-        fanout(targets) { _ in operation }
+    private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation,
+                        didComplete: ((TerminalTargetBinding) -> Void)? = nil) -> [VisualRecoveryItem] {
+        fanout(targets, operation: { _ in operation }, didComplete: didComplete)
     }
 
     private func fanout(_ targets: [TerminalTargetBinding],
-                        operation: (TerminalTargetBinding) throws -> ManagedVisualOperation) -> [VisualRecoveryItem] {
+                        operation: (TerminalTargetBinding) throws -> ManagedVisualOperation,
+                        didComplete: ((TerminalTargetBinding) -> Void)? = nil) -> [VisualRecoveryItem] {
         let groups = Dictionary(grouping: Set(targets), by: \.physicalTarget)
         let physical = Array(groups.keys)
         let live = Dictionary(grouping: targets.filter { state.validateTarget($0) == .valid }, by: \.tty)
@@ -575,6 +584,7 @@ final class VisualRecovery {
             lock.lock()
             items.append(VisualRecoveryItem(target: target, tty: target.tty, status: status, reason: reason))
             lock.unlock()
+            didComplete?(target.physicalTarget)
         }
         return items
     }

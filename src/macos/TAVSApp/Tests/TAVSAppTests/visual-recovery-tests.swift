@@ -1487,6 +1487,36 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertThrowsError(try recovery(allowed: []).target(tty: plain.tty, owner: plain.ttyOwner))
     }
 
+    func testPhysicalCompletionReportsAliasesAndFailuresBeforeAStalledPeer() throws {
+        let slow = try terminal(10), healthy = try terminal(11), unknown = try terminal(12)
+        let alias = nativeAlias(healthy), entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        identities[12] = nil
+        let runner = MockProcessRunner(), native = SystemProcessRunner(), lock = NSLock()
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+            if path == slow.tty { entered.signal(); _ = release.wait(timeout: .now() + 2) }
+            return try native.writeManagedToDevice(path: path, lockURL: outputLock,
+                beforeOpen: beforeOpen, prepare: prepare)
+        }
+        let service = recovery(runner: runner), others = expectation(description: "Independent physical completions")
+        others.expectedFulfillmentCount = 2
+        let done = expectation(description: "Whole batch returned")
+        var completed: [TerminalTargetBinding] = []
+        DispatchQueue.global().async {
+            let items = service.apply(.register, to: [slow, healthy, alias, unknown], didComplete: { target in
+                lock.lock(); completed.append(target); lock.unlock()
+                if target != slow.physicalTarget { others.fulfill() }
+            })
+            XCTAssertEqual(items.count, 3); done.fulfill()
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        wait(for: [others], timeout: 1)
+        lock.lock(); let early = Set(completed); lock.unlock()
+        XCTAssertEqual(early, Set([healthy.physicalTarget, unknown.physicalTarget]))
+        release.signal(); wait(for: [done], timeout: 2)
+        lock.lock(); let count = completed.count; lock.unlock()
+        XCTAssertEqual(count, 3)
+    }
+
     func testRelaunchReconciliationTouchesPriorEffectsOnly() throws {
         let unaffected = try terminal(10), affected = try terminal(11)
         try cache(unaffected)

@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.26
+Version: 1.27
 
 ## Public recovery commands
 
@@ -288,7 +288,17 @@ inode reuse. A preview caches its validated target before comparing that revisio
 existing writer lock. Recovery's atomic replacement rejects queued starts even if the Boolean
 value is unchanged; later accepted writes are discoverable by recovery. Exact-ID clear uses the
 same revision so an old clear cannot reapply ordinary color after emergency reset.
-Replacement is a no-op; unavailable metadata and an expired original deadline remain failures.
+
+GUI replacement previews wait only for their physical target's prior cleanup.
+`apply(_:to:didComplete:)`
+reports each physical fanout result once, including failed/vanished/unaffected groups and aliases.
+Distinct cleanup batches progress concurrently; same-target clears retain predecessor ordering.
+Optional preview/clear waits run in `beforeOpen`, before admission or record-lock acquisition,
+within the original 100 ms budget. Direct requests omit these callbacks. Bounded cleanup failure
+reports immediately but retains an outstanding predecessor dependency until both finish. Emergency
+recovery joins no preview dependency; a timed-out worker can still cause a reported busy failure.
+A replaced suspension marker makes queued output a no-op; unavailable metadata and an expired
+original deadline remain failures.
 This uses the existing marker and adds no persistent token, schema or polling protocol.
 
 `TerminalRenderer.configuredColors(executable:configurationFiles:runner:)` checks explicit
