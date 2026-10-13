@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.29
+Version: 1.30
+
+## Recovery misclassifies closed registry hints and hides live hints behind vanished owners
+
+Registry-only candidates always failed, even when the device was positively absent. Malformed
+names also set a whole-directory failure. Recovery now distinguishes proven node loss from
+unavailable/live hints and reports malformed entries individually, preserving healthy fanout.
+Hints remain observational and cannot authorize device output. Reporting deduplicates an existing
+native binding failure without hiding it behind a successful cached TTY. A focused source check
+also found that a vanished cached owner hid a still-live hint. Such hints now remain failed;
+only additional device-loss proof avoids that failure. Tests cover private malformed entries,
+closed/live hints, owner exit, contradictory metadata, native capture failure and owned-PTY reset.
 
 ## Automatic focus loses cues when coverage is temporarily unavailable
 

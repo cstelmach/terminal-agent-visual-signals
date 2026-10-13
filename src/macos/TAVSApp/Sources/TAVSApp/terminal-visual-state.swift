@@ -143,6 +143,11 @@ final class TerminalVisualStateStore {
         return validateTarget(binding) == .valid ? binding : nil
     }
 
+    // Registry hints cannot authorize output; only positive node loss classifies one as closed.
+    func isKnownMissingTTY(_ tty: String) -> Bool {
+        Self.concreteTTY(tty) && device(tty) == nil && deviceMissing(tty)
+    }
+
     func validateTarget(_ target: TerminalTargetBinding, descriptor: Int32? = nil,
                         native: GhosttySurface? = nil, confirmedNativeAbsent: Bool = false) -> TerminalTargetValidation {
         do { try validate(target) } catch { return .unavailable }

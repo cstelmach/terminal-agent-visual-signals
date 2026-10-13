@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.15
+Version: 1.16
 
 ## Public recovery commands
 
@@ -19,6 +19,13 @@ The helper returns JSON with `stateSaved`, `catalogueAvailable` and `items`. Eac
 an optional validated `target` or `tty`, `status` and optional `reason`. Status is `restored`,
 `vanished`, `unaffected` or `failed`. Missing catalogue access does not prevent cached healthy
 targets from recovering. Unsafe registry-only targets and live delivery failures remain reported.
+Registry hints never authorize output. A concrete hint is `vanished` only when current device
+inspection fails and positive node-loss evidence confirms absence. Nil or contradictory inspection
+remains `failed`. Malformed/unreadable entries have individual failures; directory failure means
+the directory itself could not be inspected. Arbitrary entry names are excluded from reports.
+An existing native binding failure is retained even beside a cached restoration on that TTY.
+Failed/restored/unaffected items suppress redundant hints. A vanished historical owner suppresses
+a closed hint only after device-loss proof; a live unverified hint still reports failure.
 
 Exit 0 means the operation completed without reported failures. A nonzero CLI exit means saving
 state failed, the helper was missing/unsupported, or native recovery was incomplete. When saving

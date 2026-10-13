@@ -945,6 +945,104 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: entry.path))
     }
 
+    func testKnownMissingRegistryDeviceIsVanishedWithoutAuthorizingOutput() throws {
+        let directory = root.appendingPathComponent("active-ttys"), tty = "/dev/ttys887"
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let entry = directory.appendingPathComponent("_dev_ttys887")
+        try Data().write(to: entry); missing.insert(tty)
+        let runner = MockProcessRunner(), report = recovery(runner: runner).recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.map(\.status), [.vanished])
+        XCTAssertEqual(report.items.first?.tty, tty)
+        XCTAssertTrue(runner.managedCallLog.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: entry.path))
+        XCTAssertEqual(restrictions.read(), .suspended)
+    }
+
+    func testVanishedCachedOwnerCannotHideLiveUnverifiedRegistryHint() throws {
+        let target = try terminal(10)
+        try cache(target)
+        let directory = root.appendingPathComponent("active-ttys")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data().write(to: directory.appendingPathComponent(target.tty.replacingOccurrences(of: "/", with: "_")))
+        identities[10] = nil; missingProcesses.insert(10)
+        let runner = MockProcessRunner(), report = recovery(runner: runner).recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.filter { $0.status == .vanished }.count, 1)
+        XCTAssertEqual(report.items.filter { $0.status == .failed && $0.tty == target.tty }.count, 1)
+        XCTAssertTrue(runner.managedCallLog.isEmpty)
+        try noBytes(target)
+        missing.insert(target.tty)
+        let closed = recovery(runner: runner).recover()
+        XCTAssertFalse(closed.hasFailures)
+        XCTAssertEqual(closed.items.count, 1)
+        XCTAssertEqual(closed.items.first?.status, .vanished)
+    }
+
+    func testLiveRegistryHintCannotAuthorizeOutputEvenWithContradictoryMissingMetadata() throws {
+        let target = try terminal(10), directory = root.appendingPathComponent("active-ttys")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data().write(to: directory.appendingPathComponent(target.tty.replacingOccurrences(of: "/", with: "_")))
+        state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock,
+            lookup: { self.identities[$0] }, device: { self.devices[$0] }, deviceMissing: { _ in true })
+        let runner = MockProcessRunner(), report = recovery(runner: runner).recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.map(\.status), [.failed])
+        XCTAssertNil(report.items.first?.target)
+        XCTAssertTrue(runner.managedCallLog.isEmpty)
+        try noBytes(target)
+    }
+
+    func testMalformedRegistryEntriesAreIndividualFailuresBesideHealthyRecovery() throws {
+        let healthy = try terminal(10)
+        try cache(healthy)
+        let directory = root.appendingPathComponent("active-ttys")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        for name in [healthy.tty.replacingOccurrences(of: "/", with: "_"), "_dev_tty", "_dev_ttys889",
+                     "PRIVATE_BODY_SENTINEL"] {
+            try Data().write(to: directory.appendingPathComponent(name))
+        }
+        let report = recovery().recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.filter { $0.status == .restored }.count, 1)
+        XCTAssertEqual(report.items.filter { $0.status == .failed }.count, 3)
+        XCTAssertEqual(report.items.first { $0.tty == "/dev/tty" }?.status, .failed)
+        XCTAssertEqual(report.items.first { $0.tty == "/dev/ttys889" }?.status, .failed)
+        XCTAssertFalse(report.items.contains { $0.reason == "Active terminal registry unavailable." })
+        XCTAssertFalse(String(decoding: try JSONEncoder().encode(report), as: UTF8.self).contains("PRIVATE_BODY_SENTINEL"))
+        XCTAssertEqual(try read(healthy), reset)
+    }
+
+    func testUnboundNativeRowHasOneFailureRatherThanAnotherRegistryFailure() throws {
+        let target = try terminal(10), directory = root.appendingPathComponent("active-ttys")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data().write(to: directory.appendingPathComponent(target.tty.replacingOccurrences(of: "/", with: "_")))
+        let row = GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: "unbound"),
+            windowID: "window", tabID: "tab", title: nil, directory: nil, tty: target.tty,
+            foregroundPID: nil, tabSelected: true, mappingIssue: nil)
+        let runner = MockProcessRunner(), report = recovery(runner: runner, native: { [row] }).recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertTrue(report.catalogueAvailable)
+        XCTAssertEqual(report.items.count, 1)
+        XCTAssertEqual(report.items.first?.status, .failed)
+        XCTAssertEqual(report.items.first?.reason, "Native target binding unavailable.")
+        XCTAssertTrue(runner.managedCallLog.isEmpty)
+        try noBytes(target)
+    }
+
+    func testUnboundNativeFailureIsNotHiddenByRestoredCachedTTY() throws {
+        let target = try terminal(10)
+        try cache(target)
+        let row = GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: "unbound"),
+            windowID: "window", tabID: "tab", title: nil, directory: nil, tty: target.tty,
+            foregroundPID: nil, tabSelected: true, mappingIssue: nil)
+        let report = recovery(native: { [row] }).recover()
+        XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.filter { $0.status == .failed }.count, 1)
+        XCTAssertEqual(report.items.filter { $0.status == .restored }.count, 1)
+        XCTAssertEqual(try read(target), reset)
+    }
+
     func testDedicatedScopeCannotPaintOwnerOnlyCachedTargets() throws {
         let target = try terminal(10)
         try cache(target)

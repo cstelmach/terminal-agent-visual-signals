@@ -393,7 +393,7 @@ final class VisualRecovery {
         let initial = Array(Set(cached.bindings + cached.effects.map(\.target)))
         var items = fanout(initial, operation: operation)
         items += cached.unreadable.map { _ in VisualRecoveryItem(status: .failed, reason: "Cached visual record unavailable.") }
-        var known = Set(initial.map(\.physicalTarget)), catalogueAvailable = false
+        var catalogueAvailable = false
         if native.finished.wait(timeout: .now() + 2.2) == .success,
            case .success(let rows) = native.result {
             catalogueAvailable = true
@@ -414,7 +414,6 @@ final class VisualRecovery {
                             reason: "Native alias registration unavailable."))
                     }
                 } else { additional.append(target) }
-                known.insert(target.physicalTarget)
             }
             for item in fanout(additional, operation: operation) {
                 items.removeAll { $0.target?.physicalTarget == item.target?.physicalTarget }
@@ -422,13 +421,14 @@ final class VisualRecovery {
             }
         }
         let registry = registryHints()
-        let knownTTYs = Set(known.map(\.tty))
-        for tty in registry.ttys where !knownTTYs.contains(tty) {
-            items.append(VisualRecoveryItem(tty: tty, status: .failed, reason: "Registry target is unverified."))
+        let reportedTTYs = Set(items.filter { $0.status != .vanished }.compactMap(\.tty))
+        for tty in registry.ttys where !reportedTTYs.contains(tty) {
+            let vanished = state.isKnownMissingTTY(tty)
+            if vanished && items.contains(where: { $0.tty == tty && $0.status == .vanished }) { continue }
+            items.append(VisualRecoveryItem(tty: tty, status: vanished ? .vanished : .failed,
+                reason: vanished ? "Registry device no longer exists." : "Registry target is unverified."))
         }
-        if registry.unavailable {
-            items.append(VisualRecoveryItem(status: .failed, reason: "Active terminal registry unavailable."))
-        }
+        items += registry.items
         return (catalogueAvailable, items)
     }
 
@@ -563,20 +563,30 @@ final class VisualRecovery {
         guard unlink(url.path) == 0 else { throw TerminalVisualStateError.storageUnavailable }
     }
 
-    private func registryHints() -> (ttys: [String], unavailable: Bool) {
+    private func registryHints() -> (ttys: [String], items: [VisualRecoveryItem]) {
         let directory = runtimeDirectory.appendingPathComponent("active-ttys")
         var info = stat()
-        if lstat(directory.path, &info) != 0 { return ([], errno != ENOENT) }
+        if lstat(directory.path, &info) != 0 && errno == ENOENT { return ([], []) }
         guard info.st_mode & S_IFMT == S_IFDIR,
-              let entries = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else { return ([], true) }
-        var ttys: [String] = [], unavailable = false
-        for entry in entries {
-            guard entry.range(of: "^_dev_tty[sp][A-Za-z0-9]+\\z", options: .regularExpression) != nil,
-                  lstat(directory.appendingPathComponent(entry).path, &info) == 0,
-                  info.st_mode & S_IFMT == S_IFREG else { unavailable = true; continue }
-            ttys.append(entry.replacingOccurrences(of: "_", with: "/"))
+              let entries = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else {
+            return ([], [VisualRecoveryItem(status: .failed, reason: "Active terminal registry unavailable.")])
         }
-        return (ttys, unavailable)
+        var ttys: [String] = [], items: [VisualRecoveryItem] = []
+        for entry in entries {
+            guard entry.range(of: "^_dev_tty[sp][A-Za-z0-9]+\\z", options: .regularExpression) != nil else {
+                items.append(VisualRecoveryItem(tty: entry == "_dev_tty" ? "/dev/tty" : nil,
+                    status: .failed, reason: "Registry entry does not name a concrete TTY."))
+                continue
+            }
+            let tty = entry.replacingOccurrences(of: "_", with: "/")
+            guard lstat(directory.appendingPathComponent(entry).path, &info) == 0,
+                  info.st_mode & S_IFMT == S_IFREG else {
+                items.append(VisualRecoveryItem(tty: tty, status: .failed, reason: "Registry entry unavailable."))
+                continue
+            }
+            ttys.append(tty)
+        }
+        return (ttys, items)
     }
 
     private static func backgroundBytes(_ background: String) -> Data {
