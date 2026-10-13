@@ -1,7 +1,20 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.31
+Version: 1.32
+
+## Portable policy reader (integration pending)
+
+`portable_policy.Policy` reads the persistent marker, runtime lock and home mute files without
+shell evaluation. Recovery suspension wins; otherwise effective hard locks precede fresh soft
+pauses from a live app. File/type/size failures raise instead of authorizing output. A malformed
+quoted rule selects no rule, matching the native predicate. Suspension must remain readable.
+
+`capture(deadline)` holds an open marker descriptor to prevent inode reuse. `matches` compares
+its filesystem device/inode, detecting atomic replacement even when the boolean is unchanged.
+Missing markers require an accessible directory. `read_regular` validates a no-follow regular
+file before bounded reads. All operations share the caller's original monotonic deadline.
+These readers do not publish rules, repaint terminals or provide a standalone backend yet.
 
 ## Portable render decoder (integration pending)
 
