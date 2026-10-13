@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.22
+Version: 1.23
 
 ## Public recovery commands
 
@@ -57,6 +57,10 @@ both Claude hook definitions, plugin shellrc and Codex installer in existing plu
 Required copy/directory/permission failures return nonzero. Direct entry points regain execute
 permission; preferences, schedules and lock definitions are not sync inputs. A failure may leave
 earlier copies applied. Sync does not build/install the native helper or restart existing workers.
+After copying, sync checks both managed-render and organizer-metadata capabilities through their
+existing validation branches, excluding isolated GUI launch keys. Missing/unsupported capability
+warns separately from source-copy success and does not claim hooks are ready. Probe output is not
+echoed. This diagnostic does not repair the pending standalone ordinary-signaling regression.
 
 The shell queries `--validate-config --managed-output-capabilities` and requires exactly
 `tavs-managed-output-schema=1`. This known validation branch is safe with older executables.

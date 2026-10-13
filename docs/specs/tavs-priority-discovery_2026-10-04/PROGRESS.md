@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 14:06 CEST
-**Version:** 4.10
+**Last Updated:** 2026-10-13 14:31 CEST
+**Version:** 4.11
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 86d7fe3; earlier hashes below/appendix | 548 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 4b6abf6; earlier hashes below/appendix | 548 Swift; 175 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -886,15 +886,15 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 delivery reporting and retry: 2026-10-13 14:06 CEST
+### Phase 9 delivery reporting and retry
 
-`86d7fe3` adds delivery reporting/retry across three production and three test files.
-Main-thread warnings/logs retain unresolved failures; active retries use the existing heartbeat/queue.
-Release/suspended retries remain explicit. `fIfs0V` exposed the missing API; `CL8Vb2` reproduced
-absent publication/retry. Corrected class filter: `7nT31J` passed 54/54 focused tests.
-Final `OrlRQX`: 548/548 Swift, 12.212 seconds, no warnings; release `qwEuRv`: 47.49 seconds.
-Current-helper `8dNSYB`: 172/172 Bats. All returned before commit, using private roots/PTYs.
-The [source check](scheduler-failures-check-2026-10-13.md) found misleading historical wording,
-now corrected. No-output registration/retry cannot certify repaint. Prior entry moved unchanged.
-**Next:** verify helper-required ordinary-signaling compatibility (Claude H1), then other source leads.
-SPEC/PLAN fixed; 2/7/8 Blocked, 9 active. Menu/native UI unverified; no personal state changes.
+> Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+
+### Phase 9 helper compatibility diagnostic: 2026-10-13 14:31 CEST
+
+`4b6abf6` separates sync-copy success from render/metadata readiness; three red cases: `0epna4`.
+Final `DIM1gt`: 548 Swift, 9.892 seconds; `5eFk7R`: 175 Bats; final sync `DQcM7q`: 10/10.
+Bash syntax passed; followed ShellCheck has only pre-existing SC2012. No Swift rebuild needed.
+The [source check](helper-compatibility-check-2026-10-13.md) confirms H1; compatibility input is pending.
+No rendering bypass or contract change. Prior entry moved unchanged; SPEC/PLAN fixed. Next: M5 cost checks
+while awaiting compatibility choice. Phases 2/7/8 Blocked, 9 active; native/UI acceptance unverified.

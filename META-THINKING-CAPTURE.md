@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 21 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 29 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 22 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 30 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2847,3 +2847,70 @@ The report produced a concrete historical-wording correction. Existing reusable-
 remains a suggestion; no new skill or control plane was created. Observable checks and edits are
 marked [O]; model attribution and causal rationale remain reconstructed. The full goal stays active,
 with helper compatibility and other source leads still pending.
+
+## 2026-10-13 · gpt-6 (self-reported) · helper-compatibility-diagnostic
+
+meta:
+  model: gpt-6 family; exact served variant unobserved
+  model_source: self-reported from runtime instructions [R]
+  interface: Codex desktop
+  thinking: unknown; extended requested
+  session: 01a10879
+  trace: observed current-turn tool results
+  delegate: read-only explorer; inherited configuration, served variant unobserved
+
+**Framing:** [O] The previous turn made progress through scheduler delivery reporting.
+Clean `470b035` and dated state identified Claude H1 next. Source inspection confirmed that
+ordinary renders and metadata require the installed native helper. Public requirements still
+promise standalone macOS/Linux signaling, and the SPEC preserves legitimate ordinary behavior.
+Limiting the new organizer to macOS/Ghostty did not authorize withdrawing existing plugin support.
+A missing capability therefore could not be dismissed as an unsupported user installation.
+
+**Strategy:** [O] Root and an explorer traced the SPEC, older adapter behavior, typed render
+queue, helper resolution, installers, sync and tests. No existing portable bounded writer/parser
+was found. Older raw printf and greedy metadata extraction lacked the required serialization,
+deadline and privacy contracts. A creator question was issued with preservation recommended;
+no answer was inferred. Independent work corrected sync's misleading readiness claim while
+leaving rendering and normative scope unchanged. [R] This allowed concrete useful progress
+without choosing a dependency or breaking compatibility to make the current implementation pass.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Reorient | Git and dated goal files | Prior turn classified as progress |
+| 2 | Inspect/delegate | Helpers, adapters, SPEC and installs | H1 confirmed, transport absent |
+| 3 | Ask | One compatibility choice | Pending; no timeout selection |
+| 4 | Red/green | Missing/unsupported/render-only helper | Three diagnostic failures reproduced |
+| 5 | Verify | Swift, private Bats, syntax and lint | 548, 175, 10 focused; baseline lint remains |
+| 6 | Commit | Sync diagnostic and tests | `4b6abf6`; H1 remains unresolved |
+
+**Decision points:** [O] Preserve the typed queue and refusal to bypass failed controlled
+rendering. Separate successful copying from actual hook readiness. Check both render and metadata
+capabilities through existing safe validation branches, omitting isolated GUI launch keys.
+Discard probe output rather than exposing unexpected contents. A neutral status replaces the
+Mac-only rebuild hint so the diagnostic remains accurate on nonmac hosts. The source investigation
+confirmed that safe standalone delivery needs a packaging/runtime choice beyond current PLAN
+constraints; test/runtime availability alone does not authorize adding a production dependency.
+
+**Failure arcs:** [O] `0epna4` reproduced three missing warnings even though copies succeeded.
+Initial ShellCheck could not follow the new dynamic source path; an explicit source directive and
+followed check resolved it, leaving only the pre-existing cache-enumeration SC2012. Source review
+flagged “Rebuild TAVS.app” as an unavailable remedy on nonmac hosts; root had already neutralized
+that hint before receiving the finding. Neither the warning nor its tests demonstrate restored
+ordinary output. [R] The transferable lesson is to distinguish a diagnostic repair from the
+underlying compatibility repair, especially when the latter needs an explicit delivery decision.
+
+**Verification:** [O] All 548 Swift tests passed in `DIM1gt`, 9.892 seconds without warnings.
+`5eFk7R` passed 175 isolated Bats; final `DQcM7q` passed 10 sync tests after wording correction.
+Bash syntax passed. Swift source and the already-built helper were unchanged; no unnecessary
+rebuild occurred. Tests used temporary plugin roots, preferences and runtime paths. No real
+sync/install, native discovery, application control or user-session operation occurred. SPEC and
+PLAN remain fixed; finished progress text and old Session Log bytes are preserved. Native/UI
+acceptance and H1 portability remain unverified, and the creator question remains pending.
+
+**Heuristics and confidence:** [O] P8/P9 recur through source adjudication and SPEC-owned state.
+The report established a real compatibility regression rather than an excuse to narrow the goal.
+Further process-cost checks can proceed independently while transport work waits. Existing skill
+promotion remains a suggestion; no new control plane or dependency was created. Observable results
+are marked [O]; attribution and strategy rationale remain reconstructed. The full goal stays active.

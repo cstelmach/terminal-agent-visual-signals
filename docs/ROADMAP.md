@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.13
+Version: 1.14
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -87,3 +87,6 @@ not rotate healthy IDs; unresolved ownership prevents replacement, and outstandi
 survives cancellation, masking and revision changes. Focus restoration changes only background.
 Native acceptance remains required across all product phases; the installed app is unchanged.
 Other terminal adapters, notifications, analytics and stronger locks remain deferred by the SPEC.
+Sync now warns when managed render or metadata capabilities are unavailable after source copying.
+Standalone ordinary-signaling compatibility remains a confirmed open regression; portable transport
+delivery needs creator input. No raw bypass or change to D01-D18 has been made.

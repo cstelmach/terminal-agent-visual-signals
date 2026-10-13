@@ -433,3 +433,16 @@ The finished lease checkpoint moved unchanged with reconstruction checked; SPEC 
 **Next:** verify scheduler partial-failure reporting/retry (Claude M6), then remaining source leads.
 Phases 2/7/8 remain Blocked and Phase 9 active. Native acceptance is unverified; no app/native control,
 install, personal settings/schedules or user session shutdown. Backup: /tmp/tavs-suspended-reconcile-cxof04o5/.
+
+### Phase 9 delivery reporting and retry: 2026-10-13 14:06 CEST
+
+`86d7fe3` adds delivery reporting/retry across three production and three test files.
+Main-thread warnings/logs retain unresolved failures; active retries use the existing heartbeat/queue.
+Release/suspended retries remain explicit. `fIfs0V` exposed the missing API; `CL8Vb2` reproduced
+absent publication/retry. Corrected class filter: `7nT31J` passed 54/54 focused tests.
+Final `OrlRQX`: 548/548 Swift, 12.212 seconds, no warnings; release `qwEuRv`: 47.49 seconds.
+Current-helper `8dNSYB`: 172/172 Bats. All returned before commit, using private roots/PTYs.
+The [source check](scheduler-failures-check-2026-10-13.md) found misleading historical wording,
+now corrected. No-output registration/retry cannot certify repaint. Prior entry moved unchanged.
+**Next:** verify helper-required ordinary-signaling compatibility (Claude H1), then other source leads.
+SPEC/PLAN fixed; 2/7/8 Blocked, 9 active. Menu/native UI unverified; no personal state changes.

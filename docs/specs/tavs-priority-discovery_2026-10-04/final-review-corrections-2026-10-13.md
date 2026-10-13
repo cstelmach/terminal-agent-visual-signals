@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.11
+Version: 1.12
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `86d7fe3`.
+Current product checkpoint: `4b6abf6`.
 
 ## Review execution status
 
@@ -323,10 +323,33 @@ commit with private roots and owned PTYs. Five new tests cover main publication,
 failure retention, coalescing/suspension, unknown bindings and scheduler gating. Menu rendering
 and physical Ghostty acceptance remain unverified. Scratch: /tmp/tavs-delivery-retry-_t_d8pfv/.
 
+## Confirmed standalone compatibility gap (Claude H1)
+
+The [source investigation](helper-compatibility-check-2026-10-13.md) confirms ordinary output
+and legacy metadata regressions when the installed helper is absent, old or unavailable on Linux.
+The organizer's macOS/Ghostty scope does not withdraw existing standalone plugin compatibility.
+No portable bounded writer/parser exists in current production. A safe transport needs packaging
+or runtime approval beyond PLAN's no-extra-binary/no-new-dependency boundary. The creator question
+is pending; no answer, scope amendment or unsafe renderer bypass has been inferred.
+
+`4b6abf6` addresses the independent misleading sync-readiness message. Source copying remains
+successful while missing managed-render or organizer-metadata capability is reported separately.
+The probes reuse existing validation branches, omit isolated launch keys and never echo their
+output. Neutral wording applies on nonmac hosts too. The follow-up source finding about a Mac-only
+rebuild hint was already corrected before receipt. This diagnostic does not resolve H1.
+
+Red `0epna4` reproduced three assertions. Final `DIM1gt` passed 548 Swift tests in 9.892 seconds
+without warnings; `5eFk7R` passed 175 isolated Bats and final focused `DQcM7q` passed 10/10.
+Bash syntax passed. Followed ShellCheck retains only pre-existing SC2012 at the unchanged cache
+enumeration; its initial dynamic-source warning was resolved by the source directive. Swift
+source/helper is unchanged and was not rebuilt. All terminal results preceded commit, with
+private roots and fixture plugin installations. No real install/sync, app or native operation ran.
+
 ## Remaining adjudication and implementation
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-Prioritize helper-required compatibility (Claude H1). Do not suppress an unbound
+H1 transport work awaits the creator choice. Meanwhile verify process-cost claims (Claude M5).
+Do not suppress an unbound
 native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
 

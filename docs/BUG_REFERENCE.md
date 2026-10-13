@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.36
+Version: 1.37
+
+## Sync claims hook readiness while the required helper is unavailable
+
+Sync copied updated hooks without building the helper, then always suggested submitting a prompt.
+Absent or older helpers drop current managed rendering and metadata, so source-copy success did
+not establish hook readiness. Sync now checks both exact capabilities and emits a separate warning
+without exposing probe output or isolated launch keys. Successful copying still returns zero;
+copy failures retain nonzero status. Tests cover missing, unsupported and render-only helpers.
+The broader standalone macOS/Linux compatibility regression remains open pending transport choice.
 
 ## Scheduler delivery failures disappear without a visible retry path
 
