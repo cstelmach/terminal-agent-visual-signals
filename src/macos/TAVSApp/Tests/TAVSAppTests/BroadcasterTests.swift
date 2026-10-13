@@ -394,6 +394,98 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertFalse(broadcaster.lastResult?.items.contains { $0.status == .failed } == true)
     }
 
+    func testFailedRestrictionRetryTouchesOnlyFailedTargetAndReportsCompletion() throws {
+        let healthy = try terminal(10), failed = try terminal(11)
+        try cache(healthy); try cache(failed); try writeMute(true)
+        let runner = MockProcessRunner(), lock = NSLock()
+        var reject = true
+        runner.managedHandler = { path, lockURL, prepare in
+            lock.lock(); let fail = reject && path == failed.tty; lock.unlock()
+            if fail { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, prepare: prepare)
+        }
+        let broadcaster = broadcaster(runner: runner, native: { [] })
+        let reported = expectation(description: "Partial failure published on main")
+        broadcaster.resultChanged = { _, items in
+            XCTAssertTrue(Thread.isMainThread)
+            if items.contains(where: { $0.status == .failed }) { reported.fulfill() }
+        }
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(healthy)
+        wait(for: [reported], timeout: 1)
+        lock.lock(); reject = false; lock.unlock()
+        let completed = expectation(description: "Failed target recovered")
+        broadcaster.resultChanged = { _, items in
+            XCTAssertTrue(Thread.isMainThread)
+            if !items.contains(where: { $0.status == .failed }) { completed.fulfill() }
+        }
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(failed)
+        wait(for: [completed], timeout: 1); try noBytes(healthy)
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(failed)
+    }
+
+    func testRegistrationAndUnaffectedRetryCannotEraseFailedPaint() throws {
+        let target = try terminal(10); try cache(target); try writeMute(true)
+        let runner = MockProcessRunner()
+        runner.managedHandler = { path, lock, prepare in
+            try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+                let bytes = try prepare(fd, deadline)
+                if bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+                return nil
+            }
+        }
+        let broadcaster = broadcaster(runner: runner, native: { [] })
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        broadcaster.discoverAndRegisterActiveAgentTTYs()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
+        try restrictions.write(suspended: true)
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
+    }
+
+    func testQueuedRestrictionRetryIsCoalescedAndCannotPaintAfterSuspension() throws {
+        let target = try terminal(10); try cache(target); try writeMute(true)
+        let entered = expectation(description: "Retry is preparing"), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let lock = NSLock(), runner = MockProcessRunner()
+        var hold = false, attempts = 0
+        runner.managedHandler = { path, lockURL, prepare in
+            lock.lock(); attempts += 1; let waiting = hold; lock.unlock()
+            if !waiting { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+            entered.fulfill(); release.wait()
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, prepare: prepare)
+        }
+        let broadcaster = broadcaster(runner: runner, native: { [] })
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        lock.lock(); let before = attempts; hold = true; lock.unlock()
+        broadcaster.retryFailedRestrictions(); wait(for: [entered], timeout: 1)
+        for _ in 0..<100 { broadcaster.retryFailedRestrictions() }
+        try restrictions.write(suspended: true); release.signal()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        lock.lock(); let after = attempts; lock.unlock()
+        XCTAssertEqual(after, before + 1)
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
+    }
+
+    func testUnboundNativeFailureRemainsVisibleWithoutBlindDiscoveryRetry() throws {
+        let target = try terminal(10), row = surface(target)
+        identities.removeValue(forKey: target.ttyOwner.pid)
+        var calls = 0
+        let broadcaster = broadcaster(native: { calls += 1; return [row] })
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed && $0.target == nil }.count, 1)
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        XCTAssertEqual(calls, 1)
+    }
+
     private func openTestPTY() throws -> (master: Int32, slave: Int32, path: String) {
         var master: Int32 = -1, slave: Int32 = -1
         var name = [CChar](repeating: 0, count: 1_024)

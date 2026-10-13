@@ -377,6 +377,28 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(broadcaster.broadcastCallCount, 1)
     }
 
+    func testHeartbeatRetriesFailedRestrictionsOnlyWhileMutedAndShowsFailures() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL); scheduler.start()
+        broadcaster.resultChanged?(false, [VisualRecoveryItem(status: .failed, reason: "test failure")])
+        XCTAssertTrue(scheduler.terminalUpdateIssue?.contains("1 failed") == true)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.retryCallCount, 1)
+        try VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state")).write(suspended: true)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.retryCallCount, 1)
+        try VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state")).write(suspended: false)
+        config.masterActive = true; try ScheduleStore.save(config, to: scheduleURL)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.retryCallCount, 1)
+        broadcaster.resultChanged?(false, [])
+        XCTAssertTrue(scheduler.terminalUpdateIssue?.contains("Native catalogue unavailable") == true)
+        broadcaster.resultChanged?(true, [])
+        XCTAssertNil(scheduler.terminalUpdateIssue)
+    }
+
     func testSuspendedStartupWithExplicitPersistentStoreIgnoresOldMutedProjection() throws {
         let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("persistent/visual-restrictions.state"))
         try restrictions.write(suspended: true)

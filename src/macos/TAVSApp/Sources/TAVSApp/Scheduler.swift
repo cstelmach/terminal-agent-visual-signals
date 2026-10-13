@@ -151,6 +151,8 @@ enum ScheduleEvaluator {
 // MARK: - Scheduler lifecycle manager
 
 protocol BroadcasterProtocol: AnyObject {
+    var resultChanged: ((Bool, [VisualRecoveryItem]) -> Void)? { get set }
+    func retryFailedRestrictions()
     func broadcast()
     func broadcastPaused(visual: PauseVisual)
     func broadcastLocked(visual: PauseVisual, untilText: String)
@@ -167,6 +169,7 @@ final class Scheduler: ObservableObject {
     @Published private(set) var reason: MuteReason = .none
     @Published private(set) var statusText: String = "Starting…"
     @Published private(set) var visualRestrictionsStatus: VisualRestrictionsStatus = .active
+    @Published private(set) var terminalUpdateIssue: String?
     @Published private(set) var masterActive = true
     // An enabled visual hard lock without an active grant gates UI resume paths.
     @Published private(set) var isHardLocked: Bool = false
@@ -232,6 +235,12 @@ final class Scheduler: ObservableObject {
         self.runtimeWatcher = runtimeWatcher
         self.calendar = calendar
         self.pauseVisualProvider = pauseVisualProvider
+        broadcaster.resultChanged = { [weak self] catalogueAvailable, items in
+            let count = items.filter { $0.status == .failed }.count
+            var issue = count > 0 ? "Earlier terminal updates: \(count) failed. Restore Visibility is available." : ""
+            if !catalogueAvailable { issue += " Native catalogue unavailable; cached targets only." }
+            self?.terminalUpdateIssue = issue.isEmpty ? nil : issue.trimmingCharacters(in: .whitespaces)
+        }
     }
 
     func start() {
@@ -482,6 +491,9 @@ final class Scheduler: ObservableObject {
 
     private func heartbeatTick() {
         loadAndEvaluate()
+        if isMuted && !visualRestrictionsStatus.disablesRestrictions {
+            broadcaster.retryFailedRestrictions()
+        }
     }
 
     private func scheduleTransitionTimer(_ transition: Date?, now: Date) {

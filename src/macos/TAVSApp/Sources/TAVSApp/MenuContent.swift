@@ -18,6 +18,7 @@ struct MenuContent: View {
             if let error = sessions.focusCleanupError { Text(error).font(.caption) }
             Text(scheduler.statusText)
                 .foregroundColor(.secondary)
+            if let issue = scheduler.terminalUpdateIssue { Text(issue).font(.caption) }
             Divider()
             Button(scheduler.masterActive ? "Pause TAVS" : "Resume TAVS") {
                 let resuming = !scheduler.masterActive

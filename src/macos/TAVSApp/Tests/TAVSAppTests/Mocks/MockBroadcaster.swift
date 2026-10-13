@@ -2,6 +2,9 @@ import Foundation
 @testable import TAVSApp
 
 final class MockBroadcaster: BroadcasterProtocol {
+    var resultChanged: ((Bool, [VisualRecoveryItem]) -> Void)?
+    private(set) var retryCallCount = 0
+    func retryFailedRestrictions() { retryCallCount += 1 }
     private(set) var broadcastCallCount = 0
     private(set) var broadcastPausedCallCount = 0
     private(set) var broadcastLockedCallCount = 0
