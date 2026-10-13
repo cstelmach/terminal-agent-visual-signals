@@ -1,7 +1,15 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.30
+Version: 1.31
+
+## Portable render decoder (integration pending)
+
+`portable_render.Render` accepts the same finite 23-field, NUL-terminated request as the native
+render helper, bounded to 16 KiB. It validates colors, palette actions, title text, image paths
+and alert flags before encoding OSC in native order. Synthetic requests suppress the alert bell;
+the iTerm2 image command keeps its required terminator. Empty background and explicit default
+reset remain separate. It does not interpret arbitrary OSC streams or advertise a capability.
 
 ## Portable primitives (integration pending)
 
