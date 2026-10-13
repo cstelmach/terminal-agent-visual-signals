@@ -28,7 +28,8 @@ enum ManagedVisualOperation {
     case clearPreview(effectID: String, revision: VisualRestrictionsRevision)
     case focus(TerminalFocusRequest)
     case clearFocus(effectID: String, revision: VisualRestrictionsRevision,
-                    didCancel: (TerminalTargetBinding) -> Void = { _ in })
+                    didCancel: (TerminalTargetBinding) -> Void = { _ in },
+                    restoreBackground: (() -> Bool)? = nil)
     case currentRestriction
     case reconcile(resetLegacy: Bool, clearSelective: Bool)
     case emergencyReset
@@ -176,7 +177,7 @@ final class VisualRecovery {
         }
         let clear: (String, VisualRestrictionsRevision, TerminalEffectKind)?
         switch operation {
-        case .clearFocus(let id, let revision, _): clear = (id, revision, .focus)
+        case .clearFocus(let id, let revision, _, _): clear = (id, revision, .focus)
         case .clearPreview(let id, let revision): clear = (id, revision, .preview)
         default: clear = nil
         }
@@ -189,7 +190,7 @@ final class VisualRecovery {
                             && ($0.revision == revision.identity || ($0.kind == .preview && $0.revision == nil))
                     }
                     try self.cancelEffects(matches, deadline: deadline)
-                    if case .clearFocus(_, _, let didCancel) = operation {
+                    if case .clearFocus(_, _, let didCancel, _) = operation {
                         guard DispatchTime.now().uptimeNanoseconds < deadline else {
                             throw TerminalVisualStateError.deadlineExceeded
                         }
@@ -284,9 +285,14 @@ final class VisualRecovery {
                 if rule != nil { return nil }
                 effects = try self.effectsUnlocked(for: target, deadline: deadline)
             }
-            if case .clearFocus(let id, let revision, _) = operation {
-                guard effects.contains(where: { $0.kind == .focus && $0.effectID == id
-                    && $0.controller == self.controller && $0.revision == revision.identity }),
+            var restoreFocusBackground = false
+            if case .clearFocus(let id, let revision, _, let restore) = operation {
+                if let restore = restore {
+                    restoreFocusBackground = restore()
+                    guard restoreFocusBackground else { return nil }
+                }
+                guard (restoreFocusBackground || effects.contains(where: { $0.kind == .focus && $0.effectID == id
+                    && $0.controller == self.controller && $0.revision == revision.identity })),
                     try self.restrictions.matches(revision, deadline: deadline) else { return nil }
             }
 
@@ -306,7 +312,13 @@ final class VisualRecovery {
             if case .reconcile(_, let clear) = operation { clearSelective = clear }
             if clearSelective { try self.cancelEffects(effects, deadline: deadline) }
             if let rule = currentRule {
-                if case .clearFocus = operation { return nil }
+                if case .clearFocus = operation {
+                    guard restoreFocusBackground else { return nil }
+                    switch rule {
+                    case .paused(let visual), .locked(let visual, untilEpoch: _):
+                        return Self.backgroundBytes(visual.backgroundColor)
+                    }
+                }
                 guard let controller = self.controller else { throw VisualRecoveryError.targetUnavailable }
                 let visual: PauseVisual
                 switch rule {
@@ -365,6 +377,9 @@ final class VisualRecovery {
             if !clearSelective {
                 try self.cancelEffects(selective ? effects.filter { !active.contains($0) } : effects,
                                        deadline: deadline)
+            }
+            if restoreFocusBackground {
+                return background.map(Self.backgroundBytes)
             }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
             if resetTitle != nil && !resetLegacy { bytes.append(Data("\u{1B}]104\u{07}".utf8)) }
@@ -447,6 +462,11 @@ final class VisualRecovery {
         fanout(targets, operation: operation)
     }
 
+    func applyFocus(to targets: [TerminalTargetBinding],
+                    request: (TerminalTargetBinding) throws -> TerminalFocusRequest) -> [VisualRecoveryItem] {
+        fanout(targets) { .focus(try request($0)) }
+    }
+
     func target(tty: String, owner: ProcessGeneration) throws -> TerminalTargetBinding {
         guard let plain = state.captureTarget(tty: tty, owner: owner) else { throw VisualRecoveryError.targetUnavailable }
         let cached = state.cachedRecords()
@@ -495,6 +515,11 @@ final class VisualRecovery {
     }
 
     private func fanout(_ targets: [TerminalTargetBinding], operation: ManagedVisualOperation) -> [VisualRecoveryItem] {
+        fanout(targets) { _ in operation }
+    }
+
+    private func fanout(_ targets: [TerminalTargetBinding],
+                        operation: (TerminalTargetBinding) throws -> ManagedVisualOperation) -> [VisualRecoveryItem] {
         let groups = Dictionary(grouping: Set(targets), by: \.physicalTarget)
         let physical = Array(groups.keys)
         let live = Dictionary(grouping: targets.filter { state.validateTarget($0) == .valid }, by: \.tty)
@@ -513,7 +538,7 @@ final class VisualRecovery {
                 guard !valid.isEmpty else { throw VisualRecoveryError.vanished }
                 guard !conflicting.contains(target.tty) else { throw VisualRecoveryError.targetUnavailable }
                 target = try self.preferredTarget(valid)
-                status = try self.write(operation, to: target) ? .restored : .unaffected
+                status = try self.write(operation(target), to: target) ? .restored : .unaffected
             }
             catch VisualRecoveryError.vanished { status = .vanished }
             catch VisualRecoveryError.previewBlocked {

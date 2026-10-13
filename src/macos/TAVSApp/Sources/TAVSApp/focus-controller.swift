@@ -26,8 +26,11 @@ final class FocusController: ObservableObject {
     private var current: Run?
     private var pendingClear: [Run] = []
     private var manual: Run?
-    private var pendingFocusClear: [Run] = []
+    private var focusLeases: [TerminalTargetBinding: FocusLease] = [:]
     private var manualPending: ([GhosttySurface], Set<GhosttySurfaceID>, Double)?
+    private var manualLatest: ([GhosttySurface], Set<GhosttySurfaceID>, Double)?
+    private var manualWanted = Set<TerminalTargetBinding>()
+    private var manualBlocked = Set<TerminalTargetBinding>()
     private var manualUpdating = false
     private var attention: AttentionState?
     private var automaticRevision: VisualRestrictionsRevision?
@@ -118,15 +121,17 @@ final class FocusController: ObservableObject {
     }
 
     func cancelForRecovery() {
-        lock.lock(); let old = current; current = nil; let oldManual = manual; manual = nil; lock.unlock()
+        lock.lock(); let old = current; current = nil; manual = nil
+        manualWanted.removeAll(); manualBlocked.removeAll()
+        for lease in focusLeases.values { lease.retiring = true }
+        lock.unlock()
         // Retain the pinned revision until pending metadata cancellation succeeds.
         if let old = old, !pendingClear.contains(where: { $0 === old }) { pendingClear.append(old) }
         timers.cancelAll()
         isPreviewActive = false; previewed.removeAll(); previewStatus = "No preview."
-        if let oldManual = oldManual { pendingFocusClear.append(oldManual) }
         attention = nil; attentionCues.removeAll(); automaticRevision = nil
         automaticHigh.removeAll(); automaticCatalogue = nil
-        manualPending = nil; workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
+        manualPending = nil; manualLatest = nil; workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
     }
 
     func focusSelected(_ selected: [GhosttySurface], catalogue: [GhosttySurface]) {
@@ -195,19 +200,16 @@ final class FocusController: ObservableObject {
             if manual == nil { manual = Run(startedAt: now, revision: revision) }
             lock.unlock()
         }
-        lock.lock(); let old = manual; let lastHeartbeat = old?.lastHeartbeat; lock.unlock()
+        lock.lock(); let old = manual; lock.unlock()
         guard let old = old else { return }
         if restrictions.read() != .active || (try? restrictions.matches(old.revision, deadline: .max)) != true {
             focusOff(); return
         }
         lock.lock()
-        if now - (lastHeartbeat ?? now) > 6 {
-            manual = Run(startedAt: now, revision: old.revision)
-            pendingFocusClear.append(old)
-        }
         manual?.version += 1
         lock.unlock()
         manualPending = (rows, ids, now)
+        manualLatest = manualPending
         updateManual()
     }
 
@@ -219,8 +221,9 @@ final class FocusController: ObservableObject {
 
     func catalogueUnavailable() {
         guard mode != .off else { return }
-        lock.lock(); manual?.version += 1; lock.unlock()
+        lock.lock(); manual?.version += 1; manualWanted.removeAll(); manualBlocked.removeAll(); lock.unlock()
         manualPending = nil
+        manualLatest = nil
         automaticCatalogue = nil
         focusStatus = mode == .automatic ? "Automatic unavailable: native catalogue is stale; cues retained."
             : "Manual unavailable: native catalogue is stale; captured set retained."
@@ -234,11 +237,11 @@ final class FocusController: ObservableObject {
     }
 
     private func retireFocus() {
-        lock.lock(); let old = manual; manual = nil; lock.unlock()
-        manualPending = nil
-        var runs = pendingFocusClear; pendingFocusClear.removeAll()
-        if let old = old { runs.append(old) }
-        clearManual(runs)
+        lock.lock(); manual = nil; manualWanted.removeAll(); manualBlocked.removeAll()
+        for lease in focusLeases.values { lease.retiring = true }
+        lock.unlock()
+        manualPending = nil; manualLatest = nil
+        clearManual()
     }
 
     private func updateManual() {
@@ -250,6 +253,7 @@ final class FocusController: ObservableObject {
         focusStatus = mode == .automatic ? "Preparing automatic focus." : "Preparing manual focus."
         queue.async { [weak self] in
             guard let self = self else { return }
+            var attempted = Set<TerminalTargetBinding>()
             let result: Result<(Int, Int, [VisualRecoveryItem], Bool), Error> = Result {
                 guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else {
                     throw VisualRecoveryError.policyChanged
@@ -264,6 +268,17 @@ final class FocusController: ObservableObject {
                     throw VisualRecoveryError.targetUnavailable
                 }
                 let outside = rows.filter { !ids.contains($0.id) }
+                let targets = outside.compactMap { self.state.captureTarget(for: $0) }
+                attempted = Set(targets.map(\.physicalTarget))
+                self.lock.lock()
+                if self.manual === run && run.version == version {
+                    self.manualWanted = attempted
+                    self.manualBlocked.removeAll()
+                    for (key, lease) in self.focusLeases where lease.owner === run && !attempted.contains(key) {
+                        lease.retiring = true
+                    }
+                }
+                self.lock.unlock()
                 guard !outside.isEmpty else { return (0, 0, [], false) }
                 guard rows.contains(where: { ids.contains($0.id) && self.state.captureTarget(for: $0) != nil }) else {
                     throw VisualRecoveryError.targetUnavailable
@@ -273,47 +288,64 @@ final class FocusController: ObservableObject {
                 }
                 if run.colors == nil { run.colors = try self.colors(instance) }
                 let colors = run.colors!
-                let targets = outside.compactMap { self.state.captureTarget(for: $0) }
                 self.lock.lock()
                 let accepted = self.manual === run && run.version == version
                 if accepted {
-                    run.targets = Array(Set(run.targets + targets))
                     run.renewedTargets.removeAll()
+                    self.manualWanted = attempted
                 }
                 self.lock.unlock()
                 guard accepted else { throw VisualRecoveryError.policyChanged }
-                let request = TerminalFocusRequest(effectID: run.id, heartbeatAt: at, colors: colors,
-                    revision: run.revision, isCurrent: { [weak self] deadline in
+                var requests: [TerminalTargetBinding: (FocusLease, Bool)] = [:]
+                let items = self.recovery.applyFocus(to: targets) { target in
+                    guard let lease = self.focusLease(target, owner: run, version: version, at: at) else {
+                        self.lock.lock()
+                        if self.manual === run && run.version == version { self.manualBlocked.insert(target.physicalTarget) }
+                        self.lock.unlock()
+                        throw VisualRecoveryError.targetUnavailable
+                    }
+                    self.lock.lock(); requests[target.physicalTarget] = (lease, lease.mayHavePainted); self.lock.unlock()
+                    return TerminalFocusRequest(effectID: lease.id, heartbeatAt: at, colors: colors,
+                    revision: lease.revision, isCurrent: { [weak self] deadline in
                         guard let self = self else { return false }
-                        guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else { return false }
+                        guard self.matchesFocusLease(lease, owner: run, version: version),
+                              self.clock.now().timeIntervalSince1970 <= at + 6 else { return false }
                         if let cues = cues,
                            !self.automaticSourcesCurrent(cues, targets: sources, run: run,
                                version: version, deadline: deadline) {
                             return false
                         }
-                        return self.matchesManual(run, version: version)
+                        return self.matchesFocusLease(lease, owner: run, version: version)
                             && self.clock.now().timeIntervalSince1970 <= at + 6
                     }, didRenew: { [weak self] target in
                         guard let self = self else { return }
                         self.lock.lock(); defer { self.lock.unlock() }
-                        if self.manual === run && run.version == version { run.renewedTargets.insert(target) }
+                        // Record actual saves even when a newer catalogue invalidated this update.
+                        lease.lastHeartbeat = at
+                        lease.mayHavePainted = true
+                        if self.manual === run && run.version == version
+                            && self.focusLeases[target.physicalTarget] === lease && !lease.retiring {
+                            run.renewedTargets.insert(target)
+                        }
                     })
-                let items = self.recovery.apply(.focus(request), to: targets)
-                self.lock.lock()
-                let renewed = !targets.isEmpty && targets.count == outside.count && Set(targets) == run.renewedTargets
-                if self.manual === run && run.version == version && renewed
-                    && !items.contains(where: { $0.status == .failed }) {
-                    run.lastHeartbeat = at
                 }
+                self.lock.lock()
+                for item in items where item.status == .unaffected {
+                    if let key = item.target?.physicalTarget, let (lease, priorPaint) = requests[key],
+                       self.focusLeases[key] === lease, !lease.retiring {
+                        // Retirement may already have issued a restoration whose outcome is unknown.
+                        lease.mayHavePainted = priorPaint
+                    }
+                }
+                let renewed = !targets.isEmpty && targets.count == outside.count && Set(targets) == run.renewedTargets
                 self.lock.unlock()
                 return (targets.count, outside.count, items, renewed)
             }
+            let handled = attempted
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.manualUpdating = false
                 if self.matchesManual(run, version: version) {
-                    let pending = self.pendingFocusClear; self.pendingFocusClear.removeAll()
-                    self.clearManual(pending)
                     switch result {
                     case .success(let (mapped, count, items, renewed)):
                         let failures = items.filter { $0.status == .failed }.count
@@ -332,6 +364,7 @@ final class FocusController: ObservableObject {
                             : "Manual unavailable: configured colors or working binding cannot be verified."
                     }
                 }
+                self.clearManual(excluding: handled)
                 self.updateManual()
             }
         }
@@ -376,20 +409,99 @@ final class FocusController: ObservableObject {
         }
     }
 
-    private func clearManual(_ runs: [Run]) {
-        for run in runs {
-            lock.lock(); let targets = run.targets; lock.unlock()
-            guard !targets.isEmpty else { continue }
-            focusClearQueue.async { [weak self] in
+    private func matchesFocusLease(_ lease: FocusLease, owner: Run, version: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return manual === owner && owner.version == version && !lease.retiring
+            && focusLeases[lease.target.physicalTarget] === lease
+    }
+
+    private func focusLease(_ target: TerminalTargetBinding, owner: Run, version: Int,
+                            at: Double, waitingUntil: DispatchTime = .now() + .milliseconds(100)) -> FocusLease? {
+        let key = target.physicalTarget
+        var priorPaint = false
+        lock.lock()
+        guard manual === owner, owner.version == version else { lock.unlock(); return nil }
+        if let old = focusLeases[key] {
+            if old.owner === owner && !old.retiring && at - old.lastHeartbeat <= 6 {
+                lock.unlock(); return old
+            }
+            old.retiring = true
+            if old.clearing {
+                lock.unlock()
+                guard old.finished.wait(timeout: waitingUntil) == .success else { return nil }
+                return focusLease(target, owner: owner, version: version, at: at, waitingUntil: waitingUntil)
+            }
+            if !old.ownershipResolved {
+                old.clearing = true
+                old.finished.enter()
+                lock.unlock()
+                _ = clearFocusLease(old)
+                lock.lock()
+            }
+            guard manual === owner, owner.version == version,
+                  focusLeases[key] == nil || (focusLeases[key] === old && old.ownershipResolved) else {
+                lock.unlock(); return nil
+            }
+            // Transfer any remaining repaint obligation to this explicit current focus request.
+            priorPaint = focusLeases[key] === old && old.mayHavePainted
+        }
+        let lease = FocusLease(target: target, owner: owner, at: at)
+        lease.mayHavePainted = priorPaint
+        focusLeases[key] = lease
+        lock.unlock(); return lease
+    }
+
+    @discardableResult
+    private func clearFocusLease(_ lease: FocusLease) -> Bool {
+        let result = recovery.apply(.clearFocus(effectID: lease.id, revision: lease.revision,
+            didCancel: { [weak self] _ in
                 guard let self = self else { return }
-                let failed = self.recovery.apply(.clearFocus(effectID: run.id, revision: run.revision), to: targets)
-                    .contains { $0.status == .failed }
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    if failed {
-                        if !self.pendingFocusClear.contains(where: { $0 === run }) { self.pendingFocusClear.append(run) }
-                        self.focusCleanupError = "Some focus effects could not be cleared. Restore Visibility is available."
-                    } else if self.pendingFocusClear.isEmpty { self.focusCleanupError = nil }
+                self.lock.lock(); lease.ownershipResolved = true; self.lock.unlock()
+            }, restoreBackground: { [weak self] in
+                guard let self = self else { return false }
+                self.lock.lock(); defer { self.lock.unlock() }
+                return lease.mayHavePainted
+            }), to: [lease.target])
+        let restored = result.allSatisfy { $0.status == .restored || $0.status == .vanished }
+        lock.lock()
+        lease.clearing = false
+        // Every focus paint follows didRenew; locked cancellation closes future publication.
+        let unpainted = lease.ownershipResolved && !lease.mayHavePainted
+        if (restored || unpainted) && focusLeases[lease.target.physicalTarget] === lease {
+            focusLeases.removeValue(forKey: lease.target.physicalTarget)
+        }
+        lock.unlock()
+        lease.finished.leave()
+        return restored || unpainted
+    }
+
+    private func clearManual(excluding handled: Set<TerminalTargetBinding> = []) {
+        lock.lock()
+        let leases = focusLeases.filter { !handled.contains($0.key) && $0.value.retiring && !$0.value.clearing }
+            .map(\.value)
+        for lease in leases { lease.clearing = true; lease.finished.enter() }
+        lock.unlock()
+        guard !leases.isEmpty else { return }
+        focusClearQueue.async { [weak self] in
+            guard let self = self else {
+                for lease in leases { lease.finished.leave() }
+                return
+            }
+            DispatchQueue.concurrentPerform(iterations: leases.count) { index in
+                _ = self.clearFocusLease(leases[index])
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.lock.lock()
+                let pending = self.focusLeases.values.contains { $0.retiring }
+                let progressed = leases.contains { self.manualWanted.contains($0.target.physicalTarget)
+                    && self.manualBlocked.contains($0.target.physicalTarget)
+                    && ($0.ownershipResolved || self.focusLeases[$0.target.physicalTarget] !== $0) }
+                self.lock.unlock()
+                self.focusCleanupError = pending ? "Some focus effects could not be cleared. Restore Visibility is available." : nil
+                if progressed, let latest = self.manualLatest, self.manualPending == nil {
+                    self.manualPending = latest
+                    self.updateManual()
                 }
             }
         }
@@ -412,10 +524,25 @@ final class FocusController: ObservableObject {
         var colors: TerminalRenderer.Colors?
         var version = 0
         var invalidSourcesVersion: Int?
-        var lastHeartbeat: Double
         var renewedTargets = Set<TerminalTargetBinding>()
         init(startedAt: Double, revision: VisualRestrictionsRevision) {
-            self.startedAt = startedAt; self.revision = revision; self.lastHeartbeat = startedAt
+            self.startedAt = startedAt; self.revision = revision
+        }
+    }
+
+    private final class FocusLease {
+        let id = UUID().uuidString
+        let target: TerminalTargetBinding
+        let owner: Run
+        let revision: VisualRestrictionsRevision
+        var lastHeartbeat: Double
+        var retiring = false
+        var ownershipResolved = false
+        var clearing = false
+        var mayHavePainted = false
+        let finished = DispatchGroup()
+        init(target: TerminalTargetBinding, owner: Run, at: Double) {
+            self.target = target; self.owner = owner; self.revision = owner.revision; self.lastHeartbeat = at
         }
     }
 }

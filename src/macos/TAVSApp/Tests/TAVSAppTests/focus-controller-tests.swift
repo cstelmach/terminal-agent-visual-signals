@@ -30,13 +30,14 @@ final class FocusControllerTests: XCTestCase {
         configureState()
     }
 
-    private func configureState(lookup: ((Int32) -> ProcessIdentity?)? = nil) {
+    private func configureState(lookup: ((Int32) -> ProcessIdentity?)? = nil,
+                                runner: ProcessRunner = SystemProcessRunner()) {
         state = TerminalVisualStateStore(runtimeDirectory: root, clock: clock,
             lookup: lookup ?? { self.identities[$0] }, processMissing: { self.missingProcesses.contains($0) })
         recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
                 lockURL: root.appendingPathComponent("lock.state"), clock: clock),
-            processRunner: SystemProcessRunner(), clock: clock, controller: generation(90), nativeSnapshot: { [] })
+            processRunner: runner, clock: clock, controller: generation(90), nativeSnapshot: { [] })
     }
 
     override func tearDownWithError() throws {
@@ -75,9 +76,12 @@ final class FocusControllerTests: XCTestCase {
         wait(for: [ready], timeout: 1)
     }
 
-    private func read(_ index: Int) throws -> Data {
+    private func read(_ index: Int, file: StaticString = #filePath, line: UInt = #line) throws -> Data {
         var descriptor = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
-        guard poll(&descriptor, 1, 1_000) == 1 else { throw POSIXError(.ETIMEDOUT) }
+        guard poll(&descriptor, 1, 1_000) == 1 else {
+            XCTFail("PTY \(index) produced no expected bytes", file: file, line: line)
+            throw POSIXError(.ETIMEDOUT)
+        }
         var bytes = [UInt8](repeating: 0, count: 4_096)
         let count = Darwin.read(ptys[index].master, &bytes, bytes.count)
         guard count > 0 else { throw POSIXError(.EIO) }
@@ -562,6 +566,98 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(try read(2), Data("\u{1B}]111\u{1B}\\".utf8))
     }
 
+    func testFailedTargetRetirementKeepsHealthyIdentityAndBoundsRetries() throws {
+        let a = try surface(10), h = try surface(20), f = try surface(30)
+        let guardLock = NSLock(), runner = MockProcessRunner()
+        var failing = false, failedClears = 0
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            guardLock.lock()
+            let reject = failing && path == f.tty
+            if reject && beforeOpen != nil { failedClears += 1 }
+            guardLock.unlock()
+            if reject { throw ProcessRunnerError.deviceNotWritable(path) }
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: beforeOpen, prepare: prepare)
+        }
+        recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
+                lockURL: root.appendingPathComponent("lock.state"), clock: clock),
+            processRunner: runner, clock: clock, controller: generation(90), nativeSnapshot: { [] })
+        let focus = controller(MockTimerScheduler()), rows = [a,h,f]
+        defer {
+            guardLock.lock(); failing = false; guardLock.unlock()
+            if focus.mode != .off {
+                let done = expectation(description: "Failed test's owned cleanup drained")
+                focus.$focusCleanupError.dropFirst().first().sink { _ in done.fulfill() }.store(in: &subscriptions)
+                focus.focusOff(); wait(for: [done], timeout: 2)
+            }
+        }
+        focus.focusSelected([a], catalogue: rows); awaitManual(focus); _ = try read(1); _ = try read(2)
+        let healthy = try XCTUnwrap(state.captureTarget(for: h)), failed = try XCTUnwrap(state.captureTarget(for: f))
+        let h0 = try XCTUnwrap(state.currentEffectUnlocked(healthy, kind: .focus, deadline: .max))
+        let f0 = try XCTUnwrap(state.currentEffectUnlocked(failed, kind: .focus, deadline: .max))
+        guardLock.lock(); failing = true; guardLock.unlock()
+        for _ in 1...12 {
+            clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus); _ = try read(1)
+            let current = try XCTUnwrap(state.currentEffectUnlocked(healthy, kind: .focus, deadline: .max))
+            XCTAssertEqual(current.effectID, h0.effectID)
+            XCTAssertEqual(current.heartbeatAt, clock.now().timeIntervalSince1970)
+            XCTAssertEqual(try state.currentEffectUnlocked(failed, kind: .focus, deadline: .max), f0)
+        }
+        guardLock.lock(); let attempts = failedClears; failing = false; guardLock.unlock()
+        XCTAssertLessThanOrEqual(attempts, 9)
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus)
+        _ = try read(1); _ = try read(2)
+        let recovered = try XCTUnwrap(state.currentEffectUnlocked(failed, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(recovered.effectID, f0.effectID)
+        XCTAssertEqual(recovered.heartbeatAt, clock.now().timeIntervalSince1970)
+        XCTAssertEqual(try state.currentEffectUnlocked(healthy, kind: .focus, deadline: .max)?.effectID, h0.effectID)
+        XCTAssertEqual(focus.workingSet, [a.id])
+        focus.focusOff(); _ = try read(1); _ = try read(2)
+    }
+
+    func testRepeatedModeChangesCannotReplaceUnresolvedTargetOwnership() throws {
+        let a = try surface(10), h = try surface(20), f = try surface(30)
+        let runner = MockProcessRunner(), guardLock = NSLock()
+        var failing = false, newFocusAttempts = 0
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            guardLock.lock()
+            let reject = failing && path == f.tty
+            if reject && beforeOpen == nil { newFocusAttempts += 1 }
+            guardLock.unlock()
+            if reject { throw ProcessRunnerError.deviceNotWritable(path) }
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: beforeOpen, prepare: prepare)
+        }
+        configureState(runner: runner)
+        let focus = controller(MockTimerScheduler()), rows = [a,h,f]
+        defer {
+            guardLock.lock(); failing = false; guardLock.unlock()
+            if focus.mode != .off {
+                let done = expectation(description: "Owned mode-change cleanup drained")
+                focus.$focusCleanupError.dropFirst().first().sink { _ in done.fulfill() }.store(in: &subscriptions)
+                focus.focusOff(); wait(for: [done], timeout: 2)
+            }
+        }
+        focus.focusSelected([a], catalogue: rows); awaitManual(focus); _ = try read(1); _ = try read(2)
+        let target = try XCTUnwrap(state.captureTarget(for: f))
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        guardLock.lock(); failing = true; guardLock.unlock()
+        for _ in 0..<6 {
+            clock.advance(by: 2); focus.focusSelected([a], catalogue: rows); awaitManual(focus)
+            _ = try read(1)
+            XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max), original)
+        }
+        guardLock.lock(); let attempts = newFocusAttempts; failing = false; guardLock.unlock()
+        XCTAssertEqual(attempts, 0)
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus); _ = try read(1); _ = try read(2)
+        let fresh = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(fresh.effectID, original.effectID)
+        XCTAssertEqual(fresh.heartbeatAt, clock.now().timeIntervalSince1970)
+        XCTAssertEqual(focus.workingSet, [a.id])
+        focus.focusOff(); _ = try read(1); _ = try read(2)
+    }
+
     func testCatalogueFailureRetainsLogicalSetAndExpiredOwnershipGetsANewID() throws {
         let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
@@ -570,7 +666,7 @@ final class FocusControllerTests: XCTestCase {
         focus.catalogueUnavailable()
         XCTAssertEqual(focus.workingSet, [a.id]); XCTAssertEqual(focus.mode, .manual)
         clock.advance(by: 10)
-        focus.acceptCatalogue([a,b]); _ = try read(1)
+        focus.acceptCatalogue([a,b]); awaitManual(focus); _ = try read(1)
         let next = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
         XCTAssertNotEqual(next.effectID, old.effectID)
         XCTAssertEqual(next.heartbeatAt, 1_010)

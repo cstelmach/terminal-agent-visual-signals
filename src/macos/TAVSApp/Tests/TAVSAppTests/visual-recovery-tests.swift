@@ -205,6 +205,95 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertEqual(try read(plain), Data("\u{1B}]111\u{1B}\\".utf8))
     }
 
+    func testFocusFactoryRejectsAmbiguousAliasesBeforeCreatingRequests() throws {
+        let plain = try terminal(10), first = nativeAlias(plain)
+        let second = TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,
+            nativeSurface: GhosttySurfaceID(application: generation(80), terminalID: "other"))
+        var calls = 0
+        let items = recovery().applyFocus(to: [first, second]) { _ in
+            calls += 1; return try self.focusRequest()
+        }
+        XCTAssertEqual(items.map(\.status), [.failed])
+        XCTAssertEqual(calls, 0)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        try noBytes(plain)
+    }
+
+    func testFocusFactoryPreservesCrossLifetimeTTYConflictRejection() throws {
+        let first = try terminal(10)
+        identities[20] = ProcessIdentity(generation: generation(20), parentPID: 1, group: 20,
+            device: first.device, foregroundGroup: 20)
+        let second = TerminalTargetBinding(tty: first.tty, device: first.device, ttyOwner: generation(20), nativeSurface: nil)
+        XCTAssertEqual(state.validateTarget(first), .valid)
+        XCTAssertEqual(state.validateTarget(second), .valid)
+        var calls = 0
+        let items = recovery().applyFocus(to: [first, second]) { _ in
+            calls += 1; return try self.focusRequest()
+        }
+        XCTAssertEqual(items.map(\.status), [.failed, .failed])
+        XCTAssertEqual(calls, 0)
+        try noBytes(first)
+    }
+
+    func testSuppressedRestorationCancelsAnUnpaintedRecipeWithoutOutput() throws {
+        let target = try terminal(10), value = try focusRequest(), renderer = recovery()
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788"), to: root.appendingPathComponent("lock.state"))
+        XCTAssertFalse(try renderer.write(.focus(value), to: target))
+        try noBytes(target)
+        try LockStateWriter.write(LockStateData(locked: false, reason: .manual, lockUntilEpoch: 0,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000), to: root.appendingPathComponent("lock.state"))
+        var canceled = false
+        XCTAssertFalse(try renderer.write(.clearFocus(effectID: value.effectID, revision: value.revision,
+            didCancel: { _ in canceled = true }, restoreBackground: { false }), to: target))
+        XCTAssertTrue(canceled)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        try noBytes(target)
+    }
+
+    func testRequestedFocusRestorationPaintsOnlyCurrentGlobalBackground() throws {
+        let target = try terminal(10), value = try focusRequest()
+        _ = try recovery().write(.focus(value), to: target); _ = try read(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#FFFFFF"),
+            to: root.appendingPathComponent("lock.state"))
+        XCTAssertTrue(try recovery().write(.clearFocus(effectID: value.effectID, revision: value.revision,
+            restoreBackground: { true }), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#667788\u{1B}\\".utf8))
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+    }
+
+    func testRequestedFocusRestorationLeavesLegacyForegroundAndPaletteForReconciliation() throws {
+        let target = try terminal(10), value = try focusRequest(), renderer = recovery()
+        _ = try renderer.write(.focus(value), to: target); _ = try read(target)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#FFFFFF"),
+            to: root.appendingPathComponent("lock.state"))
+        _ = try renderer.write(.currentRestriction, to: target); _ = try read(target)
+        try LockStateWriter.write(LockStateData(locked: false, reason: .manual, lockUntilEpoch: 0,
+            unlockUntilEpoch: 0, writtenEpoch: 1_000), to: root.appendingPathComponent("lock.state"))
+        XCTAssertTrue(try renderer.write(.clearFocus(effectID: value.effectID, revision: value.revision,
+            restoreBackground: { true }), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertTrue(try renderer.write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        let ordinary = try read(target)
+        XCTAssertTrue(ordinary.starts(with: Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8)))
+    }
+
+    func testRequestedMissingFocusRestorationComposesLatestIntentAndRejectsChangedRevision() throws {
+        let target = try terminal(10), value = try focusRequest()
+        let renderer = recovery()
+        _ = try renderer.write(.ordinary(intent(target, color: "#123456"), synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        XCTAssertTrue(try renderer.write(.clearFocus(effectID: "absent", revision: value.revision,
+            restoreBackground: { true }), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;#123456\u{1B}\\".utf8))
+        try restrictions.write(suspended: true)
+        XCTAssertFalse(try renderer.write(.clearFocus(effectID: "absent", revision: value.revision,
+            restoreBackground: { true }), to: target))
+        try noBytes(target)
+    }
+
     func testMaskedFocusCachesItsRecipeAndReportsNoDimming() throws {
         let target = try terminal(10), value = try focusRequest()
         try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
