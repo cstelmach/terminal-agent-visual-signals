@@ -729,3 +729,32 @@ Preserve native preference and never switch backend after a selected native oper
 Actual Linux namespace/device scope and physical native acceptance remain unverified; earlier
 historical failure attribution and configured-color freshness remain open. Phases 2/7/8 stay
 Blocked; Phase 9 and the full goal remain active/incomplete.
+
+### Phase 9 portable context and observations: 2026-10-14 00:19 CEST
+
+`a932802` adds finite context capture/codec, one-pass metadata/event extraction and current Mac
+foreground/provider executable proofs. Interpreter names cannot verify an agent; unverified
+foreground binding stays explicit. No body/display metadata enters correlation. `46ee18b` adds
+strict observation publication under the shared lock and one metadata deadline, preserving older
+record rejection, equal-time acceptance and regular-data repair. Shared latest-read extraction
+retains ordinary intent repair versus synthetic strictness. Publication paints nothing and creates
+no intent, target, effect or independent live/attention authority.
+Source P2 was confirmed against native intake and reproduced with its canonical response token:
+Xsbmzl failed on response controls; the corrected context preserves opaque intake metadata while
+strict observation rejects invalid ID. UZehVK: 11 context checks. Initial Ib970N lacked the module;
+Ps7cv8: 13 initial cases; KrRKhe: 116 before the extra native regression. Final KrzC8M: 117/117
+portable in 3.016 seconds; rsITTi: 561/561 Swift in 10.588 seconds; eF7MUl: 23/23 isolated hook
+checks. Python syntax and owned staged/secrets/whitespace checks passed. Actual owned Mac PTYs
+agree with source-built native foreground capture and exchange schema-1 context/observation.
+The full exploration/draft source report and parent disposition are preserved in
+[context source checks](portable-context-source-check-2026-10-14.md).
+**Scope:** Approved H1 extension, context/publication interfaces, existing process/metadata and
+shared record helpers, focused tests, API/bug/roadmap docs. Two feature commits preserve separate
+context and publication checks. No capabilities, hook routing, runtime schema or control plane.
+No app/VM/container launch, production install/settings/schedules or existing session termination.
+SPEC body/PLAN remain unchanged. Physical Ghostty visibility/navigation is not proved by PTY data.
+Next: caller ancestry and no-output register/current/check-context, then dispatcher/isolation,
+resolver/delivery/sync and explicit Linux scope/runtime checks. Preserve selected native failures;
+do not switch to portable after a failed native operation. Earlier historical failure attribution,
+configured-color freshness and physical acceptance remain open. Phases 2/7/8 stay Blocked;
+Phase 9 and the full goal remain active/incomplete.

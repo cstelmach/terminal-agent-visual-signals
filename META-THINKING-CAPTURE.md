@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 35 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 43 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 36 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 44 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3840,3 +3840,73 @@ state and existing sessions were preserved.
 P9 applies to selecting the dated state package. No new skill or control plane was proposed:
 existing source inspection and tests cover this slice. Tool actions, results and code ordering
 are observed. Explanations of why the approach was economical remain reconstructions.
+
+
+## 2026-10-14 · gpt-6 · portable-context-publication
+
+meta:
+  model: gpt-6 family self-report; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; internal setting unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool calls; no separate transcript extraction
+
+**Framing [O]:** The active goal continuation supplied the next iteration. The previous turn
+was classified as progress because reconcile code and evidence changed authoritative state.
+Git was clean and the dated progress package retained Phase 9 as active. Remaining native
+acceptance was preserved. This slice exposed internal context and observation interfaces,
+rather than prematurely advertising a backend whose helper dispatcher remains incomplete.
+
+**Strategy [O/R]:** Native intake, foreground identity and observation validation/publication
+were read. An existing explorer extracted the missing contracts and subsequently checked the
+implementation. Existing finite metadata decoding, process inspection, typed records, shared
+lock and atomic writer were reused. New context and observation modules separate correlation
+from storage. Tests were separated along that same boundary for two feature commits. Reusing
+latest-record repair across observations and ordinary intent avoided duplicating the regular-file
+repair policy; the claimed simplicity benefit is a design interpretation [R].
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Orient/read | dated state, native callers and validators | unfinished helper slice selected |
+| 2 | Red/green | context/observation tests and primitives | missing module, then 13 pass |
+| 3 | Source check | optional response-string contract | confirmed native compatibility gap |
+| 4 | Native reproduction | source-built intake token | portable failure reproduced |
+| 5 | Correction/regression | context versus observation validation | 117 portable; 561 Swift; 23 hook |
+| 6 | Commit/document | context and observation features | a932802 and 46ee18b |
+
+**Decision points [O]:** Foreground-family proof and provider executable evidence remain
+distinct. An interpreter may supply an unverified foreground binding, but cannot verify Claude
+or Codex merely from metadata or a command name. Context carries a fresh delivery/time and
+finite correlation fields, while session/cwd/transcript display fields remain outside it.
+Observation publication does not require a current live producer; later rendering and attention
+proofs retain that responsibility. Older observation times refuse replacement, equal times are
+accepted, and only invalid regular data can be repaired. Links, FIFO/storage failure and deadline
+expiry remain unavailable rather than being treated as missing observations.
+
+**Failure arc, misplaced validation [O/R]:** The draft reused the strict visual text validator
+for optional context response metadata. Source review compared native selected-string checks
+and identified accepted control-containing response values. The root reread native intake and
+constructed a token using the source-built helper. `ValueError: Invalid context token` confirmed
+the mismatch. The correction keeps type/UTF-8 length/NUL validation at intake/context and strict
+ID validation at observation publication. The regression now proves native-token acceptance,
+Python capture acceptance and observation rejection on the same value. The reconstructed cause
+[R] was applying a later authority boundary too early, narrowing otherwise valid ordinary output.
+No raw terminal interpretation or automatic cue eligibility was added.
+
+**Verification [O]:** Final isolated portable run passed 117 tests in 3.016 seconds. Swift passed
+561 in 10.588 seconds, and the affected hook suite passed 23 checks. Syntax, staged path ownership,
+secret-pattern, .env and whitespace checks passed. Owned macOS PTYs verified real foreground
+agreement with the native helper, cross-language observation tokens and absent terminal bytes.
+The source report was preserved with the confirmed P2 and its disposition. Linux runtime/scope,
+helper caller ancestry, no-output managed verbs, dispatch/routing and physical Ghostty/UI
+acceptance remain open. Existing sessions and production settings were preserved; no app, VM
+or container was launched.
+
+**Heuristics/confidence [O/R]:** P8 applies to reproducing a source finding before correction;
+P9 applies to continuing from the SPEC-owned state rather than a historical phase number.
+Existing source inspection and isolated tests suffice here, so no new control plane or skill was
+proposed. Actions, source predicates and results are observed; economy and causal explanations
+are reconstructed design arguments. The full goal remains active and incomplete.
