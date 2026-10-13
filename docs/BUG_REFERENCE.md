@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.24
+Version: 1.25
+
+## Idle timeout cleanup rejects an exited agent despite a live continuing shell
+
+The forced reset required the inherited producer to remain live. After an unexpected agent
+exit it rejected the reset, ended the timer and retained the idle color on its continuing shell.
+The existing typed reset now resolves an orphaned request through the cached target. Under the
+same output budget it requires a valid continuing owner, unchanged observation delivery and
+latest intent previously bound to that owner. It retains the same checks during final preparation.
+Existing intent must match even while the producer is live, before the first metadata publication.
+This prevents a newer standalone intent from being erased before the producer exits during open.
+Missing bound intent, newer observation or standalone intent, and owner reuse refuse output.
+The reset also shares the queued-render revision check, preventing a late directory-title replay
+after recovery. Owned-PTY regressions verify cleanup, those refusals and recovery ordering.
 
 ## An idle notification leaves its timer on the completion delivery
 

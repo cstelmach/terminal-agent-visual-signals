@@ -77,8 +77,11 @@ enum ManagedOutputEntry {
                       producer.pid > 0, producer.startSeconds > 0, producer.startMicroseconds < 1_000_000 else {
                     throw Failure.unavailable
                 }
-                guard expected == number, let live = lookup(producer.pid),
-                      live.generation == producer, live.device == number else { throw Failure.stale }
+                guard expected == number else { throw Failure.stale }
+                if verb != "--managed-forced-reset" {
+                    guard let live = lookup(producer.pid), live.generation == producer,
+                          live.device == number else { throw Failure.stale }
+                }
                 let synthetic: Bool
                 let color: String
                 if verb == "--managed-background" {
@@ -121,7 +124,8 @@ enum ManagedOutputEntry {
                 }
             }
             let recovery = try factory(marker, runtime, environment)
-            let target = verb == "--managed-reconcile" ? try recovery.cachedTarget(tty: tty)
+            let orphanedReset = verb == "--managed-forced-reset" && lookup(owner.pid)?.generation != owner
+            let target = verb == "--managed-reconcile" || orphanedReset ? try recovery.cachedTarget(tty: tty)
                 : try recovery.target(tty: tty, owner: owner)
             if let (style, intent, synthetic, intakeAt) = render {
                 let result = try recovery.render(style, intent: intent, synthetic: synthetic,

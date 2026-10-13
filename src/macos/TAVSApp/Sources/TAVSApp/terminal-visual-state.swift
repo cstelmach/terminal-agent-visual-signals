@@ -607,6 +607,47 @@ final class TerminalVisualStateStore {
         }
     }
 
+    func publishForcedResetUnlocked(_ record: OrdinaryBackgroundIntent, to target: TerminalTargetBinding,
+                                    intakeAt: Double, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        try validate(record)
+        guard record.background == "reset", record.tty == target.tty, record.device == target.device,
+              intakeAt.isFinite, intakeAt > 0, intakeAt <= record.updatedAt,
+              validateTarget(target) == .valid else { throw TerminalVisualStateError.targetUnavailable }
+        let latest: OrdinaryBackgroundIntent? = try read(recordURL("intent", tty: record.tty), deadline: deadline)
+        if let latest = latest {
+            try validate(latest)
+            guard latest.tty == record.tty, latest.device == record.device,
+                  latest.producer == record.producer, latest.deliveryID == record.deliveryID else {
+                throw TerminalVisualStateError.staleDelivery
+            }
+        }
+        if validProducer(tty: record.tty, device: record.device, producer: record.producer) {
+            guard let producer = record.producer,
+                  continuingOwner(producer, device: target.device) == target.ttyOwner else {
+                throw TerminalVisualStateError.targetUnavailable
+            }
+            try publishIntentUnlocked(record, synthetic: true, intakeAt: intakeAt, deadline: deadline)
+            try bindOrdinaryIntentUnlocked(record, to: target, deadline: deadline)
+            return
+        }
+        // An exited producer may clear only its unchanged intent bound to a live continuing owner.
+        guard let latest = latest,
+              let observation: TerminalObservation = try read(recordURL("observation", tty: record.tty),
+                                                              deadline: deadline) else {
+            throw TerminalVisualStateError.staleDelivery
+        }
+        try validate(observation)
+        guard observation.observedAt <= intakeAt, observation.tty == record.tty,
+              observation.device == record.device, observation.producer == record.producer,
+              observation.deliveryID == record.deliveryID else { throw TerminalVisualStateError.staleDelivery }
+        let aliases = try equivalentBindingsUnlocked(for: target, deadline: deadline)
+        let bound = try aliases.compactMap { try boundIntent(for: $0, deadline: deadline) }
+        guard bound.contains(latest) else { throw TerminalVisualStateError.staleDelivery }
+        try publishIntentUnlocked(record, synthetic: false, intakeAt: intakeAt, deadline: deadline)
+        try write(record, to: targetURL(target, filename: "bound-intent.json"), deadline: deadline)
+    }
+
     // Checks frozen render context under the caller's writer lock without
     // publishing an ordinary background or changing current effect ownership.
     func validateSyntheticUnlocked(_ record: OrdinaryBackgroundIntent, intakeAt: Double,

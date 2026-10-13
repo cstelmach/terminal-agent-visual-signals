@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.11
+Version: 1.12
 
 ## Public recovery commands
 
@@ -77,9 +77,16 @@ The device writer's separate original 100 ms deadline is unchanged.
 absolute 100 ms deadline. Background requests publish validated intent and the exact continuing
 owner's bound copy in `beforeOpen`, then release the stable record lock before opening the device.
 Style-only requests do not publish background intent. Device open precedes the output lock.
-Full renders pin the suspension marker before device open under that same budget. Preparation
-rejects a replaced revision with `unaffected`, preserving typed intent without emitting queued
+Full renders and forced resets pin the suspension marker before device open under the same
+budget. Preparation rejects a replaced revision with `unaffected`, preserving intent without queued
 palette, title or bell bytes. A new render after recovery captures the current revision.
+
+`--managed-forced-reset` may clear an exited producer through its cached continuing-owner binding.
+After producer exit it requires an unchanged observation and latest previously bound intent for
+that exact delivery, TTY and device. A live producer may reset without prior intent, but any current
+intent must belong to the same delivery. Checks run before open and under the output lock.
+A newer delivery, standalone intent, missing binding or reused owner rejects the reset.
+No native catalogue access or new helper verb is needed for this cleanup.
 
 Preparation revalidates the opened descriptor, lifetime, stale delivery and current policy under
 that lock. A new restriction replaces the complete ordinary render; selective backgrounds compose

@@ -86,9 +86,9 @@ final class ManagedOutputEntryTests: XCTestCase {
         ManagedOutputEntry.run(args, environment: env, factory: factory, lookup: { self.identities[$0] })
     }
 
-    private func context() -> OrganizerContext {
-        OrganizerContext(deliveryID: "delivery-1", observedAt: Date().timeIntervalSince1970 - 1,
-            provider: "claude", verifiedAgent: true, producer: generation(10), device: device,
+    private func context(pid: Int32 = 10, delivery: String = "delivery-1") -> OrganizerContext {
+        OrganizerContext(deliveryID: delivery, observedAt: Date().timeIntervalSince1970 - 1,
+            provider: "claude", verifiedAgent: true, producer: generation(pid), device: device,
             event: "Stop", responseID: nil)
     }
 
@@ -264,6 +264,53 @@ final class ManagedOutputEntryTests: XCTestCase {
         let result = run(args("--managed-forced-reset", tty, token, "\u{1B}BODY_SENTINEL"))
         XCTAssertEqual(result?.code, 1)
         XCTAssertFalse((result?.error ?? "").contains("BODY_SENTINEL"))
+        noBytes()
+    }
+
+    func testForcedResetClearsExitedProducerThroughItsContinuingOwner() throws {
+        let value = context(pid: 20)
+        let text = try token(value)
+        try observe(value)
+        XCTAssertEqual(run(args("--managed-background", tty, text, "#123456", "1"))?.code, 0)
+        _ = try read()
+        XCTAssertEqual(state.cachedRecords().bindings.first?.ttyOwner, generation(10))
+        identities.removeValue(forKey: 20)
+        XCTAssertEqual(run(args("--managed-forced-reset", tty, text, "fixture directory"))?.code, 0)
+        XCTAssertEqual(try read(), Data("\u{1B}]104\u{07}\u{1B}]111\u{1B}\\\u{1B}]0;fixture directory\u{1B}\\".utf8))
+        let target = try XCTUnwrap(state.cachedRecords().bindings.first)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "reset")
+    }
+
+    func testExitedProducerResetCannotOverrideNewDeliveryOrReusedOwner() throws {
+        let value = context(pid: 20)
+        let text = try token(value)
+        try observe(value)
+        XCTAssertEqual(run(args("--managed-background", tty, text, "#123456", "1"))?.code, 0)
+        _ = try read()
+        identities.removeValue(forKey: 20)
+        identities[10] = ProcessIdentity(generation: ProcessGeneration(pid: 10, startSeconds: 2,
+            startMicroseconds: 1), parentPID: 1, group: 10, device: device, foregroundGroup: 10)
+        XCTAssertNotEqual(run(args("--managed-forced-reset", tty, text, "old directory"))?.code, 0)
+        noBytes()
+        identities[10] = identity(10, parent: 1, device: device)
+        let latest = context(delivery: "new-delivery")
+        try observe(latest)
+        XCTAssertEqual(run(args("--managed-forced-reset", tty, text, "old directory"))?.code, 3)
+        noBytes()
+    }
+
+    func testExitedProducerResetRequiresItsPreviouslyBoundIntent() throws {
+        let value = context(pid: 20), text = try token(value)
+        try observe(value)
+        XCTAssertEqual(run(args("--managed-register", tty, "20"))?.code, 0)
+        identities.removeValue(forKey: 20)
+        XCTAssertEqual(run(args("--managed-forced-reset", tty, text, "old directory"))?.code, 3)
+        noBytes()
+        identities[getpid()] = identity(getpid(), parent: 10, device: UInt32.max)
+        let fresh = try token(context(delivery: "standalone-background"))
+        XCTAssertEqual(run(args("--managed-background", tty, fresh, "#778899", "0"))?.code, 0)
+        _ = try read()
+        XCTAssertEqual(run(args("--managed-forced-reset", tty, text, "old directory"))?.code, 3)
         noBytes()
     }
 

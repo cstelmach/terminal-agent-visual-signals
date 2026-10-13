@@ -996,6 +996,88 @@ final class VisualRecoveryTests: XCTestCase {
         XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]11;#AABBCC\u{1B}\\\u{1B}]0;directory\u{1B}\\".utf8))
     }
 
+    func testForcedResetQueuedAcrossRecoveryCannotReplayItsTitle() throws {
+        let target = try terminal(10), value = intent(target, color: "reset")
+        try cache(target)
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "complete",
+            event: nil, deliveryID: value.deliveryID, responseID: nil, observedAt: 1_000))
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        let finished = DispatchSemaphore(value: 0), result = RecoveryWriteResult()
+        defer { release.signal() }
+        let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
+            entered.signal(); release.wait(); return Darwin.open(path, flags)
+        }))
+        DispatchQueue.global().async {
+            result.value = Result {
+                try queued.write(.forcedReset(value, intakeAt: 1_000, title: "old directory"), to: target)
+            }
+            finished.signal()
+        }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        XCTAssertFalse(recovery().recover().hasFailures)
+        XCTAssertEqual(try read(target), reset)
+        release.signal()
+        XCTAssertEqual(finished.wait(timeout: .now() + 1), .success)
+        XCTAssertFalse(try XCTUnwrap(result.value).get())
+        try noBytes(target)
+    }
+
+    func testLiveProducerResetCannotEraseANewerIntentBeforeExitingDuringOpen() throws {
+        let target = try terminal(10)
+        identities[20] = ProcessIdentity(generation: generation(20), parentPID: 10, group: 10,
+            device: target.device, foregroundGroup: 10)
+        let old = OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: generation(20),
+            deliveryID: "old-agent", updatedAt: 1_000, background: "#112233")
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: generation(20), provider: "claude", verifiedAgent: true, state: "complete",
+            event: "Stop", deliveryID: old.deliveryID, responseID: nil, observedAt: 1_000))
+        _ = try recovery().write(.ordinary(old, synthetic: false, intakeAt: 1_000), to: target)
+        _ = try read(target)
+        clock.advance(by: 1)
+        _ = try recovery().write(.ordinary(intent(target, color: "#778899"), synthetic: false,
+            intakeAt: 1_001), to: target)
+        _ = try read(target)
+        clock.advance(by: 1)
+        let resetIntent = OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
+            producer: generation(20), deliveryID: old.deliveryID, updatedAt: 1_002, background: "reset")
+        let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
+            self.identities.removeValue(forKey: 20)
+            return Darwin.open(path, flags)
+        }))
+        XCTAssertThrowsError(try queued.write(.forcedReset(resetIntent, intakeAt: 1_000,
+            title: "old directory"), to: target)) { error in
+            guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Unexpected error: \(error)") }
+        }
+        try noBytes(target)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#778899")
+    }
+
+    func testForcedResetCannotEraseAStandaloneIntentPublishedDuringOpen() throws {
+        let target = try terminal(10), original = intent(target, color: "reset")
+        try state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "complete",
+            event: nil, deliveryID: original.deliveryID, responseID: nil, observedAt: 1_000))
+        let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
+            self.clock.advance(by: 1)
+            let fresh = OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
+                producer: target.ttyOwner, deliveryID: "new-standalone", updatedAt: 1_001, background: "#778899")
+            do {
+                _ = try self.recovery().write(.ordinary(fresh, synthetic: false, intakeAt: 1_001), to: target)
+                _ = try self.read(target)
+            } catch {
+                XCTFail("Standalone publication failed: \(error)"); errno = EIO; return -1
+            }
+            return Darwin.open(path, flags)
+        }))
+        XCTAssertThrowsError(try queued.write(.forcedReset(original, intakeAt: 1_000,
+            title: "old directory"), to: target)) { error in
+            guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Unexpected error: \(error)") }
+        }
+        try noBytes(target)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#778899")
+    }
+
     func testScopedTargetResolutionReusesOnlyMatchingAllowedNativeBinding() throws {
         let plain = try terminal(10)
         let native = TerminalTargetBinding(tty: plain.tty, device: plain.device, ttyOwner: plain.ttyOwner,

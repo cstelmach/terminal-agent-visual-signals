@@ -153,12 +153,19 @@ final class VisualRecovery {
         var beforeOpen: ((UInt64) throws -> Void)?
         if let (intent, synthetic, intakeAt) = publication {
             beforeOpen = { deadline in
-                try self.state.publishIntent(intent, to: target, synthetic: synthetic,
-                    intakeAt: intakeAt, deadline: deadline)
+                if resetTitle != nil {
+                    try self.state.withLock(target.tty, deadline: deadline) {
+                        try self.state.publishForcedResetUnlocked(intent, to: target,
+                            intakeAt: intakeAt, deadline: deadline)
+                    }
+                } else {
+                    try self.state.publishIntent(intent, to: target, synthetic: synthetic,
+                        intakeAt: intakeAt, deadline: deadline)
+                }
             }
         } else { beforeOpen = nil }
         var renderRevision: VisualRestrictionsRevision?
-        if render != nil {
+        if render != nil || resetTitle != nil {
             let publish = beforeOpen
             beforeOpen = { deadline in
                 renderRevision = try self.restrictions.captureRevision()
@@ -186,6 +193,10 @@ final class VisualRecovery {
         return try processRunner.writeManagedToDevice(path: target.tty,
             lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
+            if render != nil || resetTitle != nil {
+                guard let revision = renderRevision,
+                      try self.restrictions.matches(revision, deadline: deadline) else { return nil }
+            }
             if case .checkSynthetic(let intent, let intakeAt) = operation {
                 guard intent.tty == target.tty, intent.device == target.device else {
                     throw TerminalVisualStateError.invalidRecord
@@ -194,9 +205,6 @@ final class VisualRecovery {
                 return nil
             }
             if case .render(_, let intent, let synthetic, let intakeAt) = operation {
-                // Recovery invalidates queued styles even when it preserves their typed intent.
-                guard let revision = renderRevision,
-                      try self.restrictions.matches(revision, deadline: deadline) else { return nil }
                 guard intent.tty == target.tty, intent.device == target.device else {
                     throw TerminalVisualStateError.invalidRecord
                 }
@@ -270,9 +278,14 @@ final class VisualRecovery {
             }
 
             if let (intent, synthetic, intakeAt) = publication {
-                try self.state.publishIntentUnlocked(intent, synthetic: synthetic,
-                    intakeAt: intakeAt, deadline: deadline)
-                try self.state.bindOrdinaryIntentUnlocked(intent, to: target, deadline: deadline)
+                if resetTitle != nil {
+                    try self.state.publishForcedResetUnlocked(intent, to: target,
+                        intakeAt: intakeAt, deadline: deadline)
+                } else {
+                    try self.state.publishIntentUnlocked(intent, synthetic: synthetic,
+                        intakeAt: intakeAt, deadline: deadline)
+                    try self.state.bindOrdinaryIntentUnlocked(intent, to: target, deadline: deadline)
+                }
             }
             let currentRule = try self.policy.current(deadline: deadline)
             if case .currentRestriction = operation, currentRule == nil { return nil }
