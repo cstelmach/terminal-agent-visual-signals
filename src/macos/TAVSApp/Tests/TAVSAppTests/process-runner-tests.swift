@@ -778,6 +778,7 @@ final class ProcessRunnerTests: XCTestCase {
                 XCTAssertFalse(painted, file: file, line: line)
                 return
             } catch ProcessRunnerError.deviceIOFailed(_, EBUSY) { usleep(1_000) }
+            catch ProcessRunnerError.deviceWriteTimedOut { usleep(1_000) }
             catch { XCTFail("Admission cleanup failed: \(error)", file: file, line: line); return }
         }
         XCTFail("Worker did not release admission", file: file, line: line)
