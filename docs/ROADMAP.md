@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.15
+Version: 1.16
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -93,4 +93,7 @@ delivery needs creator input. No raw bypass or change to D01-D18 has been made.
 Normal Claude/Codex hooks now reuse validated organizer support across the original script exec,
 reducing helper launches from six to five while preserving argv disposal and independent rendering.
 Shell startup still uses three helpers; its cost descriptions no longer promise submillisecond work.
-Cached-record scaling and preview configuration cost remain separate unverified M5 concerns.
+Ordinary target lookup now scans only the requested TTY bucket, retaining every owner lifetime and
+effect-only binding. Full recovery still sees all records, including corruption. A symlink scan
+correction preserves healthy neighboring records. Retained history within one TTY and preview
+configuration cost remain separate M5 concerns; no general latency improvement is claimed.

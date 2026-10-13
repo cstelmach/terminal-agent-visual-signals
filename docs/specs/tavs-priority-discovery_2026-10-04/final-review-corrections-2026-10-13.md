@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.13
+Version: 1.14
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `aa85072`.
+Current product checkpoint: `70e5e74`.
 
 ## Review execution status
 
@@ -373,7 +373,8 @@ Cached-record scaling and preview configuration cost remain separate M5 work.
 ## Remaining adjudication and implementation
 
 Other Claude findings still require parent source/spec verification before fixes or dismissal.
-H1 transport work awaits the creator choice. Meanwhile verify process-cost claims (Claude M5).
+H1 transport work awaits the creator choice. Next M5 work is preview configuration cost and
+retained history within one TTY.
 Do not suppress an unbound
 native-row failure based
 only on its TTY string: nil capture cannot establish current physical/native identity.
@@ -398,3 +399,19 @@ The lease correction used owned PTYs and private roots without app or native con
 The source freeze was released after confirming that remaining provider inputs were immutable
 `71e0f60` packets. Every completed review stays labeled with that target; `689203e` is a separately
 verified correction. The goal remains active with source defects and required acceptance open.
+
+## Per-TTY cached lookup (Claude M5, partial)
+
+`70e5e74` uses the existing TTY cache partition for ordinary and orphaned-producer resolution.
+All same-TTY owner generations, native/plain aliases and effect-only bindings remain candidates.
+Full recovery/relaunch retains global enumeration and unreadable records. No history is retired.
+A Foundation probe exposed a pre-existing scanner defect: calling `skipDescendants()` on a link
+pruned the next actual directory. Keeping link rejection without that call preserves valid peers.
+Three new snapshots and two extended ambiguity checks cover the correction. `NJBAjY` was API red;
+`Q521S1` additionally exposed fixture URL spelling and missing peers; `vGkCtp` retained the latter.
+Final `1cYi6l` passed 9/9 focused; `i9FV5n` passed 551/551 Swift in 10.631 seconds. Release
+`OGadCV` passed in 19.97 seconds; current-helper `jP9fYJ` passed 178/178 isolated Bats. No warnings.
+The [source review](tty-cache-scope-check-2026-10-13.md) found no introduced defect, with explicit
+pre-existing policy/enumeration limits. The initial investigation's requirement to skip link
+descendants was corrected by the probe. No latency or native acceptance claim follows these checks.
+Next: preview configuration cost and retained history within one TTY; H1 input remains pending.

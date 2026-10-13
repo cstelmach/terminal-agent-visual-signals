@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 15:38 CEST
-**Version:** 4.12
+**Last Updated:** 2026-10-13 16:03 CEST
+**Version:** 4.13
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | aa85072; earlier hashes below/appendix | 548 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 70e5e74; earlier hashes below/appendix | 551 Swift; 178 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -882,3 +882,17 @@ Reports/measurements are in [helper cost](helper-cost-check-2026-10-13.md); fail
 H1 input remains pending. M5 cached-record scaling/configuration cost remain separate next work.
 The historical Phase 8 source block moved unchanged with reconstruction verified; open cases stay above.
 SPEC/PLAN fixed, 2/7/8 Blocked and 9 active. No real app/native control, install/sync or user-state changes.
+
+### Phase 9 per-TTY cached lookup: 2026-10-13 16:03 CEST
+
+`70e5e74` scopes two resolution callers to one TTY while retaining every owner/alias/effect branch.
+Full recovery/relaunch scans remain global. Three new cases and two extended conflict checks pass.
+Red `NJBAjY`: missing API; `Q521S1`: scope failures plus path assertions and lost sibling records.
+Normalize fixture paths; `vGkCtp` retained one lost-record failure. A local Foundation probe proved
+`skipDescendants()` on links pruned the next directory; link rejection now preserves valid peers.
+Final `1cYi6l`: 9/9 focused; `i9FV5n`: 551/551 Swift, 10.631 s; release `OGadCV`: 19.97 s.
+Current-helper `jP9fYJ`: 178/178 isolated Bats, fixtures retained. Builds/suites ran sequentially.
+The [source check](tty-cache-scope-check-2026-10-13.md) found no new defect; prior limits stay.
+**Scope:** Two source/two test paths; shared lookup correction extends Phase 9's original file list.
+No retirement/index or latency claim. Same-TTY history and preview config cost remain M5 work.
+H1 input and native acceptance stay open. SPEC/PLAN fixed; goal active, 2/7/8 Blocked, 9 active.

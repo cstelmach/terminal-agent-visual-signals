@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 23 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 31 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 24 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 32 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2984,3 +2984,91 @@ A historical finished Phase 8 source block moved unchanged while unresolved nati
 explicit. H1 input, M5 scaling/configuration work and native acceptance remain open; goal active.
 Attribution and strategy explanations are [R], while results and edits are observable. No new skill
 or process control plane was created from the existing reusable-pattern suggestions.
+
+## 2026-10-13 · gpt-6 · per-tty-cache-scope
+
+meta:
+  model: gpt-6
+  model_source: self-reported; exact served variant unobserved
+  interface: codex-desktop
+  thinking: extended requested
+  session: 01a10879
+  trace: observed tool calls; no independent transcript model extraction
+
+**Framing [O]:** The operator reported another computer crash and asked to resume the active
+implementation goal. Git was clean at dcaaf27, the goal was active and the latest progress entry
+identified cached-record scaling as independent work while compatibility input remained pending.
+The prior source report and scratch build survived. External archive recovery was available but
+unnecessary. Current goal and progress evidence superseded the older memory note about activation.
+The slice remained source-only; required physical Ghostty acceptance was still incomplete.
+
+**Strategy [R]:** Reusing the existing TTY directory partition was the smallest way to avoid
+unrelated cache work. Scoping by owner generation would have hidden another live owner and weakened
+ambiguity detection. Adding an optional scope to the same parser retained every owner and
+native/plain
+branch. Full recovery needed the original global view, including unreadable paths. This choice
+avoided
+an index, retirement policy or changed cache format, and did not require the pending compatibility
+answer.
+
+**Action trace [O]:**
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Reorient | Goal, Git, SPEC/PLAN/PROGRESS | Phase 9 active; clean baseline |
+| 2 | Inspect | Cached parser, two callers and fixtures | Verify existing TTY partition |
+| 3 | Test | Three new snapshots | Missing API, then behavioral red |
+| 4 | Probe | Foundation enumeration | Symlink skip pruned the next real directory |
+| 5 | Correct | Scope, callers and link handling | Preserve all same-TTY identities |
+| 6 | Verify | 9 focused, 551 Swift, release, 178 Bats | Sequential isolated execution |
+| 7 | Check | Explorer follow-up and exact diff | Source review; no introduced defect found |
+| 8 | Commit | Four owned source/test paths | 70e5e74; no installed app change |
+
+**Decision points [O/R]:** The requested TTY root was checked only after retaining the existing
+parent-directory check, preventing a static parent link from being followed. Effects without a
+neighboring target record remained lookup candidates. Two existing recovery cases gained
+cachedTarget
+assertions for conflicting native aliases and live physical owners. Normal and orphaned-producer
+resolution changed; full recovery and relaunch enumeration remained unscoped. These were explicit
+source choices, not a claim that unreadable records already make every resolver fail closed.
+
+**Failure arcs [O]:** The first compile failed because scoped API calls did not exist. A
+signature-only
+stub then produced behavioral scope failures. URL assertions also differed because Foundation
+returned
+normalized /private/var paths and directory slashes; normalized path comparisons corrected the
+fixture.
+The next focused run retained a healthy binding missing beside a descendant link. A small probe
+against
+that owned fixture compared enumeration with and without skipDescendants. It showed that invoking
+the
+method on a symlink skipped the next actual directory's subtree. Removing that call retained link
+rejection and restored healthy records in both scoped and full snapshots. The original
+investigation's
+skip recommendation was therefore revised from executed evidence rather than accepted unchanged.
+
+**Heuristics [O]:** P8 recurred through source verification and the discriminating runtime probe.
+P9 recurred through SPEC-owned state and a bounded Phase 9 correction. The reusable move is to test
+traversal controls on the exact node type they receive; a method name alone does not establish
+behavior.
+Existing review-adjudication and state-orientation promotion proposals remain unchanged; no new
+skill
+or process machinery was created.
+
+**Verification [O]:** Focused checks passed 9/9, the full Swift suite passed 551/551 in 10.631
+seconds,
+release rebuilt in 19.97 seconds, and current-helper Bats passed 178/178 with private roots and
+retained
+fixtures. No production deadline was changed. The source reviewer found no introduced defect but
+kept
+existing unreadable-record, ancestor and filesystem-race limits explicit. No latency benchmark,
+cache
+retirement, real-home test, installation, native control or physical readability acceptance
+occurred.
+Preview configuration cost and same-TTY retained history remain separate concerns; compatibility
+input
+remains pending. Only the bounded slice completed, and the master goal remains active.
+
+**Confidence:** Action facts and test outcomes are observed. The strategy rationale is
+reconstructed;
+exact served model attribution and native acceptance remain unverified.

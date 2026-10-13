@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.38
+Version: 1.39
+
+## Per-terminal lookup scans unrelated cache records
+
+Both normal and exited-producer target resolution recursively scanned every retained TTY bucket.
+The existing TTY partition now limits those two lookups while retaining all same-TTY owners,
+aliases and effects. Recovery continues scanning all records. Three regressions cover partition
+isolation, effect-only bindings, missing buckets, link rejection and malformed/misplaced records;
+existing recovery tests additionally reject conflicting owners and native aliases.
+
+The new descendant-link case also exposed `skipDescendants()` pruning the next real directory
+after a symlink. A local Foundation probe reproduced missing healthy target records. Enumeration
+already does not follow symlinks; recording the link as unreadable without calling that method
+preserves healthy records. Both scoped and full snapshot assertions prevent recurrence.
 
 ## Adapter exec repeats an already verified organizer probe
 

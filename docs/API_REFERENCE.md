@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.24
+Version: 1.25
 
 ## Public recovery commands
 
@@ -138,6 +138,11 @@ that exact delivery, TTY and device. A live producer may reset without prior int
 intent must belong to the same delivery. Checks run before open and under the output lock.
 A newer delivery, standalone intent, missing binding or reused owner rejects the reset.
 No native catalogue access or new helper verb is needed for this cleanup.
+
+Per-TTY resolution uses `cachedRecords(tty:)`, traversing every owner generation and native/plain
+branch of that TTY's existing cache bucket. It retains effect-only bindings and the same parser,
+placement and link checks. Full recovery and launch reconciliation still use `cachedRecords()`
+across all TTYs, including unreadable paths. No records are retired by lookup.
 
 Preparation revalidates the opened descriptor, lifetime, stale delivery and current policy under
 that lock. A new restriction replaces the complete ordinary render; selective backgrounds compose
