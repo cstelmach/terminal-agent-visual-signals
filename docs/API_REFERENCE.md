@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.14
+Version: 1.15
 
 ## Public recovery commands
 
@@ -57,6 +57,10 @@ Exactly 23 fields and a final NUL are required, with a 16 KiB maximum. Control c
 invalid flags and malformed colors/paths fail before output. The response is `rendered`,
 `restricted` or `unaffected`. A rejected stale delivery exits 3; general failure exits 1.
 These values govern title persistence and idle-worker retry. Synthetic work cannot emit a bell.
+Delayed tool-error processing/subagent restoration retains its original delivery and uses the
+same managed render. It skips timer cancellation, session-state publication, counter increments
+and new-prompt identity work. A newer hook after precheck therefore preserves its state and timer;
+final native validation still rejects the stale visual batch. Meaningful hooks retain those actions.
 Current palette, background, title and image styling is composed inside the writer transaction;
 the payload is ephemeral and is not retained as output history.
 

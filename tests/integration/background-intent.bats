@@ -293,6 +293,131 @@ SH
     [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
 }
 
+_validated_restore_race() {
+    local next_state="$1"
+    export TAVS_REAL_TEST_HELPER="$TAVS_TEST_HELPER_BIN"
+    cat > "$CASE_DIR/restore-proxy" <<'PROXY'
+#!/bin/bash
+"$TAVS_REAL_TEST_HELPER" "$@"
+result=$?
+if [[ "$1" == --managed-check-context && "$result" == 0 && "${RESTORE_BARRIER:-0}" == 1 ]]; then
+    : > "$RESTORE_CASE_DIR/validated"
+    for ((attempt=0; attempt<150; attempt++)); do
+        [[ -f "$RESTORE_CASE_DIR/release" ]] && break
+        sleep .02
+    done
+    [[ -f "$RESTORE_CASE_DIR/release" ]] || exit 1
+fi
+if [[ "$1" == --managed-render && "${6:-}" == 1 ]]; then
+    if [[ "${RESTORE_BARRIER:-0}" == 1 ]]; then
+        printf '%s' "$result" > "$RESTORE_CASE_DIR/returned"
+    else
+        printf '%s' "$result" > "$RESTORE_CASE_DIR/stage-ready"
+    fi
+fi
+exit "$result"
+PROXY
+    chmod +x "$CASE_DIR/restore-proxy"
+    cat > "$CASE_DIR/restore-race.sh" <<'SH'
+set -e
+repo="$1"; export RESTORE_CASE_DIR="$2/race-$3"
+export HOME="$RESTORE_CASE_DIR/home" CFFIXED_USER_HOME="$RESTORE_CASE_DIR/home"
+export TAVS_RUNTIME_DIR="$RESTORE_CASE_DIR/runtime" TAVS_TMP_DIR="$RESTORE_CASE_DIR/state"
+export _TAVS_TMP_DIR="$TAVS_TMP_DIR" TAVS_AGENT=claude
+export TAVS_TEST_HELPER_BIN="$2/restore-proxy"
+mkdir -p "$HOME/.tavs" "$TAVS_RUNTIME_DIR" "$TAVS_TMP_DIR"
+printf 'ENABLE_TITLE_PREFIX=false\nIDLE_CHECK_INTERVAL=0.1\nSTAGE_DURATIONS=(2 60 60 60 60 60 60)\nIDLE_STAGE_1_COLOR="#44CC55"\nTHEME_MODE="static"\nFORCE_MODE="dark"\nCLAUDE_DARK_SUBAGENT="#44AA88"\n' > "$HOME/.tavs/user.conf"
+source "$repo/src/core/session-state.sh"
+source "$repo/src/core/spinner.sh"
+TTY_SAFE="${TTY_DEVICE//\//_}"
+source "$repo/src/core/subagent-counter.sh"
+[[ "$3" != current ]] || printf '2\n' > "$SUBAGENT_COUNT_FILE"
+timer=""
+trap 'if [[ -n "$timer" ]]; then kill "$timer" 2>/dev/null || :; fi' EXIT
+printf '%s' '{"hook_event_name":"PostToolUseFailure"}' |
+    RESTORE_BARRIER=1 bash "$repo/src/agents/claude/trigger.sh" tool_error
+for ((attempt=0; attempt<100; attempt++)); do
+    [[ -f "$RESTORE_CASE_DIR/validated" ]] && break
+    sleep .03
+done
+test -f "$RESTORE_CASE_DIR/validated"
+if [[ "$3" == complete ]]; then
+    printf '%s' '{"hook_event_name":"Stop"}' |
+        bash "$repo/src/agents/claude/trigger.sh" complete
+    for ((attempt=0; attempt<40; attempt++)); do
+        read_session_state || :
+        [[ "$SESSION_STATE" == complete && -n "$SESSION_TIMER_PID" ]] && break
+        sleep .03
+    done
+    timer="$SESSION_TIMER_PID"
+    test -n "$timer"
+    for ((attempt=0; attempt<100; attempt++)); do
+        [[ -f "$RESTORE_CASE_DIR/stage-ready" ]] && break
+        sleep .03
+    done
+    test -f "$RESTORE_CASE_DIR/stage-ready"
+    test "$(cat "$RESTORE_CASE_DIR/stage-ready")" = 0
+elif [[ "$3" == subagent-start ]]; then
+    printf '%s' '{"hook_event_name":"SubagentStart"}' |
+        bash "$repo/src/agents/claude/trigger.sh" subagent-start
+    test "$(get_subagent_count)" = 1
+fi
+cp "$STATE_DB" "$RESTORE_CASE_DIR/state-before"
+cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$RESTORE_CASE_DIR/observation-before.json"
+count=$(get_subagent_count)
+: > "$RESTORE_CASE_DIR/release"
+for ((attempt=0; attempt<100; attempt++)); do
+    [[ -f "$RESTORE_CASE_DIR/returned" ]] && break
+    sleep .03
+done
+test -f "$RESTORE_CASE_DIR/returned"
+expected_result=3
+[[ "$3" != current ]] || expected_result=0
+test "$(cat "$RESTORE_CASE_DIR/returned")" = "$expected_result"
+actual_count=$(get_subagent_count)
+test "$actual_count" = "$count" || { printf 'Counter changed: %s to %s\n' "$count" "$actual_count"; exit 1; }
+cmp "$STATE_DB" "$RESTORE_CASE_DIR/state-before"
+cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$RESTORE_CASE_DIR/observation-before.json"
+if [[ -n "$timer" ]]; then
+    read_session_state
+    test "$SESSION_TIMER_PID" = "$timer"
+    kill -0 "$timer"
+    for ((attempt=0; attempt<100; attempt++)); do
+        grep -q '#44CC55' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json && break
+        sleep .03
+    done
+    grep -q '#44CC55' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
+    test "$(cat "$RESTORE_CASE_DIR/stage-ready")" = 0
+    read_session_state
+    test "$SESSION_TIMER_PID" = "$timer"
+    kill -0 "$timer"
+fi
+python3 - "$TAVS_RUNTIME_DIR/organizer" <<'CHECK'
+import json,pathlib,sys
+root=pathlib.Path(sys.argv[1])
+observation=json.loads(next(root.glob('observation-*.json')).read_text())
+intent=json.loads(next(root.glob('intent-*.json')).read_text())
+assert intent['deliveryID']==observation['deliveryID']
+CHECK
+SH
+    run _owned_pty bash "$CASE_DIR/restore-race.sh" "$REPO_ROOT" "$CASE_DIR" "$next_state"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+}
+
+@test "a restore validated before Stop preserves the newer state and timer" {
+    _validated_restore_race complete
+    [[ "$output" == *$'\033]11;#44CC55\033\\'* ]]
+}
+
+@test "a restore validated before SubagentStart preserves the newer state and count" {
+    _validated_restore_race subagent-start
+}
+
+@test "a current tool-error restore paints subagent styling without another spawn" {
+    _validated_restore_race current
+    [[ "$output" == *$'\033]11;#44AA88\033\\'* ]]
+}
+
 @test "an idle notification transfers the current delivery into graduated idle paints" {
     cat > "$HOME/.tavs/user.conf" <<'CONF'
 ENABLE_TITLE_PREFIX=false

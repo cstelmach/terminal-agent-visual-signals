@@ -202,7 +202,7 @@ _tavs_render_begin
 case "$STATE" in
     processing)
         # On new prompt (UserPromptSubmit): reset subagent counter + revalidate identity
-        if [[ "${2:-}" == "new-prompt" ]]; then
+        if [[ "${2:-}" == "new-prompt" && "${TAVS_ORGANIZER_SYNTHETIC:-0}" != 1 ]]; then
             reset_subagent_count
             # Revalidate identity: re-check collision status + assign/update dir icon
             _default_mode_p="dual"
@@ -212,7 +212,8 @@ case "$STATE" in
             fi
         fi
         should_change_state "$STATE" || exit 0
-        kill_idle_timer
+        # Synthetic restoration paints only; a live timer belongs to a newer hook.
+        [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] || kill_idle_timer
         if [[ "$ENABLE_PROCESSING" == "true" ]]; then
             should_send_bg_color && send_osc_bg "$COLOR_PROCESSING"
             _apply_palette_if_enabled
@@ -226,7 +227,7 @@ case "$STATE" in
             clear_background_image
         fi
         send_bell_if_enabled "$STATE"
-        record_state "$STATE"
+        [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] || record_state "$STATE"
         ;;
 
     permission)
@@ -348,8 +349,10 @@ case "$STATE" in
     # Fires when Task tool spawns a subagent (Explore, Plan, Bash, custom)
     subagent|subagent-start)
         should_change_state "subagent" || exit 0
-        increment_subagent_count
-        kill_idle_timer
+        if [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" != 1 ]]; then
+            increment_subagent_count
+            kill_idle_timer
+        fi
         if [[ "$ENABLE_SUBAGENT" == "true" ]]; then
             should_send_bg_color && send_osc_bg "$COLOR_SUBAGENT"
             _apply_palette_if_enabled
@@ -357,7 +360,7 @@ case "$STATE" in
             set_state_background_image "subagent"
         fi
         send_bell_if_enabled "subagent"
-        record_state "subagent"
+        [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]] || record_state "subagent"
         ;;
 
     # ===========================================================================

@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.28
+Version: 1.29
 
 ## Automatic focus loses cues when coverage is temporarily unavailable
 
@@ -62,11 +62,15 @@ connected timer, mute and managed-render checks still pass.
 
 ## A delayed tool-error restore cancels a newer completion timer
 
-The delayed synthetic trigger validated its delivery only during final output, after processing
-had killed the idle timer and changed legacy session state. A newer Stop could therefore lose
-its timer even though stale output was correctly rejected. The delayed task now checks its
-retained delivery before invoking the synthetic trigger. An owned-PTY regression reproduced
-`processing` after a newer completion and now verifies the current timer and observation survive.
+The first correction checked delivery before invoking the synthetic trigger, but a newer hook
+could arrive after that check and before the processing/subagent handlers. Stale output was
+rejected while the handlers still killed a newer timer, replaced session state or incremented
+the newer subagent count. Synthetic restoration now skips these meaningful-state actions and
+new-prompt identity work; normal hooks keep their existing behavior. The original precheck and
+final managed validation remain. Real-helper barriers reproduce the exact ordering after a
+successful precheck. Tests verify unchanged state/count/observation, stale result 3, and later
+graduated bytes from the same completion timer. A current restore still paints its configured
+subagent background without another spawn. All fixtures use private roots and owned PTYs.
 
 ## A queued ordinary render replays titles and bells after recovery
 
