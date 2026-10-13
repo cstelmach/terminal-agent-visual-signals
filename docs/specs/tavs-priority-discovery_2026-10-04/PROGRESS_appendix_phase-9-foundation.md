@@ -704,3 +704,28 @@ context/intake/observation verbs and resolver/delivery/sync integration. Do not 
 backend until those contracts are complete. Validate Linux namespace/device scope separately.
 Native physical acceptance, earlier failure attribution and color freshness remain open.
 Phases 2/7/8 stay Blocked; Phase 9 and the full goal remain active/incomplete.
+
+### Phase 9 portable reconcile: 2026-10-14 00:04 CEST
+
+`0be5c93` adds existing-target reconcile with policy captured after device open under the shared
+lock. Suspended recovery with no active residue produces no paint; global residue resets full
+defaults once and other residue resets only background. Matching preview expiry/explicit clear
+restores current ordinary intent. Active state honors explicit reset and canceled global records.
+Current rules/live selective control remain unavailable. Pending output is invalidated for the
+exact TTY slot without reading or replay; links/nonregular paths refuse. Complete output precedes
+exact-snapshot cancellation, preserving retry work and original 100 ms admission/completion budget.
+Source exploration corrected the initial pre-open-revision hypothesis against native queued
+suspension regression before implementation. eK63u8: 13 expected missing-method errors; K3iBon:
+25 renderer checks passed. Final o2JN0F: 101/101 portable, 2.718 seconds; oVGcci: 561/561 Swift,
+10.384 seconds. Syntax, staged ownership/secrets and whitespace checks passed. The bounded source
+check found no concrete introduced defect; both reports and parent verification are preserved in
+[reconcile source checks](portable-reconcile-source-check-2026-10-14.md).
+**Scope:** Approved H1 extension, existing renderer/ownership modules and owned-PTY tests, API and
+roadmap updates. No runtime schema/capability/routing or new control plane. No production state,
+app/VM/container launch or existing session termination. These checks prove PTY bytes and state,
+not native Ghostty visibility/navigation. SPEC body and PLAN remain unchanged.
+Next: helper current/register/context/intake/observation verbs and resolver/delivery/sync routing.
+Preserve native preference and never switch backend after a selected native operation fails.
+Actual Linux namespace/device scope and physical native acceptance remain unverified; earlier
+historical failure attribution and configured-color freshness remain open. Phases 2/7/8 stay
+Blocked; Phase 9 and the full goal remain active/incomplete.
