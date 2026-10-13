@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 30 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 38 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 31 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 39 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -3500,3 +3500,70 @@ moves are already covered by existing execution and review instructions.
 **Confidence:** Actions and failures are observed. Strategy motives are reconstructed. Source
 compatibility is scoped to the inspected implementation; backend and physical acceptance remain
 unverified.
+
+## 2026-10-13 · gpt-6 self-report · portable-ownership-guard
+
+meta:
+  model: gpt-6 family (self-reported; exact served variant unverified)
+  model_source: self-reported from environment; no observed executor model field
+  interface: codex-desktop
+  thinking: extended requested; runtime mode unobserved
+  session: 01a10879
+  trace: observed tool calls; internal motives reconstructed
+
+**Framing [O]:** This continuation resumed an active incomplete goal from clean c62caf8.
+The next bounded H1 slice supplied current target proof rather than advertising a partial
+standalone backend. Existing finite readers and device workers were retained. Native source
+required all same-TTY owner branches, effect-only candidates, one physical lifetime and at
+most one native alias. Unknown metadata could not be treated as proof of absent control.
+
+**Strategy [R]:** A guard separated from publication appears to keep ownership decisions
+reviewable before hooks can consume them. The source-derived tests covered competing lifetimes,
+misplaced records, unknown controllers, expiry, global precedence and recovery revisions.
+Actual owned Mac PTYs then connected the guard to the existing worker without opening user
+terminals. This left durable intent publication and cleanup explicitly pending.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Read | SPEC-owned state, native validation and delivery | Continued Phase 9 source fixes |
+| 2 | Test/edit | Ownership guard | Missing-module red, nine initial checks green |
+| 3 | Verify | Owned PTY actor plus bounded worker | Current output and recovery rejection |
+| 4 | Review/edit | Parent-path race | Held-FD reads plus replacement regressions |
+| 5 | Test/edit | Native-app status ordering | Reproduced mismatch and corrected it |
+| 6 | Verify/commit | Full portable and Swift sets | 47/47 and 561/561 |
+| 7 | Preserve | Reports, progress and capture | Reconstruction checked before consolidation |
+
+**Decision points [O]:** The guard explicitly refuses live native control instead of composing
+an assumed cached background. It returns obsolete active records for later cancellation, so
+accepting ownership is not itself permission to ignore residual presentation. File reads use
+the enumerated parent descriptor; absolute names serve placement comparison. Linux scope is
+not removed to satisfy Mac schema 1. The broad same-TTY scan is bounded by the original budget,
+including unknown or malformed branches rather than only the currently selected owner.
+
+**Failure arcs:** F1, path-proof gap [O]: the first traversal held directory descriptors but
+reopened records through absolute paths. Source review confirmed that a transient replacement
+could hide an active preview and restore the inode before the final comparison. The held-reader
+test failed for missing dir_fd, then reader support anchored sibling and effect reads. The later
+full inactive-copy test passed on first addition; it was not a historical red reproduction.
+The reviewer initially attributed that red to the later test. The parent corrected the report
+before preserving it. F2, native-order mismatch [O]: unknown owner metadata was checked before
+proven native-app exit. A regression failed, then moving the owner check after app validation
+matched current native source. Both failures changed concrete code rather than goal criteria.
+
+**Verification [O]:** Final HHJ0b8 passed 47 portable checks in 1.465 seconds. pEvu07 passed
+561 Swift tests in 10.461 seconds. Two owned Mac PTYs exercised actual identity/device checks;
+fixture lifetimes retired separately from the device deadline. Syntax, staged additions and
+secret checks passed before source commits. No production install, personal schedule, native
+Ghostty UI, Linux kernel or container acceptance ran. Progress consolidation reproduced the
+pre-move document exactly; existing historical text remained in the linked appendix.
+
+**Heuristics:** P8/P9 recur. Keep enumeration and consumption in the same held namespace.
+Verify whether an unavailable identity is positively absent before releasing control. Preserve
+whether a regression actually failed before its fix. Existing review/execution instructions
+already cover these moves, so no new skill promotion is proposed.
+
+**Confidence:** The action trace, source changes and check results are observed. Motives are
+reconstructed. Owned PTY evidence supports this guard, not complete H1 routing or physical
+Ghostty acceptance. The shared output lock remains an explicit caller precondition.

@@ -574,3 +574,56 @@ output lock, then context/observe, synthetic/reset/reconcile, resolver and deliv
 Validate Linux owned PTYs in an authorized runtime; native Ghostty acceptance still needs access
 or direct operator evidence. Earlier historical failure attribution and color freshness remain open.
 Phases 2/7/8 remain Blocked on native cases; Phase 9 and the full goal remain active/incomplete.
+
+### Phase 9 preview fixture correction: 2026-10-13 19:51 CEST
+
+`33fadb1` corrects two fixture ordering/lifetime assumptions and strengthens an error diagnostic.
+Replacement color preparation now waits for the held old cleanup; gates release explicitly.
+Exit cancels queued preview and drains the start and supplied cleanup queue through a barrier.
+This replaces a draft entered-call counter, which could miss cleanup not yet started. The
+controller initializer accepts that existing queue; its production concurrent default is preserved.
+Failed prerequisites stop dependent no-paint assertions. The mock injected-error check now reports
+actual error/time rather than accepting a timeout as the intended failure. The 100 ms bound stays.
+`pifCjn`: 2/2; `4TXmzt`: 49 cases, one unexpected EPERM teardown failure; `fBD2nj`: 49/49.
+Intermediate full `g3tYba`/`6a3v7E`: 561/561. Final `Xl7xhB`: 561/561 in 10.782 seconds;
+release `MT5Cjf`: 22.11 seconds. Prior 184 Bats passed at the metadata checkpoint.
+Verified source findings and all new failure diagnostics are retained in
+[preview source checks](preview-timing-source-check-2026-10-13.md). Source-only reports describe
+specified drafts; final queue-barrier revision is parent-checked, not a refreshed provider verdict.
+**Scope:** Two tests, one existing controller initializer and API/bug docs. No output-policy change,
+real native target, install/sync, personal setting/schedule or existing session action.
+The exact earlier-run interleaving, teardown failure cause and healthy deadline stalls remain
+unproven. Passing current suites does not establish those causes or physical native acceptance.
+Next: implement the safe portable process-identity/writer/synthetic lifecycle and validate macOS
+and Linux owned PTYs. Metadata-only support does not close H1. Later verify color freshness and
+remaining source review leads. Ghostty access still needs direct operator acceptance; no retry ran.
+Phases 2/7/8 remain Blocked on native cases, 9 In Progress. The full goal remains active/incomplete.
+
+### Phase 9 portable identity/device foundations: 2026-10-13 21:21 CEST
+
+`764e22b` implements process/device identity; `1029d4e` implements the bounded device primitive.
+These modules are not wired and advertise no capability. H1 ordinary output is still open.
+Mac ABI and exact owned-PTY identity are exercised. Linux avoids mutable epoch estimates:
+held proc reads, mature exact-branch birth ticks, aligned NSpid, namespace pairs/offsets and boot
+scope. Missing evidence refuses. Linux scope needs versioned records at integration, not native
+schema-1 insertion. Actual Linux kernel/namespace acceptance remains unverified.
+One original 100 ms deadline covers child dispatch/open/lock/prepare/write. Child standard channels
+close; late phases recheck expiry. Known partial output retains its count; uncertain output stays
+unknown. Caller timeout requests termination; separate tests drain/reap owned workers.
+Initial red `D90iVU`/`P4rJE5`: missing modules. `PSL0Yj`: missing Linux parser. `D9ku25` exposed
+TTY-name test reuse; tests now use separate directories. `mir9tF` exposed an integer-only Python
+exception property; a custom bytes_written attribute fixes it. `CLpU4A`: two genuine late-phase
+failures without guard checks. Final `b0nPds`: 14/14, 1.294 seconds. Full Swift `mVnI0m`:
+561/561, 10.438 seconds; Swift source unchanged since the preceding verified release.
+Public-web AGY contract/call completed without repository input or fingerprints; its report is
+PARTIAL because PID/device conclusions conflict with source. Native research and exact source
+contracts/review are retained in [compatibility checks](helper-compatibility-check-2026-10-13.md).
+**Scope:** Approved portability extension: two modules/two tests, API/bug/roadmap docs. No normal
+backend selection, global policy bypass, extra agent authority or actual user-target operation.
+Docker daemon is stopped. Startup may resume existing containers; the exact-scope question remains
+pending. Ghostty Computer Use remains denied; no retry, VM/container start or native target action.
+Next: finite render decoder and strict record/policy/ownership guard, then complete context,
+observation/intent, synthetic/reset/reconcile, resolver and install/sync integration. Validate Linux
+owned PTYs when an authorized runtime is available. Keep Mac schema unchanged and no failed-native
+bypass. Prior failure causes, color freshness and required physical acceptance remain open.
+Phases 2/7/8 remain Blocked on native cases; 9 and the full goal remain active/incomplete.

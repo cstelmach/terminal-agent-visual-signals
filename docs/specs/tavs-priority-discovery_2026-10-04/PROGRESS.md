@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 21:52 CEST
-**Version:** 4.20
+**Last Updated:** 2026-10-13 22:12 CEST
+**Version:** 4.21
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | dd8bafd, c94e978, 1e55ac1; earlier below/appendix | 31 portable; 561 Swift; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 8b9ef37, b971720; earlier below/appendix | 47 portable; 561 Swift; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -844,57 +844,36 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 > Finished metadata/source-sync checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 > H1 rendering and historical deadline attribution remain open in current entries below.
 
-### Phase 9 preview fixture correction: 2026-10-13 19:51 CEST
+### Phase 9 fixture and identity/device foundations
 
-`33fadb1` corrects two fixture ordering/lifetime assumptions and strengthens an error diagnostic.
-Replacement color preparation now waits for the held old cleanup; gates release explicitly.
-Exit cancels queued preview and drains the start and supplied cleanup queue through a barrier.
-This replaces a draft entered-call counter, which could miss cleanup not yet started. The
-controller initializer accepts that existing queue; its production concurrent default is preserved.
-Failed prerequisites stop dependent no-paint assertions. The mock injected-error check now reports
-actual error/time rather than accepting a timeout as the intended failure. The 100 ms bound stays.
-`pifCjn`: 2/2; `4TXmzt`: 49 cases, one unexpected EPERM teardown failure; `fBD2nj`: 49/49.
-Intermediate full `g3tYba`/`6a3v7E`: 561/561. Final `Xl7xhB`: 561/561 in 10.782 seconds;
-release `MT5Cjf`: 22.11 seconds. Prior 184 Bats passed at the metadata checkpoint.
-Verified source findings and all new failure diagnostics are retained in
-[preview source checks](preview-timing-source-check-2026-10-13.md). Source-only reports describe
-specified drafts; final queue-barrier revision is parent-checked, not a refreshed provider verdict.
-**Scope:** Two tests, one existing controller initializer and API/bug docs. No output-policy change,
-real native target, install/sync, personal setting/schedule or existing session action.
-The exact earlier-run interleaving, teardown failure cause and healthy deadline stalls remain
-unproven. Passing current suites does not establish those causes or physical native acceptance.
-Next: implement the safe portable process-identity/writer/synthetic lifecycle and validate macOS
-and Linux owned PTYs. Metadata-only support does not close H1. Later verify color freshness and
-remaining source review leads. Ghostty access still needs direct operator acceptance; no retry ran.
-Phases 2/7/8 remain Blocked on native cases, 9 In Progress. The full goal remains active/incomplete.
-
-### Phase 9 portable identity/device foundations: 2026-10-13 21:21 CEST
-
-`764e22b` implements process/device identity; `1029d4e` implements the bounded device primitive.
-These modules are not wired and advertise no capability. H1 ordinary output is still open.
-Mac ABI and exact owned-PTY identity are exercised. Linux avoids mutable epoch estimates:
-held proc reads, mature exact-branch birth ticks, aligned NSpid, namespace pairs/offsets and boot
-scope. Missing evidence refuses. Linux scope needs versioned records at integration, not native
-schema-1 insertion. Actual Linux kernel/namespace acceptance remains unverified.
-One original 100 ms deadline covers child dispatch/open/lock/prepare/write. Child standard channels
-close; late phases recheck expiry. Known partial output retains its count; uncertain output stays
-unknown. Caller timeout requests termination; separate tests drain/reap owned workers.
-Initial red `D90iVU`/`P4rJE5`: missing modules. `PSL0Yj`: missing Linux parser. `D9ku25` exposed
-TTY-name test reuse; tests now use separate directories. `mir9tF` exposed an integer-only Python
-exception property; a custom bytes_written attribute fixes it. `CLpU4A`: two genuine late-phase
-failures without guard checks. Final `b0nPds`: 14/14, 1.294 seconds. Full Swift `mVnI0m`:
-561/561, 10.438 seconds; Swift source unchanged since the preceding verified release.
-Public-web AGY contract/call completed without repository input or fingerprints; its report is
-PARTIAL because PID/device conclusions conflict with source. Native research and exact source
-contracts/review are retained in [compatibility checks](helper-compatibility-check-2026-10-13.md).
-**Scope:** Approved portability extension: two modules/two tests, API/bug/roadmap docs. No normal
-backend selection, global policy bypass, extra agent authority or actual user-target operation.
-Docker daemon is stopped. Startup may resume existing containers; the exact-scope question remains
-pending. Ghostty Computer Use remains denied; no retry, VM/container start or native target action.
-Next: finite render decoder and strict record/policy/ownership guard, then complete context,
-observation/intent, synthetic/reset/reconcile, resolver and install/sync integration. Validate Linux
-owned PTYs when an authorized runtime is available. Keep Mac schema unchanged and no failed-native
-bypass. Prior failure causes, color freshness and required physical acceptance remain open.
-Phases 2/7/8 remain Blocked on native cases; 9 and the full goal remain active/incomplete.
+> Finished source checkpoints: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+> Historical failures and Linux/native acceptance remain unresolved in current entries.
 
 > [Portable reader checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
+
+### Phase 9 portable ownership guard: 2026-10-13 22:12 CEST
+
+`8b9ef37` anchors record reads to held parents; `b971720` adds current ordinary ownership proof.
+The guard scans all branches for one TTY, including effect-only targets, canonical placement and
+bound-intent siblings. Unknown state refuses; proven reuse/exit/expiry is distinct. One physical
+owner and at most one native alias are permitted. Descriptor, owner and suspension revision
+revalidate under the caller's shared lock; live global/selective control refuses ordinary paint.
+Obsolete records are returned for future cancellation. No cleanup, publication or hook routing
+is advertised. Linux identities are not stripped to fit native schema 1.
+Initial red wZmEKd: missing module. Q0DTud: 9/9; 1XBxu3: 12/12 including two actual owned Mac PTYs.
+The held-reader regression fuvBJv failed for missing dir_fd before correction. Source review
+confirmed a transient-directory replacement gap; the later full inactive-copy regression first
+passed WLsay1 (14 ownership checks). The native status-order test wJ9cRD failed, then correction
+matched native validateTarget. Final HHJ0b8: 47/47 portable checks in 1.465 seconds; full Swift
+pEvu07: 561/561 in 10.461 seconds. Owned PTY output and recovery rejection are proved, not visible
+Ghostty salience or navigation. Module syntax, staged diffs and secret checks pass.
+Both full reports and parent dispositions are retained in
+[ownership checks](portable-ownership-source-check-2026-10-13.md).
+**Scope:** Approved H1 portability extension, one guard/test plus shared held-reader support,
+API/bug docs. No app/VM/container launch, production install or personal schedule/settings action.
+Two finished source checkpoints moved unchanged to the existing Phase 9 appendix after this
+entry exceeded the 900-line limit. Script reconstruction reproduced pre-move progress exactly.
+Next: durable intent publication/binding and obsolete-effect cancellation/legacy reset within
+bounded transactions, then context/observation/synthetic/reset/reconcile and hook resolver/delivery.
+Earlier historical failure causes, color freshness, actual Linux and native acceptance remain open.
+Phases 2/7/8 remain Blocked on native cases; Phase 9 and the full goal remain active/incomplete.
