@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.17
+Version: 1.18
 
 ## Public recovery commands
 
@@ -193,6 +193,9 @@ Only a guarded controller request advances the six-second heartbeat. Global paus
 retain precedence without replacing the dynamic record; clearing or expiry recomposes fresh
 intent. Alias agreement compares inputs, revision, run and controller, not last computed color.
 Exact-ID clear cancels metadata before device open and emits no stale repaint after replacement.
+Preview and focus cleanup use independent background queues. An unrelated blocked focus clear
+cannot queue ahead of a healthy preview clear. Both retain the existing per-TTY serialization
+and original device deadline; conflicting writes to the same terminal remain serialized.
 Stored revision mismatch cannot revive a lease after partial recovery and explicit resumption.
 `FocusController.focusSelected(_:catalogue:)` captures native surface IDs independently of
 browsing selection and priorities. Accepted catalogues retain that set, add new surfaces only

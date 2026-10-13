@@ -319,3 +319,34 @@ unchanged to the existing Phase 9 appendix with reconstruction equality verified
 healthy-target recovery or losing old effect ownership. Scheduler recomposition and compatibility
 remain material source leads. Phases 2/7/8 stay Blocked, Phase 9 In Progress, and the goal active.
 Required visible/native acceptance remains unverified and cannot be replaced by source tests.
+
+
+### Phase 9 native device admission: 2026-10-13 07:22 CEST
+
+Previous turn progressed through recovery classification `5696f4c`, recorded in `3c1c451`.
+`ca27873` bounds repeated native I/O for one physical terminal lifetime across runner instances.
+Metadata publication precedes admission; latest intent and exact-ID cancellation remain available.
+Slots survive caller timeout until actual worker cleanup. Native aliases share a slot, reused
+validated owner generations remain separate, and old completion cannot release a new owner's slot.
+Raw/unresolved requests use conservative normalized path admission. Only emergency reset gets
+one reserved lane, retaining the same output lock, fresh target/policy checks and 100 ms deadline.
+
+Red `sxskYB` observed five blocked opens instead of one. The initial admission passed focused tests
+but full `ZbTOkp` failed 14 assertions (8 unexpected errors): ordinary admission also blocked
+same-process recovery. The reserved reset lane fixes that conflict. A busy standalone update now
+explicitly verifies retained metadata and stale-reset rejection rather than requiring another open.
+The source check found premature teardown and syntactic raw aliases; both received regressions.
+Cleanup releases every held seam, probes actual exact-slot availability and checks no late bytes.
+
+Final `uWrBWe` passed 519/519 Swift tests in 9.179 seconds without warnings; release `fakLJK`
+built in 13.54 seconds; current-helper `KqB4Iq` passed 172/172 isolated Bats. These results returned
+before the product commit. Tests used private roots, owned PTYs and mocked identities only.
+Six new tests accompany the fix. API/bug documentation and two source reports are retained.
+The prior finished classification block moved unchanged to the existing Phase 9 appendix;
+reconstruction equality was verified. SPEC body and PLAN remain fixed.
+
+**Limits and next:** this bounds repeated native I/O, not arbitrary callback stalls, all lifetimes
+or cross-process workers. Focus cleanup retention remains unresolved. Verify scheduler repaint
+and helper compatibility next without weakening the agreed product. Phases 2/7/8 remain Blocked,
+Phase 9 In Progress and the goal active. Native visible acceptance is still unverified; no native
+query, installation, personal schedule/settings change or user-session shutdown occurred.

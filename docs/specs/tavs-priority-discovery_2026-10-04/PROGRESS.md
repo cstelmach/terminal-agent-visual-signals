@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Manual (active Codex goal supplies continuation)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-13 07:22 CEST
-**Version:** 4.5
+**Last Updated:** 2026-10-13 07:47 CEST
+**Version:** 4.6
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | ca27873; earlier hashes below/appendix | 519 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | eeed5cb; earlier hashes below/appendix | 520 Swift; 172 Bats; earlier Python below | | Final reviews complete; remaining source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -866,32 +866,32 @@ reducer and explicit Automatic mode, preserving all unresolved native acceptance
 
 > Finished registry-reporting correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-### Phase 9 native device admission: 2026-10-13 07:22 CEST
+### Phase 9 native device admission
 
-Previous turn progressed through recovery classification `5696f4c`, recorded in `3c1c451`.
-`ca27873` bounds repeated native I/O for one physical terminal lifetime across runner instances.
-Metadata publication precedes admission; latest intent and exact-ID cancellation remain available.
-Slots survive caller timeout until actual worker cleanup. Native aliases share a slot, reused
-validated owner generations remain separate, and old completion cannot release a new owner's slot.
-Raw/unresolved requests use conservative normalized path admission. Only emergency reset gets
-one reserved lane, retaining the same output lock, fresh target/policy checks and 100 ms deadline.
+> Finished admission correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
 
-Red `sxskYB` observed five blocked opens instead of one. The initial admission passed focused tests
-but full `ZbTOkp` failed 14 assertions (8 unexpected errors): ordinary admission also blocked
-same-process recovery. The reserved reset lane fixes that conflict. A busy standalone update now
-explicitly verifies retained metadata and stale-reset rejection rather than requiring another open.
-The source check found premature teardown and syntactic raw aliases; both received regressions.
-Cleanup releases every held seam, probes actual exact-slot availability and checks no late bytes.
+### Phase 9 independent preview clear: 2026-10-13 07:47 CEST
 
-Final `uWrBWe` passed 519/519 Swift tests in 9.179 seconds without warnings; release `fakLJK`
-built in 13.54 seconds; current-helper `KqB4Iq` passed 172/172 isolated Bats. These results returned
-before the product commit. Tests used private roots, owned PTYs and mocked identities only.
-Six new tests accompany the fix. API/bug documentation and two source reports are retained.
-The prior finished classification block moved unchanged to the existing Phase 9 appendix;
-reconstruction equality was verified. SPEC body and PLAN remain fixed.
+Previous turn progressed through admission `ca27873`, recorded in `edd9528`.
+`eeed5cb` gives preview and focus cleanup separate queues. Shared per-TTY output serialization,
+exact-ID cancellation, target checks and the original device deadline are preserved.
+Red `Q72Rts` failed the 0.5-second healthy-preview completion expectation while another target's
+focus cleanup was held. Green `OpyL1V` passed all 33 controller tests. The regression checks
+completion before unrelated release, exact reset bytes and canceled preview metadata on owned PTYs.
+Final `HBwtxF` passed 520/520 Swift tests in 11.032 seconds without warnings; release `KcJkJV`
+built in 15.83 seconds; current-helper `kzSZFO` passed 172/172 isolated Bats. All returned before
+commit. No shell source changed. Backups: /tmp/tavs-focus-cleanup-20261013/backup/.
 
-**Limits and next:** this bounds repeated native I/O, not arbitrary callback stalls, all lifetimes
-or cross-process workers. Focus cleanup retention remains unresolved. Verify scheduler repaint
-and helper compatibility next without weakening the agreed product. Phases 2/7/8 remain Blocked,
-Phase 9 In Progress and the goal active. Native visible acceptance is still unverified; no native
-query, installation, personal schedule/settings change or user-session shutdown occurred.
+The retained source design proposes per-target leases within one logical focus run. Healthy
+renewals must continue while one target retains its old exact ID/revision and one retiring
+obligation. Missing didRenew cannot prove absence: record rename precedes a final deadline check.
+Canceled metadata and an unaffected/no-paint result also cannot prove physical restoration.
+Root verified both source paths. A focused cancellation-stage distinction is still required;
+no new effect schema, persistent registry or generic result protocol is proposed or implemented.
+
+**Next:** implement and test that per-target retirement bound, including same-refresh fresh IDs,
+mode switches, unknown saves and outstanding repaint. The preview queue defect is resolved;
+retained-run growth remains open. The previous finished admission block moved unchanged to its
+existing appendix with reconstruction verified. SPEC body/PLAN remain fixed. Phases 2/7/8 remain
+Blocked, Phase 9 In Progress, and the goal active. No native/app-control call, install, personal
+settings/schedule change or user-session shutdown occurred. Required native acceptance is unverified.

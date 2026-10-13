@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 16 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification  device admission |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 24 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification  device admission |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 17 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 25 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -2498,3 +2498,69 @@ to its existing appendix, with reconstruction equality checked. Retained focus c
 material source leads remain open. No new skill promotion is proposed: existing review and
 execution instructions already describe these checks. [R] A reusable candidate is to test the
 recovery path against a resource guard before treating bounded normal-path tests as convergence.
+
+## 2026-10-13 · gpt-6 (self-reported; variant unverified) · separate-preview-clear
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported [R]; served variant unobserved
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879
+  trace: observed tool actions; causal interpretation reconstructed
+
+**Framing [O].** Continue the full organizer/focus goal from the dated SPEC package after the
+verified device-admission checkpoint. The next review concern combined retained focus-run growth
+with delayed preview cleanup. The source still appended retired whole runs when an outside target
+prevented aggregate heartbeat renewal. That larger defect was not treated as solved by the device
+guard. The current slice reproduced and fixed the independent preview-delay consequence while
+researching the ownership distinction needed for a safe retention change.
+
+**Strategy [O/R].** Read current source, tests and the four state documents before editing.
+Use two dedicated owned PTYs and a mock barrier to hold focus cleanup on B while selecting and
+clearing a preview on A. Observe completion before releasing B, then verify exact reset bytes and
+inactive preview metadata. [R] This discriminates shared-queue interference from legitimate
+serialization on one TTY. Separate cleanup queues preserve the existing writer policy and target
+checks; no new ownership protocol was required for this specific defect.
+
+**Action trace [O].**
+
+| # | Move | Evidence | Result |
+|---|---|---|---|
+| 1 | Orient | edd9528 and dated progress | Phase 9 remains active |
+| 2 | Source exploration | aggregate renewal and whole-run cleanup | retention still unbounded |
+| 3 | Red test | Q72Rts, preview completion before B release | one timeout failure |
+| 4 | Fix | independent focus-clear queue | 33 controller cases pass |
+| 5 | Verify | HBwtxF, KcJkJV, kzSZFO | 520 Swift, release, 172 Bats |
+| 6 | Adjudicate design | metadata save and clear paths | no-paint/unknown-save limits retained |
+| 7 | Commit | eeed5cb | preview defect fixed, broader goal open |
+
+**Decision points [O].** A serial shared cleanup queue let unrelated focus batches delay preview
+clearing despite independent target fanout. Separate queues remove that interference while the
+existing TTY lock still orders conflicting writes. A conservative whole-mode replacement gate
+would stop healthy focus when one target could not retire. The proposed next direction instead
+uses individual target leases inside a stable logical run, blocking only the unresolved target's
+next ID. That direction is documented as design, not shipped implementation.
+
+**Failure and near-miss arcs [O/R].** F1, shared concurrency assumption: the new healthy preview
+expectation timed out at 0.5 seconds while B's cleanup was held. The next move inspected both
+queue uses and redirected focus retirement to its own queue. The focused suite and full suite
+then passed. F2, unsafe inference avoided: pruning by missing didRenew would assume no record
+was saved. Root inspection confirmed rename happens before a final deadline check, so a published
+record can accompany an error before that callback. A clear returning unaffected can also omit
+physical repaint. The agent's proposed cancellation-stage evidence therefore remains necessary,
+and no unknown old ID, revision pin or repaint obligation was dropped this turn.
+
+**Verification and limits [O].** All 520 Swift tests passed in 11.032 seconds without warnings;
+release built in 15.83 seconds and the rebuilt helper passed 172 isolated shell cases before
+commit. The new mock barrier proves queue independence, not kernel-stall behavior or native UI.
+Existing writer tests cover the retained deadline and serialization. No app-control/native call,
+installation, personal preferences/schedules or session shutdown occurred. Retired focus history,
+other material source leads and required visible Ghostty acceptance remain open.
+
+**Residue [O/R].** P8 verified review remedies against connected source, and P9 retained the
+SPEC-owned state directory. The finished admission entry moved verbatim to its existing appendix;
+reconstruction and prior capture-log preservation were checked. The design report is 86 lines,
+with implementation and test scope explicit, avoiding another large provider packet. No new
+skill promotion or process layer is proposed. [R] Keep metadata ownership resolution and actual
+repaint responsibility separate in the next target-retirement implementation.

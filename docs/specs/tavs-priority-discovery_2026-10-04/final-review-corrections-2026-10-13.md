@@ -1,10 +1,10 @@
 # Final review leads and verified corrections
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.6
+Version: 1.7
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
-Current product checkpoint: `ca27873`.
+Current product checkpoint: `eeed5cb`.
 
 ## Review execution status
 
@@ -231,6 +231,18 @@ The last three code slices and their staged records added 61 net production line
 process-document lines before this note (18.4:1). Source checks produced the live registry-hint
 fix, raw-path admission correction and worker-cleanup test repair. This is useful defect evidence,
 but documentation growth is high. Keep subsequent reports/progress concise; add no process layer.
+
+## Independent preview cleanup (Claude M4, partial)
+
+`eeed5cb` separates focus-retirement batches from preview cleanup without changing the shared
+per-TTY writer. Red `Q72Rts` proves a held unrelated focus cleanup delayed healthy preview clear.
+Final `HBwtxF` passed 520/520 Swift tests in 11.032 seconds; release `KcJkJV` built in 15.83
+seconds; current-helper `kzSZFO` passed 172/172 isolated Bats. All completed before commit.
+The [source design](focus-cleanup-design-followup-2026-10-13.md) proposes per-target leases and
+retirement gating, preserving healthy renewals. Retention remains unresolved. Root confirmed
+the post-rename deadline check and no-paint clear paths: absent callbacks and canceled metadata
+do not establish physical restoration. The next change needs focused cancellation evidence,
+retained repaint responsibility and tests for unknown writes, not blind pruning of retired IDs.
 
 ## Remaining adjudication and implementation
 

@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.31
+Version: 1.32
+
+## Unrelated focus cleanup delays a healthy preview clear
+
+Preview and focus retirement shared one serial cleanup queue. A stalled focus target therefore
+prevented a healthy terminal's preview clear from starting, despite independent device fanout.
+Dedicated queues now separate those batches while the shared per-TTY writer still orders actual
+conflicting output. The regression holds one focus cleanup, clears a preview on another owned
+PTY before releasing it, and checks exact background reset plus canceled preview metadata.
+Retired focus ownership growth remains a separate open issue; this fix does not drop old IDs.
 
 ## Repeated timeouts accumulate native device workers
 
