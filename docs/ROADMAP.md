@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
-Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.20
+Last Updated: 2026-10-14 (Europe/Vienna)
+Version: 1.21
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -15,11 +15,12 @@ and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.
 Source and owned-terminal checks pass. Required physical Ghostty/UI acceptance remains open;
 the current source has not been deployed to the installed application.
 
-Portable compatibility now has tested process/device and bounded-writer primitives. macOS owned
-PTYs verify exact metadata/output, stale rejection, locking and expiry. Linux parser proofs avoid
-mutable wall-clock birth estimates; actual Linux runtime checks are pending. These modules are
-unwired and expose no capability. Complete policy/record composition, lifecycle operations and
-hook delivery remain necessary to restore standalone output and close H1.
+Portable compatibility has tested process/device, policy/record and bounded ordinary output
+primitives. Owned macOS PTYs verify rendering, bound forced reset, one-time suspended reconcile,
+current-preview refusal, pending-alert invalidation and failed-write retry. Linux parser proofs
+avoid mutable wall-clock birth estimates; actual Linux runtime and namespace/device checks remain
+pending. These modules are unwired and expose no capability. Helper context/intake/observation
+verbs and hook delivery remain necessary to restore standalone output and close H1.
 
 ## Phase 7 source verified; native acceptance pending
 

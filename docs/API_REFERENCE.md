@@ -1,7 +1,25 @@
 # Recovery and managed output API
 
-Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.41
+Last Updated: 2026-10-14 (Europe/Vienna)
+Version: 1.42
+
+## Portable reconcile transaction (integration pending)
+
+`Renderer.reconcile(tty, reset_legacy=True, clear_selective=False)` selects an existing current
+cached target. It captures suspension after device open under the shared lock, so recovery queued
+before open governs reconciliation. Current native rules or surviving selective control refuse
+ordinary paint. Explicit clear cancels selective ownership only after successful restoration.
+
+Suspension with no active effects produces no paint. Residual global presentation clears palette,
+foreground and background defaults once; other residue clears only the default background. A
+matching-revision preview that expires or is explicitly cleared restores latest ordinary intent.
+Active reconciliation honors explicit legacy reset and canceled global records. No title, image
+or audible alert is replayed. All steps share the original 100 ms deadline.
+
+The current TTY's pending OSC slot is invalidated through held parent descriptors without reading
+its body. Linked/nonregular paths fail; other slots remain intact. Failed writes retain active
+cleanup records for retry. Unavailable suspension state remains an explicit failure. Owned macOS
+PTYs verify these branches; helper/hook routing and Linux scope remain pending.
 
 ## Portable forced-reset transaction (integration pending)
 
@@ -11,7 +29,7 @@ the request. Reset authority is rechecked before open and under the output lock.
 at most 512 UTF-8 bytes without control/format characters. Palette resets before default
 background/title; foreground resets only for residual global presentation. No audible alert or
 historical stream is added. An owned producer exits while its parent terminal remains live in
-the physical PTY test. Reconcile and helper/hook integration remain pending.
+the physical PTY test. Helper/hook integration remains pending.
 
 ## Portable bound reset authority (integration pending)
 
@@ -35,7 +53,7 @@ Obsolete active effects are cancelled after successful output, using exact recor
 This differs from native pre-output cancellation to keep retry work discoverable after failed
 portable writes. Completion failure reports delivered bytes accurately and retains unfinished
 records. All steps share the original 100 ms budget. Owned Mac PTYs verify this transaction;
-helper verbs, forced reset/reconcile, hook routing and Linux record integration remain pending.
+helper verbs, hook routing and Linux record integration remain pending.
 
 ## Portable worker completion (integration pending)
 
@@ -58,8 +76,8 @@ Binding requires full latest-record equality. A matching bound copy can restore 
 after producer exit; unbound native intent additionally requires exact existing adoption.
 `Store.resolve`/`_current` have an internal `targets_only` publication mode that excludes bound
 and effect contents while preserving directory/link checks. It grants no rendering authority:
-`ordinary_ownership` always reads all control records. Cancellation, forced reset, transaction
-assembly, helper verbs, hook routing and Linux scope integration remain pending.
+`ordinary_ownership` always reads all control records. Helper verbs, hook routing and Linux scope
+integration remain pending.
 
 ## Portable record replacement (integration pending)
 

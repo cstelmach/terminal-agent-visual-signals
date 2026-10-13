@@ -203,6 +203,204 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
             Renderer(self.store).forced_reset(dict(record, updatedAt=time.time()), record["updatedAt"], "")
         self.assertFalse(select.select([self.master], [], [], 0.05)[0])
 
+    def pending(self):
+        path = self.runtime / "pending" / (self.tty.replace("/", "_") + ".osc")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"\x1b]0;historical title\a\a")
+        return path
+
+    def current_preview_revision(self, path):
+        deadline = time.monotonic_ns() + 100_000_000
+        revision = self.store.policy.capture(deadline)
+        try:
+            record = records.read(self.store.directory, path, "effect", time.time(), deadline)
+            record["revision"] = dict(zip(("device", "inode"), revision.identity))
+            records.write(self.store.directory, path, record, "effect", time.time(), deadline)
+        finally:
+            revision.close()
+
+    def test_reconcile_restores_current_color_without_title_or_alert_replay(self):
+        self.assertTrue(self.render(style(title="current title", bell=True)))
+        self.received()
+        pending = self.pending()
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, reset_legacy=False))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+        self.assertFalse(pending.exists())
+
+    def test_active_reconcile_resets_legacy_even_with_cancelled_global_record(self):
+        self.assertTrue(self.render())
+        self.received()
+        self.effect(active=False)
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, reset_legacy=False))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\")
+
+    def test_suspended_reconcile_after_completed_recovery_does_not_repaint(self):
+        self.assertTrue(self.render())
+        self.received()
+        self.effect(active=False)
+        self.marker.write_bytes(Policy._marker(True))
+        pending = self.pending()
+        self.assertFalse(Renderer(self.store).reconcile(self.tty))
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertFalse(pending.exists())
+
+    def test_suspended_residual_global_clears_defaults_once_without_theme_replay(self):
+        path = self.effect()
+        self.marker.write_bytes(Policy._marker(True))
+        renderer = Renderer(self.store)
+        self.assertTrue(renderer.reconcile(self.tty))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]111\a")
+        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
+                                      time.monotonic_ns()+100_000_000)["active"])
+        self.assertFalse(renderer.reconcile(self.tty))
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+
+    def test_suspended_preview_without_revision_clears_background_default(self):
+        path = self.effect("preview")
+        self.marker.write_bytes(Policy._marker(True))
+        self.assertTrue(Renderer(self.store).reconcile(self.tty))
+        self.assertEqual(self.received(), b"\x1b]111\x1b\\")
+        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
+                                      time.monotonic_ns()+100_000_000)["active"])
+
+    def test_suspended_current_live_preview_refuses_paint_and_invalidates_pending(self):
+        self.marker.write_bytes(Policy._marker(True))
+        path = self.effect("preview")
+        self.current_preview_revision(path)
+        pending = self.pending()
+        with self.assertRaises(OSError) as failure:
+            Renderer(self.store).reconcile(self.tty)
+        self.assertEqual(failure.exception.errno, errno.EBUSY)
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertFalse(pending.exists())
+        self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
+                                     time.monotonic_ns()+100_000_000)["active"])
+
+    def test_suspended_expired_current_preview_restores_latest_intent_once(self):
+        self.assertTrue(self.render())
+        self.received()
+        self.marker.write_bytes(Policy._marker(True))
+        path = self.effect("preview", age=3)
+        self.current_preview_revision(path)
+        renderer = Renderer(self.store)
+        self.assertTrue(renderer.reconcile(self.tty))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+        self.assertFalse(renderer.reconcile(self.tty))
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+
+    def test_explicit_clear_releases_current_selective_control(self):
+        self.assertTrue(self.render())
+        self.received()
+        path = self.effect("preview")
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, clear_selective=True))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\")
+        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
+                                      time.monotonic_ns()+100_000_000)["active"])
+
+    def test_suspended_explicit_clear_of_current_preview_restores_ordinary_intent(self):
+        self.assertTrue(self.render())
+        self.received()
+        self.marker.write_bytes(Policy._marker(True))
+        path = self.effect("preview")
+        self.current_preview_revision(path)
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, clear_selective=True))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
+                                      time.monotonic_ns()+100_000_000)["active"])
+
+    def test_reconcile_queued_before_recovery_uses_after_open_suspension(self):
+        self.assertTrue(self.render())
+        self.received()
+        pending = self.pending()
+        original_open = os.open
+        def recover_during_open(path, flags, *args, **kwargs):
+            if str(path) == self.tty:
+                self.marker.write_bytes(Policy._marker(True))
+            return original_open(path, flags, *args, **kwargs)
+        with patch("portable_device_writer.os.open", side_effect=recover_during_open):
+            self.assertFalse(Renderer(self.store).reconcile(self.tty))
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertFalse(pending.exists())
+
+    def test_reconcile_refuses_linked_pending_without_reading_or_cancelling(self):
+        path = self.effect()
+        pending = self.pending()
+        saved = pending.with_name("saved-pending")
+        pending.rename(saved)
+        pending.symlink_to(saved)
+        with self.assertRaises(OSError):
+            Renderer(self.store).reconcile(self.tty)
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertTrue(saved.exists())
+        self.assertTrue(pending.is_symlink())
+        self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
+                                     time.monotonic_ns()+100_000_000)["active"])
+
+    def test_reconcile_failed_write_retains_cleanup_for_retry(self):
+        path = self.effect()
+        self.marker.write_bytes(Policy._marker(True))
+        original_write = os.write
+        def fail_device(fd, data):
+            if os.isatty(fd):
+                raise OSError(errno.EIO, "Injected reconcile-write failure")
+            return original_write(fd, data)
+        with patch("portable_device_writer.os.write", side_effect=fail_device):
+            with self.assertRaises(OSError):
+                Renderer(self.store).reconcile(self.tty)
+        self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
+                                     time.monotonic_ns()+100_000_000)["active"])
+        self.assertTrue(Renderer(self.store).reconcile(self.tty))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]111\a")
+
+    def test_reconcile_flags_require_actual_bools(self):
+        with self.assertRaises(OSError) as failure:
+            Renderer(self.store).reconcile(self.tty, reset_legacy=1)
+        self.assertEqual(failure.exception.errno, errno.EINVAL)
+
+    def test_current_global_rule_refuses_clear_without_cancelling_its_effect(self):
+        path = self.effect()
+        pending = self.pending()
+        (self.runtime / "lock.state").write_text(
+            'SCHEMA_VERSION="1"\nLOCKED="true"\nLOCK_UNTIL_EPOCH="%d"\n' % (int(time.time())+120))
+        with self.assertRaises(OSError) as failure:
+            Renderer(self.store).reconcile(self.tty, clear_selective=True)
+        self.assertEqual(failure.exception.errno, errno.EBUSY)
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertTrue(pending.exists())
+        self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
+                                     time.monotonic_ns()+100_000_000)["active"])
+
+    def test_recovery_during_background_composition_rejects_reconcile_paint(self):
+        self.assertTrue(self.render())
+        self.received()
+        path = self.effect("preview", age=3)
+        renderer = Renderer(self.store)
+        original_background = renderer.intents.ordinary_background_unlocked
+        def recover_during_background(target, deadline):
+            result = original_background(target, deadline)
+            replacement = self.root / "replacement"
+            replacement.write_bytes(Policy._marker(True))
+            replacement.replace(self.marker)
+            return result
+        with patch.object(renderer.intents, "ordinary_background_unlocked", side_effect=recover_during_background):
+            with self.assertRaises(OSError) as failure:
+                renderer.reconcile(self.tty)
+        self.assertEqual(failure.exception.errno, errno.ESTALE)
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+        self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
+                                     time.monotonic_ns()+100_000_000)["active"])
+
+    def test_reconcile_invalidates_only_current_tty_pending_slot(self):
+        self.assertTrue(self.render())
+        self.received()
+        pending = self.pending()
+        other = pending.with_name("_dev_ttys-other.osc")
+        other.write_bytes(b"other owned pending")
+        self.assertTrue(Renderer(self.store).reconcile(self.tty))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\")
+        self.assertFalse(pending.exists())
+        self.assertEqual(other.read_bytes(), b"other owned pending")
+
 
 if __name__ == "__main__":
     unittest.main()

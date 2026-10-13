@@ -257,6 +257,13 @@ class Store:
 
     def ordinary_ownership(self, target, revision, descriptor, deadline):
         """Require the caller's shared output lock; return obsolete active records to cancel."""
+        return self._ownership(target, revision, descriptor, deadline)[1]
+
+    def reconcile_ownership(self, target, revision, descriptor, deadline, clear_selective):
+        return self._ownership(target, revision, descriptor, deadline,
+                               reconcile=True, clear_selective=clear_selective)
+
+    def _ownership(self, target, revision, descriptor, deadline, reconcile=False, clear_selective=False):
         if not self.policy.matches(revision, deadline):
             raise OSError(errno.ESTALE, "Visual suspension revision changed")
         _, effects = self._current(target, deadline, descriptor)
@@ -273,6 +280,8 @@ class Store:
             live = live and age >= 0 and (age < 2 if effect["kind"] == "preview" else age <= 6)
             identity = effect.get("revision")
             live = live and (identity is None or (identity["device"], identity["inode"]) == revision.identity)
+            if clear_selective or (reconcile and suspended and identity is None):
+                live = False
             if live:
                 controller = self._lookup(effect["controller"]["pid"], deadline)
                 if controller is None:
@@ -289,4 +298,4 @@ class Store:
         if not self.policy.matches(revision, deadline) or self.status(target, deadline, descriptor) != "valid":
             raise OSError(errno.ESTALE, "Visual ownership changed")
         check_deadline(deadline)
-        return obsolete
+        return effects, obsolete, suspended
