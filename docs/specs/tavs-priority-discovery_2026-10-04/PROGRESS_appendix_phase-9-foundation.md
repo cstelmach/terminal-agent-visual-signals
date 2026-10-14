@@ -869,3 +869,32 @@ use portable only for absent/unsupported native, retain selection after failed o
 recovery native-only. Validate existing adapter cache transfer and operation-specific scope; copy
 standalone shellrc resources independent of checkout. Linux scope/runtime, historical failure,
 configured-color freshness and physical acceptance remain open. Phases 2/7/8 stay Blocked.
+
+### Phase 9 portable ownership guard: 2026-10-13 22:12 CEST
+
+`8b9ef37` anchors record reads to held parents; `b971720` adds current ordinary ownership proof.
+The guard scans all branches for one TTY, including effect-only targets, canonical placement and
+bound-intent siblings. Unknown state refuses; proven reuse/exit/expiry is distinct. One physical
+owner and at most one native alias are permitted. Descriptor, owner and suspension revision
+revalidate under the caller's shared lock; live global/selective control refuses ordinary paint.
+Obsolete records are returned for future cancellation. No cleanup, publication or hook routing
+is advertised. Linux identities are not stripped to fit native schema 1.
+Initial red wZmEKd: missing module. Q0DTud: 9/9; 1XBxu3: 12/12 including two actual owned Mac PTYs.
+The held-reader regression fuvBJv failed for missing dir_fd before correction. Source review
+confirmed a transient-directory replacement gap; the later full inactive-copy regression first
+passed WLsay1 (14 ownership checks). The native status-order test wJ9cRD failed, then correction
+matched native validateTarget. Final HHJ0b8: 47/47 portable checks in 1.465 seconds; full Swift
+pEvu07: 561/561 in 10.461 seconds. Owned PTY output and recovery rejection are proved, not visible
+Ghostty salience or navigation. Module syntax, staged diffs and secret checks pass.
+Both full reports and parent dispositions are retained in
+[ownership checks](portable-ownership-source-check-2026-10-13.md).
+**Scope:** Approved H1 portability extension, one guard/test plus shared held-reader support,
+API/bug docs. No app/VM/container launch, production install or personal schedule/settings action.
+Two finished source checkpoints moved unchanged to the existing Phase 9 appendix after this
+entry exceeded the 900-line limit. Script reconstruction reproduced pre-move progress exactly.
+Next: durable intent publication/binding and obsolete-effect cancellation/legacy reset within
+bounded transactions, then context/observation/synthetic/reset/reconcile and hook resolver/delivery.
+Earlier historical failure causes, color freshness, actual Linux and native acceptance remain open.
+Phases 2/7/8 remain Blocked on native cases; Phase 9 and the full goal remain active/incomplete.
+
+Current source and acceptance status remain in [PROGRESS.md](PROGRESS.md).
