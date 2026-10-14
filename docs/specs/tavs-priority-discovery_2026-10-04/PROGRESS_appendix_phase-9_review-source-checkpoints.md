@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.4
+Version: 1.5
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -85,3 +85,10 @@ API1.57/BUG1.63/ROADMAP1.35, full source report and capture saved. SPEC/PLAN unc
 API1.58/BUG1.64/ROADMAP1.36, full source report and capture saved; finished release block moves unchanged with verified reconstruction.
 Next: missing quiet-period bounds and compatibility/storage trust findings. Headless feedback, native/Linux and timing limits remain open.
 SPEC/PLAN fixed; no live app/install/preferences/schedules/native/session/VM actions. Full goal active and incomplete.
+
+
+### Phase 9 quiet-bound validation: 2026-10-14 15:46 CEST
+`506cddb` closes missing bounds/resume bypass (3 production/3 test/4 doc files); disabled drafts/range edges/empty-window warning remain.
+[Checks and failures](quiet-bounds-source-check-2026-10-14.md): RED ebEMby3/7 assertions, AJrV2b parity; l1xmDk **614/614**,23.588s;1nDFbD22/22;0xpWqp release223.51s.
+LsYHBP614/14 failures (6 unexpected) and load/swap snapshot are retained; GaF3m3 five separated cases pass. Causes remain open.
+Next: provider compatibility/storage trust and other material findings. Headless/native/Linux, palette and timing limits remain open; goal active/incomplete; no live actions.

@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 15:46 CEST
-**Version:** 4.41
+**Last Updated:** 2026-10-14 16:18 CEST
+**Version:** 4.42
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 506cddb; earlier below/appendix | 614 Swift;22 parity; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 616 Swift executed (full failures);175 portable/19 background;prior parity below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -892,9 +892,9 @@ Neither timing cause is established; [full source/failure notes](final-review-co
 Active legacy cleanup can still reset fresh palette; [limits](release-retry-source-check-2026-10-14.md) remain unresolved.
 
 > Finished projection retry: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+> Finished quiet validation: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+Prior LsYHBP614/14 timing failures remain unattributed in [its checks](quiet-bounds-source-check-2026-10-14.md).
 
-### Phase 9 quiet-bound validation: 2026-10-14 15:46 CEST
-`506cddb` closes missing bounds/resume bypass (3 production/3 test/4 doc files); disabled drafts/range edges/empty-window warning remain.
-[Checks and failures](quiet-bounds-source-check-2026-10-14.md): RED ebEMby3/7 assertions, AJrV2b parity; l1xmDk **614/614**,23.588s;1nDFbD22/22;0xpWqp release223.51s.
-LsYHBP614/14 failures (6 unexpected) and load/swap snapshot are retained; GaF3m3 five separated cases pass. Causes remain open.
-Next: provider compatibility/storage trust and other material findings. Headless/native/Linux, palette and timing limits remain open; goal active/incomplete; no live actions.
+### Phase 9 ordinary-provider synthetic compatibility: 2026-10-14 16:18 CEST
+`6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
+Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 remain incomplete; next diagnose timing/root trust and compatibility, with headless/Linux/native/palette limits open. No live actions.
