@@ -1,7 +1,26 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.58
+Version: 1.59
+
+## Paint failures lack the original writer result
+
+The initial focus fixture recorded thrown errors but not successful `false` returns. Its status
+wait also accepted a failed fanout containing `outside`. The late-preview fixture only proved that
+open was entered; generic recovery status hid the original error and stage timing.
+
+Both cases now record caller Boolean/error, open result, beforeOpen/prepare entry and outcome,
+elapsed time and supplied deadline remainder without logging payloads. The recorder preserves
+nil callbacks, exact physical target, non-emergency admission, flags and errno. Successful clear
+paths await controller cleanup publication before teardown. Seven fresh-process pairs passed;
+the historical first-paint and EPERM causes remain unestablished.
+
+The full TJMEY4 run exposed two other recovery-race failures. Their paused-open barrier included
+independent recovery and reset-byte assertions in the original 100 ms device budget. Revision
+fixtures now publish once under a bounded call, pause outside the device budget, then invoke the
+original preparation with a fresh real writer deadline. Full recover/reset/resume and old-output
+rejection remain asserted. Production retains one 100 ms deadline. Four focused and all 570 Swift
+tests pass. TJMEY4 also timed out in a subsequent fresh render; that cause remains unattributed.
 
 ## Identical catalogue polls discard slow focus preparation
 

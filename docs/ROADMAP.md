@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.30
+Version: 1.31
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -24,6 +24,11 @@ Identical in-flight catalogue polls now preserve preparation while refreshing co
 bindings, emphasized sets and cues still invalidate it. Heartbeats start after preparation and
 stale catalogue coverage refuses paint. Five regressions and all 570 isolated Swift tests pass.
 Visible native readability and the separate intermittent initial-paint diagnosis remain pending.
+The initial-paint fixtures now preserve original writer outcomes and monotonic stage timing;
+successful paths await cleanup completion. Two recovery revision fixtures use a publication
+barrier outside the device budget while retaining full recovery and obsolete-output rejection.
+All 570 Swift tests pass. Historical first-paint/EPERM and a captured fresh-render timeout remain
+unattributed; these fixture changes do not establish their production causes.
 
 ## Verified source
 

@@ -97,6 +97,50 @@ final class FocusControllerTests: XCTestCase {
         wait(for: [done], timeout: 2)
     }
 
+    private func recordedWriter(_ target: TerminalTargetBinding,
+                                openDevice: @escaping (String, Int32) -> Int32 = { Darwin.open($0, $1) })
+        -> (MockProcessRunner, () -> [String]) {
+        let runner = MockProcessRunner(), traceLock = NSLock()
+        var trace: [String] = [], calls = 0
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            let start = DispatchTime.now().uptimeNanoseconds
+            traceLock.lock(); calls += 1; let call = calls; traceLock.unlock()
+            func record(_ stage: String, deadline: UInt64? = nil) {
+                let now = DispatchTime.now().uptimeNanoseconds
+                let remaining = deadline.map { "; remaining ns: \(Int64($0) - Int64(now))" } ?? ""
+                traceLock.lock(); trace.append("\(call) \(stage); elapsed ns: \(now - start)\(remaining)")
+                traceLock.unlock()
+            }
+            let system = SystemProcessRunner(openDevice: { path, flags in
+                record("open entered")
+                let fd = openDevice(path, flags), openError = errno
+                record("open returned \(fd), errno \(openError)"); errno = openError
+                return fd
+            })
+            let wrappedBeforeOpen = beforeOpen.map { callback in
+                { (deadline: UInt64) throws -> Void in
+                    record("beforeOpen entered", deadline: deadline)
+                    do { try callback(deadline); record("beforeOpen returned", deadline: deadline) }
+                    catch { record("beforeOpen threw \(error)", deadline: deadline); throw error }
+                }
+            }
+            record("caller entered")
+            do {
+                let wrote = try system.writeManagedToDevice(path: path, lockURL: lock,
+                    beforeOpen: wrappedBeforeOpen, target: target.physicalTarget, emergency: false) { fd, deadline in
+                    record("prepare entered", deadline: deadline)
+                    do {
+                        let data = try prepare(fd, deadline)
+                        record("prepare returned " + (data.map { "bytes \($0.count)" } ?? "nil"), deadline: deadline)
+                        return data
+                    } catch { record("prepare threw \(error)", deadline: deadline); throw error }
+                }
+                record("caller returned \(wrote)"); return wrote
+            } catch { record("caller threw \(error)"); throw error }
+        }
+        return (runner, { traceLock.lock(); defer { traceLock.unlock() }; return trace })
+    }
+
     private func attention(_ row: GhosttySurface, _ delivery: String, producer: Int32? = nil) -> TerminalVisualCoverage {
         TerminalVisualCoverage(observation: TerminalObservation(tty: row.tty!,
             device: identities[row.foregroundPID!]!.device, producer: generation(producer ?? row.foregroundPID!),
@@ -537,37 +581,29 @@ final class FocusControllerTests: XCTestCase {
     }
 
     func testManualCapturedSetIsIndependentOfPreviewAndClearsLatestIntent() throws {
-        let a = try surface(10), b = try surface(20), runner = MockProcessRunner(), guardLock = NSLock()
+        let a = try surface(10), b = try surface(20)
         let expectedTarget = try XCTUnwrap(state.captureTarget(for: b))
-        var failures: [String] = []
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
-            let start = DispatchTime.now().uptimeNanoseconds
-            do {
-                return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                    beforeOpen: beforeOpen, target: expectedTarget.physicalTarget, emergency: false, prepare: prepare)
-            } catch {
-                let elapsed = DispatchTime.now().uptimeNanoseconds - start
-                guardLock.lock(); failures.append("\(error); elapsed ns: \(elapsed)"); guardLock.unlock()
-                throw error
-            }
-        }
+        let (runner, trace) = recordedWriter(expectedTarget)
         configureState(runner: runner)
         let focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
-        guardLock.lock(); let initialFailures = failures; guardLock.unlock()
-        XCTAssertTrue(initialFailures.isEmpty, initialFailures.joined(separator: "\n"))
-        XCTAssertFalse(focus.focusStatus.contains("unavailable"), focus.focusStatus)
+        XCTAssertTrue(trace().contains { $0.contains("caller returned true") },
+                      focus.focusStatus + "\n" + trace().joined(separator: "\n"))
         XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
         _ = try read(1)
         focus.preview([b]); awaitPaint(focus, count: 1); _ = try read(1)
         XCTAssertEqual(focus.workingSet, [a.id])
-        focus.clearPreview(); _ = try read(1)
+        let previewCleared = expectation(description: "Preview cleanup completed")
+        focus.$cleanupError.dropFirst().first().sink { _ in previewCleared.fulfill() }.store(in: &subscriptions)
+        focus.clearPreview(); wait(for: [previewCleared], timeout: 2); _ = try read(1)
         let target = try XCTUnwrap(state.captureTarget(for: b))
         try recovery.write(.ordinary(OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
             producer: target.ttyOwner, deliveryID: "updated", updatedAt: 1_000, background: "#AA2200"),
             synthetic: false, intakeAt: 1_000), to: target)
         _ = try read(1)
-        focus.focusOff()
+        let focusCleared = expectation(description: "Manual cleanup completed")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in focusCleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [focusCleared], timeout: 2)
         XCTAssertEqual(focus.mode, .off); XCTAssertTrue(focus.workingSet.isEmpty)
         XCTAssertEqual(try read(1), Data("\u{1B}]11;#AA2200\u{1B}\\".utf8))
         var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
@@ -1112,19 +1148,26 @@ final class FocusControllerTests: XCTestCase {
     func testLatePreviewTimerSchedulingUsesTheRemainingDisplayLifetime() throws {
         let row = try surface(10), timers = MockTimerScheduler()
         let entered = DispatchSemaphore(value: 0), advance = DispatchSemaphore(value: 1)
-        configureState(runner: SystemProcessRunner(openDevice: { path, flags in
+        let target = try XCTUnwrap(state.captureTarget(for: row))
+        let (runner, trace) = recordedWriter(target, openDevice: { path, flags in
             if advance.wait(timeout: .now()) == .success {
                 self.clock.advance(by: 1.25); entered.signal()
             }
             return Darwin.open(path, flags)
-        }))
+        })
+        configureState(runner: runner)
         let focus = controller(timers)
         focus.preview([row])
         // Keep main-queue timer setup pending until the writer has consumed part of the lease.
         XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
-        awaitPaint(focus, count: 1); _ = try read(0)
+        awaitPaint(focus, count: 1)
+        XCTAssertTrue(trace().contains { $0.contains("caller returned true") },
+                      focus.previewStatus + "\n" + trace().joined(separator: "\n"))
+        _ = try read(0)
         XCTAssertEqual(try XCTUnwrap(timers.scheduledTimers.first).delay, 0.75, accuracy: 0.001)
-        clock.advance(by: 0.75); timers.fireAll()
+        let cleared = expectation(description: "Expired preview cleanup completed")
+        focus.$cleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        clock.advance(by: 0.75); timers.fireAll(); wait(for: [cleared], timeout: 2)
         XCTAssertFalse(focus.isPreviewActive)
         XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
     }

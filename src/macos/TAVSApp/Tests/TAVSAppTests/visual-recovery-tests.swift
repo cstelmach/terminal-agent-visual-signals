@@ -529,9 +529,15 @@ final class VisualRecoveryTests: XCTestCase {
             let finished = DispatchSemaphore(value: 0), result = RecoveryWriteResult()
             defer { release.signal() }
             let style = try render(), value = intent(target)
-            let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
-                entered.signal(); release.wait(); return Darwin.open(path, flags)
-            }))
+            let runner = MockProcessRunner()
+            runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+                // Pause after publication, outside the device budget, to test revision rejection.
+                try SystemProcessRunner.completeDeviceWrite(path: path) { try beforeOpen?($0) }
+                entered.signal(); release.wait()
+                return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                    beforeOpen: nil, target: target.physicalTarget, emergency: false, prepare: prepare)
+            }
+            let queued = recovery(runner: runner)
             DispatchQueue.global().async {
                 result.value = Result {
                     try queued.render(style, intent: value, synthetic: false, intakeAt: 1_000,
@@ -1399,9 +1405,15 @@ final class VisualRecoveryTests: XCTestCase {
         let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
         let finished = DispatchSemaphore(value: 0), result = RecoveryWriteResult()
         defer { release.signal() }
-        let queued = recovery(runner: SystemProcessRunner(openDevice: { path, flags in
-            entered.signal(); release.wait(); return Darwin.open(path, flags)
-        }))
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            // Pause after publication, outside the device budget, to test revision rejection.
+            try SystemProcessRunner.completeDeviceWrite(path: path) { try beforeOpen?($0) }
+            entered.signal(); release.wait()
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: nil, target: target.physicalTarget, emergency: false, prepare: prepare)
+        }
+        let queued = recovery(runner: runner)
         DispatchQueue.global().async {
             result.value = Result {
                 try queued.write(.forcedReset(value, intakeAt: 1_000, title: "old directory"), to: target)
