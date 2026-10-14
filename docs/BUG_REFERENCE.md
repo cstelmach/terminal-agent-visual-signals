@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.54
+Version: 1.55
+
+## Restore test rejects a legitimate completion timer transition
+
+The completion race fixture compared the entire session-state file while its live timer could
+advance `complete` to `idle`. A controlled 2.5-second delay reproduced the original mismatch before
+stale restoration was released; state was identical before/after its stale code 3. The same timer,
+counter, Stop observation and delivery were preserved. A passing retry alone did not establish this.
+
+The completion case now checks allowed forward state progression, matching priority, nonregressing
+time and the exact new live timer. Other cases retain byte equality. Stale code 3, counter,
+observation, graduated color and delivery checks remain required. Original deleted case artifacts
+prevent definitive attribution of every historical failure; the reproduced mechanism is confirmed.
 
 ## Core ordinary routing still requires the native companion
 

@@ -376,10 +376,20 @@ expected_result=3
 test "$(cat "$RESTORE_CASE_DIR/returned")" = "$expected_result"
 actual_count=$(get_subagent_count)
 test "$actual_count" = "$count" || { printf 'Counter changed: %s to %s\n' "$count" "$actual_count"; exit 1; }
-cmp "$STATE_DB" "$RESTORE_CASE_DIR/state-before"
+if [[ -z "$timer" ]]; then
+    cmp "$STATE_DB" "$RESTORE_CASE_DIR/state-before"
+fi
 cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$RESTORE_CASE_DIR/observation-before.json"
 if [[ -n "$timer" ]]; then
+    read -r before_tty before_state before_priority before_time before_timer \
+        < "$RESTORE_CASE_DIR/state-before"
     read_session_state
+    # The newer timer may legitimately advance completion to idle during stale restore.
+    [[ "$SESSION_STATE" == complete || "$SESSION_STATE" == idle ]]
+    [[ "$before_state" != idle || "$SESSION_STATE" == idle ]]
+    test "$SESSION_PRIORITY" = "$(get_state_priority "$SESSION_STATE")"
+    test "$SESSION_TIME" -ge "$before_time"
+    test "$before_timer" = "$timer"
     test "$SESSION_TIMER_PID" = "$timer"
     kill -0 "$timer"
     for ((attempt=0; attempt<100; attempt++)); do
