@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.73
+Version: 1.74
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -12,7 +12,9 @@ retain statuses, require rendered completion plus physical bytes, and use inheri
 The four historical combined-run failures remain unattributed. A later diagnostic run reaches
 all intended colors but fails a separate delayed tool-error timestamp assertion; its records
 are retained. A final control also captures a native caller deadline at the newer render.
-Reporting fixes do not establish its internal stage or either historical delivery cause.
+The native timeout now adds a synchronized last-entered writer boundary without waiting for
+the worker. A masked-focus failure reports preparation; no nested cause is established.
+Reporting fixes do not establish either historical delivery cause.
 
 ## Concurrent lock mutations overwrite newer grants and lock ends
 

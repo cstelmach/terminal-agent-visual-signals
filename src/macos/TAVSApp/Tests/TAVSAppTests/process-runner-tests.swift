@@ -287,7 +287,7 @@ final class ProcessRunnerTests: XCTestCase {
             finished.fulfill()
         }
         wait(for: [entered, finished], timeout: 1)
-        assertTimedOut(result, since: start)
+        assertTimedOut(result, since: start, stage: .open)
         release.signal()
         wait(for: [opened], timeout: 1)
         assertDescriptorClosed(result.descriptor)
@@ -318,7 +318,7 @@ final class ProcessRunnerTests: XCTestCase {
             finished.fulfill()
         }
         wait(for: [entered, finished], timeout: 1)
-        assertTimedOut(result, since: start)
+        assertTimedOut(result, since: start, stage: .prepare)
         release.signal()
         assertDescriptorClosed(result.descriptor)
         assertNoPTYBytes(tty.master)
@@ -348,7 +348,7 @@ final class ProcessRunnerTests: XCTestCase {
                 return Data([0x61])
             }
         })
-        assertTimedOut(result, since: start)
+        assertTimedOut(result, since: start, stage: .lock)
         assertDescriptorClosed(result.descriptor)
         var after = stat()
         XCTAssertEqual(lstat(lockURL.path, &after), 0)
@@ -680,7 +680,7 @@ final class ProcessRunnerTests: XCTestCase {
         }
         XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
         wait(for: [finished], timeout: 1)
-        assertTimedOut(result, since: start)
+        assertTimedOut(result, since: start, stage: .publication)
         release.signal()
         wait(for: [lateOpen], timeout: 0.02)
         XCTAssertFalse(FileManager.default.fileExists(atPath: lockURL.path))
@@ -902,11 +902,13 @@ final class ProcessRunnerTests: XCTestCase {
     }
 
     private func assertTimedOut(_ result: ManagedWriteResult, since start: UInt64,
+                                stage expectedStage: DeviceWriteStage? = nil,
                                 file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertThrowsError(try result.get(), file: file, line: line) { error in
-            guard case ProcessRunnerError.deviceWriteTimedOut = error else {
+            guard case ProcessRunnerError.deviceWriteTimedOut(_, let stage) = error else {
                 return XCTFail("Unexpected error: \(error)", file: file, line: line)
             }
+            if let expectedStage = expectedStage { XCTAssertEqual(stage, expectedStage, file: file, line: line) }
         }
         let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
         XCTAssertGreaterThanOrEqual(elapsed, 0.08, file: file, line: line)

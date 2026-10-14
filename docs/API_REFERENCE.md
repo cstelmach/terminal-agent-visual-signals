@@ -1,19 +1,25 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.67
+Version: 1.68
 
 ## Private managed-output failure diagnostics
 
 Code1 managed failures retain empty stdout and the `Managed output unavailable.` prefix,
 adding fixed `stage` and `failure` tokens. Stages identify the caller's request, roots, identity,
 context, input, setup, target or write boundary; native suspension persistence also uses policy.
-The write boundary includes publication, validation, locking and bytes, so it is not a measured
-physical substage. Native labels match typed errors; portable labels match fixed exception
-families. Numeric device/OS codes are restricted to 1...4095; native POSIX codes are typed.
+Native timeout labels now add the last entered writer boundary: queued, operation, storage,
+publication, admission, open, lock, prepare, write or cleanup. A completion-owned mutex protects
+that fixed enum; the caller uses one nonblocking try-read and reports unavailable attribution
+if busy. Late workers cannot advance it past the original deadline. It identifies a boundary,
+not elapsed time or a syscall cause. Completed timeout errors are enriched after the semaphore;
+unfinished results are never read. Native labels match typed errors; portable labels match fixed
+exception families. Numeric device/OS codes are restricted to 1...4095; native POSIX codes are typed.
 Unknown categories remain explicit other/os/device-io failures. No exception descriptions,
 class names, paths, titles, payloads, tokens or userInfo are printed.
 
+The internal deviceWriteTimedOut case gains a defaulted optional stage. Existing one-argument
+construction and bare matching remain valid; nil keeps the generic device-deadline label.
 Code3 stale diagnostics, successful scalar tokens, organizer errors and capabilities remain.
 A native exception after suspension persistence retains its structured partial report and adds
 these tokens to the fixed reason; no successful restore or target disappearance is inferred.

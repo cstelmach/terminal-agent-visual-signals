@@ -6,6 +6,10 @@ struct BoundedProcessOutput {
     let exitCode: Int32
 }
 
+enum DeviceWriteStage: String {
+    case queued, operation, storage, publication, admission, open, lock, prepare, write, cleanup, unavailable
+}
+
 protocol ProcessRunner: AnyObject {
     @discardableResult
     func run(executableURL: URL, arguments: [String]) throws -> Data
@@ -151,30 +155,42 @@ final class SystemProcessRunner: ProcessRunner {
 
     func writeToDevice(path: String, data: Data) throws {
         guard !data.isEmpty else { return }
-        try Self.completeDeviceWrite(path: path) { deadline in
-            try self.writeNonblockingToDevice(path: path, data: data, deadline: deadline)
+        try Self.completeDeviceWrite(path: path) { deadline, stage in
+            try self.writeNonblockingToDevice(path: path, data: data, deadline: deadline, stage: stage)
         }
     }
 
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               target: TerminalTargetBinding?, emergency: Bool = false,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
-        try Self.completeDeviceWrite(path: path) { deadline in
+        try Self.completeDeviceWrite(path: path) { deadline, stage in
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.storage)
             guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
             let directory = lockURL.deletingLastPathComponent()
             do { try RuntimeDirectoryTrust.check(directory, deadline: deadline) }
             catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
                 throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
-            try beforeOpen?(deadline)
+            if let beforeOpen = beforeOpen {
+                try self.checkDeviceDeadline(path: path, deadline: deadline)
+                stage(.publication)
+                try beforeOpen(deadline)
+            }
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.storage)
             do { try RuntimeDirectoryTrust.check(directory, create: true, deadline: deadline) }
             catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
                 throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.admission)
             let admission = try Self.admitDevice(path: path, target: target, emergency: emergency)
             defer { Self.releaseDevice(admission) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.open)
             let device = try self.openNonblockingDevice(path: path, deadline: deadline)
             defer { Darwin.close(device) }
+            try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.storage)
             do { try RuntimeDirectoryTrust.check(directory, deadline: deadline) }
             catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
                 throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
@@ -184,6 +200,7 @@ final class SystemProcessRunner: ProcessRunner {
                 throw ProcessRunnerError.deviceIOFailed(path, EINVAL)
             }
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.lock)
             var lockFD: Int32
             repeat {
                 lockFD = Darwin.open(lockURL.path, O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0o600)
@@ -208,10 +225,13 @@ final class SystemProcessRunner: ProcessRunner {
             }
             defer { flock(lockFD, LOCK_UN) }
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            stage(.prepare)
             let data = try prepare(device, deadline)
             try self.checkDeviceDeadline(path: path, deadline: deadline)
-            guard let data = data else { return false }
+            guard let data = data else { stage(.cleanup); return false }
+            stage(.write)
             try self.writeToDescriptor(device, path: path, data: data, deadline: deadline)
+            stage(.cleanup)
             return true
         }
     }
@@ -220,25 +240,46 @@ final class SystemProcessRunner: ProcessRunner {
     // The semaphore publishes the worker's result only after completion;
     // a timeout reports failure without reading an incomplete result.
     static func completeDeviceWrite<T>(path: String, operation: @escaping (UInt64) throws -> T) throws -> T {
+        try completeDeviceWrite(path: path) { deadline, stage in
+            stage(.operation)
+            return try operation(deadline)
+        }
+    }
+
+    private static func completeDeviceWrite<T>(path: String,
+        operation: @escaping (UInt64, (DeviceWriteStage) -> Void) throws -> T) throws -> T {
         let deadline = DispatchTime.now() + .milliseconds(100)
         let completion = DeviceWriteCompletion<T>()
         DispatchQueue.global(qos: .userInitiated).async {
-            completion.result = Result { try operation(deadline.uptimeNanoseconds) }
+            completion.result = Result {
+                try operation(deadline.uptimeNanoseconds, { completion.enter($0, before: deadline.uptimeNanoseconds) })
+            }
             completion.finished.signal()
         }
         guard completion.finished.wait(timeout: deadline) == .success else {
             TAVSLog.broadcaster.error("terminal I/O timed out: \(path, privacy: .public)")
-            throw ProcessRunnerError.deviceWriteTimedOut(path)
+            throw ProcessRunnerError.deviceWriteTimedOut(path, completion.snapshot())
         }
-        return try completion.result!.get()
+        do { return try completion.result!.get() }
+        catch ProcessRunnerError.deviceWriteTimedOut(let failedPath, let stage) {
+            throw ProcessRunnerError.deviceWriteTimedOut(failedPath, stage ?? completion.snapshot())
+        }
     }
 
-    private func writeNonblockingToDevice(path: String, data: Data, deadline: UInt64) throws {
+    private func writeNonblockingToDevice(path: String, data: Data, deadline: UInt64,
+                                         stage: (DeviceWriteStage) -> Void) throws {
+        try checkDeviceDeadline(path: path, deadline: deadline)
+        stage(.admission)
         let admission = try Self.admitDevice(path: path, target: nil, emergency: false)
         defer { Self.releaseDevice(admission) }
+        try checkDeviceDeadline(path: path, deadline: deadline)
+        stage(.open)
         let descriptor = try openNonblockingDevice(path: path, deadline: deadline)
         defer { Darwin.close(descriptor) }
+        try checkDeviceDeadline(path: path, deadline: deadline)
+        stage(.write)
         try writeToDescriptor(descriptor, path: path, data: data, deadline: deadline)
+        stage(.cleanup)
     }
 
     private static func admitDevice(path: String, target: TerminalTargetBinding?,
@@ -335,6 +376,21 @@ final class SystemProcessRunner: ProcessRunner {
 private final class DeviceWriteCompletion<T> {
     let finished = DispatchSemaphore(value: 0)
     var result: Result<T, Error>?
+    private let stageLock = NSLock()
+    private var stage = DeviceWriteStage.queued
+
+    func enter(_ stage: DeviceWriteStage, before deadline: UInt64) {
+        stageLock.lock()
+        if DispatchTime.now().uptimeNanoseconds < deadline { self.stage = stage }
+        stageLock.unlock()
+    }
+
+    // Timeout diagnostics must neither wait for the worker nor read its unfinished result.
+    func snapshot() -> DeviceWriteStage {
+        guard stageLock.try() else { return .unavailable }
+        defer { stageLock.unlock() }
+        return stage
+    }
 }
 
 enum ProcessRunnerError: Error {
@@ -345,5 +401,5 @@ enum ProcessRunnerError: Error {
     case processOutputTooLarge
     case deviceNotWritable(String)
     case deviceIOFailed(String, Int32)
-    case deviceWriteTimedOut(String)
+    case deviceWriteTimedOut(String, DeviceWriteStage? = nil)
 }

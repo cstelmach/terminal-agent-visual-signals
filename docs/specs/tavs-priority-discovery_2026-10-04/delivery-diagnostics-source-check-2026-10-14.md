@@ -1,7 +1,7 @@
 # Managed delivery diagnostics and retained failures
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.0
+Version: 1.1
 
 Parent: [Progress](PROGRESS.md). Baseline: e53697c. Phase9 remains incomplete.
 The two source reports below are read-only checks, not final provider approval.
@@ -543,3 +543,291 @@ files and this previously untracked report. The review checks produced the missi
 worker oracle and ERR-inheritance correction here; earlier checks produced the accepted lock
 snapshot and color validation corrections. No new process instruction or control plane was added.
 SPEC/PLAN bodies remain fixed; Phase9 and the full goal remain active/incomplete.
+
+
+## Native writer timeout boundary source check
+
+# Native writer timeout stage source exploration
+
+Last Updated: 2026-10-14
+Version: 1.0
+
+Repository: `/Users/cs/local/code/apps/terminal-agent-visual-signals`
+Baseline: `1cda895` (`fix: Expose private managed failure stages`)
+Scope: read-only source exploration. No tests, provider calls or live actions were run.
+The parent was concurrently adding an owned managed-entry regression test; it is discussed
+separately below. This report is not a formal independent review or approval.
+
+## Conclusion
+
+Reuse `DeviceWriteCompletion<T>` for a small, protected fixed-enum stage field. Publish stage
+changes through a dedicated `NSLock`, and let the timed-out caller use `try()` once to snapshot
+that field. Never acquire a blocking lock or inspect `result` after semaphore timeout.
+
+Keep the original 100 ms `DispatchTime` deadline. Add no observer queues, persisted tracing,
+per-stage budgets or post-timeout wait. An absent snapshot means attribution is unavailable;
+it does not convert timeout to success. Stage identifies the last entered boundary, not the
+reason that boundary consumed the budget.
+
+## Current execution path
+
+`ProcessRunner.swift:222-237` creates the single deadline and completion, schedules a global
+worker, and waits until that deadline. The worker assigns `completion.result` before signaling
+`finished`. The parent reads result only after a successful wait. After timeout the worker may
+continue and run its defers; the caller currently throws an unqualified timeout.
+
+Managed output (`ProcessRunner.swift:159-217`) executes these boundaries in sequence:
+
+| Boundary | Source | Relevant behavior |
+| --- | --- | --- |
+| Initial validation/trust | 163-168 | Deadline check; file URL requirement; parent traversal |
+| Publication | 169-170 | Optional `beforeOpen` callback; deadline checked after return |
+| Directory creation/trust | 171-173 | Trusted missing parent creation under original deadline |
+| Admission | 174-175,245-257 | Static `NSLock`; reserve physical target/emergency lane |
+| Device open | 176-177,270-285 | Injected opener; can stall despite `O_NONBLOCK`; late FD closed |
+| Post-open trust/lock | 178-211 | Parent revalidation, stable lock open/type/owner/mode, bounded flock |
+| Preparation | 212-215 | Callback under output flock; nil skips paint; deadline after return |
+| Physical write | 216,287-331 | Partial write/EINTR/EAGAIN/poll retain original deadline |
+| Resource release | Defers after 175,177,195,209 | Release admission, FD and flock after worker exits |
+
+Raw output (`ProcessRunner.swift:151-156,238-242`) has admission, open and write boundaries.
+Generic direct `completeDeviceWrite` callers also exist in tests and mocks. Their operation
+may not expose inner boundaries, so their generic stage should remain truthful.
+
+`VisualRecovery.write` wraps metadata publication and revision capture in `beforeOpen`
+(`visual-recovery.swift:158-179`). Its preparation closure validates physical target, marker,
+synthetic context, caches/effects, policy and rendering (`visual-recovery.swift:210 onward`).
+An outer `prepare` diagnosis therefore intentionally does not resolve every internal read.
+
+## Smallest synchronized design
+
+Use a nonprivate enum if it is associated with the internal `ProcessRunnerError`, otherwise
+Swift access-control rules reject a private type in an internal enum case. Suggested stages
+are fixed raw values such as `queued`, `operation`, `trust`, `publication`, `admission`,
+`open`, `lock`, `prepare`, and `write`. Split trust-before/publication-after trust only if the
+specific measured failure needs the distinction; fixed labels should identify clear boundaries.
+
+Inside the existing completion object:
+
+- `private let stageLock = NSLock()`
+- `private var stage: DeviceWriteStage = .queued`
+- A worker-only setter locks, copies one enum value and unlocks.
+- A snapshot method calls `stageLock.try()` once; nil if unavailable, otherwise copy and unlock.
+
+Do not run logging, callbacks, filesystem operations or deadline checks while holding this
+lock. Do not put `result` behind it: semaphore completion already establishes the result's
+publication, and the timeout branch must not read unfinished result.
+
+Add a private overload with an explicit `stagedOperation` label that receives deadline plus
+an update callback. Keep the current `(UInt64) throws -> T` helper as a wrapper. This preserves
+current mocks and tests, avoids ambiguous trailing closures, and introduces no protocol change.
+Managed/raw implementations use the staged overload directly.
+
+Before each new potentially slow boundary, check the original deadline and then publish its
+stage. Otherwise a callback that returns after the deadline can cause attribution to advance
+to `open` even though open must never run. Stage is best interpreted as the last allowed
+entered boundary. The queued value covers a worker that never reached its first operation.
+
+For timeouts thrown by the worker's own deadline checks, enrich the completed timeout with
+its stage before publishing result, or decorate a completed timeout on the success branch.
+Preserve the actual original error path and any already-present stage. Do not coerce
+`TerminalVisualStateError.deadlineExceeded`, policy failures or unrelated errors into a
+`ProcessRunnerError`: existing caller error categories and stale statuses are deliberate.
+
+## Source compatibility
+
+Proposed case: `case deviceWriteTimedOut(String, stage: DeviceWriteStage? = nil)`.
+
+Existing `ProcessRunnerError.deviceWriteTimedOut(path)` expressions occur in runner deadline
+checks and `MockProcessRunner.swift:73,77`. The default preserves their call form. All current
+case matches omit associated-value patterns entirely:
+
+- `managed-output-entry.swift:180`: `case .deviceWriteTimedOut`
+- `process-runner-tests.swift:604,843,907`: bare case guards/catch
+
+These continue to recognize the expanded case. Repository search found no existing
+`case .deviceWriteTimedOut(let path)` destructuring to adapt. Swift package uses tools 6.0
+with Swift language mode v5 (`Package.swift`). Compiler verification was deliberately not run;
+parent's focused RED/GREEN compile should verify the proposed associated-value default.
+
+Managed entry should pattern-match stage and emit only its allowlisted raw value, e.g.
+`device-deadline-publication`. Nil retains the existing `device-deadline` category. Avoid
+`String(describing: error)` and any associated path/payload. The generic source timeout log
+already logs a public device path; that pre-existing behavior is outside this scoped change.
+
+## Contrasting options
+
+| Design | Assessment |
+| --- | --- |
+| Completion-owned NSLock plus try snapshot | Recommended. Existing dependency, small and explicit; timeout never waits |
+| Unsynchronized enum field | Reject. Worker/caller concurrent access is a Swift data race |
+| Ordinary locked snapshot after timeout | Reject. A preempted holder can extend the caller deadline indefinitely |
+| Serial queue and sync snapshot | Reject. Same post-timeout blocking problem plus extra queue |
+| OSAllocatedUnfairLock | Possible but greater API/availability/test surface with no measured need |
+| Atomic integer via new package | Excess dependency for one diagnostic field |
+| Synchronous stderr per stage | Adds I/O to critical path; can block, expose input or mix late output |
+| Extra timeout observer worker | More lifetimes and races; cannot safely read unfinished result |
+
+The worker's brief locked setter is still cooperatively scheduled, like the existing admission
+lock. An OS scheduler can deschedule any instruction. The caller's single `try()` avoids adding
+an unbounded wait; no ordinary Swift solution promises exact real-time wall-clock execution.
+
+## Lifetime and race limits
+
+- Completion is retained by the worker until it finishes. A setter closure that captures it
+  creates no cycle provided completion does not retain that closure.
+- Timeout error copies an enum value. It must not expose the mutable completion object.
+- A worker can advance while a timeout snapshot is taken. Snapshot reports the synchronized
+  value at observation; it is not a proof of where time was spent or when the worker was scheduled.
+- Deadline checks before entering the next boundary reduce false advancement from late return.
+- If the snapshot try-lock fails, report unavailable attribution. Do not retry or spin.
+- Preserve all existing late-open FD closure and admission identity semantics. No stage action
+  should reopen, repaint, release another lifetime's slot or alter emergency lane selection.
+- Failed caller return does not prove completed worker cleanup. Tests must release gates and
+  wait for resource/admission release before fixture teardown.
+
+## Focused verification suggestions
+
+The parent's current uncommitted managed-entry case blocks publication/open/prepare and
+expects `stage=write failure=device-deadline-<phase>.` This directly covers the desired public
+fixed-label behavior. It does not yet directly verify every resource release: `drained` is
+fulfilled inside the gate callback, before late open returns or prepare defers finish. For
+open/prepare, wait for admission release or assert owned FD closure before deleting roots.
+Publication has no device admission yet.
+
+Useful tests with existing seams/helpers:
+
+1. Wedged beforeOpen/open/prepare reports the exact entered stage and returns on the existing
+   caller budget. Gate release cannot produce late bytes; owned descriptors/slots are reclaimed.
+2. Held output flock reports lock; a full owned PTY queue reports write. Keep actual bytes and
+   deadline checks, rather than treating timeout as successful delivery.
+3. Legacy `deviceWriteTimedOut(path)` construction remains valid and maps to generic label;
+   unrelated errno/stale categories preserve their exact prior output.
+4. Completed cooperative timeout obtains stage without reading a partial result. A late
+   successful callback cannot turn an already timed-out caller into success.
+5. If a direct tiny completion seam is used, holding its progress lock while snapshot runs
+   must immediately return nil. Do not add a broad production injection framework solely for it.
+
+After source change, run focused runner/entry tests, connected recovery/focus regressions,
+full Swift suite, release helper build and the relevant isolated managed-background reproducer.
+Retain failures and do not widen the 100 ms deadline. A new stage may identify the next
+experiment; this diagnostic slice does not itself fix a budget-consuming implementation.
+
+## Memory context
+
+A lightweight registry check retained only the runtime and terminal-session boundaries from
+`/Users/cs/.codex/memories/MEMORY.md:748-749`, rollout
+`01a100cb-205c-7840-8268-c3d4ab1f7849`. No runtime action was taken from historical state.
+All source findings above were inspected in the current checkout.
+
+## Follow-up source check of implemented diff
+
+Checked the current four-file diff against baseline `1cda895` after the parent's implementation.
+This was read-only inspection. No tests, runtime actions or formal provider review were run.
+
+### Verified source properties
+
+- `DeviceWriteCompletion<T>` owns its enum and dedicated mutex. Every stage read/write is
+  synchronized. `snapshot()` uses one `NSLock.try()` and immediately returns `.unavailable`
+  on contention. It never waits, spins or reads `result`.
+- Setter's critical section contains only a monotonic clock comparison, one enum assignment
+  and unlock. There are no filesystem operations, logging or arbitrary callbacks under it.
+  The comparison prevents a callback returning after the deadline from advancing attribution.
+- The original deadline is still created once as `DispatchTime.now() + .milliseconds(100)`.
+  Both overloads use that same lifetime. No per-stage timeout or post-timeout grace was added.
+- Timeout still logs and throws, and result is accessed only after successful semaphore wait.
+  Completed worker timeout is decorated with the snapshot only when it has no existing stage.
+  The failed path and unrelated error types remain intact.
+- Binary-operation overload is private; the legacy unary wrapper remains available for tests
+  and mocks. Closure arity differentiates current calls. Optional associated stage defaults
+  keep old one-argument error construction, and existing bare-case matching remains valid.
+- Managed stages cover storage traversal, publication, admission, open, output lock,
+  preparation, physical write and successful/nil cleanup. Raw writes cover admission/open/
+  write/cleanup. Stage transitions do not alter target keys, emergency lane, open flags,
+  lock trust rules, descriptor/flock defers, false/nil results or error categories.
+- Managed helper concatenates only fixed enum raw values. It adds no path, exception text,
+  request payload or mutable state to output. Legacy nil-stage errors retain generic category.
+- Four existing runner cases now assert `.open`, `.prepare`, `.lock` and `.publication` while
+  retaining deadline and physical descriptor/byte checks.
+- Added managed-entry test gates publication/open/prepare and checks exact public labels.
+  Its new post-release admission probe conflicts with any matching path lane when target is
+  nil, so open/prepare cannot pass it before the old admission is released. Since original
+  defers release admission after closing descriptor and output flock, this addresses the
+  previously identified callback-release versus cleanup distinction. Publication has no
+  admission yet and its late deadline check prevents opening.
+
+### Findings and limits
+
+No further confirmed material defect was found in this diagnostic diff.
+
+`storage` intentionally combines all three trust traversals and nearby directory checks.
+`lock` combines lock open, metadata and acquisition. `prepare` contains the broader recovery
+read/validation/rendering work. These labels narrow the next experiment but are not elapsed
+measurements or diagnoses of a syscall or record.
+
+The stage mutex is briefly blocking for the worker; only the caller snapshot is nonblocking.
+OS scheduling may delay that worker setter, the pre-existing log call or caller instructions.
+The change preserves a bounded wait, not a hard real-time wall-clock promise.
+
+`.cleanup` is entered only for successful/nil operation completion before defers. Error
+unwinding retains the failed operation's stage. Therefore a caller timeout during prolonged
+error cleanup still names the prior boundary; the field does not claim full resource release.
+Likewise a successful cleanup mark can precede the actual descriptor/flock/admission release.
+This is appropriate for last-entered attribution, but should not be described as proof that
+physical cleanup finished.
+
+The monotonic comparison makes stage stable after deadline, except an already-in-progress
+assignment can become visible around that boundary. A contended snapshot accurately emits
+`.unavailable`. The current gated cases avoid such contention by blocking after stage entry,
+but no new direct contention/queued/cleanup test was added, and physical write-stage coverage
+is inherited from existing backpressure tests rather than a new stage assertion.
+
+Compilation and runtime behavior remain for the parent's RED/GREEN/full-suite verification.
+This check supplies source evidence only and grants no independent provider approval.
+
+
+## Parent writer-boundary verification
+
+The completion now owns a fixed stage enum protected separately from result publication.
+Worker changes contain only a monotonic comparison and enum copy under the small mutex.
+The timed-out caller uses one try-lock, returning unavailable attribution rather than waiting.
+Result remains readable only after successful semaphore completion. A completed unstaged timeout
+gets its stage without changing its error path/type. Stage updates after the original deadline
+are ignored, preserving the preceding boundary after late callback return.
+
+Raw/managed paths record admitted/open/lock/prepare/write boundaries as applicable. No budget,
+identity/emergency lane, descriptor flags, false result, write retry or physical style changes.
+Legacy unary completion and one-argument timeout construction remain; fixed helper suffixes
+omit paths. The SDK probe confirmed NSLock.try and defaulted associated-value/bare-match syntax.
+
+Isolated command logs remain under tavs-isolated.RUN/command.log in the prior recorded temp root:
+
+- sFgCr7: RED1 case/3 assertions,0.870s; gated publication/open/prepare lacked exact labels.
+- ouLpNe: connected58/58,6.301s before four existing stage assertions were added.
+- a5N6Er: full661,18 assertions (5 unexpected),35.150s. Four existing focus cases fail17
+  assertions; new cleanup probe fails1 because XCTAssertFalse swallowed EBUSY before catch.
+  Assigning the throwing call's result before asserting fixes that fixture bug. The older focus
+  failures occur earlier in the suite and cannot be attributed to that later probe.
+- cnpCpn: production release73.75s, external owned scratch; no subsequent production changes.
+- bCutEb: rebuilt-helper four-case Bats4/4 with retained records and worker-byte assertions.
+- CzR0fN: post-probe-correction full661,4 assertions (2 unexpected),30.685s. Only existing
+  testSlowColorPreparationDoesNotConsumeTheTwoSecondPreviewLease fails, at cleanup reads
+  for both PTYs. No further unchanged full run erased that result.
+- HkeBXw: final connected59/59,6.682s, including that preview case and all writer/entry cases.
+  This is the separated run's outcome, not attribution of the full-suite failures.
+
+The a5N6Er masked-focus trace captures deviceWriteTimedOut with prepare at caller-wrapper
+elapsed251642125ns. That value is not preparation elapsed. It locates the last entered boundary,
+not the nested operation or scheduling cause. New gates wait for admission release following
+late descriptor/flock cleanup; the probe retains EBUSY/timeout retries after moving I/O outside
+the assertion macro. Four older runner cases now also assert open/prepare/lock/publication while
+retaining their physical bytes, FD and original deadline checks.
+
+[Preparation reconnaissance](PROGRESS_appendix_phase-9_review-source-checkpoints.md#focus-preparation-path-source-exploration)
+records concrete repeated discovery/read work and its validation purposes. It is not a measured
+bottleneck or permission to drop identity, leaf trust, current policy/revision or cue checks.
+Next: measure/narrow preparation and verify safe operation-local reuse; delayed restore and
+portable ready-result deadline remain separate concerns. Native UAT/final reviews remain open.
+Scope:2 production/2 test files plus existing docs. SPEC/PLAN bodies stay fixed.
+A concurrent51620dc instruction-archive commit changes only .gitignore; it is preserved and
+excluded from this source correction. Goal/Phase9 remain active and incomplete.

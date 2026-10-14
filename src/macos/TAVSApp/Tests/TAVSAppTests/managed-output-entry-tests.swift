@@ -157,6 +157,57 @@ final class ManagedOutputEntryTests: XCTestCase {
         noBytes()
     }
 
+    func testCallerTimeoutReportsTheLastEnteredWriterStageWithoutWaitingForTheWorker() throws {
+        for phase in ["publication", "open", "prepare"] {
+            let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+            let drained = expectation(description: "Expired worker leaves its gated stage")
+            let block = {
+                entered.signal(); release.wait(); drained.fulfill()
+            }
+            let actual = SystemProcessRunner(openDevice: { path, flags in
+                if phase == "open" { block() }
+                return Darwin.open(path, flags)
+            })
+            let runner = MockProcessRunner()
+            runner.managedBeforeOpenHandler = { path, lock, _, _ in
+                try actual.writeManagedToDevice(path: path, lockURL: lock,
+                    beforeOpen: { _ in if phase == "publication" { block() } }) { _, _ in
+                    if phase == "prepare" { block() }
+                    return nil
+                }
+            }
+            processRunner = runner
+            let command = args("--managed-render", tty, try token(context()), "0")
+            let result = ManagedOutputEntry.run(command, factory: factory,
+                lookup: { self.identities[$0] }, renderInput: { self.renderData() })
+            XCTAssertEqual(entered.wait(timeout: .now()), .success, phase)
+            XCTAssertEqual(result?.code, 1)
+            XCTAssertEqual(result?.output, "")
+            XCTAssertEqual(result?.error,
+                "Managed output unavailable. stage=write failure=device-deadline-\(phase).\n")
+            release.signal()
+            wait(for: [drained], timeout: 1)
+            // Observe admission release after late descriptor/lock cleanup, not only callback release.
+            try waitForAdmissionRelease()
+            noBytes()
+        }
+    }
+
+    private func waitForAdmissionRelease() throws {
+        let until = DispatchTime.now().uptimeNanoseconds + 1_000_000_000
+        let lock = try state.lockURL(forTTY: tty)
+        while DispatchTime.now().uptimeNanoseconds < until {
+            do {
+                let painted = try SystemProcessRunner().writeManagedToDevice(path: tty, lockURL: lock) { _, _ in nil }
+                XCTAssertFalse(painted)
+                return
+            } catch ProcessRunnerError.deviceIOFailed(_, EBUSY) { usleep(1_000) }
+            catch ProcessRunnerError.deviceWriteTimedOut { usleep(1_000) }
+            catch { XCTFail("Admission cleanup failed: \(error)"); return }
+        }
+        XCTFail("Expired worker did not release admission")
+    }
+
     private func observe(_ context: OrganizerContext) throws {
         try state.publishObservation(TerminalObservation(tty: tty, device: device,
             producer: context.producer, provider: context.provider, verifiedAgent: true,

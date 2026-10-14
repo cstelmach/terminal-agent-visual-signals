@@ -1,12 +1,15 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.45
+Version: 1.46
 
 Managed helpers now expose private fixed failure-stage/category diagnostics. Worker acceptance
 requires returned rendering and actual PTY color, with Bats records retained for failures.
 660 Swift/177 portable tests and release pass. Historical delivery failures remain unassigned;
 current native caller-deadline, delayed tool-error and portable parent bound need follow-up.
+Native writer timeouts now carry nonblocking synchronized boundary labels. Connected59 tests
+and release pass; full661 retains four old preview-cleanup assertions. Preparation is located
+in one earlier masked-focus failure; its nested cost/cause remains open.
 Native/Linux/headless/palette acceptance and final reviews remain open.
 
 Native scheduling and Darwin CLI lock mutations now share a fresh read/merge/replace mutex.

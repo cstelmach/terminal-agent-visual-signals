@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.11
+Version: 1.12
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -649,3 +649,164 @@ the concrete limitations described above. No provider verdict or score is added.
 658 Swift/29 CLI pass;54 Bats/4 failures retained;controls4/4;release19.15s.
 [Scope/results](current-codex-review-2026-10-14.md#parent-native-lock-transaction-correction).
 Next: portable/shell trust and delivery; native/Linux/headless/palette remain open.
+
+
+### Phase 9 delivery diagnostics: 2026-10-14
+
+660 Swift/177 Python/release pass;53/54 Bats, late restore failure retained;final control3/4.
+[Source/results/limits](delivery-diagnostics-source-check-2026-10-14.md).
+Next: native caller deadline stage, delayed restore, portable parent bound; native UAT stays open.
+
+
+# Focus preparation path source exploration
+
+Last Updated: 2026-10-14
+Version: 1.0
+
+Repository: `/Users/cs/local/code/apps/terminal-agent-visual-signals`
+Observed HEAD during inspection: `51620dc`; writer-stage changes were an uncommitted parent diff.
+Scope: read-only source exploration. No source edits, tests, timing measurements, live actions
+or provider reviews. This report is not formal approval.
+
+## Evidence boundary
+
+Parent reports that retained full-suite log `a5N6Er` contains a masked-focus fixture caller
+exception `deviceWriteTimedOut(..., .prepare)`, with caller-wrapper elapsed `251642125 ns`.
+That figure is not preparation elapsed. The fixed stage shows the worker last entered
+preparation before its original deadline; it does not locate the specific nested operation,
+prove continuous CPU execution, or distinguish delayed caller observation/error cleanup.
+This report supplies source structure for the next experiment, not a performance diagnosis.
+
+## Focus preparation, in source order
+
+`VisualRecovery.performWrite` performs preliminary target validation before the managed
+writer (`visual-recovery.swift:130-139`). The writer independently validates runtime trust,
+admits and opens the device, obtains the stable output flock, then calls preparation.
+Those earlier validations cannot authorize later output by themselves.
+
+The `.focus` preparation path is:
+
+1. `requireValid(target, descriptor: fd)` correlates live owner/application generations,
+   current TTY number and the opened character-device descriptor.
+2. `cacheTargetUnlocked(target)` checks live target again and validates/creates its target
+   record. Initial `effectsUnlocked` enumerates equivalent plain/native bindings, then reads
+   legacy, preview and focus records for every alias.
+3. Focus branch (`visual-recovery.swift:274-291`) checks request currency and marker revision,
+   reads restriction status, evaluates global policy, then checks request/marker/status again.
+4. Reads current ordinary background; computes focus color; constructs new focus record;
+   checks its controller lease and request currency again.
+5. Cancels other focus ownership, saves the focus record, calls `didRenew`.
+6. If the earlier global policy result was non-nil, returns nil immediately. Metadata is
+   renewed while global rules mask dimming; this early return is intentional.
+7. Otherwise gathers effects again after mutations, evaluates global policy again, reads
+   marker status, filters current leases and validates their marker identities.
+8. Final dynamic focus composition reads ordinary background again, recomputes the dim color,
+   optionally saves changed lease colors, cancels obsolete effects, and emits background bytes.
+
+The first and final policy evaluations may differ because recovery, grants, schedules or
+locks can change between them. Final policy and suspension checks must remain fresh.
+
+## Concrete repeated operations
+
+Counts below describe a successful source branch, not elapsed time or executed syscall counts
+in the failure. Reads may return early, fail or take different alias branches.
+
+| Operation | Repetition in unmasked focus branch | Masked early-return branch | Purpose |
+| --- | --- | --- | --- |
+| Equivalent-binding discovery | Four calls: initial effects, initial ordinary background, post-save effects, final ordinary background | Two calls: initial effects and initial ordinary background | Verify exact physical-owner lifetime, plain/native equivalence and absence of multiple live native mappings |
+| Effect collection | Two passes, each up to three records per alias | One pass | Read state initially; see own cancellations/new focus record afterward |
+| Ordinary-background resolution | Two calls | One call | Current intent, bound correlation/adoption and dynamic focus color |
+| Target cache | Initial cache plus cache inside `saveEffectUnlocked`; additional calls only if final lease color changes | Initial plus save cache | Positive live target authorization and correctly bound target record |
+| Current focus record read | Initial effect gather; saveEffect's comparison; post-save gather | Initial gather; saveEffect comparison | Validate monotonic heartbeat and ownership before mutation, then read resulting projection |
+| Policy evaluation | Focus branch and later common branch | Focus branch only | Global rules can mask focus; recheck before physical output |
+| Marker reads/matches | Explicit focus guards, twice per policy call, final status and lease revisions | Explicit guards plus policy reads | Persistent recovery must override queued restriction output |
+
+### Equivalent bindings and record reads
+
+`effectsUnlocked` (`visual-recovery.swift:600-604`) always starts with
+`state.equivalentBindingsUnlocked` and reads each alias's `effect.json`, `preview.json` and
+`focus.json` through `currentEffectUnlocked`.
+
+`equivalentBindingsUnlocked` (`terminal-visual-state.swift:308-353`) validates the live target,
+checks its owner-lifetime subtree trust, recursively enumerates entries, rejects links, reads
+and decodes each `target.json`, checks exact expected path via symlink resolution, validates
+saved target syntax and live identity, then rejects more than one live native ID. These checks
+prevent title matching, TTY reuse or ambiguous aliases from authorizing an effect.
+
+`ordinaryBackgroundUnlocked` (`terminal-visual-state.swift:355-384`) validates target, reads
+latest per-TTY intent, discovers aliases again and reads each alias's bound intent. `boundIntent`
+then rereads that alias's `target.json` to validate the intent association. This happens even
+when latest intent is absent: the nil guard follows alias/bound reads. Changing that order can
+change invalid-record/ambiguity behavior and requires semantic tests; it is not automatically
+an equivalent short circuit.
+
+The masked fixture's base state uses injected dictionary process lookup, not production
+`proc_pidinfo` (`focus-controller-tests.swift:35-42`). Device and descriptor checks still use
+POSIX metadata. Production `ProcessIdentity.inspect` is one `proc_pidinfo` call per lookup;
+`deviceNumber` uses `lstat`. Do not attribute this fixture failure to libproc latency merely
+because production lookup can invoke it.
+
+### Live process validation and request callbacks
+
+`validateTarget` (`terminal-visual-state.swift:156-178`) can inspect owner, native application,
+TTY and descriptor. `cacheTargetUnlocked` and every equivalence scan independently call it.
+These calls serve different authorization points and must not be removed as redundant by name.
+
+Each successful `.focus` preparation calls `request.isCurrent(deadline)` three times. In
+automatic mode its callback (`focus-controller.swift:428-440`) checks local lease/version,
+then `automaticSourcesCurrent` over cue surfaces. Each source validation inspects producer,
+application, device and target; target validation then inspects owner/application/device again
+(`terminal-visual-state.swift:181-215`). The pre-writer automatic validation in
+`focus-controller.swift:393-397` uses a separate preparation window and does not substitute
+for the last in-writer cue check. The final check prevents Focus Off, cue exit or stale source
+from painting after earlier acceptance.
+
+`isSelectiveLeaseActive` also checks the controller generation and heartbeat. Focus saving
+checks previous record lease for same-effect renewal; final lease filtering invokes it again.
+Do not cache liveness or clock-derived lease status across delay/mutation boundaries.
+
+### Trust traversal and decoding
+
+Every `read` (`terminal-visual-state.swift:1016-1059`) calls `trustedDirectory(parent)`, then
+lstat/open/fstat correlates safe regular leaf ownership/device/inode, performs bounded reads
+and JSON decoding under the original deadline. `write` similarly rechecks parent and existing
+leaf before exclusive temporary creation and atomic rename.
+
+`trustedDirectory` invokes `RuntimeDirectoryTrust.check(runtimeDirectory)` and `check(parent)`
+(`terminal-visual-state.swift:568-574`). The second walk revisits root components, but the first
+requires effective-UID ownership at the runtime leaf while the second treats it as an ancestor
+where root ownership can be allowed. Omitting the first call would lose a current guarantee.
+`RuntimeDirectoryTrust` walks POSIX metadata for each component and checks deadline per step
+(`runtime-directory.swift:10-62`). No lasting trust cache is safe merely because writer flock
+is held: it does not freeze filesystem permissions or substitution by another actor.
+
+## Narrow next-slice candidates
+
+Recommended starting point is tracing one or two inner boundaries in the existing private
+fixture recorder or a small source-count seam. Preserve the full failed log and the worker's
+original deadline. Do not assume which repeated operation caused the failure.
+
+If a measured preparation bottleneck supports reducing work, the strongest source candidate
+is operation-local reuse of the already resolved ordinary background in the `.focus` branch.
+That branch writes focus/effect files, not ordinary intent, between its two background reads.
+A safe change needs to prove ordinary publication and alias changes use the same stable TTY
+lock, preserve latest-intent semantics, and retain fresh target, marker, policy and cue checks
+at their physical-output boundaries. No process-wide cache is warranted.
+
+Next candidate is reusing an operation-local checked alias list and resulting records while
+still retaining fresh live target validation and leaf trust when those files are used. Own
+focus writes/cancellations must update or invalidate the local effect view. This can avoid
+re-enumeration without pretending pre-lock data or an earlier liveness observation is current.
+Use existing helpers/parameters if practical rather than introducing a broad transaction cache.
+
+The initial ordinary lookup in the masked branch supplies a syntactically valid stored focus
+background and supports later restoration/dynamic color semantics. Skipping it merely because
+a global rule currently masks dimming requires explicit verification of those contracts.
+Do not make the global mask a shortcut around source/intent authorization.
+
+## Limits and excluded changes
+
+No removal of identity/trust checks, wider deadline, automatic retries, global cache, reduced
+acceptance scope, new coordinator or new control plane is recommended. Byte evidence still
+cannot replace Ghostty native visible acceptance. This source report provides no timing proof,
+compiler evidence or provider approval.

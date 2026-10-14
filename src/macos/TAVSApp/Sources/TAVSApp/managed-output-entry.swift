@@ -177,7 +177,8 @@ enum ManagedOutputEntry {
         if let error = error as? ProcessRunnerError {
             switch error {
             case .deviceNotWritable: return "device-unavailable"
-            case .deviceWriteTimedOut: return "device-deadline"
+            case .deviceWriteTimedOut(_, let stage):
+                return stage.map { "device-deadline-\($0.rawValue)" } ?? "device-deadline"
             case .deviceIOFailed(_, let code):
                 return (1...4095).contains(code) ? "device-io-\(code)" : "device-io"
             default: return "process"
