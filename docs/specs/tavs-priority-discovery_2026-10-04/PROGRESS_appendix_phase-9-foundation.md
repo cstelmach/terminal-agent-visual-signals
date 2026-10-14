@@ -820,3 +820,29 @@ Next: legacy unbound organizer-intent semantics, complete capability contract an
 delivery/sync. Preserve native preference and never change backend after selected-operation failure.
 Explicit Linux versioned scope and actual kernel/device proof remain pending, along with historical
 failure attribution, configured-color freshness and physical acceptance. Phases 2/7/8 remain Blocked.
+
+### Phase 9 portable unbound intent: 2026-10-14 07:56 CEST
+
+`7af2505` adds data-only unbound publication and finite organizer-intent CLI. Bound/unbound paths
+share latest normalization, observation freshness, synthetic exact/live proof, regular repair and
+ordering. Ordinary optional/dead identity is retained as data; unbound path creates no target,
+bound/adoption record or bytes. Bound target/alias, late producer and exact-binding checks remain.
+Supersession now compares native delivery/producer/device fields, not mis-keyed current.tty;
+observation matching still includes TTY. Metadata keeps one explicit 100 ms deadline, tighter
+than native legacy post-lock timing. Source check found no functional defect; its two direct
+coverage gaps were closed by equal-timestamp and producer-exit-during-latest-read cases.
+J7yKQT lacked the method; NvUhcE passed 23 intent cases. n5WUtZ lacked helper support. z3iQxk:
+167 portable; QS45Lt: 168; final rA0fi1: 170/170 in 5.725 seconds. yS5dC8: 561/561 Swift,
+11.320 seconds; q0Zrrt: 23/23 isolated hooks. Native/shell source unchanged by later Python tests.
+Syntax, staged ownership, .env/secrets and whitespace passed. Owned Mac PTY CLI produces no
+output bytes/cache, and optional-identity CLI constructs no renderer. Both reports and parent
+verification are preserved in
+[unbound intent source checks](portable-unbound-intent-source-check-2026-10-14.md).
+**Scope:** Approved H1 extension, shared publisher and dispatcher/test paths, API/bug/roadmap.
+No advertised capability, hook selection/delivery, runtime schema or new control plane. No app/
+VM/container launch, production install/settings/schedules or existing session termination.
+SPEC body and PLAN untouched. Phase 9 and full goal remain active/incomplete.
+Next: complete capability contract and backend resolver/delivery/sync with native preference and
+no backend change after selected-operation failure. Linux versioned scope and actual kernel/device
+proof, historical failure attribution, configured-color freshness and physical acceptance remain
+open. Phases 2/7/8 stay Blocked on required native cases.

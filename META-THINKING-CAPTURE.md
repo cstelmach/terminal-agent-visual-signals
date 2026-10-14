@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 38 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 46 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 39 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 47 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4051,3 +4051,72 @@ capability/selection/delivery, Linux scope/runtime and physical Ghostty acceptan
 state tied to the dated SPEC. Known report paths should be read directly, and parallel reports
 need distinct filenames. No new control plane or skill was proposed. Actions/results are observed;
 causal/economy claims are reconstructed. Phase 9 and the full goal remain active/incomplete.
+
+
+## 2026-10-14 · gpt-6 · portable-unbound-intent
+
+meta:
+  model: gpt-6 family self-report; exact served variant unobserved
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; internal setting unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool calls; no separate transcript extraction
+
+**Framing [O]:** The active goal continuation selected the remaining legacy unbound intent
+contract from the dated state package. The preceding dispatcher turn was progress, and Git was
+clean. The full objective remained nine phases with native acceptance. This slice completed
+one internal data path needed before capabilities and hook selection, without equating data
+retention with target ownership, agent identity or successful terminal rendering.
+
+**Strategy [O/R]:** Native organizer/state publication code was read before tests. One explorer
+extracted the contract and a separate read-only explorer checked implementation without reading
+the first report. Existing normalization, typed reads, shared lock and atomic replacement were
+reused. The common latest-intent helper serves the two actual callers, while bound-specific
+ownership/cache logic remains in its wrapper. Keeping that boundary avoids an unbound painter;
+the code ordering is observed [O], while the economy argument is reconstructed [R].
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|---|---|---|
+| 1 | Orient/read | current state and native unbound contract | data-only requirements established |
+| 2 | Red/green | optional/synthetic/ordering/repair tests | absent method, then 23 intent cases |
+| 3 | Wire/test | finite organizer-intent dispatcher | unsupported verb, then CLI no-paint proof |
+| 4 | Source comparison | supersession identity and deadline | native field comparison corrected |
+| 5 | Source check/regression | equal-time and late-exit gaps | 170 portable; 561 Swift; 23 hook |
+| 6 | Commit/document | publisher and supporting records | 7af2505; goal remains incomplete |
+
+**Decision points [O]:** Ordinary unbound publication permits structurally valid optional or
+exited identity because it stores data, not output authority. Synthetic publication requires
+exact observation delivery/device/producer/TTY and current live process/device. Invalid
+synthetic records/storage retain unavailable code 1; missing/mismatching proof is stale code 3.
+The unbound method creates only latest intent and the existing writer lock, with no target,
+bound copy, adoption, observation replacement or renderer. Bound publication keeps target/alias
+proof and its late producer revalidation. Portable metadata uses one 100 ms whole-operation
+budget, explicitly tighter than native legacy post-lock publication rather than an exact timing
+claim. Capability advertisement and routing remained untouched.
+
+**Correction and verification arc [O/R]:** Source comparison identified that prior delivery
+supersession included current.tty while native compares delivery ID, producer and device only.
+A valid-shaped record under the wrong TTY key could authorize older replacement solely from
+that field. The common comparison was corrected and a regression verifies refusal without
+altering the original. The source check found no functional defect but distinguished two
+coverage gaps from defects: equal timestamp and producer exit during latest read. Both received
+direct tests. The reconstructed lesson [R] is to keep exact observation matching separate from
+which changes actually authorize superseding latest intent, then test the before-write proof
+that refactoring moves across metadata reads.
+
+**Verification [O]:** Final private-root portable run passed 170 tests in 5.725 seconds. Swift
+passed 561 in 11.320 seconds and hooks passed 23 checks; native/shell source did not change with
+later Python tests. Syntax, owned staging, .env/secrets and whitespace passed. Actual owned Mac
+PTY helper publication returned empty success and emitted no bytes or target cache. A missing-
+identity dispatcher test constructed no renderer. Original red failures and both source reports
+were preserved with parent disposition. Production settings, installed hooks and existing
+sessions were untouched, and no app, VM or container was launched.
+
+**Heuristics/confidence [O/R]:** P8 applies to checking source recommendations and coverage claims;
+P9 keeps state tied to the incoming SPEC. No new control plane or skill was proposed. Capabilities,
+backend selection/delivery, Linux scope/runtime, historical failure/configured-color concerns
+and physical Ghostty acceptance remain open. Actions/results are observed; causal and economy
+claims are reconstructed. Phase 9 and the full goal remain active/incomplete.
