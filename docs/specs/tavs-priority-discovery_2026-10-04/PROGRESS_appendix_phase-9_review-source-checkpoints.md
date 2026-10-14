@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.2
+Version: 1.3
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -68,3 +68,11 @@ API1.56/BUG1.62/ROADMAP1.34, source report and capture saved. Finished progress 
 unchanged to the existing appendix with exact reconstruction verified. SPEC/PLAN fixed.
 Next: independent headless cleanup, projection/release retry and compatibility. No live actions.
 Native2/7/8 Blocked, 9 In Progress, Linux ordinary incomplete; full goal active and incomplete.
+
+`4b96e46` retries failed bound targets through current-policy reconciliation after active release.
+RED WOIijj: 3 cases/5 assertions; eTZ42j:62/62; 6LNVmm:**596/596 Swift**,14.058s; jJlAb3:release17.76s.
+[Source report and limits](release-retry-source-check-2026-10-14.md) preserve Is0gWg's nil-callback compile error, corrected before RED.
+**Scope:** Two production/two test files and API/bug/roadmap; four new owned-PTY cases, one revised caller test.
+Suspension remains guarded; no new native query, timer, registry or device deadline. Active legacy cleanup can reset fresh palette.
+Next: projection-write recovery and independent headless feedback; Linux/native acceptance and timing causes remain open.
+API1.57/BUG1.63/ROADMAP1.35, full source report and capture saved. SPEC/PLAN unchanged; full goal active and incomplete.

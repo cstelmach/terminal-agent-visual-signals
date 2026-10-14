@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 14:36 CEST
-**Version:** 4.39
+**Last Updated:** 2026-10-14 15:08 CEST
+**Version:** 4.40
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 4b96e46; earlier below/appendix | 596 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | ab00c35; earlier below/appendix | 609 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -888,10 +888,13 @@ eoVi2e retained 190 tests/5 failures (1 unexpected): no Manual paint and a 20 ms
 Neither timing cause is established; [full source/failure notes](final-review-corrections-2026-10-13.md#gui-recovery-cohort-correction-2026-10-14) remain available.
 
 ### Phase 9 failed release retries: 2026-10-14 14:36 CEST
-`4b96e46` retries failed bound targets through current-policy reconciliation after active release.
-RED WOIijj: 3 cases/5 assertions; eTZ42j:62/62; 6LNVmm:**596/596 Swift**,14.058s; jJlAb3:release17.76s.
-[Source report and limits](release-retry-source-check-2026-10-14.md) preserve Is0gWg's nil-callback compile error, corrected before RED.
-**Scope:** Two production/two test files and API/bug/roadmap; four new owned-PTY cases, one revised caller test.
-Suspension remains guarded; no new native query, timer, registry or device deadline. Active legacy cleanup can reset fresh palette.
-Next: projection-write recovery and independent headless feedback; Linux/native acceptance and timing causes remain open.
-API1.57/BUG1.63/ROADMAP1.35, full source report and capture saved. SPEC/PLAN unchanged; full goal active and incomplete.
+> Finished release retry: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+Active legacy cleanup can still reset fresh palette; [limits](release-retry-source-check-2026-10-14.md) remain unresolved.
+
+### Phase 9 projection-write retries: 2026-10-14 15:08 CEST
+`ab00c35` gates transition/paint caches and heartbeat retries on required persistence; timers/readback continue.
+[Source checks and failures](projection-retry-source-check-2026-10-14.md): tlK6dw RED7/13 assertions; mupO0o65/65; D6toCz **609/609**,16.301s; hj0ZJJ release29.58s.
+**Scope:** One production/two test files and API/bug/roadmap;13 new cases include owned-PTY repair, direct grant outcomes and expiry.
+API1.58/BUG1.64/ROADMAP1.36, full source report and capture saved; finished release block moves unchanged with verified reconstruction.
+Next: missing quiet-period bounds and compatibility/storage trust findings. Headless feedback, native/Linux and timing limits remain open.
+SPEC/PLAN fixed; no live app/install/preferences/schedules/native/session/VM actions. Full goal active and incomplete.
