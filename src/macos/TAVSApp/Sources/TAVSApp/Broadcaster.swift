@@ -123,7 +123,8 @@ final class Broadcaster: BroadcasterProtocol {
             }
             if let operation = operation { record(recovery.apply(operation)) }
             if retry {
-                record((catalogueAvailable, recovery.apply(.currentRestriction, to: retryTargets)), targeted: true)
+                record((catalogueAvailable, recovery.apply(.reconcile(resetLegacy: false, clearSelective: false),
+                    to: retryTargets)), targeted: true)
             }
         }
     }

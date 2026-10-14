@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.56
+Version: 1.57
 
 ## GUI recovery confirmation
 
@@ -398,10 +398,15 @@ repaint succeeded from canceled metadata; reported failures remain retryable wit
 Scheduler delivery results publish on the main queue. Menu warnings distinguish earlier failed
 updates from unavailable native coverage; count-only logs expose neither titles nor payloads.
 Unresolved exact targets remain until restored or confirmed vanished; registration/no-output success
-does not certify repaint. The existing 60-second heartbeat retries only failed restriction targets
-while a pause/lock remains active, through the coalesced queue and fresh writer policy. Unknown
-bindings, release failures and suspended cleanup use explicit Restore Visibility, preserving fresh
-hook colors. No native query, additional timer or persistent retry registry is added by retries.
+does not certify repaint. The existing 60-second heartbeat retries only failed bound targets
+while the suspension marker is active, including after a pause/lock ends. Targeted reconciliation
+reads current policy, restores legacy foreground/palette from retained global records and composes
+latest ordinary/focus background. Healthy targets are not retried; no native query or timer is added.
+Unknown bindings and suspended cleanup use explicit Restore Visibility. A no-output result never
+proves an earlier failure resolved. A separate successful recovery can leave this in-memory warning.
+While active, cleanup of an unresolved global record can also reset a fresh ordinary palette;
+it preserves the latest background and replays no historical title or bell. Suspended recovery
+preserves fresh complete renders. No cross-process physical-success receipt is inferred.
 
 The helper returns JSON with `stateSaved`, `catalogueAvailable` and `items`. Each item contains
 an optional validated `target` or `tty`, `status` and optional `reason`. Status is `restored`,

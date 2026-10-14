@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.62
+Version: 1.63
+
+## Failed release clears receive no active heartbeat retry
+
+The scheduler retried only while muted, and Broadcaster used currentRestriction for failed targets.
+After release, that operation emits no bytes without a rule. A failed clear could therefore leave
+legacy foreground/palette changes on a plain shell even after its device became writable.
+
+The heartbeat now retries bound failures while the suspension marker remains active, including
+unmuted state. Targeted reconciliation restores current policy/background and handles canceled
+global metadata after a failed prepared write. Healthy targets are untouched. Four owned-PTY
+cases and the heartbeat caller test cover failure stages, failed-only retry, fresh background,
+no historical title/bell and suspended preservation. The 100 ms writer deadline is unchanged.
+Suspended/unbound recovery feedback and failed projection persistence remain separate issues.
 
 ## Successful GUI recovery leaves canceled focus leases stuck
 

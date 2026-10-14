@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.34
+Version: 1.35
 
 GUI recovery now settles canceled focus leases from actual per-target outcomes before showing
 the report. Failed or unconfirmed targets remain retryable; late reports preserve replacement
@@ -133,8 +133,11 @@ Disabled scheduler/startup reconciliation now preserves emergency defaults until
 or preview action. Canceled records do not repaint themes or reset fresh colors. Remaining active
 restrictions clear to defaults; valid suspended previews still restore latest intent on clear.
 Scheduler delivery warnings and count-only logs now expose failed targets and missing catalogue
-coverage. Existing heartbeats retry only failed active-restriction targets; release/suspended
-failures retain explicit Restore Visibility. No-output registration cannot erase a paint failure.
+coverage. Existing heartbeats now retry failed bound targets after release while the suspension
+marker remains active. Reconciliation handles canceled global records and current background;
+suspended/unbound failures retain explicit Restore Visibility. No-output registration cannot erase
+a paint failure. Unresolved legacy cleanup can reset a fresh active palette; suspended fresh renders
+are preserved. Projection persistence and cross-process recovery feedback remain open.
 Focus clear exposes locked exact-ownership cancellation separately from physical output. The
 controller now retains one lease per physical target and coalesces its cleanup. Failed peers do
 not rotate healthy IDs; unresolved ownership prevents replacement, and outstanding repaint work

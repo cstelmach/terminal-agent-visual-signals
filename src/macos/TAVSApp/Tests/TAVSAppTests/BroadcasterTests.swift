@@ -448,6 +448,114 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
     }
 
+    func testFailedReleaseRetryRestoresOnlyFailedTargetBeforePreparationFailure() throws {
+        try failedReleaseRetry(afterPreparation: false)
+    }
+
+    func testFailedReleaseRetryRestoresCanceledLegacyRecordAfterPreparationFailure() throws {
+        try failedReleaseRetry(afterPreparation: true)
+    }
+
+    private func failedReleaseRetry(afterPreparation: Bool) throws {
+        let healthy = try terminal(10), failed = try terminal(11)
+        try cache(healthy, color: "#456789"); try cache(failed, color: "#ABCDEF")
+        try writeMute(true)
+        let runner = MockProcessRunner(), guardLock = NSLock()
+        var reject = false, paths: [String] = []
+        runner.managedHandler = { path, lockURL, prepare in
+            guardLock.lock(); paths.append(path); let fail = reject && path == failed.tty; guardLock.unlock()
+            if fail && !afterPreparation { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+            let target = path == failed.tty ? failed : healthy
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL,
+                beforeOpen: nil, target: target.physicalTarget, emergency: false) { fd, deadline in
+                let bytes = try prepare(fd, deadline)
+                if fail && bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+                return bytes
+            }
+        }
+        let broadcaster = broadcaster(runner: runner, native: { [] })
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(healthy); _ = try read(failed)
+        guardLock.lock(); reject = true; guardLock.unlock()
+        try writeMute(false)
+        broadcaster.broadcastPausedClear(); broadcaster.broadcast()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(healthy)
+        XCTAssertEqual(try XCTUnwrap(state.currentEffectUnlocked(failed, deadline: .max)).active, !afterPreparation)
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
+        try noBytes(failed)
+        guardLock.lock(); reject = false; paths.removeAll(); guardLock.unlock()
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        guardLock.lock(); let retried = paths; guardLock.unlock()
+        XCTAssertEqual(retried, [failed.tty])
+        XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 0)
+        if broadcaster.lastResult?.items.contains(where: { $0.status == .failed }) == false {
+            XCTAssertEqual(try read(failed), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        }
+        try noBytes(healthy)
+        guardLock.lock(); paths.removeAll(); guardLock.unlock()
+        broadcaster.retryFailedRestrictions()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        guardLock.lock(); let extra = paths; guardLock.unlock()
+        XCTAssertTrue(extra.isEmpty)
+    }
+
+    func testActiveFailedReleaseRetryUsesFreshBackgroundWithoutTitleOrBellReplay() throws {
+        try failedReleaseWithFreshRender(suspended: false)
+    }
+
+    func testSuspendedRetryPreservesFreshRenderAndRetainsUnconfirmedFailure() throws {
+        try failedReleaseWithFreshRender(suspended: true)
+    }
+
+    private func failedReleaseWithFreshRender(suspended: Bool) throws {
+        let target = try terminal(10)
+        try cache(target, color: "#456789"); try writeMute(true)
+        let runner = MockProcessRunner(), guardLock = NSLock()
+        var reject = false
+        runner.managedHandler = { path, lockURL, prepare in
+            guardLock.lock(); let fail = reject; guardLock.unlock()
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL,
+                beforeOpen: nil, target: target.physicalTarget, emergency: false) { fd, deadline in
+                let bytes = try prepare(fd, deadline)
+                if fail && bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+                return bytes
+            }
+        }
+        let broadcaster = broadcaster(runner: runner, native: { [] })
+        broadcaster.broadcastPaused(visual: ignoredVisual)
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); _ = try read(target)
+        guardLock.lock(); reject = true; guardLock.unlock()
+        try writeMute(false); broadcaster.broadcastPausedClear()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+        guardLock.lock(); reject = false; guardLock.unlock()
+        let service = recovery()
+        if suspended {
+            XCTAssertFalse(service.recover().hasFailures)
+            XCTAssertEqual(try read(target), emergencyReset)
+        }
+        clock.advance(by: 1)
+        var fields = ["#ABCDEF", "set", "#123456"] + Array(repeating: "", count: 15)
+        fields += ["1", "FRESH_TITLE", "iterm2-clear", "", "1"]
+        let style = try TerminalRender(Data((fields.joined(separator: "\0") + "\0").utf8))
+        let fresh = OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: target.ttyOwner,
+            deliveryID: "fresh-render", updatedAt: 1_001, background: "#ABCDEF")
+        XCTAssertEqual(try service.render(style, intent: fresh, synthetic: false, intakeAt: 1_001, to: target), .rendered)
+        var expected = style.beforeBackground
+        expected.append(Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        expected.append(style.afterBackground(synthetic: false))
+        XCTAssertEqual(try read(target), expected)
+        broadcaster.retryFailedRestrictions(); XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        if suspended {
+            try noBytes(target)
+            XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
+        } else {
+            XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+            XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 0)
+        }
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
+    }
+
     func testQueuedRestrictionRetryIsCoalescedAndCannotPaintAfterSuspension() throws {
         let target = try terminal(10); try cache(target); try writeMute(true)
         let entered = expectation(description: "Retry is preparing"), release = DispatchSemaphore(value: 0)

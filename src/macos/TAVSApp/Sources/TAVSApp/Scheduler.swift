@@ -493,7 +493,7 @@ final class Scheduler: ObservableObject {
 
     private func heartbeatTick() {
         loadAndEvaluate()
-        if isMuted && !visualRestrictionsStatus.disablesRestrictions {
+        if !visualRestrictionsStatus.disablesRestrictions {
             broadcaster.retryFailedRestrictions()
         }
     }

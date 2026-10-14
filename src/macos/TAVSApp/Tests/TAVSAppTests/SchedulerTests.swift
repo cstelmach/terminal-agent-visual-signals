@@ -434,7 +434,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertEqual(broadcaster.broadcastCallCount, 1)
     }
 
-    func testHeartbeatRetriesFailedRestrictionsOnlyWhileMutedAndShowsFailures() throws {
+    func testHeartbeatRetriesFailedUpdatesAfterReleaseButNotDuringSuspension() throws {
         try writeStandardConfig()
         var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
         try ScheduleStore.save(config, to: scheduleURL); scheduler.start()
@@ -449,7 +449,7 @@ final class SchedulerLifecycleTests: XCTestCase {
         config.masterActive = true; try ScheduleStore.save(config, to: scheduleURL)
         timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
         XCTAssertFalse(scheduler.isMuted)
-        XCTAssertEqual(broadcaster.retryCallCount, 1)
+        XCTAssertEqual(broadcaster.retryCallCount, 2)
         broadcaster.resultChanged?(false, [])
         XCTAssertTrue(scheduler.terminalUpdateIssue?.contains("Native catalogue unavailable") == true)
         broadcaster.resultChanged?(true, [])
