@@ -846,3 +846,26 @@ Next: complete capability contract and backend resolver/delivery/sync with nativ
 no backend change after selected-operation failure. Linux versioned scope and actual kernel/device
 proof, historical failure attribution, configured-color freshness and physical acceptance remain
 open. Phases 2/7/8 stay Blocked on required native cases.
+
+### Phase 9 ordinary capability and copied delivery: 2026-10-14 08:12 CEST
+
+`039ae69` adds the distinct Mac ordinary capability with exact argv, process inspection and
+native-scope absence; it reads no stdin and creates no state. Native control/recovery/Linux
+capability remains unavailable. Source sync now delivers all 13 portable modules together and
+restores entry executable mode. Existing target selection/native readiness messages are unchanged.
+Initial aX0rJK lacked the marker; S6UNQd lacked copied modules. OVYlz3: 19 focused helper checks;
+NeR0ok: 12 sync cases. Final KclsSP: 171/171 portable, 8.086 seconds. H3yns9: 561/561 Swift,
+19.183 seconds; agiDyg: 35/35 isolated sync/hook Bats. Shell/Python syntax, staged ownership,
+.env/secrets and whitespace passed. Private copies compare every module, independently probe both
+entries and preserve preference/schedule/lock sentinels. Source check found no concrete defect.
+The routing recon remains a pre-change snapshot and both full reports plus parent evidence are in
+[capability/delivery source checks](portable-capability-delivery-source-check-2026-10-14.md).
+**Scope:** Approved H1 extension, two source/two test files and API/roadmap. No helper selection,
+installed-shell resources, runtime schema or new control plane. No real install/sync/settings/
+schedules, app/VM/container launch or existing session termination. SPEC body and PLAN untouched.
+Phase 9 and full goal remain active/incomplete; this does not close H1 or native acceptance.
+Next: shared Bash/zsh selection/call boundary, require both native schemas for ordinary preference,
+use portable only for absent/unsupported native, retain selection after failed operation and keep
+recovery native-only. Validate existing adapter cache transfer and operation-specific scope; copy
+standalone shellrc resources independent of checkout. Linux scope/runtime, historical failure,
+configured-color freshness and physical acceptance remain open. Phases 2/7/8 stay Blocked.
