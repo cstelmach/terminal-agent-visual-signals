@@ -1,7 +1,24 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.67
+Version: 1.68
+
+## Native managed paths accept untrusted runtime storage
+
+Directory-type and private-lock checks did not validate the runtime's UID, writable permissions,
+or linked ancestry. Three initial cases reproduced unsafe policy, publication and device output.
+A shared RuntimeDirectoryTrust guard now checks directories at storage, rule, registry, pending
+and managed-writer use points. Wrong-owner, writable and user-linked paths report unavailable;
+unsafe record leaves cannot be adopted or repaired. Existing safe 0755 roots remain accepted.
+
+New directories use 0700. Bounded readlink validates macOS's root-owned /tmp and /var aliases.
+The writable sticky exception is limited to root-owned system temp ancestors after a regression
+reproduced an overly broad draft. The first draft also wrongly used Foundation alias resolution;
+an isolated probe established its behavior before the POSIX correction. All failure logs remain.
+
+Twelve new cases and all 631 Swift tests pass, as do the release build and 19 helper checks.
+The 100 ms writer budget remains. Scheduler, marker, portable and shell trust remain separate
+work; POSIX checks do not establish ACL completeness or a reproduced foreign-account attack.
 
 ## Record reads retry after the caller's deadline
 

@@ -52,6 +52,26 @@ final class VisualRestrictionPolicyTests: XCTestCase {
 
     func testMissingRulesHaveNoRestriction() throws { XCTAssertNil(try current()) }
 
+    func testWritableRuntimeDirectoryCannotSupplyARestriction() throws {
+        try writeLock()
+        defer { _ = chmod(root.path, 0o700) }
+        for mode: mode_t in [0o770, 0o777] {
+            XCTAssertEqual(chmod(root.path, mode), 0)
+            XCTAssertThrowsError(try current())
+        }
+        XCTAssertEqual(chmod(root.path, 0o755), 0)
+        XCTAssertEqual(try current(), .locked(pause, untilEpoch: 2_000))
+    }
+
+    func testWritablePolicyFileCannotSupplyARestriction() throws {
+        try writeLock()
+        XCTAssertEqual(chmod(lockURL.path, 0o666), 0)
+        defer { _ = chmod(lockURL.path, 0o600) }
+        XCTAssertThrowsError(try current())
+        XCTAssertEqual(chmod(lockURL.path, 0o600), 0)
+        XCTAssertEqual(try current(), .locked(pause, untilEpoch: 2_000))
+    }
+
     func testSuspensionAndUnavailableMarkerOverrideEveryRuleBeforeUnsafeReads() throws {
         try writeLock()
         try writeMute()

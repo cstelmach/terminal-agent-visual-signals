@@ -614,6 +614,8 @@ final class VisualRecovery {
     private func invalidatePending(_ target: TerminalTargetBinding, deadline: UInt64) throws {
         guard DispatchTime.now().uptimeNanoseconds < deadline else { throw TerminalVisualStateError.deadlineExceeded }
         let directory = runtimeDirectory.appendingPathComponent("pending")
+        try RuntimeDirectoryTrust.check(runtimeDirectory, deadline: deadline)
+        try RuntimeDirectoryTrust.check(directory, deadline: deadline)
         var info = stat()
         if lstat(directory.path, &info) != 0 {
             if errno == ENOENT { return }
@@ -625,13 +627,17 @@ final class VisualRecovery {
             if errno == ENOENT { return }
             throw TerminalVisualStateError.storageUnavailable
         }
-        guard info.st_mode & S_IFMT == S_IFREG else { throw TerminalVisualStateError.storageUnavailable }
+        guard info.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(info) else {
+            throw TerminalVisualStateError.storageUnavailable
+        }
         guard DispatchTime.now().uptimeNanoseconds < deadline else { throw TerminalVisualStateError.deadlineExceeded }
         guard unlink(url.path) == 0 else { throw TerminalVisualStateError.storageUnavailable }
     }
 
     private func registryHints() -> (ttys: [String], items: [VisualRecoveryItem]) {
         let directory = runtimeDirectory.appendingPathComponent("active-ttys")
+        do { try RuntimeDirectoryTrust.check(runtimeDirectory); try RuntimeDirectoryTrust.check(directory) }
+        catch { return ([], [VisualRecoveryItem(status: .failed, reason: "Active terminal registry unavailable.")]) }
         var info = stat()
         if lstat(directory.path, &info) != 0 && errno == ENOENT { return ([], []) }
         guard info.st_mode & S_IFMT == S_IFDIR,
@@ -647,7 +653,7 @@ final class VisualRecovery {
             }
             let tty = entry.replacingOccurrences(of: "_", with: "/")
             guard lstat(directory.appendingPathComponent(entry).path, &info) == 0,
-                  info.st_mode & S_IFMT == S_IFREG else {
+                  info.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(info) else {
                 items.append(VisualRecoveryItem(tty: tty, status: .failed, reason: "Registry entry unavailable."))
                 continue
             }

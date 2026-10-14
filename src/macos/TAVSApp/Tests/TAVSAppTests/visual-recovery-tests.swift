@@ -487,6 +487,29 @@ final class VisualRecoveryTests: XCTestCase {
         return try TerminalRender(Data((fields.joined(separator: "\0") + "\0").utf8))
     }
 
+    func testWritableRegistryDirectoryReportsUnavailable() throws {
+        let registry = root.appendingPathComponent("active-ttys")
+        XCTAssertEqual(mkdir(registry.path, 0o700), 0)
+        XCTAssertEqual(chmod(registry.path, 0o777), 0)
+        defer { _ = chmod(registry.path, 0o700) }
+        let result = recovery().apply(.register)
+        XCTAssertTrue(result.items.contains { $0.status == .failed && $0.reason == "Active terminal registry unavailable." })
+    }
+
+    func testWritablePendingDirectoryFailsWithoutDeletionOrPaint() throws {
+        let target = try terminal(10)
+        try cache(target)
+        let url = pending(target), parent = url.deletingLastPathComponent()
+        XCTAssertEqual(mkdir(parent.path, 0o700), 0)
+        let original = Data("historical-owned-fixture".utf8)
+        try original.write(to: url)
+        XCTAssertEqual(chmod(parent.path, 0o777), 0)
+        defer { _ = chmod(parent.path, 0o700) }
+        XCTAssertThrowsError(try recovery().write(.emergencyReset, to: target))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        try noBytes(target)
+    }
+
     func testCompleteRenderUsesOneWriteAndCurrentSelectiveBackground() throws {
         let target = try terminal(10)
         try cache(target, effect: true)

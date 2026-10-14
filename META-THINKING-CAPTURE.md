@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 53 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 61 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 54 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 62 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -5037,3 +5037,68 @@ verified; unresolved cases remain in the main progress file.
 **Confidence and limits [O]**: Source behavior and test outcomes are observed. Exact model variant,
 old timing causes, physical Ghostty acceptance and Linux compatibility are unverified. No new
 pattern or skill is proposed. The master goal remains active and incomplete.
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · native-runtime-directory-trust
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported family; exact root/subagent served variants unobserved
+  interface: Codex desktop
+  thinking: extended effort requested; runtime setting unverified
+  session: 01a10879
+  trace: observed current tool results and diffs; no Claude action-trace output
+
+**Framing [O]**: The active goal continuation followed a verified read-retry correction. Git was
+clean at d11a04a and the dated files retained four incomplete implementation phases. The next
+bounded correction concerned runtime trust, a material finding from the source review. The work
+kept native acceptance separate from code checks and preserved the blocked Ghostty access and
+Linux host choice. No live install, settings change, existing session shutdown or native action
+occurred. Original SPEC decisions and PLAN body were not changed.
+
+**Strategy [O]**: Two explorers mapped native and portable consumers, starting with directory
+ownership, write permission, sticky ancestry and symlink rules. Their complete reports were read,
+not used as approvals. Current consumers showed that a CLI-only check misses direct GUI creation,
+unlocked storage helpers, cache, independent policy and registry/pending access. The chosen slice
+implemented one shared native POSIX guard at those use points. Native Scheduler, persistent marker,
+portable and shell paths remain explicit work; this is not a claim that every runtime consumer is
+fixed. The common helper expresses a concrete filesystem check, without a trust cache or new
+registry, binding protocol, process supervisor or schema.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Reorient | Git, SPEC/PLAN/PROGRESS/GOAL | Previous turn progress; goal incomplete |
+| 2 | Explore/source trace | Native and portable root consumers | Static UID/mode/ancestry gaps |
+| 3 | Behavioral RED | Policy, publication, writer | 3 cases/10 failed assertions |
+| 4 | Implement/probe | Shared guard and macOS alias behavior | Draft rejection explained by local probe |
+| 5 | Focused verification | Aliases and connected consumers | 6/6, then 228/228 |
+| 6 | Source check/RED | Sticky organizer cache/unlocked bypass | 1 case/2 failed assertions |
+| 7 | Correct/verify | Narrow system-temp exception | 631/631, release, 19/19 helper checks |
+| 8 | Record | Combined reports, docs, history and capture | Known open scope retained |
+
+**Decision points [O]**: Effective-UID-owned roots with no group/other write bits remain accepted,
+including safe 0755 fixtures. Missing write components use 0700; existing unsafe paths are rejected
+rather than changed. The runtime leaf cannot be a symlink. Root-owned /tmp and /var aliases use a
+bounded readlink check and protected system targets. The writer runs checks in its existing worker
+using the original deadline; directory creation now precedes admission/open, with revalidation after
+open. That ordering change is documented. Target/emergency admission identities remain intact.
+
+**Failure arcs [O]**: TzBVlr established the original gap. The first implementation then produced
+393 failures across 220 tests in JSDgL7 because Foundation's resolvingSymlinksInPath retained /var
+instead of returning the assumed /private/var spelling. An isolated metadata probe fPhLxD established
+that behavior; bounded POSIX readlink corrected it. The next source check found an overly broad
+sticky exception that admitted organizer01777 during deeper cache/unlocked traversal. pomoPO
+reproduced two failed assertions. Restricting that exception to root-owned system temporary
+ancestors corrected the source property. These implementation mistakes were folded from the
+observation stub, with their logs retained. Neither explains older unrelated timing failures.
+
+**Verification and limits [O]**: EP1Q21 passes 631 Swift tests in 16.422 seconds, including twelve
+new cases. yCpWOG builds final release in 20.00 seconds; noTOPS passes nineteen isolated rebuilt-
+helper checks on owned PTYs. Tests cover unsafe files/parents, creation, aliases, rejection before
+callbacks/open/pixels, and preservation of pending/record bytes. Synthetic UID metadata tests the
+predicate; it is not a real foreign-account attack. ACL and full adversarial path-race guarantees
+are unverified. The final source-check report predates the sticky correction and is not fresh
+reviewer approval. P8/P9 were applied; no new pattern or skill is proposed. Full reports and final
+scope are durable. The complete master goal remains active and incomplete.

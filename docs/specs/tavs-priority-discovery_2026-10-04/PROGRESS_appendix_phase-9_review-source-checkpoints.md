@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.5
+Version: 1.6
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -92,3 +92,15 @@ SPEC/PLAN fixed; no live app/install/preferences/schedules/native/session/VM act
 [Checks and failures](quiet-bounds-source-check-2026-10-14.md): RED ebEMby3/7 assertions, AJrV2b parity; l1xmDk **614/614**,23.588s;1nDFbD22/22;0xpWqp release223.51s.
 LsYHBP614/14 failures (6 unexpected) and load/swap snapshot are retained; GaF3m3 five separated cases pass. Causes remain open.
 Next: provider compatibility/storage trust and other material findings. Headless/native/Linux, palette and timing limits remain open; goal active/incomplete; no live actions.
+
+
+### Phase 9 record read retry deadlines: 2026-10-14 16:34 CEST
+
+The read loop now checks the original deadline before each syscall, including EINTR/partial retries.
+RED jhc4kO: 3 cases/2 assertions; cpDRTk:201/201; xMoxpJ:619/619,17.133s; dKefZH:release23.81s.
+TOldLS:19/19 background-intent checks with the rebuilt helper and private owned PTYs.
+[Source report and limits](initial-paint-source-check-2026-10-14.md) preserve historical failures.
+**Scope:** One production/one test file plus existing docs/capture; no budget/schema/live changes.
+17 completed Phase 2 review/scope lines moved unchanged to its appendix; reconstruction verified.
+Earlier timing causes, native/Linux, headless feedback, palette and runtime-root trust stay open.
+Next: root trust and compatibility corrections; Phase9/goal active and incomplete, 2/7/8 Blocked.

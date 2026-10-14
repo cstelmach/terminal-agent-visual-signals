@@ -127,6 +127,62 @@ final class ProcessRunnerTests: XCTestCase {
         assertNoPTYBytes(tty.master)
     }
 
+    func testUntrustedLockDirectoryFailsBeforeCallbacksDeviceOpenOrPaint() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave); _ = chmod(root.path, 0o700) }
+        XCTAssertEqual(chmod(root.path, 0o777), 0)
+        let lock = root.appendingPathComponent("writer.lock")
+        let runner = SystemProcessRunner(openDevice: { path, flags in
+            XCTFail("Untrusted storage must be rejected before opening the device")
+            return Darwin.open(path, flags)
+        })
+        XCTAssertThrowsError(try runner.writeManagedToDevice(path: tty.path, lockURL: lock,
+            beforeOpen: { _ in XCTFail("Untrusted storage must precede publication") }) { _, _ in
+                XCTFail("Untrusted storage must precede policy preparation")
+                return Data([0x61])
+            })
+        XCTAssertFalse(FileManager.default.fileExists(atPath: lock.path))
+        assertNoPTYBytes(tty.master)
+    }
+
+    func testRuntimeDirectoryTrustPreservesSystemAliasesMissingRootsAndSafeModes() throws {
+        let missing = root.appendingPathComponent("fresh/nested")
+        try RuntimeDirectoryTrust.check(missing)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: missing.path))
+        try RuntimeDirectoryTrust.check(missing, create: true)
+        var info = stat()
+        XCTAssertEqual(lstat(missing.path, &info), 0)
+        XCTAssertEqual(info.st_mode & 0o777, 0o700)
+        XCTAssertEqual(info.st_uid, geteuid())
+        XCTAssertEqual(chmod(missing.path, 0o755), 0)
+        try RuntimeDirectoryTrust.check(missing)
+        // The injected root traverses /var; this missing read also exercises the /tmp alias.
+        try RuntimeDirectoryTrust.check(URL(fileURLWithPath: "/tmp/tavs-missing-\(UUID().uuidString)"))
+    }
+
+    func testRuntimeDirectoryTrustRejectsLinkedAndWritableAncestorsBeforeCreating() throws {
+        let linked = root.appendingPathComponent("linked")
+        try FileManager.default.createSymbolicLink(at: linked, withDestinationURL: root)
+        XCTAssertThrowsError(try RuntimeDirectoryTrust.check(linked))
+        XCTAssertThrowsError(try RuntimeDirectoryTrust.check(linked.appendingPathComponent("child"), create: true))
+        let writable = root.appendingPathComponent("writable")
+        XCTAssertEqual(mkdir(writable.path, 0o700), 0)
+        XCTAssertEqual(chmod(writable.path, 0o777), 0)
+        defer { _ = chmod(writable.path, 0o700) }
+        let child = writable.appendingPathComponent("child")
+        XCTAssertThrowsError(try RuntimeDirectoryTrust.check(child, create: true))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: child.path))
+    }
+
+    func testRuntimeDirectoryOwnershipRejectsForeignUIDAndWritableLeaves() {
+        var info = stat(); info.st_uid = geteuid(); info.st_mode = S_IFDIR | 0o755
+        XCTAssertTrue(RuntimeDirectoryTrust.owned(info))
+        info.st_uid = geteuid() &+ 1
+        XCTAssertFalse(RuntimeDirectoryTrust.owned(info), "Synthetic metadata, not a cross-user actor")
+        info.st_uid = geteuid(); info.st_mode = S_IFDIR | 0o770
+        XCTAssertFalse(RuntimeDirectoryTrust.owned(info))
+    }
+
     func testPausedOpenDoesNotHoldLockAndPolicyReadsNewSuspension() throws {
         let tty = try openPTY()
         defer { close(tty.master); close(tty.slave) }

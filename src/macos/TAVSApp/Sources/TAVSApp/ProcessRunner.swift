@@ -161,18 +161,23 @@ final class SystemProcessRunner: ProcessRunner {
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try Self.completeDeviceWrite(path: path) { deadline in
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
+            let directory = lockURL.deletingLastPathComponent()
+            do { try RuntimeDirectoryTrust.check(directory, deadline: deadline) }
+            catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
+                throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
             try beforeOpen?(deadline)
             try self.checkDeviceDeadline(path: path, deadline: deadline)
+            do { try RuntimeDirectoryTrust.check(directory, create: true, deadline: deadline) }
+            catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
+                throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
             let admission = try Self.admitDevice(path: path, target: target, emergency: emergency)
             defer { Self.releaseDevice(admission) }
             let device = try self.openNonblockingDevice(path: path, deadline: deadline)
             defer { Darwin.close(device) }
-            guard lockURL.isFileURL else { throw ProcessRunnerError.deviceIOFailed(path, EINVAL) }
-            let directory = lockURL.deletingLastPathComponent()
-            do {
-                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
-                                                        attributes: [.posixPermissions: 0o700])
-            } catch { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
+            do { try RuntimeDirectoryTrust.check(directory, deadline: deadline) }
+            catch { try self.checkDeviceDeadline(path: path, deadline: deadline)
+                throw ProcessRunnerError.deviceIOFailed(path, EACCES) }
             try self.checkDeviceDeadline(path: path, deadline: deadline)
             var info = stat()
             guard lstat(directory.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
@@ -187,7 +192,7 @@ final class SystemProcessRunner: ProcessRunner {
             defer { Darwin.close(lockFD) }
             try self.checkDeviceDeadline(path: path, deadline: deadline)
             guard fstat(lockFD, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
-                  info.st_mode & 0o777 == 0o600 else {
+                  info.st_uid == geteuid(), info.st_mode & 0o777 == 0o600 else {
                 throw ProcessRunnerError.deviceIOFailed(path, EINVAL)
             }
             while true {

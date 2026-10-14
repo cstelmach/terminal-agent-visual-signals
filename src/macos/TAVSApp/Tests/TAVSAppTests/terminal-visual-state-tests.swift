@@ -80,6 +80,50 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(makeStore().coverage(for: surface()).observation, observed)
     }
 
+    func testUntrustedRuntimeCannotPublishOrganizerRecords() throws {
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true,
+                                               attributes: [.posixPermissions: 0o700])
+        XCTAssertEqual(chmod(root.path, 0o777), 0)
+        defer { _ = chmod(root.path, 0o700) }
+        XCTAssertThrowsError(try makeStore().publishObservation(observation()))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: organizer.path))
+    }
+
+    func testWritableRecordCannotBeAdoptedOrRepaired() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let url = recordURL("intent"), original = try Data(contentsOf: url)
+        XCTAssertEqual(chmod(url.path, 0o666), 0)
+        defer { _ = chmod(url.path, 0o600) }
+        XCTAssertThrowsError(try store.publishIntent(intent(color: "reset", time: 999)))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        XCTAssertNil(store.coverage(for: surface()).intent)
+    }
+
+    func testWritableTargetDirectoryCannotEnterCacheOrSupplyIntent() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        try store.bindOrdinaryIntentUnlocked(intent(), to: target, deadline: deadline())
+        let parent = try targetRecordURL("target.json").deletingLastPathComponent()
+        XCTAssertEqual(chmod(parent.path, 0o777), 0)
+        defer { _ = chmod(parent.path, 0o700) }
+        XCTAssertTrue(store.cachedRecords().bindings.isEmpty)
+        XCTAssertTrue(store.cachedRecords().unreadable.contains(parent))
+        XCTAssertThrowsError(try store.ordinaryBackgroundUnlocked(for: target, deadline: deadline()))
+    }
+
+    func testStickyWritableOrganizerCannotBeTraversedByUnlockedReadsOrCache() throws {
+        let store = makeStore()
+        try store.publishIntent(intent())
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        try store.bindOrdinaryIntentUnlocked(intent(), to: target, deadline: deadline())
+        XCTAssertEqual(chmod(organizer.path, 0o1777), 0)
+        defer { _ = chmod(organizer.path, 0o700) }
+        XCTAssertTrue(store.cachedRecords().bindings.isEmpty)
+        XCTAssertThrowsError(try store.cacheTargetUnlocked(target, deadline: deadline()))
+    }
+
     func testParallelFreshTargetsCreateSharedParentsWithoutLosingBindings() throws {
         let targets = (0..<32).map { index -> TerminalTargetBinding in
             let path = "/dev/ttys\(100 + index)"

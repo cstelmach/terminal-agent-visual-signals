@@ -1,7 +1,28 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.61
+Version: 1.62
+
+## Native runtime directory trust
+
+RuntimeDirectoryTrust.check validates a file URL's directory chain at use. Existing leaves must
+belong to the effective UID and have no group/other write bits. Ancestors must belong to root or
+the effective UID and be non-writable by group/other, with a narrow root-owned sticky exception
+for /private/tmp and /private/var/tmp. Only the verified root-owned /tmp and /var system symlinks
+are accepted as ancestors. A runtime leaf or user/organizer symlink remains unavailable.
+
+Missing read directories retain absence behavior. Creation uses 0700 for each missing component
+after checking its parent; unsafe existing paths are rejected rather than changed. Typed-store
+and policy reads also validate file UID/write bits; unsafe typed leaves are storage failures,
+not repairable invalid data. Existing inode, no-follow and size checks remain.
+
+Store, rule, registry, pending and managed-writer boundaries reuse this guard. Writer checks run
+inside its existing worker and original 100 ms deadline, before callbacks/open and again after
+open. Lock-parent creation now precedes device admission/open. Lock-file UID checks supplement
+its existing exact 0600 predicate. No target/emergency identity or render schema changes occur.
+
+Scheduler's separate projection readers/writers, persistent marker, portable and shell paths are
+outside this correction. The guard checks POSIX metadata, not ACLs or all path replacement races.
 
 ## Record read retries
 

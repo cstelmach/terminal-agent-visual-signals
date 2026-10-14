@@ -100,6 +100,8 @@ final class VisualRestrictionPolicy {
     private func readRule(_ url: URL, deadline: UInt64) throws -> String? {
         try check(deadline)
         guard url.isFileURL else { throw VisualRestrictionPolicyError.unavailable }
+        do { try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), deadline: deadline) }
+        catch { try check(deadline); throw VisualRestrictionPolicyError.unavailable }
         var before = stat()
         let inspected = lstat(url.path, &before), inspectError = errno
         try check(deadline)
@@ -107,7 +109,8 @@ final class VisualRestrictionPolicy {
             if inspectError == ENOENT { return nil }
             throw VisualRestrictionPolicyError.unavailable
         }
-        guard before.st_mode & S_IFMT == S_IFREG, before.st_size >= 0, before.st_size <= 8_192 else {
+        guard before.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(before),
+              before.st_size >= 0, before.st_size <= 8_192 else {
             throw VisualRestrictionPolicyError.unavailable
         }
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
@@ -117,7 +120,7 @@ final class VisualRestrictionPolicy {
         var opened = stat()
         let verified = fstat(fd, &opened)
         try check(deadline)
-        guard verified == 0, opened.st_mode & S_IFMT == S_IFREG,
+        guard verified == 0, opened.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(opened),
               opened.st_ino == before.st_ino, opened.st_dev == before.st_dev,
               opened.st_size >= 0, opened.st_size <= 8_192 else { throw VisualRestrictionPolicyError.unavailable }
         var result = Data(), buffer = [UInt8](repeating: 0, count: 8_193)

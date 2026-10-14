@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 16:34 CEST
-**Version:** 4.43
+**Last Updated:** 2026-10-14 17:10 CEST
+**Version:** 4.44
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 619 Swift pass; prior 616 failures retained;175 portable/19 background | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 631 Swift pass; prior failures retained;175 portable/19 background | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -887,13 +887,14 @@ Prior LsYHBP614/14 timing failures remain unattributed in [its checks](quiet-bou
 `6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
 Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 remain incomplete; next diagnose timing/root trust and compatibility, with headless/Linux/native/palette limits open. No live actions.
 
-### Phase 9 record read retry deadlines: 2026-10-14 16:34 CEST
+> Finished record-read checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-The read loop now checks the original deadline before each syscall, including EINTR/partial retries.
-RED jhc4kO: 3 cases/2 assertions; cpDRTk:201/201; xMoxpJ:619/619,17.133s; dKefZH:release23.81s.
-TOldLS:19/19 background-intent checks with the rebuilt helper and private owned PTYs.
-[Source report and limits](initial-paint-source-check-2026-10-14.md) preserve historical failures.
-**Scope:** One production/one test file plus existing docs/capture; no budget/schema/live changes.
-17 completed Phase 2 review/scope lines moved unchanged to its appendix; reconstruction verified.
-Earlier timing causes, native/Linux, headless feedback, palette and runtime-root trust stay open.
-Next: root trust and compatibility corrections; Phase9/goal active and incomplete, 2/7/8 Blocked.
+### Phase 9 native runtime trust: 2026-10-14 17:10 CEST
+
+Native storage/rules/managed writer/registry/pending reject unsafe UID/mode/links within old budgets.
+[Reports, draft failures and limits](runtime-trust-source-check-2026-10-14.md) retain all findings.
+EP1Q21:631/631,16.422s; yCpWOG:release20.00s; noTOPS:19/19;12 new cases;100ms unchanged.
+**Scope:** Five production/four test files; shared I/O correction beyond Phase9's original list.
+Finished read-retry block moved unchanged to the existing appendix; reconstruction verified.
+Next: Scheduler/marker/portable/shell trust, Linux/headless/palette fixes and native acceptance.
+Phase9/goal active and incomplete;2/7/8 Blocked; older timing attribution remains open.

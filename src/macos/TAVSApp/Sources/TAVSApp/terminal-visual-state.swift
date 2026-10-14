@@ -85,6 +85,7 @@ enum TerminalVisualStateError: Error, CustomStringConvertible {
 }
 
 final class TerminalVisualStateStore {
+    private let runtimeDirectory: URL
     private let directory: URL
     private let clock: Clock
     private let lookup: (Int32) -> ProcessIdentity?
@@ -110,6 +111,7 @@ final class TerminalVisualStateStore {
          processMissing: @escaping (Int32) -> Bool = TerminalVisualStateStore.knownProcessMissing,
          descriptorDevice: @escaping (Int32) -> UInt32? = TerminalVisualStateStore.characterDevice,
          readDescriptor: @escaping (Int32, UnsafeMutableRawPointer?, Int) -> Int = { Darwin.read($0, $1, $2) }) {
+        self.runtimeDirectory = runtimeDirectory
         directory = runtimeDirectory.appendingPathComponent("organizer", isDirectory: true)
         self.clock = clock
         self.lookup = lookup
@@ -311,6 +313,7 @@ final class TerminalVisualStateStore {
         guard validation == .valid else { throw TerminalVisualStateError.targetUnavailable }
         let root = targetURL(target.physicalTarget, filename: "target.json")
             .deletingLastPathComponent().deletingLastPathComponent()
+        try trustedDirectory(root, deadline: deadline)
         var info = stat()
         if lstat(root.path, &info) != 0 {
             let absent = errno == ENOENT
@@ -416,6 +419,8 @@ final class TerminalVisualStateStore {
 
     func cachedRecords(tty: String? = nil) -> TerminalCachedVisualRecords {
         var root = directory.appendingPathComponent("targets", isDirectory: true)
+        do { try trustedDirectory(root) }
+        catch { return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root]) }
         var info = stat()
         if lstat(root.path, &info) != 0 {
             return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: errno == ENOENT ? [] : [root])
@@ -425,6 +430,8 @@ final class TerminalVisualStateStore {
         }
         if let tty = tty {
             root.appendPathComponent(key(tty), isDirectory: true)
+            do { try trustedDirectory(root) }
+            catch { return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: [root]) }
             if lstat(root.path, &info) != 0 {
                 return TerminalCachedVisualRecords(bindings: [], effects: [], unreadable: errno == ENOENT ? [] : [root])
             }
@@ -440,6 +447,9 @@ final class TerminalVisualStateStore {
         }
         for case let url as URL in enumerator {
             guard lstat(url.path, &info) == 0 else { unreadable.append(url); continue }
+            if info.st_mode & S_IFMT == S_IFDIR, !RuntimeDirectoryTrust.owned(info) {
+                unreadable.append(url); enumerator.skipDescendants(); continue
+            }
             if info.st_mode & S_IFMT == S_IFLNK {
                 // Enumeration does not follow links; skipping here can prune the next real directory.
                 unreadable.append(url); continue
@@ -552,37 +562,14 @@ final class TerminalVisualStateStore {
     }
 
     private func prepareTargetDirectory(_ url: URL, deadline: UInt64) throws {
-        try checkDeadline(deadline)
+        try trustedDirectory(url, create: true, deadline: deadline)
+    }
+
+    private func trustedDirectory(_ url: URL, create: Bool = false, deadline: UInt64? = nil) throws {
         do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
-                                                    attributes: [.posixPermissions: 0o700])
-        } catch { throw TerminalVisualStateError.storageUnavailable }
-        try checkDeadline(deadline)
-        var current = directory, info = stat()
-        guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
-            throw TerminalVisualStateError.storageUnavailable
-        }
-        for component in url.pathComponents.dropFirst(directory.pathComponents.count) {
-            current.appendPathComponent(component)
-            try checkDeadline(deadline)
-            if lstat(current.path, &info) != 0 {
-                guard errno == ENOENT else { throw TerminalVisualStateError.storageUnavailable }
-                do {
-                    try FileManager.default.createDirectory(at: current, withIntermediateDirectories: false,
-                                                            attributes: [.posixPermissions: 0o700])
-                } catch {
-                    // Different TTY writers can create a shared parent after the absence check.
-                    guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
-                        throw TerminalVisualStateError.storageUnavailable
-                    }
-                }
-            }
-            try checkDeadline(deadline)
-            guard lstat(current.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
-                throw TerminalVisualStateError.storageUnavailable
-            }
-        }
-        try checkDeadline(deadline)
+            try RuntimeDirectoryTrust.check(runtimeDirectory, create: create, deadline: deadline)
+            try RuntimeDirectoryTrust.check(url, create: create, deadline: deadline)
+        } catch { try checkDeadline(deadline); throw TerminalVisualStateError.storageUnavailable }
     }
 
     private static func knownDeviceMissing(_ path: String) -> Bool {
@@ -980,10 +967,7 @@ final class TerminalVisualStateStore {
                              body: () throws -> T) throws -> T {
         try checkDeadline(suppliedDeadline)
         guard directory.isFileURL else { throw TerminalVisualStateError.storageUnavailable }
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
-                                                    attributes: [.posixPermissions: 0o700])
-        } catch { throw TerminalVisualStateError.storageUnavailable }
+        try trustedDirectory(directory, create: true, deadline: suppliedDeadline)
         try checkDeadline(suppliedDeadline)
         var info = stat()
         guard lstat(directory.path, &info) == 0, info.st_mode & S_IFMT == S_IFDIR else {
@@ -1001,7 +985,7 @@ final class TerminalVisualStateStore {
         defer { close(fd) }
         try checkDeadline(suppliedDeadline)
         guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
-              info.st_mode & 0o777 == 0o600 else {
+              info.st_uid == geteuid(), info.st_mode & 0o777 == 0o600 else {
             throw TerminalVisualStateError.storageUnavailable
         }
         try checkDeadline(suppliedDeadline)
@@ -1031,11 +1015,13 @@ final class TerminalVisualStateStore {
 
     private func read<T: Decodable>(_ url: URL, deadline: UInt64? = nil) throws -> T? {
         try checkDeadline(deadline)
+        try trustedDirectory(url.deletingLastPathComponent(), deadline: deadline)
         var before = stat()
         if lstat(url.path, &before) != 0 {
             if errno == ENOENT { try checkDeadline(deadline); return nil }
             throw TerminalVisualStateError.storageUnavailable
         }
+        guard RuntimeDirectoryTrust.owned(before) else { throw TerminalVisualStateError.storageUnavailable }
         guard before.st_mode & S_IFMT == S_IFREG, before.st_size >= 0,
               before.st_size <= Self.sizeLimit else { throw TerminalVisualStateError.invalidRecord }
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
@@ -1048,6 +1034,7 @@ final class TerminalVisualStateStore {
               current.st_size >= 0, current.st_size <= Self.sizeLimit else {
             throw TerminalVisualStateError.invalidRecord
         }
+        guard RuntimeDirectoryTrust.owned(current) else { throw TerminalVisualStateError.storageUnavailable }
         var buffer = [UInt8](repeating: 0, count: Self.sizeLimit + 1)
         var data = Data()
         while data.count <= Self.sizeLimit {
@@ -1091,6 +1078,14 @@ final class TerminalVisualStateStore {
 
     private func write<T: Encodable>(_ record: T, to url: URL, deadline: UInt64? = nil) throws {
         do {
+            try checkDeadline(deadline)
+            try trustedDirectory(url.deletingLastPathComponent(), deadline: deadline)
+            var existing = stat()
+            if lstat(url.path, &existing) == 0 {
+                guard existing.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(existing) else {
+                    throw TerminalVisualStateError.storageUnavailable
+                }
+            } else if errno != ENOENT { throw TerminalVisualStateError.storageUnavailable }
             try checkDeadline(deadline)
             let data = try JSONEncoder().encode(record)
             guard data.count <= Self.sizeLimit else { throw TerminalVisualStateError.invalidRecord }
