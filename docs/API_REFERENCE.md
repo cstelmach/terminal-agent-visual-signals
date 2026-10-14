@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.68
+Version: 1.69
 
 ## Private managed-output failure diagnostics
 
@@ -17,6 +17,11 @@ unfinished results are never read. Native labels match typed errors; portable la
 exception families. Numeric device/OS codes are restricted to 1...4095; native POSIX codes are typed.
 Unknown categories remain explicit other/os/device-io failures. No exception descriptions,
 class names, paths, titles, payloads, tokens or userInfo are printed.
+
+Semaphore success also requires current monotonic time before the original 100 ms deadline.
+Late completed values, including no-paint false, and failures report caller timeout before
+Result access. Timely results/errors retain their behavior; timeout does not prove no paint.
+The internal completionTime clock seam affects this caller check only, never the worker budget.
 
 The internal deviceWriteTimedOut case gains a defaulted optional stage. Existing one-argument
 construction and bare matching remain valid; nil keeps the generic device-deadline label.

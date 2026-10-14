@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 60 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 68 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 61 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 69 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -5542,3 +5542,74 @@ The writer boundary is now known in one failure; its nested cause remains unprov
 | Correct fixture | Admission probe's assertion boundary | EBUSY reaches retry handler |
 | Verify |661 full,59 connected, release,4 Bats | Full failures retained; preparation located |
 | Preserve | Reports, source counts, progress and capture | Concurrent change and open causes retained |
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · caller-result-deadline
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported [R]; environment identifies family, no served-model evidence
+  interface: Codex desktop
+  thinking: unknown; user requested ultrathink
+  session: 01a10879
+  trace: observed tool calls in this resumed turn
+
+**Framing [O]:** The user resumed the approved implementation goal. Current Git, goal status,
+SPEC, PLAN and PROGRESS established Phase 9 source repairs with required native acceptance
+still open. The working tree began clean at da1f029. Existing runtime/session boundaries were
+rechecked in memory and source. No native app control, real scheduling preferences or installed
+bundle replacement formed part of this slice. The initial candidate reduced duplicated runtime
+trust traversal; the final change rejects a completed result accepted after the caller deadline.
+
+**Strategy [O]:** A scoped explorer inspected read reuse and the directory walker. Root inspected
+those reports and connected callers, backed up owned files externally, then added boundary tests.
+The proposed one-pass ownership check retained explicit symlink and deadline checks but introduced
+lexical containment. Direct directory tests passed. Connected record/focus/recovery tests exposed
+canonical URLs from Foundation enumeration. The entire candidate was withdrawn. A smaller,
+previously recorded caller completion gap was then reproduced with a deterministic clock seam.
+
+**Action trace [O]**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Read | Goal, Git, SPEC state, source and reports | Active/incomplete; clean baseline |
+| 2 | Back up/edit/test | Three trust draft paths | Compile RED; eight direct tests pass |
+| 3 | Connected tests/source | Enumeration versus configured runtime spelling | 287 tests/417 assertions |
+| 4 | Preserve/restore | Owned external draft and original files | Two original trust walks retained |
+| 5 | Regression probe | Ready result at original deadline | Behavioral RED: two failed throws |
+| 6 | Implement/test | Caller guard and timely/error controls | Connected62 and final664 pass |
+| 7 | Build/check | Source release and isolated helper | Separate logs retained |
+
+**Decision points [O]:** Reusing a decoded ordinary color across callbacks was declined because
+producer lifetimes and leaf evidence can change independently of the cooperative TTY mutex.
+One-pass trust initially looked smaller, but correction required checks for unwalked configured
+aliases and implicit physical parents. Keeping the proven two walks avoided adding those branches
+for an unmeasured speed claim. The completion fix changes result acceptance, rather than widening
+the worker budget. The internal clock seam affects only the caller's final monotonic comparison.
+
+**Failure arc F1 [O]:** The one-pass draft produced Organizer storage unavailable on legitimate
+cached records. Root inspected concrete failing paths and found `/private/var` URLs beneath a
+store configured through `/var`. The earlier explorer claim that every caller constructed lexical
+descendants was incorrect for enumerated leaves. Direct boundary tests had missed that integration
+case. Correction: preserve the failed draft/report/log externally and restore exactly the three
+owned paths. Not every downstream assertion was attributed separately. Residue: do not equate
+constructed roots with every URL returned by filesystem enumeration.
+
+**Failure arc F2 [O]:** Full I4q8iG retained five assertions in a preview predecessor-cleanup case.
+Its separated connected run passed. Final CWktqK passed after adding two deterministic controls.
+Neither pass explains the earlier cleanup failure. No deadline, physical-byte assertion or target
+identity requirement was relaxed. The final report retains both outcomes for later diagnosis.
+
+**Verification [O]:** Behavioral RED used the caller clock seam with the final guard removed,
+so completed true and false failed two expected-throw assertions. GREEN checks the original
+submission deadline before reading Result. Timely values/errors remain intact; a late completed
+error receives caller-timeout precedence. Source inspection verifies publication before semaphore
+signal and nonblocking stage snapshots. These tests do not establish Ghostty readability or
+native pane/Space acceptance, eliminate historical preparation costs, or guarantee that the OS
+cannot preempt the caller after its final clock check.
+
+**Heuristics and confidence:** P8/P9 recur. No new skill or control mechanism is proposed.
+Commands, diffs and test outcomes above are observed; model attribution remains self-reported.
+Any suggestion that a smaller diff is easier to maintain is a design judgment [R], not an
+observation of internal computation. Goal completion still requires the outstanding source,
+provider-review and physical acceptance work.

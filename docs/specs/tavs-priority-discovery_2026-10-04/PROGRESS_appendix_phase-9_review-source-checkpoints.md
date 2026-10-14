@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.12
+Version: 1.13
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -810,3 +810,15 @@ No removal of identity/trust checks, wider deadline, automatic retries, global c
 acceptance scope, new coordinator or new control plane is recommended. Byte evidence still
 cannot replace Ghostty native visible acceptance. This source report provides no timing proof,
 compiler evidence or provider approval.
+
+## Caller ready-result deadline: 2026-10-14
+
+The native caller now checks monotonic time after semaphore success and before result access.
+The original 100 ms deadline, worker stages, identity and serialization remain. Late true,
+false and error outcomes become caller timeout; timely errors/results preserve their behavior.
+Three deterministic controls use a caller-only clock seam. Behavioral RED fails two assertions;
+connected62 and final664 pass. Earlier full662/5 cleanup assertions remain unattributed.
+[Source, review and results](caller-deadline-source-check-2026-10-14.md) include the withdrawn
+one-pass trust draft and its retained287/417 failure run. Two trust walks remain unchanged.
+Scope:1 production/1 test file plus existing docs and one scoped source report; Phase9 repair.
+Native phases2/7/8 remain Blocked; Phase9 and the full goal remain active and incomplete.

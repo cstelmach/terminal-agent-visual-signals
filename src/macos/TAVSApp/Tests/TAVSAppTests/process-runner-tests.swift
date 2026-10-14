@@ -183,6 +183,54 @@ final class ProcessRunnerTests: XCTestCase {
         XCTAssertFalse(RuntimeDirectoryTrust.owned(info))
     }
 
+    func testCompletedDeviceResultCannotSucceedAfterCallerDeadline() {
+        var originalDeadline: UInt64 = 0
+        for result in [true, false] {
+            XCTAssertThrowsError(try SystemProcessRunner.completeDeviceWrite(path: "owned-fixture",
+                completionTime: { originalDeadline }) { deadline in
+                    originalDeadline = deadline
+                    return result
+                }) { error in
+                    guard case ProcessRunnerError.deviceWriteTimedOut("owned-fixture", .operation) = error else {
+                        return XCTFail("Expected original-deadline rejection: \(error)")
+                    }
+                }
+        }
+    }
+
+    func testCompletedDeviceResultBeforeCallerDeadlinePreservesPaintAndSkip() throws {
+        var originalDeadline: UInt64 = 0
+        for result in [true, false] {
+            let completed = try SystemProcessRunner.completeDeviceWrite(path: "owned-fixture",
+                completionTime: { originalDeadline - 1 }) { deadline in
+                    originalDeadline = deadline
+                    return result
+                }
+            XCTAssertEqual(completed, result)
+        }
+    }
+
+    func testCompletedDeviceFailureUsesCallerDeadlineWithoutLosingTimelyError() {
+        var originalDeadline: UInt64 = 0
+        for expired in [false, true] {
+            XCTAssertThrowsError(try SystemProcessRunner.completeDeviceWrite(path: "owned-fixture",
+                completionTime: { expired ? originalDeadline : originalDeadline - 1 }) { deadline -> Bool in
+                    originalDeadline = deadline
+                    throw ProcessRunnerError.deviceIOFailed("owned-fixture", EIO)
+                }) { error in
+                    if expired {
+                        guard case ProcessRunnerError.deviceWriteTimedOut("owned-fixture", .operation) = error else {
+                            return XCTFail("Expected caller timeout: \(error)")
+                        }
+                    } else {
+                        guard case ProcessRunnerError.deviceIOFailed("owned-fixture", EIO) = error else {
+                            return XCTFail("Expected original failure: \(error)")
+                        }
+                    }
+                }
+        }
+    }
+
     func testPausedOpenDoesNotHoldLockAndPolicyReadsNewSuspension() throws {
         let tty = try openPTY()
         defer { close(tty.master); close(tty.slave) }

@@ -239,14 +239,17 @@ final class SystemProcessRunner: ProcessRunner {
     // Some wedged macOS TTYs stall inside open even with O_NONBLOCK.
     // The semaphore publishes the worker's result only after completion;
     // a timeout reports failure without reading an incomplete result.
-    static func completeDeviceWrite<T>(path: String, operation: @escaping (UInt64) throws -> T) throws -> T {
-        try completeDeviceWrite(path: path) { deadline, stage in
+    static func completeDeviceWrite<T>(path: String,
+        completionTime: () -> UInt64 = { DispatchTime.now().uptimeNanoseconds },
+        operation: @escaping (UInt64) throws -> T) throws -> T {
+        try completeDeviceWrite(path: path, completionTime: completionTime) { deadline, stage in
             stage(.operation)
             return try operation(deadline)
         }
     }
 
     private static func completeDeviceWrite<T>(path: String,
+        completionTime: () -> UInt64 = { DispatchTime.now().uptimeNanoseconds },
         operation: @escaping (UInt64, (DeviceWriteStage) -> Void) throws -> T) throws -> T {
         let deadline = DispatchTime.now() + .milliseconds(100)
         let completion = DeviceWriteCompletion<T>()
@@ -256,7 +259,9 @@ final class SystemProcessRunner: ProcessRunner {
             }
             completion.finished.signal()
         }
-        guard completion.finished.wait(timeout: deadline) == .success else {
+        // A ready signal does not prove the caller resumed before its deadline.
+        guard completion.finished.wait(timeout: deadline) == .success,
+              completionTime() < deadline.uptimeNanoseconds else {
             TAVSLog.broadcaster.error("terminal I/O timed out: \(path, privacy: .public)")
             throw ProcessRunnerError.deviceWriteTimedOut(path, completion.snapshot())
         }
