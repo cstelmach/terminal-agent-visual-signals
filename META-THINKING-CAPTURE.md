@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 43 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 51 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 44 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 52 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4398,3 +4398,59 @@ semantics or they can manufacture the suspected failure. Preserve failed evidenc
 separate current passing checks from causal attribution. Existing skills cover these methods;
 no new capability package, schema or control plane was added. Actions/results above are observed;
 explanatory motives remain reconstructions, not privileged internal reasoning.
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · focus-poll-coalescing
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported [R], system family description; no provider model census
+  interface: Codex desktop
+  thinking: unknown; thorough work requested
+  session: 01a10879
+  trace: observed tool/diff results; earlier red steps retained in context and logs
+
+**Framing [O].** The user requested resumption of the active nine-phase goal. Current Git
+showed only the controller and its tests modified. The surviving focused command completed
+successfully, but its last chunk contained the separate empty Swift Testing summary. Reading
+its log established the relevant XCTest count of 53. The goal and dated progress file still
+recorded incomplete native acceptance. This slice therefore finished a source defect rather
+than asserting that the whole organizer/focus release was complete.
+
+**Strategy [O/R].** The implementation coalesces identical rendering inputs during preparation,
+retains only the latest pending catalogue, and refreshes coverage independently of version.
+A new binding or cue still invalidates captured work. Taking the heartbeat after preparation
+avoids consuming effect lifetime in color lookup. [R] This is the smaller remedy because it
+uses the existing run, lease and writer guards rather than another scheduler or cache layer.
+The original device deadline remained 100 ms. No app, container or native target was operated.
+
+**Action trace [O].**
+
+| Move | Object | Result |
+|---|---|---|
+| Reorient | Goal, Git, dated state, invoked skills | Active Phase 9; owned source diff retained |
+| Read review | Scoped explorer report and guarded diff | No new safety defect; two concrete test gaps |
+| Inspect focused log | YgOuTa | 53 controller tests passed |
+| Run regression | Isolated owned Swift scratch | 570 tests passed in 11.760 seconds |
+| Build | Same owned release scratch, sequential | Passed in 26.05 seconds |
+| Commit | Five exact source/test/API/bug/roadmap paths | 0c8ca92; credential and diff checks passed |
+
+**Decision points [O].** The tests advance identical polls through eight virtual seconds,
+beyond the original snapshot lifetime. A changed foreground PID and new automatic cue each
+have a negative case. Holding the second lookup prevents replacement preparation from making
+the initial attempt appear successful. The review's suggested gaps were resolved with these
+specific cases, without adding unrelated test machinery. Full shell/portable checks were not
+repeated because this slice changed Swift controller behavior and its immediate docs only.
+
+**Failure arcs [O].** The retained compile failure attempted to mutate an immutable title;
+the fixture now reconstructs that surface with the same rendering fields. Behavioral RED
+then exposed missing initial effects under identical polling. The final assertions distinguish
+obsolete inputs from fresh identical coverage. During commit, a quoted message produced literal
+newline escapes. The next command repaired only that new commit message from a temporary text
+file containing actual newlines. The final commit has a normal subject/body structure.
+
+**Verification and residue [O].** All focused and full Swift checks, release build, diff and
+added-line credential checks passed before recording completion of this source slice. Native
+ordering/readability, Linux runtime and the independent intermittent first-paint error remain
+open. The pending Docker choice received no answer, so no startup occurred. P8/P9 recur;
+no new skill or profile was created. [R] The transferable move is to distinguish freshness
+refresh from semantic invalidation and test the held first result before allowing its replacement.
