@@ -2,7 +2,9 @@ import errno
 import json
 import os
 from pathlib import Path
+import pty
 import select
+import signal
 import subprocess
 import sys
 import tempfile
@@ -173,6 +175,59 @@ class PortableHelperTests(unittest.TestCase):
             self.assertEqual(result[0], code)
             self.assertEqual(result[1], b"")
             self.assertNotIn(b"private-", result[2])
+
+
+@unittest.skipUnless(sys.platform == "darwin", "Owned macOS hook routing acceptance")
+class PortableHookRoutingTests(unittest.TestCase):
+    def test_missing_native_helper_routes_real_hook_intake_and_render_to_owned_pty(self):
+        root = Path(tempfile.mkdtemp(prefix="hook-routing-", dir=os.environ["TAVS_TEST_ROOT"]))
+        (root / "home/.tavs").mkdir(parents=True)
+        core = Path(__file__).resolve().parents[2] / "src/core/organizer-state.sh"
+        env = dict(os.environ, HOME=str(root / "home"), TAVS_RUNTIME_DIR=str(root / "runtime"),
+                   TAVS_TEST_HELPER_BIN=str(root / "missing-native"), TAVS_AGENT="claude")
+        actor, master = pty.fork()
+        if actor == 0:
+            env["TTY_DEVICE"] = os.ttyname(0)
+            os.execve("/bin/bash", ["bash", "-c", '''
+set -e
+source "$1"
+_tavs_organizer_intake claude "$$" <<< '{"hook_event_name":"Stop","session_id":"hook-43","prompt":"BODY_SENTINEL"}'
+[[ "$_TAVS_HELPER_BACKEND" == portable ]]
+_tavs_organizer_begin complete
+_tavs_render_begin
+_tavs_render_queue background '#123456'
+_tavs_render_flush
+''', "_", str(core)], env)
+        data = bytearray()
+        deadline = time.monotonic() + 5
+        status = None
+        try:
+            while time.monotonic() < deadline:
+                if select.select([master], [], [], 0.02)[0]:
+                    try:
+                        data.extend(os.read(master, 4096))
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                waited, value = os.waitpid(actor, os.WNOHANG)
+                if waited:
+                    status = value
+                    break
+            self.assertIsNotNone(status, "Owned hook shell did not finish")
+            self.assertEqual(os.waitstatus_to_exitcode(status), 0, data)
+            self.assertEqual(data, b"\x1b]11;#123456\x1b\\")
+            directory = root / "runtime/organizer"
+            observation = json.loads(next(directory.glob("observation-*.json")).read_bytes())
+            intent = json.loads(next(directory.glob("intent-*.json")).read_bytes())
+            self.assertEqual(observation["deliveryID"], intent["deliveryID"])
+            self.assertFalse(observation["verifiedAgent"])
+            self.assertNotIn("BODY_SENTINEL", str(observation)+str(intent))
+            self.assertFalse((root / "home/.tavs/visual-restrictions.state").exists())
+        finally:
+            if status is None:
+                os.kill(actor, signal.SIGKILL)
+                os.waitpid(actor, 0)
+            os.close(master)
 
 
 @unittest.skipUnless(sys.platform == "darwin", "Owned macOS helper/device acceptance")

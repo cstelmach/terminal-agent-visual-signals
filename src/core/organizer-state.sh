@@ -1,53 +1,30 @@
 #!/bin/bash
 
-# Import only a matching executable cache with the existing intake/context hint.
-if [[ "$(declare -p _TAVS_ORGANIZER_HELPER_CHECKED 2>/dev/null)" == 'declare -x '* ]]; then
-    if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then
-        _tavs_import_helper="$TAVS_TEST_HELPER_BIN"
-    else
-        _tavs_import_helper=/Applications/TAVS.app/Contents/MacOS/TAVSApp
-    fi
-    if [[ "${_TAVS_ORGANIZER_HELPER_CHECKED:-0}" != 1 || "${TAVS_ORGANIZER_INTAKE:-0}" != 1 \
-        || -z "${TAVS_ORGANIZER_CONTEXT:-}" || "${_TAVS_ORGANIZER_HELPER:-}" != "$_tavs_import_helper" \
-        || ! -x "$_tavs_import_helper" ]]; then
-        unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
-    fi
-    unset _tavs_import_helper
-fi
-# A verified adapter cache is used in this shell, not inherited by later children.
-export -n _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
+source "${BASH_SOURCE[0]%/*}/helper-selection.sh"
+unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_MANAGED_HELPER_CHECKED
+export -n _TAVS_ORGANIZER_HELPER _TAVS_MANAGED_HELPER
 
 _tavs_organizer_helper() {
-    if [[ "${_TAVS_ORGANIZER_HELPER_CHECKED:-0}" != 1 ]]; then
-        _TAVS_ORGANIZER_HELPER_CHECKED=1
-        if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then
-            _TAVS_ORGANIZER_HELPER="$TAVS_TEST_HELPER_BIN"
-        else
-            _TAVS_ORGANIZER_HELPER=/Applications/TAVS.app/Contents/MacOS/TAVSApp
-        fi
-        local support=""
-        if [[ -x "$_TAVS_ORGANIZER_HELPER" ]]; then
-            support=$(env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
-                -u TAVS_SESSIONS_TEST_TARGETS "$_TAVS_ORGANIZER_HELPER" \
-                --validate-config --organizer-capabilities 2>/dev/null) || support=""
-        fi
-        [[ "$support" == "tavs-organizer-schema=1" ]] || _TAVS_ORGANIZER_HELPER=""
-    fi
-    [[ -n "$_TAVS_ORGANIZER_HELPER" ]]
+    _tavs_helper_select || { _TAVS_ORGANIZER_HELPER=""; return 1; }
+    _TAVS_ORGANIZER_HELPER="$_TAVS_HELPER_BIN"
 }
 
 _tavs_organizer_call() {
-    env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
-        -u TAVS_SESSIONS_TEST_TARGETS "$_TAVS_ORGANIZER_HELPER" "$@"
+    if [[ "$_TAVS_HELPER_BACKEND" == native ]]; then
+        env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
+            -u TAVS_SESSIONS_TEST_TARGETS "$_TAVS_HELPER_BIN" "$@"
+    else
+        _tavs_helper_call "$@"
+    fi
 }
 
 _tavs_organizer_intake() {
     local provider="$1" caller="$2" key value valid=0
-    local native=0 legacy=0
+    local selected=0 legacy=0
     local mode="default" transcript="" session="" cwd="" context=""
-    unset _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
+    unset _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
     unset _TAVS_HOOK_PAYLOAD TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_CONTEXT
-    if _tavs_organizer_helper; then native=1; fi
+    if _tavs_organizer_helper; then selected=1; fi
     while IFS= read -r -d '' key && IFS= read -r -d '' value; do
         case "$key" in
             TAVS_PERMISSION_MODE) mode="$value" ;;
@@ -59,7 +36,7 @@ _tavs_organizer_intake() {
             TAVS_LEGACY_METADATA_INTAKE) [[ "$value" == 1 ]] && legacy=1 ;;
         esac
     done < <(
-        if [[ "$native" == 1 ]]; then
+        if [[ "$selected" == 1 ]]; then
             _tavs_organizer_call --organizer-intake "$provider" "$caller"
         else
             command -v python3 >/dev/null && \
@@ -70,8 +47,12 @@ _tavs_organizer_intake() {
     export TAVS_SESSION_ID="$session" TAVS_CWD="$cwd"
     if [[ "$valid" == 1 && -n "$context" ]]; then
         export TAVS_ORGANIZER_CONTEXT="$context" TAVS_ORGANIZER_INTAKE=1
-        export _TAVS_ORGANIZER_HELPER_CHECKED _TAVS_ORGANIZER_HELPER
+        export _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
         return 0
+    fi
+    if [[ "$selected" == 1 ]]; then
+        export TAVS_ORGANIZER_INTAKE=0
+        export _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
     fi
     if [[ "$legacy" == 1 ]]; then printf 'tavs: organizer coverage unavailable\n' >&2
     else printf 'tavs: organizer metadata unavailable\n' >&2
@@ -94,22 +75,8 @@ _tavs_organizer_begin() {
 }
 
 _tavs_managed_helper() {
-    if [[ "${_TAVS_MANAGED_HELPER_CHECKED:-0}" != 1 ]]; then
-        _TAVS_MANAGED_HELPER_CHECKED=1
-        if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then
-            _TAVS_MANAGED_HELPER="$TAVS_TEST_HELPER_BIN"
-        else
-            _TAVS_MANAGED_HELPER=/Applications/TAVS.app/Contents/MacOS/TAVSApp
-        fi
-        local support=""
-        if [[ -x "$_TAVS_MANAGED_HELPER" ]]; then
-            support=$(env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
-                -u TAVS_SESSIONS_TEST_TARGETS "$_TAVS_MANAGED_HELPER" \
-                --validate-config --managed-output-capabilities 2>/dev/null) || support=""
-        fi
-        [[ "$support" == tavs-managed-output-schema=1 ]] || _TAVS_MANAGED_HELPER=""
-    fi
-    [[ -n "$_TAVS_MANAGED_HELPER" ]]
+    _tavs_helper_select || { _TAVS_MANAGED_HELPER=""; return 1; }
+    _TAVS_MANAGED_HELPER="$_TAVS_HELPER_BIN"
 }
 
 _tavs_managed_context() {
@@ -124,7 +91,7 @@ _tavs_managed_context() {
 
 _tavs_managed_forced_reset() {
     _tavs_managed_helper && _tavs_managed_context || return 1
-    "$_TAVS_MANAGED_HELPER" --managed-forced-reset "$HOME/.tavs/visual-restrictions.state" \
+    _tavs_helper_call --managed-forced-reset "$HOME/.tavs/visual-restrictions.state" \
         "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" "$TTY_DEVICE" "$TAVS_ORGANIZER_CONTEXT" \
         "$1" >/dev/null
 }
@@ -133,7 +100,7 @@ _tavs_managed_check_context() {
     _TAVS_MANAGED_STALE=0
     local result=0
     if _tavs_managed_helper && _tavs_managed_context; then
-        "$_TAVS_MANAGED_HELPER" --managed-check-context "$HOME/.tavs/visual-restrictions.state" \
+        _tavs_helper_call --managed-check-context "$HOME/.tavs/visual-restrictions.state" \
             "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" "$TTY_DEVICE" "$TAVS_ORGANIZER_CONTEXT" \
             >/dev/null || result=$?
     else
@@ -145,7 +112,7 @@ _tavs_managed_check_context() {
 
 _tavs_managed_reconcile() {
     _tavs_managed_helper || return 1
-    "$_TAVS_MANAGED_HELPER" --managed-reconcile "$HOME/.tavs/visual-restrictions.state" \
+    _tavs_helper_call --managed-reconcile "$HOME/.tavs/visual-restrictions.state" \
         "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" "$1" "$$" >/dev/null
 }
 
@@ -197,11 +164,10 @@ _tavs_render_flush() {
     if _tavs_managed_helper; then
         _tavs_managed_context || result=$?
     else
-        _TAVS_MANAGED_HELPER_CHECKED=0
         result=1
     fi
     if [[ "$result" == 0 ]]; then
-        outcome=$(_tavs_render_payload | "$_TAVS_MANAGED_HELPER" --managed-render \
+        outcome=$(_tavs_render_payload | _tavs_helper_call --managed-render \
             "$HOME/.tavs/visual-restrictions.state" "${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}" \
             "$TTY_DEVICE" "$TAVS_ORGANIZER_CONTEXT" "${TAVS_ORGANIZER_SYNTHETIC:-0}") || result=$?
     fi

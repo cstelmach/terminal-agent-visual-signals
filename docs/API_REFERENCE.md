@@ -1,9 +1,31 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.50
+Version: 1.51
 
-## Portable ordinary capability and copied delivery (routing pending)
+## Shared ordinary helper selection and core routing
+
+`src/core/helper-selection.sh` serves Bash 3.2 and zsh. Ordinary hooks select the native candidate
+only when both exact organizer and managed-output schemas are supported. Otherwise they select
+the adjacent executable Python 3 ordinary helper after its distinct capability check. Selection
+precedes stdin consumption and remains fixed for that hook. Failed operations return their original
+status; they cannot change backend, reparse payloads or emit raw terminal output.
+
+Completed adapter intake exports the chosen path/backend with the existing context/intake hint.
+Success uses intake `1` with context; failure uses intake `0` without context, carrying selection
+without metadata authority. Core accepts only the matching candidate, then removes those export
+attributes before child work. Missing or mismatched intake hints force a new capability check.
+Portable paths resolve the module directory physically so adapter and core source aliases agree.
+Native capability and organizer calls omit native test scope; managed calls retain it. Every
+portable probe and operation retains scope so unsupported dedicated scope remains a refusal.
+
+The core bridge routes context/intake, observation, render, context validation, forced reset and
+reconciliation through that choice. Sync distinguishes portable ordinary support from native
+organizer/focus/recovery. Recovery remains native-only and persists suspension before its probe.
+Standalone installed-shell resources and Linux runtime support remain pending. Owned macOS PTY
+tests verify real hook intake/render bytes, not visible Ghostty colors or native navigation.
+
+## Portable ordinary capability and copied delivery
 
 The exact query `--validate-config --portable-ordinary-capabilities` returns
 `tavs-portable-ordinary-schema=1` only on macOS with current process inspection available and
@@ -13,9 +35,9 @@ This distinct marker describes ordinary operations; it does not claim native foc
 
 Source sync copies all 13 existing portable helper modules together and makes the entry executable.
 The copied helper probes without importing files from the source checkout. Fake installation
-tests compare each copied file and preserve preferences, schedules and lock state. Shared backend
-selection and installed-shell resource delivery remain pending; source copying alone is not hook
-readiness, and no real installation was synchronized during verification.
+tests compare each copied file and preserve preferences, schedules and lock state. Copied core
+intake now selects the portable backend without the original checkout. Installed-shell resource
+delivery remains pending; no real installation was synchronized during verification.
 
 ## Portable unbound intent publication (integration pending)
 
@@ -31,9 +53,9 @@ device rather than a mis-keyed cached TTY field. Stale data is code 3; invalid r
 code 1. The whole portable metadata operation retains one 100 ms budget, tighter than native legacy
 post-lock publication. CLI success is empty output and grants no independent rendering authority.
 
-## Portable helper dispatcher (integration pending)
+## Portable helper dispatcher (core routing; standalone startup pending)
 
-`python3 src/core/portable_helper.py` handles finite organizer intake/context/observe and managed
+`python3 src/core/portable_helper.py` handles finite organizer intake/context/observe/intent and managed
 register/current/reconcile/check-context/background/render/forced-reset requests. Argument counts,
 types, absolute roots, concrete device and parent-side identity proof precede worker mutation.
 `TAVS_TEST_ROOT` confines filesystem operations to an owned temporary directory; any native
@@ -49,8 +71,9 @@ its 1 MiB/two-second phase. Ancestry, input and device phases do not renew the d
 a pre-open render revision. Unavailable suspension disables restrictions for this ordinary route;
 live native control still refuses output. Full render/reset retain frozen revision, and initial
 replacement returns unaffected without paint. Reconcile retains its after-open strict revision.
-Symlink-loop failures remain private. Capability queries, native recovery and Linux schema remain
-unsupported; no hook/backend selection or installation uses this entry yet.
+Symlink-loop failures remain private. Native capabilities/recovery and Linux schema remain
+unsupported. Core hooks use this entry after its distinct ordinary capability check; standalone
+installed-shell resources remain pending.
 
 ## Portable record failure categories (integration pending)
 
@@ -335,28 +358,24 @@ both Claude hook definitions, plugin shellrc and Codex installer in existing plu
 Required copy/directory/permission failures return nonzero. Direct entry points regain execute
 permission; preferences, schedules and lock definitions are not sync inputs. A failure may leave
 earlier copies applied. Sync does not build/install the native helper or restart existing workers.
-After copying, sync checks both managed-render and organizer-metadata capabilities through their
-existing validation branches, excluding isolated GUI launch keys. Missing/unsupported capability
-warns separately from source-copy success and does not claim hooks are ready. Probe output is not
-echoed. This diagnostic does not repair the pending standalone ordinary-signaling regression.
-Sync also copies `src/core/portable_metadata.py`. When native organizer capability is absent or
-unsupported, intake selects this Python 3 reader before consuming input. It preserves the four
-legacy metadata fields, returns unavailable organizer coverage and exports no context/trust hint.
-It accepts a top-level JSON object, caps input at 1 MiB with a two-second read deadline, rejects
-invalid field types and enforces the native byte/control limits. Conversation bodies and nested
-metadata do not reach core. A missing runtime or invalid payload clears inherited fields and
-reports metadata unavailable. A selected native intake failure never invokes a second parser.
-This path supplies metadata only; ordinary rendering without the native companion remains open.
-Successful Claude/Codex intake transfers the existing positive organizer capability cache across
-the unchanged core script exec. Core accepts an imported cache only with the existing intake/context
-hint, matching selected helper and executable presence, then removes its export attributes. Intake
-clears inherited cache before probing. Managed support remains independently validated; actual
-observation/render calls still determine success. These hints do not authenticate hostile complete
-environment tuples or guarantee safety against same-path executable replacement.
+After copying, sync uses the shared ordinary selector described above. Native organizer and managed
+schemas are checked together. Portable support is reported separately from native controls; no
+helper availability claim exposes probe output. Sync copies all portable modules, not just the
+legacy metadata reader. Core hooks can now use portable typed intake and rendering independently
+of the original source checkout. Installed-shell resource delivery and Linux support remain open.
 
-The shell queries `--validate-config --managed-output-capabilities` and requires exactly
-`tavs-managed-output-schema=1`. This known validation branch is safe with older executables.
-Unknown support is an explicit failure. Headless entry runs before GUI or login initialization.
+If neither backend is supported, intake retains the bounded metadata-only reader: four legacy
+fields, unavailable organizer coverage and no context/intake authority. A missing Python runtime or
+invalid payload clears inherited fields and reports unavailable metadata. Selected operation
+failure never invokes that reader. Successful intake uses context plus intake `1`; failed selected
+intake carries its fixed choice with intake `0` and no context. Core validates the matching candidate
+and hint before removing cache exports. The hints do not authenticate hostile complete environment
+tuples or guarantee safety against same-path executable replacement.
+
+Standalone shell startup and public recovery still query native managed-output support directly.
+The known `--validate-config --managed-output-capabilities` branch requires exactly
+`tavs-managed-output-schema=1`; unknown support is an explicit failure. Headless entry runs before
+GUI or login initialization. Ordinary core hooks additionally require the native organizer schema.
 
 The internal `--managed-render` request receives one bounded UTF-8 NUL-delimited stdin payload:
 

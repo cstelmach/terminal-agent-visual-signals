@@ -10,9 +10,13 @@ setup() {
     cp "$REPO_ROOT/src/agents/claude/trigger.sh" "$FIXTURE/src/agents/claude/trigger.sh"
     cp "$REPO_ROOT/src/agents/codex/trigger.sh" "$FIXTURE/src/agents/codex/trigger.sh"
     cp "$REPO_ROOT/src/core/organizer-state.sh" "$FIXTURE/src/core/organizer-state.sh"
-    if [[ -f "$REPO_ROOT/src/core/portable_metadata.py" ]]; then
-        cp "$REPO_ROOT/src/core/portable_metadata.py" "$FIXTURE/src/core/portable_metadata.py"
-    fi
+    local file
+    for file in helper-selection.sh portable_helper.py portable_context.py portable_metadata.py \
+        portable_observation.py portable_intent.py portable_records.py portable_record_io.py \
+        portable_render.py portable_renderer.py portable_ownership.py portable_policy.py \
+        portable_device_writer.py portable_process_identity.py; do
+        cp "$REPO_ROOT/src/core/$file" "$FIXTURE/src/core/$file"
+    done
     cp "$REPO_ROOT/src/install/install-codex.sh" "$FIXTURE/src/install/install-codex.sh"
     cat > "$FIXTURE/src/core/trigger.sh" <<'SH'
 #!/bin/bash
@@ -258,6 +262,7 @@ CORE
 
 @test "adapter intake ignores forged inherited organizer capability cache" {
     export _TAVS_ORGANIZER_HELPER_CHECKED=1 _TAVS_ORGANIZER_HELPER="$BATS_TEST_TMPDIR/forged-helper"
+    export _TAVS_HELPER_CHECKED=1 _TAVS_HELPER_BACKEND=native _TAVS_HELPER_BIN="$_TAVS_ORGANIZER_HELPER"
     export FORGED_LOG="$BATS_TEST_TMPDIR/forged-calls"
     cat > "$_TAVS_ORGANIZER_HELPER" <<'HELPER'
 #!/bin/bash
@@ -270,6 +275,39 @@ HELPER
     [ "$status" -eq 0 ]
     [ ! -e "$FORGED_LOG" ]
     _assert_private_dispatch processing
+}
+
+@test "portable adapter choice crosses exec without another probe or leaked private cache" {
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing" CALLS="$BATS_TEST_TMPDIR/calls"
+    cat > "$FIXTURE/src/core/portable_helper.py" <<'HELPER'
+#!/bin/bash
+printf '%s\n' "$1" >> "$CALLS"
+case "$1" in
+    --validate-config) printf 'tavs-portable-ordinary-schema=1\n' ;;
+    --organizer-intake)
+        cat >/dev/null
+        printf 'TAVS_ORGANIZER_INTAKE\0%s\0TAVS_ORGANIZER_CONTEXT\0%s\0' 1 fixture-context ;;
+    --organizer-observe) ;;
+    --managed-render) cat >/dev/null; printf 'rendered\n' ;;
+    *) exit 43 ;;
+esac
+HELPER
+    cat > "$FIXTURE/src/core/trigger.sh" <<'CORE'
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/organizer-state.sh"
+[[ "$_TAVS_HELPER_BACKEND" == portable ]] || exit 43
+_tavs_organizer_begin "$1"
+_tavs_render_begin
+_tavs_render_queue background '#123456'
+_tavs_render_flush || exit
+env | /usr/bin/grep '^_TAVS_.*HELPER' > "$CAPTURE.private" || :
+CORE
+    printf '{"prompt":"BODY_SENTINEL"}' > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude processing
+    [ "$status" -eq 0 ]
+    [ "$(wc -l < "$CALLS")" -eq 4 ]
+    [ "$(grep -c '^--validate-config$' "$CALLS")" -eq 1 ]
+    [ ! -s "$CAPTURE.private" ]
 }
 
 @test "core rejects an imported capability cache without a matching intake hint" {
@@ -297,24 +335,24 @@ assert e["TAVS_SESSION_ID"].startswith("$(touch ") and e["TAVS_CWD"].startswith(
 PY
 }
 
-@test "Absent or legacy helper preserves allowlisted metadata with unavailable organizer coverage" {
+@test "Absent or legacy native helper uses portable intake without claiming verified correlation" {
     printf '%s' '{"prompt":"PROMPT_BODY_SENTINEL","permission_mode":"plan","session_id":"standalone-session","cwd":"/fixture/standalone","transcript_path":"/fixture/transcript.jsonl","tool_input":{"permission_mode":"bypassPermissions","session_id":"BODY_SENTINEL"}}' \
         > "$BATS_TEST_TMPDIR/payload.json"
     local selected="$TAVS_TEST_HELPER_BIN"
     export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/missing-helper"
     run _claude permission
     [ "$status" -eq 0 ]
-    [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
+    [[ "$output" != *unavailable* && "$output" != *BODY_SENTINEL* ]]
     _assert_private_dispatch permission
     python3 - "$CAPTURE" <<'PY'
-import json,sys
+import base64,json,sys
 e=json.load(open(sys.argv[1]))["env"]
 assert e["TAVS_PERMISSION_MODE"] == "plan"
 assert e["TAVS_SESSION_ID"] == "standalone-session"
 assert e["TAVS_CWD"] == "/fixture/standalone"
 assert e["TAVS_TRANSCRIPT_PATH"] == "/fixture/transcript.jsonl"
-assert not e["TAVS_ORGANIZER_CONTEXT"]
-assert e["TAVS_ORGANIZER_INTAKE"] is None
+assert not json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))["verifiedAgent"]
+assert e["TAVS_ORGANIZER_INTAKE"] == "1"
 PY
 
     cat > "$BATS_TEST_TMPDIR/old-helper" <<'SH'
@@ -327,18 +365,18 @@ SH
     export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/old-helper"
     run _claude permission
     [ "$status" -eq 0 ]
-    [[ "$output" == *unavailable* && "$output" != *BODY_SENTINEL* ]]
+    [[ "$output" != *unavailable* && "$output" != *BODY_SENTINEL* ]]
     _assert_private_dispatch permission
     [ "$(cat "$CAPTURE.legacy")" = "known-validation-only" ]
     python3 - "$CAPTURE" <<'PY'
-import json,sys
+import base64,json,sys
 e=json.load(open(sys.argv[1]))["env"]
 assert e["TAVS_PERMISSION_MODE"] == "plan"
 assert e["TAVS_SESSION_ID"] == "standalone-session"
 assert e["TAVS_CWD"] == "/fixture/standalone"
 assert e["TAVS_TRANSCRIPT_PATH"] == "/fixture/transcript.jsonl"
-assert not e["TAVS_ORGANIZER_CONTEXT"]
-assert e["TAVS_ORGANIZER_INTAKE"] is None
+assert not json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))["verifiedAgent"]
+assert e["TAVS_ORGANIZER_INTAKE"] == "1"
 PY
     export TAVS_TEST_HELPER_BIN="$selected"
 }
@@ -349,12 +387,13 @@ PY
     [ "$status" -eq 0 ]
     _assert_private_dispatch complete
     python3 - "$CAPTURE" <<'PY'
-import json,sys
+import base64,json,sys
 e=json.load(open(sys.argv[1]))["env"]
 assert e["TAVS_SESSION_ID"] == 'thread"\\escaped'
 assert e["TAVS_CWD"] == "/fixture/space and\nnewline"
-assert not e["TAVS_TRANSCRIPT_PATH"] and not e["TAVS_ORGANIZER_CONTEXT"]
-assert e["TAVS_ORGANIZER_INTAKE"] is None
+assert not e["TAVS_TRANSCRIPT_PATH"]
+assert not json.loads(base64.b64decode(e["TAVS_ORGANIZER_CONTEXT"]))["verifiedAgent"]
+assert e["TAVS_ORGANIZER_INTAKE"] == "1"
 PY
 }
 
@@ -362,8 +401,13 @@ PY
     export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/failing-helper"
     cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
 #!/bin/bash
-if [[ "$1:$2" == --validate-config:--organizer-capabilities ]]; then
-    printf 'tavs-organizer-schema=1\n'; exit 0
+if [[ "$1" == --validate-config ]]; then
+    case "$2" in
+        --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+        --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+        *) exit 43 ;;
+    esac
+    exit 0
 fi
 [[ "$1" == --organizer-intake ]] || exit 43
 cat >/dev/null
@@ -383,8 +427,52 @@ import json,sys
 e=json.load(open(sys.argv[1]))["env"]
 assert e["TAVS_PERMISSION_MODE"] == "default"
 assert not e["TAVS_SESSION_ID"] and not e["TAVS_CWD"] and not e["TAVS_TRANSCRIPT_PATH"]
-assert e["TAVS_ORGANIZER_CONTEXT"] is None and e["TAVS_ORGANIZER_INTAKE"] is None
+assert e["TAVS_ORGANIZER_CONTEXT"] is None and e["TAVS_ORGANIZER_INTAKE"] == "0"
 PY
+}
+
+@test "failed selected intake retains native choice when core runs after capability disappears" {
+    export TAVS_TEST_HELPER_BIN="$BATS_TEST_TMPDIR/failing-native" CALLS="$BATS_TEST_TMPDIR/calls"
+    export FAILED_INTAKE="$BATS_TEST_TMPDIR/failed-intake"
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+printf 'native:%s\n' "$1" >> "$CALLS"
+case "$1" in
+    --validate-config)
+        [[ ! -e "$FAILED_INTAKE" ]] || exit 1
+        case "$2" in
+            --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+            --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+        esac ;;
+    --organizer-intake) cat >/dev/null; : > "$FAILED_INTAKE"; exit 1 ;;
+    --organizer-context) printf 'fixture-context\n' ;;
+    --organizer-observe) ;;
+    --managed-render) cat >/dev/null; exit 1 ;;
+esac
+HELPER
+    chmod +x "$TAVS_TEST_HELPER_BIN"
+    cat > "$FIXTURE/src/core/portable_helper.py" <<'HELPER'
+#!/bin/bash
+printf 'portable:%s\n' "$1" >> "$CALLS"
+exit 1
+HELPER
+    cat > "$FIXTURE/src/core/trigger.sh" <<'CORE'
+#!/bin/bash
+source "$(dirname "${BASH_SOURCE[0]}")/organizer-state.sh"
+_tavs_organizer_begin "$1"
+[[ "$_TAVS_HELPER_BACKEND" == native ]] || exit 43
+env | /usr/bin/grep '^_TAVS_.*HELPER' > "$CAPTURE.private" || :
+_tavs_render_begin
+_tavs_render_queue background '#123456'
+_tavs_render_flush
+CORE
+    printf '{"prompt":"BODY_SENTINEL"}' > "$BATS_TEST_TMPDIR/payload.json"
+    run _claude processing
+    [ "$status" -eq 1 ]
+    [ "$(grep -c '^native:--validate-config$' "$CALLS")" -eq 2 ]
+    [[ "$(cat "$CALLS")" != *portable:* ]]
+    [[ "$(cat "$CALLS")" == *native:--managed-render* ]]
+    [ ! -s "$CAPTURE.private" ]
 }
 
 @test "Missing portable runtime clears inherited metadata and organizer authority" {

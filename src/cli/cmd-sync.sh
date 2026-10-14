@@ -73,7 +73,12 @@ EOF
     # shellcheck source=../core/organizer-state.sh
     source "$TAVS_ROOT/src/core/organizer-state.sh" || return 1
     if _tavs_managed_helper && _tavs_organizer_helper; then
-        cli_success "Plugin cache synced. Submit a prompt to test."
+        if [[ "$_TAVS_HELPER_BACKEND" == native ]]; then
+            cli_success "Plugin cache synced. Submit a prompt to test."
+        else
+            cli_info "Portable ordinary helper selected; native organizer/focus/recovery require the companion."
+            cli_success "Plugin cache synced."
+        fi
     else
         cli_warn "Sources copied; native render/metadata helper unavailable or unsupported."
         cli_info "Sync copies sources only; it does not build/install a compatible helper."

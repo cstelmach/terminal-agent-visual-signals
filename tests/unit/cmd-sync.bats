@@ -38,7 +38,7 @@ sync_fixture() {
     local target file
     for target in "$CACHE" "$MARKET"; do
         for file in "${FILES[@]}" src/core/organizer-state.sh src/core/visual-restrictions-state.sh \
-            src/core/portable_metadata.py src/cli/cmd-recover.sh; do
+            src/core/helper-selection.sh src/core/portable_metadata.py src/cli/cmd-recover.sh; do
             cmp "$REPO_ROOT/$file" "$target/$file"
         done
         for file in tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh src/core/trigger.sh; do
@@ -75,12 +75,12 @@ sync_fixture() {
         run env TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper" bash -c '
 source "$1/src/core/organizer-state.sh"
 _tavs_organizer_intake claude "$$" || result=$?
-[[ "$result" == 1 && "$TAVS_PERMISSION_MODE" == plan ]]
+[[ "${result:-0}" == 0 && "$TAVS_PERMISSION_MODE" == plan ]]
 [[ "$TAVS_SESSION_ID" == copied-43 && "$TAVS_CWD" == /fixture/copied ]]
-[[ -z "${TAVS_ORGANIZER_CONTEXT+x}${TAVS_ORGANIZER_INTAKE+x}" ]]
+[[ -n "$TAVS_ORGANIZER_CONTEXT" && "$TAVS_ORGANIZER_INTAKE" == 1 && "$_TAVS_HELPER_BACKEND" == portable ]]
 ' _ "$target" <<< '{"session_id":"copied-43","cwd":"/fixture/copied","permission_mode":"plan","prompt":"BODY_SENTINEL"}'
         [ "$status" -eq 0 ]
-        [ "$output" = 'tavs: organizer coverage unavailable' ]
+        [ "$output" = '' ]
     done
 }
 
@@ -136,8 +136,13 @@ _tavs_organizer_intake claude "$$" || result=$?
     export TAVS_STATUS=false TAVS_TEST_HELPER_BIN="$TEST_DIR/helper" INTAKE_LOG="$TEST_DIR/intake"
     cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
 #!/bin/bash
-if [[ "$1:$2" == --validate-config:--organizer-capabilities ]]; then
-    printf 'tavs-organizer-schema=1\n'; exit 0
+if [[ "$1" == --validate-config ]]; then
+    case "$2" in
+        --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+        --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+        *) exit 1 ;;
+    esac
+    exit 0
 fi
 [[ "$1" == --organizer-intake ]] || exit 1
 session=$(jq -r '.session_id // .["thread-id"]' < /dev/stdin) || exit 1
@@ -167,10 +172,10 @@ COPY
     [[ "$output" != *'Plugin cache synced'* ]]
 }
 
-@test "sync reports a missing helper without claiming hooks are ready" {
+@test "sync reports portable ordinary support separately from native controls" {
     export TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper"
     sync_fixture
-    [[ "$output" == *'native render/metadata helper unavailable or unsupported'* ]]
+    [[ "$output" == *'Portable ordinary helper selected'* ]]
     [[ "$output" != *'Submit a prompt to test'* ]]
     cmp "$REPO_ROOT/src/core/organizer-state.sh" "$CACHE/src/core/organizer-state.sh"
     [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
@@ -184,7 +189,7 @@ printf 'PROBE_OUTPUT_SENTINEL\n'
 HELPER
     chmod +x "$TAVS_TEST_HELPER_BIN"
     sync_fixture
-    [[ "$output" == *'native render/metadata helper unavailable or unsupported'* ]]
+    [[ "$output" == *'Portable ordinary helper selected'* ]]
     [[ "$output" != *PROBE_OUTPUT_SENTINEL* && "$output" != *'Submit a prompt to test'* ]]
 }
 
@@ -213,7 +218,7 @@ HELPER
     [[ "$output" == *'State saved; native recovery helper unavailable'* ]]
     grep -q '^SUSPENDED="true"$' "$HOME/.tavs/visual-restrictions.state"
     run bash -c 'source "$1/src/core/organizer-state.sh"; _tavs_managed_helper' _ "$CACHE"
-    [ "$status" -eq 1 ]
+    [ "$status" -eq 0 ]
     run bash -c 'source "$HOME/.tavs/shellrc"; _tavs_shellrc_managed_helper'
     [ "$status" -eq 1 ]
 }
