@@ -17,6 +17,18 @@ from portable_records import StaleRecordError, key, target_path
 
 
 class PortableIntentTests(unittest.TestCase):
+    def test_ordinary_provider_synthetic_updates_keep_observation_and_reject_supersession(self):
+        for provider in ("gemini", "opencode", "unknown"):
+            with self.subTest(provider=provider):
+                self.observe(provider=provider, event=None)
+                original = self.observation_path.read_bytes()
+                result = self.publish(synthetic=True)
+                self.assertEqual(result["background"], "#112233")
+                self.assertEqual(self.observation_path.read_bytes(), original)
+                self.observe(provider=provider, event=None, deliveryID="replacement", observedAt=901)
+                with self.assertRaises(StaleRecordError):
+                    self.publish(synthetic=True)
+
     def test_unbound_normal_intent_needs_no_device_or_live_producer_and_creates_no_target(self):
         record = dict(self.record)
         record.pop("device")

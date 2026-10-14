@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.65
+Version: 1.66
+
+## Existing provider contexts cannot publish observations for synthetic updates
+
+Contexts accepted Gemini/OpenCode/unknown, but both observation validators admitted only
+Claude/Codex. Immediate ordinary rendering could proceed without an observation; later idle/error
+updates required an exact observation and were rejected. Native and portable regressions failed
+at observation publication before the fix.
+
+Observation validation now matches the existing context provider set. Native attention eligibility
+explicitly stays Claude/Codex-only, and coverage labels other observations as ordinary-only.
+Frozen delivery/producer/device checks are unchanged. Provider rejection fixtures now use truly
+unsupported strings. Owned-PTY tests exercise synthetic output and the Gemini idle worker through
+native and portable helpers without running those agent applications or adding hooks.
 
 ## Enabled quiet periods with missing bounds validate but never apply
 

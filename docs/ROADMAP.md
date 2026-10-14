@@ -1,7 +1,13 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.37
+Version: 1.38
+
+Existing Gemini/OpenCode/unknown ordinary contexts can now publish the observations needed for
+synthetic idle/error updates in native and portable readers. Exact stale-context checks remain.
+Automatic focus still recognizes only the agreed Claude/Codex events; other-provider coverage is
+explicitly unavailable for automatic attention. No richer hooks or provider integration was added.
+Native deployment, Linux ordinary support and physical Ghostty acceptance remain separate work.
 
 Enabled quiet rules now require both selected-kind bounds in Swift and the CLI. Preferences
 explains missing values; disabled drafts and existing range semantics are preserved. Scheduler

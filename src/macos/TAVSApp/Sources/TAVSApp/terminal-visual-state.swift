@@ -824,7 +824,9 @@ final class TerminalVisualStateStore {
                 } catch { invalid = true }
                 let status: String
                 if let observation = observation {
-                    if !observation.verifiedAgent { status = "Unverified agent observation." }
+                    if !["claude", "codex"].contains(observation.provider) {
+                        status = "Ordinary provider observation; automatic focus unavailable."
+                    } else if !observation.verifiedAgent { status = "Unverified agent observation." }
                     else if correlated(observation.producer!, device: observation.device!, surface: surface) {
                         status = "Agent observation."
                     } else { status = "Last-known agent observation." }
@@ -890,7 +892,8 @@ final class TerminalVisualStateStore {
     }
 
     private static func attentionEligible(_ record: TerminalObservation) -> Bool {
-        guard record.verifiedAgent, let event = record.event else { return false }
+        guard ["claude", "codex"].contains(record.provider), record.verifiedAgent,
+              let event = record.event else { return false }
         if record.provider == "codex" {
             return record.state == "complete" && event == "agent-turn-complete" && record.responseID != nil
         }
@@ -899,7 +902,7 @@ final class TerminalVisualStateStore {
     }
 
     private func validate(_ record: TerminalObservation) throws {
-        guard record.schema == 1, ["claude", "codex"].contains(record.provider),
+        guard record.schema == 1, ["claude", "codex", "gemini", "opencode", "unknown"].contains(record.provider),
               Self.states.contains(record.state), record.event.map(Self.events.contains) ?? true,
               record.responseID.map(Self.validID) ?? true else { throw TerminalVisualStateError.invalidRecord }
         try validate(tty: record.tty, device: record.device, producer: record.producer,

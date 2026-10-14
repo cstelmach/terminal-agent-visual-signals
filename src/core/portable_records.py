@@ -11,6 +11,7 @@ import unicodedata
 
 from portable_policy import check_deadline, read_regular
 from portable_render import normalized_background, normalized_hex
+from portable_metadata import PROVIDERS
 
 
 class StaleRecordError(OSError):
@@ -149,7 +150,7 @@ def decode(data, kind, now):
         else:
             _object(value, ("schema", "tty", "provider", "verifiedAgent", "state", "deliveryID", "observedAt"),
                     ("device", "producer", "event", "responseID"))
-            if (not isinstance(value["provider"], str) or value["provider"] not in {"claude", "codex"}
+            if (not isinstance(value["provider"], str) or value["provider"] not in PROVIDERS
                     or type(value["verifiedAgent"]) is not bool or not isinstance(value["state"], str)
                     or value["state"] not in {"processing", "permission", "complete", "idle", "compacting",
                                               "reset", "subagent", "tool_error"}):

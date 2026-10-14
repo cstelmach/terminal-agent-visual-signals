@@ -255,6 +255,41 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertThrowsError(try store.publishObservation(observation(path: "/dev/tty")))
     }
 
+    func testOrdinaryProviderSyntheticUpdatesRetainDeliveryWithoutAttentionEligibility() throws {
+        let store = makeStore()
+        for provider in ["gemini", "opencode", "unknown"] {
+            var observed = observation(delivery: provider + "-delivery", time: 1_000)
+            observed.provider = provider; observed.verifiedAgent = false; observed.event = nil
+            try store.publishObservation(observed)
+            let original = try Data(contentsOf: recordURL("observation"))
+            let value = intent(delivery: observed.deliveryID, color: "#AABBCC", time: 1_000)
+            try store.publishIntent(value, synthetic: true, intakeAt: observed.observedAt)
+            XCTAssertEqual(try Data(contentsOf: recordURL("observation")), original)
+            let coverage = store.coverage(for: surface())
+            XCTAssertEqual(coverage.observation?.provider, provider)
+            XCTAssertEqual(coverage.intent?.background, "#AABBCC")
+            XCTAssertFalse(coverage.attentionEligible)
+            XCTAssertTrue(coverage.status.contains("automatic focus unavailable"), coverage.status)
+            try store.publishObservation(observation(delivery: provider + "-replacement", time: 1_000))
+            XCTAssertThrowsError(try store.publishIntent(value, synthetic: true, intakeAt: observed.observedAt))
+        }
+    }
+
+    func testOrdinaryProvidersCannotClaimAutomaticCuesUsingVerifiedFlagAndClaudeEvents() throws {
+        let store = makeStore()
+        for provider in ["gemini", "opencode", "unknown"] {
+            for state in ["complete", "permission"] {
+                var observed = observation(delivery: provider + "-" + state)
+                observed.provider = provider; observed.state = state
+                observed.event = state == "complete" ? "Stop" : "PermissionRequest"
+                try store.publishObservation(observed)
+                let coverage = store.coverage(for: surface())
+                XCTAssertEqual(coverage.observation?.provider, provider)
+                XCTAssertFalse(coverage.attentionEligible)
+            }
+        }
+    }
+
     func testSyntheticIntentPreservesMeaningfulObservationBytesAndIdentity() throws {
         let store = makeStore()
         let observed = observation()
@@ -412,7 +447,7 @@ final class TerminalVisualStateTests: XCTestCase {
         let store = makeStore()
         var invalid: [TerminalObservation] = []
         var value = observation(); value.schema = 2; invalid.append(value)
-        value = observation(); value.provider = "unknown"; invalid.append(value)
+        value = observation(); value.provider = "unsupported-provider"; invalid.append(value)
         value = observation(); value.state = "BODY_SENTINEL"; invalid.append(value)
         value = observation(); value.event = "BODY_SENTINEL"; invalid.append(value)
         value = observation(); value.deliveryID = "$(BODY_SENTINEL)"; invalid.append(value)

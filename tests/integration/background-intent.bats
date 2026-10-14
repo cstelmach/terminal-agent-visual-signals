@@ -69,6 +69,62 @@ SCRIPT
     [ "$status" -eq 0 ]
 }
 
+_ordinary_provider_updates() {
+    local backend="$1"
+    cat > "$CASE_DIR/ordinary-provider.sh" <<'SH'
+set -e
+export TTY_DEVICE="$(tty)"
+if [[ "$3" == portable ]]; then
+    export TAVS_TEST_HELPER_BIN="$2/missing-native"
+fi
+source "$1/src/core/terminal-osc-sequences.sh"
+for provider in gemini opencode unknown; do
+    export TAVS_AGENT="$provider"
+    unset TAVS_ORGANIZER_CONTEXT TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_SYNTHETIC
+    _tavs_organizer_begin complete
+    test "$_TAVS_HELPER_BACKEND" = "$3"
+    send_osc_bg '#112233'
+    cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
+    export TAVS_ORGANIZER_SYNTHETIC=1
+    send_osc_bg '#AABBCC'
+    cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
+    grep -q '#AABBCC' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
+    if [[ "$provider" == gemini ]]; then
+        source "$1/src/core/theme-config-loader.sh"
+        source "$1/src/core/session-state.sh"
+        source "$1/src/core/palette-mode-helpers.sh"
+        source "$1/src/core/idle-worker-background.sh"
+        get_short_cwd() { printf fixture; }
+        ENABLE_TITLE_PREFIX=false
+        UNIFIED_CHECK_INTERVAL=0.05
+        UNIFIED_STAGE_DURATIONS=(0 60)
+        UNIFIED_STAGE_COLORS=('#AABBCC' '#CCBBDD')
+        (set +e; unified_timer_worker "$TTY_DEVICE") > "$2/worker.log" 2>&1 &
+        worker_pid=$!
+        trap 'kill "$worker_pid" 2>/dev/null || :; wait "$worker_pid" 2>/dev/null || :; cat "$2/worker.log" >&2' EXIT
+        for ((attempt=0; attempt<40; attempt++)); do
+            grep -q '#CCBBDD' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json && break
+            sleep 0.05
+        done
+        grep -q '#CCBBDD' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
+        cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
+        kill "$worker_pid"; wait "$worker_pid"; trap - EXIT
+    fi
+done
+SH
+    run _owned_pty /bin/bash "$CASE_DIR/ordinary-provider.sh" "$REPO_ROOT" "$CASE_DIR" "$backend"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *$'\033]11;#AABBCC'* ]]
+}
+
+@test "native ordinary provider synthetic updates preserve observations and emit background" {
+    _ordinary_provider_updates native
+}
+
+@test "portable ordinary provider synthetic updates preserve observations and emit background" {
+    _ordinary_provider_updates portable
+}
+
 @test "idle worker uses the semantic background helper for every reset and color" {
     run grep -E 'emit_osc.*(11;|111)' "$REPO_ROOT/src/core/idle-worker-background.sh"
     [ "$status" -eq 1 ]

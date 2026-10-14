@@ -58,12 +58,21 @@ class PortableObservationTests(unittest.TestCase):
         self.assertEqual(json.loads(saved.read_bytes())["deliveryID"], "delivery-43")
 
     def test_observation_rejects_unsupported_provider_state_and_invalid_response(self):
-        for value, state in ((dict(self.context, provider="gemini"), "complete"),
+        for value, state in ((dict(self.context, provider="other"), "complete"),
                              (self.context, "success"),
                              (dict(self.context, responseID="x"*129), "complete")):
             with self.assertRaises((ValueError, OSError)):
                 self.publish(value, state)
         self.assertFalse(self.path.exists())
+
+    def test_existing_ordinary_context_providers_can_publish_unverified_observations(self):
+        for provider in ("gemini", "opencode", "unknown"):
+            with self.subTest(provider=provider):
+                self.publish(dict(self.context, provider=provider, event=None))
+                saved = json.loads(self.path.read_bytes())
+                self.assertEqual(saved["provider"], provider)
+                self.assertFalse(saved["verifiedAgent"])
+                self.assertEqual(saved["deliveryID"], self.context["deliveryID"])
 
     def test_unavailable_latest_type_or_lock_cannot_be_repaired_as_data(self):
         self.path.parent.mkdir(parents=True)

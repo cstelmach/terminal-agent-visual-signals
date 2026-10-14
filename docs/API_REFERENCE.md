@@ -1,7 +1,23 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.59
+Version: 1.60
+
+## Ordinary provider observation compatibility
+
+Native and portable schema-1 observation readers accept the existing context provider set:
+claude, codex, gemini, opencode and unknown. This lets ordinary synthetic idle/error updates retain
+and validate their original delivery, live producer and device. Synthetic updates do not replace
+observations, and superseded contexts still fail. Unknown provider strings remain invalid.
+
+Automatic attention eligibility remains limited to Claude/Codex supported events; a verified flag
+or Claude-like event cannot grant it to another provider. The existing cue reducer independently
+retains that same boundary. Other-provider coverage states that automatic focus is unavailable.
+No executable verification, hook, integration or schema-version expansion was added.
+
+The portable reader reuses the existing metadata PROVIDERS constant. Copied helper bundles already
+include that module. Native reading of portable observations uses the same accepted domain.
+Updated native helper code is required for this native-path repair; no deployed app was changed.
 
 ## Enabled quiet-period bounds
 
