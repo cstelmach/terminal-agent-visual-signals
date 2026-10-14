@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.69
+Version: 1.70
 
 ## Private managed-output failure diagnostics
 
@@ -22,6 +22,10 @@ Semaphore success also requires current monotonic time before the original 100 m
 Late completed values, including no-paint false, and failures report caller timeout before
 Result access. Timely results/errors retain their behavior; timeout does not prove no paint.
 The internal completionTime clock seam affects this caller check only, never the worker budget.
+
+Portable callers recheck after readiness, bounded read and decoding, including parse failure.
+Expired packets report ETIMEDOUT with bytes_written=None. Timely child errors retain known
+write counts and stale categories; timely malformed packets remain EIO. Child cleanup is unchanged.
 
 The internal deviceWriteTimedOut case gains a defaulted optional stage. Existing one-argument
 construction and bare matching remain valid; nil keeps the generic device-deadline label.

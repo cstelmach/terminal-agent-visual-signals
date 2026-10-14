@@ -29,7 +29,9 @@ def reap_completed():
 
 def _check(deadline):
     if time.monotonic_ns() >= deadline:
-        raise OSError(errno.ETIMEDOUT, "Portable device output timed out")
+        failure = OSError(errno.ETIMEDOUT, "Portable device output timed out")
+        failure.bytes_written = None
+        raise failure
 
 
 @contextmanager
@@ -149,7 +151,13 @@ def write_managed(path, lock_path, before_open, prepare, after_write=None):
             failure = OSError(errno.ETIMEDOUT, "Portable device output timed out")
             failure.bytes_written = None
             raise failure
-        value = json.loads(os.read(read_fd, 512))
+        _check(deadline)
+        try:
+            data = os.read(read_fd, 512)
+            _check(deadline)
+            value = json.loads(data)
+        finally:
+            _check(deadline)
         if "errno" in value:
             failure = (StaleRecordError("Portable record stale") if value.get("stale") is True
                        else OSError(value["errno"], "Portable device output unavailable"))

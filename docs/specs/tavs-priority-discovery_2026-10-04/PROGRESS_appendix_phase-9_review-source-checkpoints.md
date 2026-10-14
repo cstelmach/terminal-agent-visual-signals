@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.13
+Version: 1.14
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -822,3 +822,20 @@ connected62 and final664 pass. Earlier full662/5 cleanup assertions remain unatt
 one-pass trust draft and its retained287/417 failure run. Two trust walks remain unchanged.
 Scope:1 production/1 test file plus existing docs and one scoped source report; Phase9 repair.
 Native phases2/7/8 remain Blocked; Phase9 and the full goal remain active and incomplete.
+
+### Phase 9 writer deadline boundaries: 2026-10-14
+
+661 full/4 failures retained;59 connected/4 Bats/release pass;prepare timeout located.
+[Source/results](delivery-diagnostics-source-check-2026-10-14.md#parent-writer-boundary-verification).
+Next: preparation work, delayed restore, portable parent bound; native UAT remains open.
+
+
+## Portable caller ready-result deadline: 2026-10-14
+
+Original-deadline checks now follow ready/read/decode, including parse failure. Parent timeout
+bytes stay unknown; accepted child failures preserve known counts and stale category. Five new
+methods cover real private PTYs, parent-only exact expiry, late known partial bytes and timely
+parse errors. Portable182 pass; Swift664/2 and Bats2/4 failures remain with passing separate
+controls. [Source/results](caller-deadline-source-check-2026-10-14.md#portable-parent-verification).
+Scope:1 production/1 test file plus existing docs; Phase9 support repair. Native acceptance and
+final reviews remain open. No live app/settings/session change or worker budget widening.

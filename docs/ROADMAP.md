@@ -1,17 +1,20 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.47
+Version: 1.48
 
 Managed helpers now expose private fixed failure-stage/category diagnostics. Worker acceptance
 requires returned rendering and actual PTY color, with Bats records retained for failures.
 660 Swift/177 portable tests and release pass. Historical delivery failures remain unassigned;
-current native caller-deadline, delayed tool-error and portable parent bound need follow-up.
+Caller result bounds are now checked; native preparation and delayed tool-error need follow-up.
 Native writer timeouts now carry nonblocking synchronized boundary labels. Connected59 tests
 and release pass; full661 retains four old preview-cleanup assertions. Preparation is located
 in one earlier masked-focus failure; its nested cost/cause remains open.
 Ready native results now recheck the original caller deadline. Three deterministic controls,
 664 Swift tests, connected62, release and four helper checks pass; old cleanup cause remains open.
+Portable parents now check ready/read/decoded packets within the original deadline, including
+parse errors. Portable182 pass; fresh Swift664 has two preparation/read assertions and Bats2/4.
+Passing controls do not explain those retained failures. Child cleanup and byte-count rules remain.
 Native/Linux/headless/palette acceptance and final reviews remain open.
 
 Native scheduling and Darwin CLI lock mutations now share a fresh read/merge/replace mutex.

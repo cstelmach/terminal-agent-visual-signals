@@ -143,3 +143,152 @@ Production release r4zvt3 passes in 29.18s. Rebuilt-helper Bats17HSb1 passes fou
 checks: retained standalone intent, actual synthetic color, transferred idle paints, and public
 recovery/resume. Bats per-case records remain available. Next: portable ready-result deadline
 and delayed tool-error attribution. Required native acceptance and final provider reviews remain.
+
+## Portable investigation
+
+# Portable ready-result deadline contract
+
+Last Updated: 2026-10-14
+Version: 1.0
+Source: HEAD c1d5168, portable_device_writer.py, portable_renderer.py and connected unit tests.
+Read-only source investigation. No edits, tests, native/live actions or provider review.
+
+## Confirmed gap
+
+The portable parent can currently return success, return no-output false, or raise the original
+child error after its original deadline. `write_managed` computes its remaining select timeout
+at lines 147-148, but it neither checks the clock after readiness nor after pipe read/JSON
+interpretation at lines 152-158. A ready pipe with an already expired zero timeout is accepted.
+The parent can also be descheduled after readiness or spend its remaining budget decoding the
+result. The child checks do not close these caller-side windows.
+
+## Existing 100 ms contract
+
+- After nonblocking reap of older owned children, one deadline is created at parent submission:
+  monotonic_ns plus 100,000,000 (`112-114`). Pipe creation and fork consume this same budget.
+- The child inherits that exact deadline and runs `_perform` with it (`133`). It does not get
+  another 100 ms after fork, admission, locking or physical output.
+- Before-open publication occurs before physical open; child inspection, exact character-device
+  check, stable TTY lock, prepare and write use the inherited deadline (`63-107`).
+- `prepare=None` means successful no-output false. Actual bytes are written under the output
+  lock. Partial writes, EINTR and backpressure are handled inside the original deadline.
+- Known write-phase failures attach the actual count through `error.bytes_written = written`
+  (`104-106`), including a failure after complete output during metadata completion.
+- The child sends a small JSON packet with wrote, or errno/bytes/stale (`133-139`), then exits.
+  Closing inherited stdio prevents a wedged child retaining caller channels (`123-143`).
+- The parent waits only for remaining original budget, reads at most 512 bytes, interprets the
+  packet, then always closes its pipe and performs nonblocking owned-child cleanup (`147-172`).
+  A still-running child is signaled SIGKILL and retained in `_children` for later nonblocking
+  reaping. Do not replace this with blocking waitpid or an added completion budget.
+
+This is bounded reporting with cooperative child I/O checks, not a guarantee that timeout means
+zero physical output. A child may have painted before a late parent result is rejected.
+
+## Typed caller implications
+
+All production `write_managed` calls found are in portable_renderer.py:
+
+- `_no_output` (`40-78`) implements register/current/check_context and normally returns false
+  after typed target, context, policy and record checks. Late false must be rejected as timeout
+  just like late true; it is still a completed transaction result.
+- `reconcile` (`90-133`) performs policy/current-target validation and physical restoration.
+  `_complete_effects` is called under the held lock only after output (`152-163`).
+- Ordinary render/background/forced reset `_execute` (`165-218`) prepares finite typed bytes,
+  rechecks policy and target, writes, and completes obsolete ownership records afterward.
+
+Rejecting a late parent result must not undo effects, reread source payloads, retry output, or
+claim restoration was absent. It changes the caller's accepted result only. Existing known
+child write counts remain useful only when their packet is accepted before the caller deadline.
+
+## Check placement comparison
+
+1. **After readiness only:** catches a late select return and prevents beginning an already
+   expired pipe read. It does not cover read/decode consuming or losing the remaining budget.
+2. **After read/decode only:** rejects late true/false/child errors before they are interpreted,
+   but starts a read after an already expired readiness event. If decoding throws, a check
+   placed only after the successful decode is skipped and a late parse error becomes EIO.
+3. **Recommended:** check immediately after readiness and again when bounded read/decode
+   finishes, including its exceptional path. Keep both inside the existing parent try/finally.
+   The second check must precede errno/stale/bytes interpretation and success return.
+
+A small inner `try/finally` around `json.loads(os.read(read_fd, 512))` can perform the second
+check on both successful and failed parsing, without another result protocol or public clock
+API. It deliberately gives original-deadline timeout precedence over a late parse failure.
+Before the deadline, existing malformed-packet EIO handling remains.
+
+## Timeout and byte-count semantics
+
+Reuse the existing `_check(deadline)` primitive, but ensure every parent-generated timeout
+sets bytes_written to None. The smallest shared change is for `_check` itself to create that
+attribute. Its child uses remain compatible:
+
+- Child prewrite deadline failures already serialize getattr(error, bytes_written, None), so
+  adding an explicit None produces the same packet.
+- Child write-phase or after-write deadline failures are caught by `_perform`, which overwrites
+  the initial None with the authoritative written count (`104-106`). Existing known count
+  behavior, including complete output followed by deadline failure, is preserved.
+- Parent timeout after readiness or decode must retain None, even if the child packet claims
+  three or eight bytes. That packet was not accepted within the caller budget, so the parent
+  reports unknown delivery rather than promoting its late byte report to trusted evidence.
+
+Keep the existing not-ready timeout branch and cleanup behavior. Do not infer stale-record
+category or physical success from an expired packet. Before deadline, child StaleRecordError
+must remain distinguishable from a plain target ESTALE error, as currently tested.
+
+## Practical RED and regression cases
+
+Use existing unittest.mock.patch, owned PTYs and the private TAVS_TEST_ROOT. No new injectable
+public clock seam is necessary. Patch clock behavior only in the parent PID; the child keeps
+real monotonic time and its actual 100 ms budget. Capture the first parent clock value so the
+expiry value is the exact original deadline, not a newly invented timeout.
+
+- Wrap real parent select. Once its read pipe is genuinely ready, mark the parent clock equal
+  to the original deadline. Test both a nonempty payload and prepare=None. HEAD accepts their
+  true/false results; the correction must report ETIMEDOUT and bytes_written=None. Assert the
+  ready-stage expiry hook actually ran so an earlier worker timeout cannot satisfy this test.
+- Keep readiness in budget, then wrap parent json.loads to decode normally and advance the
+  parent clock to the original deadline before returning the value. Test success/no-output
+  and an original child EIO or StaleRecordError packet. HEAD accepts or propagates that packet;
+  the correction must report a plain parent ETIMEDOUT with unknown bytes.
+- A late error packet with a known partial count must still produce parent bytes_written=None.
+  Physical owned-PTY bytes may be checked separately; they do not turn the late call into a
+  success. Existing partial and after-output failure tests guard accepted known counts.
+- If the implementation uses successful-decode-only checking, add a late malformed decode
+  case; an inner finally check avoids that gap. Before-deadline malformed decode remains EIO.
+- Retain before-deadline true/false, stale-versus-target category, held-lock deadline, delayed
+  preparation, stdio detachment and existing known partial/full byte tests (`45-190`).
+  Verify `_children` retires with the existing bounded teardown. No cleanup deadline widening.
+
+The read packet is bounded at 512 bytes and current child JSON output is small. This correction
+addresses result acceptance timing, not a newly designed transport, parser schema, I/O trust
+system or claim that all portable deadline issues are solved. Parent read syscall failures,
+record-directory trust and Linux backend completion remain separate work unless source/tests
+show a directly connected regression.
+
+## Portable parent verification
+
+The final scoped diff check finds no concrete regression. Root verified checks after readiness,
+after read and in the decode finally, before interpreting result fields. Worker deadline and
+nonblocking child cleanup are unchanged. Child write-phase failures still overwrite unknown
+bytes with their known count; caller timeouts retain None. No provider approval is claimed.
+
+Five new tests cover all parent boundaries and timely/late parse errors. Parent-only clock
+patches use the original deadline and require the intended expiry hook to run. Each late
+boundary includes real paint, skip, EIO, stale and a known three-byte partial-output packet.
+Physical bytes are checked independently. Existing write-loop partial/complete error tests pass.
+
+Logs under the prior private `tavs-isolated.RUN/command.log` root:
+
+- ze6SFt: initial three tests fail12 assertions, proving late acceptance/category behavior.
+- q5Fi1N: first writer15 pass; dKbdxx: late parse RED fails4 assertions.
+- XjAYaX: portable182 pass,7.318s; XxqKJB: final182 pass,7.348s after partial/expiry controls.
+- f2H3SR: Swift664/2 unexpected assertions,24.285s. The existing delayed-clear/relaunch test
+  fails its fresh render with native prepare timeout and following PTY read timeout.
+- puqFoF: that single native case passes,0.080s; no unchanged full rerun erased f2H3SR.
+- x9DupH: four Bats2 pass/2 fail. Portable synthetic render reports os-60; owned synthetic
+  reaches all intended colors but fails its tool-error timestamp check. Records are retained.
+- E1OGyv: those two shell cases pass separately. This does not explain the combined failures.
+
+The portable root/report does not explain native preparation or delayed restore timing.
+No deadline was widened, native source changed or required acceptance waived. Next: preparation
+cost and delayed restore attribution, with Linux/native/headless/palette and final reviews open.

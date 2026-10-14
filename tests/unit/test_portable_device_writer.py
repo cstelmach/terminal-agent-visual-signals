@@ -16,6 +16,97 @@ from portable_records import StaleRecordError
 
 
 class PortableDeviceWriterTests(unittest.TestCase):
+    def test_parent_ready_result_rejects_expired_deadline_before_read(self):
+        self._assert_parent_result_deadline("ready")
+
+    def test_parent_read_result_rejects_expired_deadline_before_decode(self):
+        self._assert_parent_result_deadline("read")
+
+    def test_parent_decoded_result_rejects_expired_deadline_before_acceptance(self):
+        self._assert_parent_result_deadline("decode")
+
+    def test_parent_late_decode_failure_uses_caller_timeout(self):
+        self._assert_parent_result_deadline("decode", fail_decode=True)
+
+    def test_parent_timely_decode_failure_preserves_io_category(self):
+        with patch("portable_device_writer.json.loads", side_effect=ValueError("Injected decode failure")):
+            with self.assertRaises(OSError) as failure:
+                writer.write_managed(self.path, self.lock, None, lambda fd, deadline: b"timely")
+        self.assertEqual(failure.exception.errno, errno.EIO)
+        self.assertIsNone(failure.exception.bytes_written)
+        self.assertTrue(select.select([self.master], [], [], 1)[0])
+        self.assertEqual(os.read(self.master, 1024), b"timely")
+
+    def _assert_parent_result_deadline(self, boundary, fail_decode=False):
+        parent = os.getpid()
+        monotonic, ready, read, decode = time.monotonic_ns, select.select, os.read, writer.json.loads
+        partial = OSError(errno.EIO, "Injected partial failure")
+        partial.bytes_written = 3
+        for payload in (b"timely", None, OSError(errno.EIO, "Injected failure"), StaleRecordError("Stale"), partial):
+            expired, original_deadline, reads, decodes = False, 0, 0, 0
+
+            def clock():
+                nonlocal original_deadline
+                now = monotonic()
+                if os.getpid() == parent:
+                    if original_deadline == 0:
+                        original_deadline = now + 100_000_000
+                    if expired:
+                        return original_deadline
+                return now
+
+            def selected(*args):
+                nonlocal expired
+                result = ready(*args)
+                if os.getpid() == parent and boundary == "ready" and result[0]:
+                    expired = True
+                return result
+
+            def received(*args):
+                nonlocal expired, reads
+                data = read(*args)
+                if os.getpid() == parent:
+                    reads += 1
+                    expired = boundary == "read"
+                return data
+
+            def decoded(*args):
+                nonlocal expired, decodes
+                value = decode(*args)
+                if os.getpid() == parent:
+                    decodes += 1
+                    expired = boundary == "decode"
+                    if fail_decode:
+                        raise ValueError("Injected decode failure")
+                return value
+
+            def prepare(fd, deadline):
+                if isinstance(payload, Exception):
+                    if payload is partial:
+                        payload.bytes_written = os.write(fd, b"par")
+                    raise payload
+                return payload
+
+            with self.subTest(boundary=boundary, payload=type(payload).__name__), \
+                 patch("portable_device_writer.time.monotonic_ns", clock), \
+                 patch("portable_device_writer.select.select", selected), \
+                 patch("portable_device_writer.os.read", received), \
+                 patch("portable_device_writer.json.loads", decoded):
+                with self.assertRaises(OSError) as failure:
+                    writer.write_managed(self.path, self.lock, None, prepare)
+                self.assertTrue(expired, "The intended ready/read/decode boundary must be reached")
+                self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
+                self.assertIsNone(failure.exception.bytes_written)
+                self.assertFalse(isinstance(failure.exception, StaleRecordError))
+                self.assertEqual(reads, 0 if boundary == "ready" else 1)
+                self.assertEqual(decodes, 1 if boundary == "decode" else 0)
+            physical = b"par" if payload is partial else payload if isinstance(payload, bytes) else None
+            if physical is not None:
+                self.assertTrue(ready([self.master], [], [], 1)[0])
+                self.assertEqual(read(self.master, 1024), physical)
+            else:
+                self.assertFalse(ready([self.master], [], [], 0)[0])
+
     def test_worker_preserves_stale_record_category_separately_from_target_errno(self):
         for error in (StaleRecordError("Stale delivery"), OSError(errno.ESTALE, "Changed target")):
             def prepare(fd, deadline):
