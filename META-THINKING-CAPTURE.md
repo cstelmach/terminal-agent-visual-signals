@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 40 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 48 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 41 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 49 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4187,3 +4187,73 @@ portable only for absent/unsupported native and retain choice after an operation
 stays native-only. Linux scope/runtime and physical Ghostty acceptance remain open. No new
 control plane or skill was proposed. Actions/results are observed; causal/economy claims are
 reconstructed. Phase 9, H1 and the full goal remain active/incomplete.
+
+## 2026-10-14 · gpt-6 · shared-helper-routing
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported from the task environment, not a measured runtime identity [R]
+  interface: Codex desktop
+  thinking: unknown; user requested extended reasoning
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool actions; motive explanations reconstructed
+
+**Framing.** [O] The resumed goal remained active, with source work in Phase 9 and native
+acceptance still blocked in Phases 2/7/8. Git and current progress agreed on a clean checkpoint.
+The portable helper capability and complete copied module closure existed, but core hooks still
+selected native implementations independently. This slice connected those callers. Live runtime
+history from memory was used only as a warning to recheck before action; no historical PID or
+installed-app snapshot authorized a signal, installation or terminal operation.
+
+**Strategy.** [R] A shared Bash/zsh selector was the smallest complete repair because selection,
+intake and rendering needed one consistent backend across an existing process boundary. Native
+support required both existing exact schemas. Portable support required its distinct ordinary
+schema. The implementation reused the context/intake hint and existing helpers, keeping recovery
+native-only. No new service, persistent transport record or control protocol was introduced.
+
+**Action trace [O].**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Orient | Goal, Git, skills, current progress and callers | Phase 9 source slice |
+| 2 | Test first | Shared Bash/zsh selection | Missing-module red; then fixture-alias correction |
+| 3 | Connect | Core organizer/managed calls and sync reporting | Main routing checks passed |
+| 4 | Exercise | Real owned macOS PTY | Intake, observation and render retained one delivery |
+| 5 | Source check | Adapter failure across exec | Confirmed lost-selection defect |
+| 6 | Reproduce/fix | Intake failure plus disappearing capability | Red before correction; choice retained afterward |
+| 7 | Verify | 106 shell, 172 portable, 561 Swift tests | Passing private-root evidence |
+| 8 | Preserve | Commits, reports and progress appendix | History retained; goal incomplete |
+
+**Decision points.** [O] Native capability probes and organizer calls retained their existing
+scope sanitization. Portable probes and operations preserved scope so its unsupported-scope
+refusal remained effective. Managed calls also retained scope. Selection happened before stdin
+consumption; actual operation failure did not permit another parser or raw writer. The failed
+intake now exports flag `0` without context, carrying selection without successful metadata
+claim. Core accepts consistent matching candidates, then removes private export attributes.
+
+**Failure arcs.** F1 [O]: two selector assertions initially compared different spellings of the
+same temporary directory. Source intentionally resolved its directory physically; fixture
+expectations were corrected. F2 [O]: one existing fake native helper advertised only organizer
+support, so the new paired capability check correctly excluded it. The intended fully capable
+fixture was corrected. F3 [O]: successful handoff tests missed the failed-intake exec path. The
+source checker reproduced selection loss; parent source inspection and a red copied-adapter
+regression confirmed it before the existing flag supplied the smaller correction. F4 [O]: an
+ignored new appendix was initially omitted from staging. Exact-path force-add restored it to
+the local consolidation commit; a trailing blank warning was corrected without changing the
+moved block. A commit message with literal newline escapes was repaired using a message file.
+[R] Check command exit results before committing, especially for newly created ignored docs.
+
+**Verification and limits.** [O] Final shell coverage included recovery, liveness and ordinary
+output paths. The portable suite included the real hook bridge on an owned PTY. Swift source
+was unchanged after its full passing run. The checker initially used an incompatible workspace
+binary; its two native-dependent failures were distinguished from source defects by explicit
+capability results. Recheck used the supplied current binary: eight focused cases and 24
+Bash/zsh cache combinations passed. PTY bytes do not establish visible Ghostty acceptance.
+Standalone shell resources, Linux runtime, color freshness and historical failure attribution
+remain open. No personal settings, installed app or existing sessions were modified.
+
+**Heuristics and confidence.** [O] P8 and P9 recur here: verify a finding through the real process
+boundary and use SPEC-owned state after recovery. [R] Process-boundary tests matter more than
+adding another isolated cache assertion. Existing skills cover this behavior; no new capability
+package was added. Actions/results above are observed, while proposed reasons and heuristics
+remain reconstructions rather than a claim to expose internal reasoning.
