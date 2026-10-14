@@ -57,3 +57,27 @@ report is historical source review, not a new approval of the revised target. Bu
 cause, fix and prevention are recorded here; `docs/BUG_REFERENCE.md` does not yet exist.
 
 The remaining native acceptance stays in [PROGRESS.md](PROGRESS.md).
+
+## Earlier Sessions source/build checkpoint: 2026-10-12 10:02 CEST
+
+Implemented the resizable Sessions scene and menu action, multiselection, explicit per-row Go To,
+High/Normal/Low priorities and stable native-order sorting. Rows show title, exact TTY/native ID,
+directory and explicit missing observations. Focus is Off; selection has no navigation or paint.
+Priorities are atomically saved under the supplied URL and retained through TAVS restart for
+valid native keys. Failed/ambiguously empty refreshes retain last-known data and disable actions.
+Trusted nonempty catalogues reconcile missing bindings. The model owns its two-second timer.
+
+Added an isolated Sessions-only app branch with explicit private storage and exact target scope.
+It constructs no production scheduler, preference view, login-registration delegate or discovery.
+Incomplete test environment rejects before UI startup. Fixture mode labels navigation as simulated;
+native test mode filters metadata and rejects out-of-scope navigation. The production catalogue
+remains unrestricted. No real app installation, personal settings change or session shutdown occurred.
+
+Verification: 12 new tests, including store restart, generation changes, moves, selection/navigation,
+failure retention, malformed/write-failed storage, timer ownership and isolated launch/target scope.
+The initial red run failed on missing SessionsModel. Final full Swift run passed 236/236 in
+2.283 seconds; release build passed in 7.69 seconds. Compile-only native script, staged plist and
+code-sign validation passed. Two invalid-environment binary launches exited 1 before UI startup.
+Logs, build and the fixture test bundle are in `/tmp/tavs-phase2-20261012T092559/`.
+
+Live acceptance remains recorded in [PROGRESS.md](PROGRESS.md).

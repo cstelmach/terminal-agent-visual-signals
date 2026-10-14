@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 45 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 53 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 46 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 54 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4514,3 +4514,67 @@ finished progress block was moved unchanged with exact reconstruction before the
 Historical first-paint/EPERM, fresh-render timing and physical/Linux acceptance remain open.
 P8/P9 recur; no new skill/profile or runtime control plane was created. [R] The reusable move
 is to identify exactly which assertion failed before treating a nearby timing remedy as its cause.
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · current-review-schedule-validation
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported [R]; system family, no serving-model census
+  interface: Codex desktop
+  thinking: unknown; thorough work requested
+  session: 01a10879
+  trace: observed tool/diff outputs
+  reviewers: Codex requested Sol/configured gpt-5.6-sol; Claude requested opus; serving variants unknown
+
+**Framing [O].** The active goal continued through live review jobs. The parent re-read the
+current dated state, kept the original main checkout at 7ecfba2, and inspected accepted reports
+as each provider completed. Codex finished three canonical passes. Claude completed eight native
+CLI subcalls, then its delivery/CLI call exited 1 without diagnostics or a report. No host output
+was substituted for that missing review. AGY remained stopped before provider dispatch by its
+higher-priority reviewer prerequisite. Native acceptance and Linux runtime were still unavailable.
+
+**Strategy [O/R].** The parent checked claims against exact source and existing tests. A reported
+Go To test gap was disproved by real SessionsModel deferred-navigation tests. A mtime-only color
+cache was not accepted because included configuration and appearance changes were unresolved.
+The native revalidation, recovery bookkeeping and provider-validation gaps remained source leads.
+[R] Separating reports from findings kept review grades from becoming automatic repair commands.
+One concrete load trap became the bounded implementation slice rather than a larger parser rewrite.
+
+**Action trace [O].**
+
+| Move | Object | Outcome |
+|---|---|---|
+| Revalidate jobs | Codex/Claude live handles | Existing runs retained; no restart on observation timeout |
+| Read and check | Current reports, callers and tests | Mixed confirmed, conditional and disproved claims |
+| Isolate implementation | Attached schedule-validation worktree | Review target remained unchanged |
+| Reproduce | Invalid enabled start through scheduler startup | Fatal optional unwrap at line147, signal5 |
+| Guard adoption | Existing ScheduleStore validator | Rejection visible; source file and manual-lock semantics preserved |
+| Verify | Three regressions and complete suite | 573 Swift tests passed; release14.23s with one job |
+| Integrate | d26a4b4 fast-forward | No squash or branch deletion; primary state still incomplete |
+
+**Failure arcs [O].** Importing all of Combine made Scheduler ambiguous. A selective Publisher
+import repaired the fixture before behavioral RED. The new test then reproduced the actual trap,
+so the code change addressed a production load path rather than only a validator unit case.
+An independent source check found both production evaluator calls behind the new validation gate.
+Its suggested manual-lock combination became the third regression, which passed.
+
+The default release attempt failed while closing an object file with ENOSPC. Inventory showed
+that the two owned build trees totaled under1GiB, while the volume was low on free space and swap
+was substantial. No unrelated data or temporary artifacts were deleted. A serial release with
+unchanged optimization passed. [R] Lower concurrency was a resource hypothesis; the successful
+retry does not establish why Claude's separate final call failed. That cause remains unknown.
+
+**Decision points [O].** Invalid semantic rules use the existing no-config projection, which
+still merges manual locks and suspension, and status explains rejection. No last-known policy,
+new parsed type or on-disk repair behavior was invented. Main stayed stable during provider work;
+a feature branch made implementation concurrent without altering what reviewers inspected.
+After verification and provider completion, fast-forward integration preserved the feature commit.
+
+**State and residue [O].** Complete provider outputs were saved in the dated package. Claude's
+oversized combined report was split at existing boundaries with exact reconstruction verified;
+no hashes or proof machinery were added. Finished Sessions source/build text moved unchanged to
+an existing appendix. Two overlong progress drafts failed size checks before primary replacement;
+the existing appendix append was retained without duplicating it. Final progress is899lines.
+P8/P9 recur. Remaining compatibility, isolation, native mapping and recovery claims still need
+source checks and discriminating tests. Physical/Linux acceptance and historical paint/teardown
+attribution remain open. The full goal is active; passing tests did not redefine completion.

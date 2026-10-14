@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 11:32 CEST
-**Version:** 4.35
+**Last Updated:** 2026-10-14 12:46 CEST
+**Version:** 4.36
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 434c1fc; earlier below/appendix | 570 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | d26a4b4; earlier below/appendix | 573 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -76,25 +76,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 ### Phase 2 source checkpoint: 2026-10-12 10:02 CEST, live acceptance BLOCKED
 
-Implemented the resizable Sessions scene and menu action, multiselection, explicit per-row Go To,
-High/Normal/Low priorities and stable native-order sorting. Rows show title, exact TTY/native ID,
-directory and explicit missing observations. Focus is Off; selection has no navigation or paint.
-Priorities are atomically saved under the supplied URL and retained through TAVS restart for
-valid native keys. Failed/ambiguously empty refreshes retain last-known data and disable actions.
-Trusted nonempty catalogues reconcile missing bindings. The model owns its two-second timer.
-
-Added an isolated Sessions-only app branch with explicit private storage and exact target scope.
-It constructs no production scheduler, preference view, login-registration delegate or discovery.
-Incomplete test environment rejects before UI startup. Fixture mode labels navigation as simulated;
-native test mode filters metadata and rejects out-of-scope navigation. The production catalogue
-remains unrestricted. No real app installation, personal settings change or session shutdown occurred.
-
-Verification: 12 new tests, including store restart, generation changes, moves, selection/navigation,
-failure retention, malformed/write-failed storage, timer ownership and isolated launch/target scope.
-The initial red run failed on missing SessionsModel. Final full Swift run passed 236/236 in
-2.283 seconds; release build passed in 7.69 seconds. Compile-only native script, staged plist and
-code-sign validation passed. Two invalid-environment binary launches exited 1 before UI startup.
-Logs, build and the fixture test bundle are in `/tmp/tavs-phase2-20261012T092559/`.
+> Finished Sessions source/build checkpoint: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
 Independent Codex review completed successfully with the configured Sol/high route. Its original
 CONCERN 7/10 finding assumed successful empty rows confirmed closure. Source verification falsified
@@ -896,3 +878,22 @@ One finished polling block moved unchanged to the linked appendix; exact reconst
 Next: scoped final review of current source, or Linux kernel checks after the pending host/Docker
 answer. Capture original initial/fresh writer failures if they recur; passing retries cannot close
 attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and incomplete.
+
+### Phase 9 current reviews and schedule-load fix: 2026-10-14 12:46 CEST
+[Codex full review](current-codex-review-2026-10-14.md): three calls, 118 supplied entries.
+[Claude partial review](current-claude-review-2026-10-14.md): eight calls; final delivery/CLI call
+exited 1 with empty diagnostics. No retry/substitute. AGY's developer fingerprint prerequisite
+still blocks provider dispatch; neither source review establishes UAT.
+`d26a4b4` validates decoded schedules before adoption, reports rejection and uses existing no-config/
+manual-lock projection without editing saved rules. An attached worktree preserved the review target;
+fast-forward integrated the tested feature. [Source check](schedule-load-validation-source-check-2026-10-14.md)
+found no unvalidated production evaluator path. uWPXQJ's ambiguous Combine import was corrected.
+RED jA1Zi2 trapped at Scheduler.swift:147, signal 5; gYsik4 passed startup/watcher. WpH7Hy:
+**573/573 Swift**, 10.743 seconds, including manual lock. Release IjQeTU failed ENOSPC; no deletion.
+Serial release 4IawHc passed in 14.23 seconds with default optimization. BUG 1.60/ROADMAP 1.32,
+diff/credential checks and capture recorded. Worktree retained; reports reconstruct exactly.
+**Scope:** Scheduler/its tests and bug/roadmap, shared-code correction from the Phase 9 review.
+Finished Sessions source/build text moved unchanged; unresolved failure history stays current.
+Next: fresh native/recovery checks, projection/release retries and compatibility/isolation fixes.
+Linux ordinary code remains incomplete. Native 2/7/8 remain Blocked, 9 In Progress. No real install,
+settings/schedules/native action or shutdown. SPEC/PLAN unchanged; full goal active and incomplete.

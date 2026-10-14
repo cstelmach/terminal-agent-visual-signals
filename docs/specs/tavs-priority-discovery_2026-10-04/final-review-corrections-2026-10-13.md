@@ -450,3 +450,32 @@ preview. `a54Lpn`: 142/142 focused; `40ORys`: 561/561 Swift, 11.028 seconds; rel
 14.02 seconds; current-helper `7WAkIc`: 178/178 isolated Bats. No warnings or deadline relaxation.
 The [full source checks](preview-timing-source-check-2026-10-13.md) retain superseded draft findings.
 Separate managed-reset failures, focus-color freshness, H1 and physical/native acceptance remain open.
+
+## Current follow-up reviews: 2026-10-14
+
+Current reviewed source: `7ecfba2`. [Codex](current-codex-review-2026-10-14.md) completed three
+passes; [Claude](current-claude-review-2026-10-14.md) completed eight subcalls but its final
+installation/CLI-recovery call exited 1 with empty diagnostics. Coverage is explicitly partial.
+AGY's developer-level fingerprint precondition remains incompatible; no provider call occurred.
+
+`d26a4b4` resolves Codex scheduler R1 after an owned startup trap reproduced it. Candidate load
+validation protects all production evaluator callers. Startup, watcher/valid replacement and
+continuing manual-lock cases pass; all 573 Swift tests and serial release build pass. Default
+release first failed for disk space; no cleanup was performed. Main was unchanged during reviews;
+the isolated branch was integrated by fast-forward afterward.
+
+Parent checks support missing fresh native mapping, delete-before-copy replacement, post-recovery
+painted-lease bookkeeping and partial-mapping status issues. The missing Go To model tests claim
+is disproved by deferred navigation tests in focus-controller-tests. Selection pruning restarting
+preview has no established SPEC violation: each selection change restarts preview. Per-poll work
+is real but material cost is unmeasured; mtime-only caching risks stale included-theme/config data.
+
+Linux ordinary compatibility remains a real implementation gap. Context permits broader providers
+while native and portable observations accept only Claude/Codex, blocking synthetic updates.
+Raw printf fallback, README scope withdrawal, arbitrary stale-revision lease removal, deletion/
+quarantine and broad refactors are not accepted remedies. Verify per-target restoration outcomes
+and retain failures. Remaining claims need parent checks and discriminating tests before fixes.
+Repair lock-gate's env-i fixture before any run; do not use workstation defaults.
+
+Physical native acceptance, Linux kernel checks and historical initial-paint/EPERM/fresh-render
+attribution remain open. Passing tests and completed review workflow are not product approval.
