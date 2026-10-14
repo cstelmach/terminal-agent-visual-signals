@@ -120,6 +120,26 @@ class PortableHelperTests(unittest.TestCase):
         args[3] = encode_context(older, time.time())
         self.assertEqual(helper.run(args, self.environment), (3, b"", b""))
 
+    def test_organizer_intent_is_data_only_with_optional_identity_and_no_renderer(self):
+        token = encode_context(self.context, time.time())
+        args = ["helper", "--organizer-intent", "/dev/ttys043", token, "rgb:a/b/c", "0"]
+        with patch("portable_helper.Renderer") as renderer:
+            self.assertEqual(helper.run(args, self.environment), (0, b"", b""))
+        renderer.assert_not_called()
+        directory = Path(self.runtime) / "organizer"
+        value = json.loads((directory / ("intent-"+key(args[2])+".json")).read_bytes())
+        self.assertEqual(value["background"], "#AABBCC")
+        self.assertNotIn("producer", value)
+        self.assertFalse((directory / "targets").exists())
+
+    def test_organizer_intent_synthetic_mismatch_is_silent_stale_and_bad_flag_is_unavailable(self):
+        token = encode_context(self.context, time.time())
+        args = ["helper", "--organizer-intent", "/dev/ttys043", token, "reset", "1"]
+        self.assertEqual(helper.run(args, self.environment), (3, b"", b""))
+        args[5] = "true"
+        self.assertEqual(helper.run(args, self.environment), (1, b"", b"Organizer metadata unavailable.\n"))
+
+
     def test_dispatch_does_not_classify_generic_target_estale_as_stale_data(self):
         producer = {"pid": 43, "startSeconds": 100, "startMicroseconds": 0}
         value = dict(self.context, producer=producer, device=123)
@@ -233,6 +253,17 @@ class PortableHelperPTYTests(fixture.OwnedPTYFixture, unittest.TestCase):
         self.assertEqual(failed.returncode, 1)
         self.assertFalse(select.select([self.master], [], [], 0.05)[0])
         self.assertFalse((self.store.directory / ("intent-"+key(self.tty)+".json")).exists())
+
+    def test_owned_synthetic_unbound_intent_changes_data_without_device_output_or_target(self):
+        self.observe()
+        args = [sys.executable, str(self.helper_path), "--organizer-intent", self.tty, self.token, "#123456", "1"]
+        result = subprocess.run(args, env=self.env, capture_output=True, timeout=3)
+        self.assertEqual((result.returncode, result.stdout, result.stderr), (0, b"", b""))
+        saved = json.loads((self.store.directory / ("intent-"+key(self.tty)+".json")).read_bytes())
+        self.assertEqual(saved["deliveryID"], self.context["deliveryID"])
+        self.assertEqual(saved["background"], "#123456")
+        self.assertFalse((self.store.directory / "targets").exists())
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
 
 
 if __name__ == "__main__":

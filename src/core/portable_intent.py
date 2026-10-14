@@ -2,8 +2,10 @@
 
 import errno
 import json
+import time
 
 from portable_ownership import _binding
+from portable_device_writer import output_lock
 from portable_policy import InvalidRegularFileError, check_deadline
 from portable_process_identity import continuing_owner
 import portable_record_io as records
@@ -124,17 +126,7 @@ class Intents:
         normalized = self._normalize(record, synthetic, intake_at, deadline)
         self._require_producer(target, normalized, deadline)
         self.store._current(target, deadline, targets_only=True)
-        observation = self._observation(record["tty"], not synthetic, deadline)
-        self._check_observation(observation, normalized, synthetic, intake_at, deadline)
-        latest = self._latest(record["tty"], synthetic, deadline)
-        if latest is not None:
-            supersedes = (observation is not None and _delivery(observation) == _delivery(normalized)
-                          and _delivery(latest) != _delivery(normalized))
-            if not supersedes and normalized["updatedAt"] < latest["updatedAt"]:
-                raise StaleRecordError("Ordinary intent superseded")
-        self._require_producer(target, normalized, deadline)
-        records.write(self.store.directory, self._path("intent", record["tty"]), normalized,
-                      "intent", self.store.clock(), deadline)
+        self._publish_latest_unlocked(normalized, synthetic, intake_at, deadline, target=target)
         cached_path = target_path(self.store.directory, target, "target.json")
         bound_path = target_path(self.store.directory, target, "bound-intent.json")
         try:
@@ -158,6 +150,38 @@ class Intents:
         records.write(self.store.directory, bound_path, normalized, "intent", self.store.clock(), deadline)
         check_deadline(deadline)
         return normalized
+
+    def publish_unbound(self, record, synthetic, intake_at):
+        deadline = time.monotonic_ns()+100_000_000
+        normalized = self._normalize(record, synthetic, intake_at, deadline)
+        lock = self.store.directory / ("writer-"+key(normalized["tty"])+".lock")
+        with output_lock(lock, deadline):
+            self._publish_latest_unlocked(normalized, synthetic, intake_at, deadline)
+        return normalized
+
+    def _publish_latest_unlocked(self, normalized, synthetic, intake_at, deadline, target=None):
+        record = normalized
+        observation = self._observation(record["tty"], not synthetic, deadline)
+        self._check_observation(observation, normalized, synthetic, intake_at, deadline)
+        if synthetic:
+            producer = normalized.get("producer")
+            current = self.store._lookup(producer["pid"], deadline) if producer is not None else None
+            device = self.store.device(normalized["tty"])
+            check_deadline(deadline)
+            if (producer is None or normalized.get("device") is None or device != normalized["device"]
+                    or current is None or current["generation"] != producer or current["device"] != device):
+                raise StaleRecordError("Synthetic intent producer stale")
+        latest = self._latest(record["tty"], synthetic, deadline)
+        if latest is not None:
+            supersedes = (observation is not None and _delivery(observation) == _delivery(normalized)
+                          and _delivery(latest)[1:] != _delivery(normalized)[1:])
+            if not supersedes and normalized["updatedAt"] < latest["updatedAt"]:
+                raise StaleRecordError("Ordinary intent superseded")
+        if target is not None:
+            self._require_producer(target, normalized, deadline)
+        records.write(self.store.directory, self._path("intent", record["tty"]), normalized,
+                      "intent", self.store.clock(), deadline)
+        check_deadline(deadline)
 
     def publish_forced_reset_unlocked(self, target, record, intake_at, deadline):
         normalized = self._normalize(record, True, intake_at, deadline)

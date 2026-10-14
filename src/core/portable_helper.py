@@ -9,6 +9,7 @@ import sys
 import time
 
 from portable_context import capture, decode_context, encode_context
+from portable_intent import Intents
 from portable_metadata import PROVIDERS, decode_intake, read_input
 from portable_observation import publish_observation
 from portable_policy import Policy
@@ -20,7 +21,7 @@ from portable_renderer import Renderer
 
 
 _SCOPE_KEYS = {"TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_TARGETS", "TAVS_SESSIONS_TEST_FIXTURE"}
-_COUNTS = {"--organizer-intake": 4, "--organizer-context": 4, "--organizer-observe": 5,
+_COUNTS = {"--organizer-intake": 4, "--organizer-context": 4, "--organizer-observe": 5, "--organizer-intent": 6,
            "--managed-register": 6, "--managed-current": 6, "--managed-reconcile": 6,
            "--managed-check-context": 6, "--managed-background": 8,
            "--managed-render": 7, "--managed-forced-reset": 7}
@@ -90,7 +91,16 @@ def run(args, environment=None):
             marker, runtime = _roots(str(_path(environment["HOME"]) / ".tavs/visual-restrictions.state"),
                                      environment.get("TAVS_RUNTIME_DIR", "/tmp/tavs-"+str(os.getuid())), environment)
             context = decode_context(args[3], time.time())
-            publish_observation(Store(runtime, Policy(marker, runtime)), context, args[2], args[4])
+            store = Store(runtime, Policy(marker, runtime))
+            if verb == "--organizer-observe":
+                publish_observation(store, context, args[2], args[4])
+            else:
+                record = {"schema": 1, "tty": args[2], "deliveryID": context["deliveryID"],
+                          "updatedAt": time.time(), "background": args[4]}
+                for field in ("device", "producer"):
+                    if context.get(field) is not None:
+                        record[field] = context[field]
+                Intents(store).publish_unbound(record, _flag(args[5]), context["observedAt"])
             return 0, b"", b""
         marker, runtime = _roots(args[2], args[3], environment)
         tty = args[4]

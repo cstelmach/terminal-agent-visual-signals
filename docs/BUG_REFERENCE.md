@@ -1,7 +1,16 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.52
+Version: 1.53
+
+## Portable intent supersession includes a mis-keyed TTY field
+
+The previous latest-intent comparison included current.tty as a reason for authorized delivery
+supersession. Native compares delivery ID, producer and device only. A valid-shaped record stored
+under the wrong TTY key could therefore permit an older replacement without a new delivery.
+Shared bound/unbound ordering now compares the native identity fields; exact observation matching
+still includes TTY. The regression verifies refusal and preserves the original record. Unbound
+data publication does not authorize painting; existing target/binding proofs remain required.
 
 ## Portable dispatcher draft misses EOF, background and path boundaries
 

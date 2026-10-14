@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.24
+Version: 1.25
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -23,8 +23,9 @@ pending. Finite context capture and observation publication now have native inte
 identity/privacy, ordering and storage checks. These modules remain unwired and expose no
 capability. Caller ancestry and register/current/check-context now have bounded no-output and
 alias checks. The finite Mac helper dispatcher and stale/unavailable error categories now have
-owned-PTY, private-root and bounded-input checks. Capabilities, legacy unbound intent semantics,
-backend selection/delivery and Linux versioning/runtime still need work before H1 is complete.
+owned-PTY, private-root and bounded-input checks. Data-only unbound intent now shares freshness/
+repair rules without painting or target caching. Capabilities, backend selection/delivery and
+Linux versioning/runtime still need work before H1 is complete.
 
 ## Phase 7 source verified; native acceptance pending
 

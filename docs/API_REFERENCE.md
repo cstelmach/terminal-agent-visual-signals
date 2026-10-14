@@ -1,7 +1,21 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.48
+Version: 1.49
+
+## Portable unbound intent publication (integration pending)
+
+`Intents.publish_unbound` and helper `--organizer-intent tty token background synthetic` retain
+only latest ordinary intent under the shared per-TTY metadata lock. Ordinary publication permits
+optional or exited identity as data. Synthetic publication requires an exact current observation
+and live matching process/device. Neither creates target/bound/adoption records or device bytes.
+
+Bound and unbound publication share normalization, observation freshness, synthetic proof,
+regular-only repair, ordering and latest replacement. Bound publication additionally retains its
+target/alias proof, late producer check and exact binding. Supersession compares delivery/producer/
+device rather than a mis-keyed cached TTY field. Stale data is code 3; invalid records/storage are
+code 1. The whole portable metadata operation retains one 100 ms budget, tighter than native legacy
+post-lock publication. CLI success is empty output and grants no independent rendering authority.
 
 ## Portable helper dispatcher (integration pending)
 
@@ -21,8 +35,8 @@ its 1 MiB/two-second phase. Ancestry, input and device phases do not renew the d
 a pre-open render revision. Unavailable suspension disables restrictions for this ordinary route;
 live native control still refuses output. Full render/reset retain frozen revision, and initial
 replacement returns unaffected without paint. Reconcile retains its after-open strict revision.
-Symlink-loop failures remain private. Capability queries, native recovery, legacy organizer-intent
-and Linux schema remain unsupported; no hook/backend selection or installation uses this entry yet.
+Symlink-loop failures remain private. Capability queries, native recovery and Linux schema remain
+unsupported; no hook/backend selection or installation uses this entry yet.
 
 ## Portable record failure categories (integration pending)
 

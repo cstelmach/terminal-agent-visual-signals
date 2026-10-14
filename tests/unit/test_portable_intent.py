@@ -1,4 +1,5 @@
 import errno
+import json
 import os
 from pathlib import Path
 import sys
@@ -16,6 +17,79 @@ from portable_records import StaleRecordError, key, target_path
 
 
 class PortableIntentTests(unittest.TestCase):
+    def test_unbound_normal_intent_needs_no_device_or_live_producer_and_creates_no_target(self):
+        record = dict(self.record)
+        record.pop("device")
+        record.pop("producer")
+        self.assertEqual(self.intents.publish_unbound(record, False, 900)["background"], "#112233")
+        self.assertEqual(set(path.name for path in self.store.directory.iterdir()),
+                         {self.path.name, "writer-"+key(self.target["tty"])+".lock"})
+        self.assertFalse((self.store.directory / "targets").exists())
+        self.identities.clear()
+        record = dict(self.record, updatedAt=960)
+        self.intents.publish_unbound(record, False, 900)
+        self.assertEqual(json.loads(self.path.read_bytes())["updatedAt"], 960)
+
+    def test_unbound_synthetic_keeps_observation_identity_and_requires_live_exact_device(self):
+        self.observe()
+        before = self.observation_path.read_bytes()
+        self.intents.publish_unbound(self.record, True, 900)
+        self.assertEqual(self.observation_path.read_bytes(), before)
+        self.assertFalse((self.store.directory / "targets").exists())
+        original = self.path.read_bytes()
+        self.identities[43]["device"] = 124
+        with self.assertRaises(StaleRecordError):
+            self.intents.publish_unbound(dict(self.record, updatedAt=960), True, 900)
+        self.assertEqual(self.path.read_bytes(), original)
+
+    def test_unbound_ordering_and_supersession_match_bound_publication(self):
+        self.intents.publish_unbound(self.record, False, 900)
+        with self.assertRaises(StaleRecordError):
+            self.intents.publish_unbound(dict(self.record, updatedAt=940), False, 900)
+        replacement = dict(self.record, deliveryID="new-delivery", updatedAt=920)
+        self.observe(deliveryID="new-delivery", observedAt=910)
+        self.intents.publish_unbound(replacement, False, 910)
+        self.assertEqual(json.loads(self.path.read_bytes())["deliveryID"], "new-delivery")
+
+    def test_wrong_cached_tty_alone_cannot_authorize_older_delivery_supersession(self):
+        self.intents.publish_unbound(self.record, False, 900)
+        current = json.loads(self.path.read_bytes())
+        current["tty"] = "/dev/ttysOther43"
+        self.path.write_text(json.dumps(current))
+        self.observe()
+        with self.assertRaises(StaleRecordError):
+            self.intents.publish_unbound(dict(self.record, updatedAt=940), False, 900)
+        self.assertEqual(json.loads(self.path.read_bytes()), current)
+
+    def test_unbound_equal_timestamp_can_replace_background(self):
+        self.intents.publish_unbound(self.record, False, 900)
+        self.intents.publish_unbound(dict(self.record, background="#AABBCC"), False, 900)
+        self.assertEqual(json.loads(self.path.read_bytes())["background"], "#AABBCC")
+
+    def test_bound_producer_exit_during_latest_read_prevents_shared_write(self):
+        def producer_exits(tty, synthetic, deadline):
+            self.identities.pop(43)
+            return None
+        with patch.object(self.intents, "_latest", side_effect=producer_exits):
+            with self.assertRaises(OSError) as failure:
+                self.publish()
+        self.assertNotIsInstance(failure.exception, StaleRecordError)
+        self.assertFalse(self.path.exists())
+        self.assertFalse((self.store.directory / "targets").exists())
+
+    def test_unbound_repairs_only_regular_intent_and_synthetic_record_errors_are_unavailable(self):
+        self.path.parent.mkdir(parents=True)
+        self.path.write_bytes(b"invalid intent")
+        self.observe()
+        with self.assertRaises(OSError) as failure:
+            self.intents.publish_unbound(self.record, True, 900)
+        self.assertNotIsInstance(failure.exception, StaleRecordError)
+        self.intents.publish_unbound(self.record, False, 900)
+        self.observation_path.write_bytes(b"invalid observation")
+        with self.assertRaises(OSError) as failure:
+            self.intents.publish_unbound(self.record, True, 900)
+        self.assertNotIsInstance(failure.exception, StaleRecordError)
+
     def test_synthetic_invalid_observation_file_is_stale_but_storage_and_target_are_not(self):
         self.observation_path.parent.mkdir(parents=True)
         os.mkfifo(self.observation_path)
