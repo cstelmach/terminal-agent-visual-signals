@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum TAVSAppMain {
     static func main() {
         let args = CommandLine.arguments
+        if LockStateEntry.handle(args) { return }
         if ManagedOutputEntry.handle(args) { return }
         if VisualRestrictionsStateStore.handle(args) { return }
         if OrganizerIntake.handle(args) { return }

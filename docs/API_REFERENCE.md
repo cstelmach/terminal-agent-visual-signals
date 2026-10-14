@@ -1,7 +1,35 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.65
+Version: 1.66
+
+## Shared native lock-state transactions
+
+LockStateWriter.update(at:transform:) holds the stable `lock.state.lock` across a checked
+fresh read, merge, semantic comparison and atomic replacement. The regular mutex must be
+owned by the effective UID and have mode 0600. Its descriptor is always released; the file
+remains across rule replacements. No-file shortcuts leave lock.state absent, but create the
+mutex. Timestamp-only no-ops return the actual stored record. Transform failure or contention
+cannot replace state. One cooperative 100 ms deadline covers the transaction, separately from
+the existing 100 ms device caller deadline.
+
+Scheduler manual engagement, grant and schedule projection use this transaction. Its watcher
+baseline is the accepted transaction snapshot, including nil for unused absence. A newer CLI
+update remains detectable rather than being absorbed by a later snapshot reread.
+
+The headless qualifier `--validate-config --lock-state-capabilities` emits
+`tavs-lock-state-schema=1`. `--lock-state-update /absolute/lock.state now END BG FG`,
+`grant END`, and `replace LOCKED REASON END GRANT BG FG` return the accepted lock end.
+Now/grant ends must be finite digit-only Int64 values after the current time. Replace validates
+its fields; colors use PauseVisual's canonical hex normalizer. Malformed requests exit nonzero
+before UI or login startup. These verbs perform rule I/O without terminal enumeration or paint.
+
+Darwin CLI mutations require a matching native helper. Explicit test helpers override the
+installed path, including unavailable values. The CLI probes the qualifier and never retries
+an operation through an unlocked writer. Grants acquire after the challenge and preserve the
+current record's end/colors. Non-Darwin writes still lack shared serialization; their post-
+challenge reread only narrows the stale window. Older writers that ignore the mutex do not
+participate. Plain-file deadlines cannot preempt blocked syscalls; ACL/TOCTOU limits remain.
 
 ## Checked native mute projection I/O
 
@@ -21,7 +49,7 @@ Scheduler retries pending startup reads before overwrite and consumes them only 
 is saved. Lock-save failure skips mute writing. A safely repaired unknown startup value triggers
 one explicit reconciliation for an unmuted current projection, without inferring its old Boolean.
 Suspended/unavailable restriction UI, grants and retry timers remain. Device100ms is unchanged;
-file checks do not interrupt blocked syscalls or serialize concurrent GUI/CLI merge transactions.
+file checks do not interrupt blocked syscalls. Native lock merges use the shared transaction above.
 
 ## Checked native lock-state I/O
 
@@ -43,8 +71,8 @@ The same cooperative deadline covers preparation/writes. Successful rename commi
 private bytes; no fallible permission operation follows. Existing unsafe/unparseable destinations
 are preserved. No-file/unchanged shortcuts inspect current data; readonly unchanged state is valid.
 
-The terminal device deadline remains 100 ms. GUI/CLI read-merge-write is not yet serialized;
-late reread failures cannot undo dispatched work. Portable/shell I/O remain outside this scope.
+The terminal device deadline remains 100 ms. Native and Darwin CLI mutations now serialize
+read/merge/replace. Portable/non-Darwin storage and non-cooperating writers remain outside it.
 
 ## Native persistent marker trust
 

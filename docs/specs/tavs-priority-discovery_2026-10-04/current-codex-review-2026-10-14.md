@@ -1,7 +1,7 @@
 # TAVS current implementation Codex review
 
 Last Updated: 2026-10-14T12:31:58
-Version: 1.2
+Version: 1.3
 
 ## Invocation and result
 
@@ -680,3 +680,51 @@ Plain-file deadlines do not preempt blocked syscalls. ACL/TOCTOU and concurrent 
 merge races remain outside this guard. Portable/shell trust, Linux ordinary, headless feedback,
 palette/physical acceptance and final reviews remain open. The earlier missing-byte failure and
 older timing/teardown causes are not attributed by these passes. Full goal remains incomplete.
+
+
+## Parent native lock transaction correction
+
+The native/Darwin RMW correction uses one stable private regular mutex across fresh read,
+merge and replacement. Native manual/grant/schedule paths and typed headless CLI operations
+share it. Semantic no-ops return stored bytes' record; unused absence still leaves no rule.
+The watcher baseline is the accepted transaction snapshot, so a later grant remains detectable.
+CLI acquisition follows the challenge; accepted lock ends drive messages. Colors are canonical
+before serialization; invalid requests cannot enter the UI. Device100ms is unchanged.
+
+[Both complete source reports and disposition](PROGRESS_appendix_phase-9_review-source-checkpoints.md#native-lock-transaction-source-checks-2026-10-14).
+Reports are source checks, not final independent provider approval. Verified findings produced
+compile-fragment repair, color normalization and the additional watcher correction.
+
+Isolated runs, with log roots /var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.RUN/:
+
+- HJSQtD: RED1/2 assertions,0.132s; writer replaced bytes despite held mutation mutex.
+- hB7jjO: RED1 CLI case; post-challenge replacement lost a newer lock end.
+- dtMlIt: compile failure from a leftover Scheduler catch/read fragment; corrected directly.
+- il24iO: connected100/100,0.692s; DACDUW: intermediate full655/655,22.054s.
+- V47Mgv: intermediate release34.44s; Kawukn: color-corrected release40.54s.
+- mC7wtG: fixture compile failure, throwing inference inside nonthrowing visual callback;
+  explicit do/catch retained publication errors and removed the mismatch.
+- tBfZkL: watcher RED1/2 assertions,0.471s; late snapshot absorbed the new grant.
+- U29ZpU: connected checks pass after snapshot correction.
+- LMLHFu: final658/658 Swift,17.013s; Y5UCeP: final release19.15s.
+- i5itEP:54 Bats,4 failures. All29 cmd-lock and6 marker cases pass; background cases38/39/42/45
+  fail (native/portable provider synthetic updates, standalone muted write, owned synthetic PTY).
+  The initial tail showed only42/45; full-log inspection corrected that count. Helper/render
+  unavailable is shown for45; the other assertions lack precise stage attribution.
+- dQrEwk: focused four-case control passes with failure-output printing. This establishes the
+  separated run's result; it does not explain the combined-run failures. No full rerun erased them.
+
+Seven new Swift and five CLI cases cover mutex scope/contended preservation, fresh schedule and
+post-challenge merges, watcher snapshot ordering, no-op/deadline behavior, unsafe mutex objects,
+canonical colors/input rejection, missing helper and headless operation. Changed shell syntax
+and diff checks pass. Tests used private roots and the explicit external source-built helper;
+no installed app, real preference/schedule, live terminal or unrelated process changed.
+Scope:6 production/3 test files; shared Phase9 correction beyond the original phase list.
+Earlier Bug Reference isolation/launch text moved unchanged to its focused appendix; reconstruction
+passed. The finished mute progress entry moved unchanged to the existing review appendix.
+
+Non-Darwin writers, old non-cooperating binaries, pre-challenge duration semantics, ACL/TOCTOU
+and hard syscall bounds remain outside this correction. Shell/portable trust, headless physical
+feedback, palette release, Linux ordinary support, final reviews and native acceptance remain
+open. All earlier timing failures, plus i5itEP's four failures, remain unattributed. Goal/Phase9
+remain incomplete; SPEC/PLAN bodies are fixed.

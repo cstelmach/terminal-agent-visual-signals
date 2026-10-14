@@ -86,18 +86,22 @@ _lock_now() {
     now=$(date +%s)
     new_until=$(( now + seconds ))
 
-    # Merge (spec 2.2): an existing unexpired lock keeps the LATER end;
-    # engaging a lock always cancels any active unlock grant.
-    if _tavs_lock_read && [[ "$_LS_LOCKED" == "true" ]] \
-        && [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]] \
-        && (( _LS_LOCK_UNTIL > new_until )) && (( _LS_LOCK_UNTIL > now )); then
-        new_until="$_LS_LOCK_UNTIL"
-    fi
-
     _lock_resolve_colors
-    if ! _tavs_lock_write "true" "manual" "$new_until" "0" "$_LOCK_BG" "$_LOCK_FG"; then
-        cli_error "Could not write lock state"
-        return 1
+    if [[ "$(uname -s)" == Darwin ]]; then
+        if ! new_until=$(_tavs_lock_native_update now "$new_until" "$_LOCK_BG" "$_LOCK_FG"); then
+            cli_error "Could not write lock state"
+            return 1
+        fi
+    else
+        if _tavs_lock_read && [[ "$_LS_LOCKED" == true ]] \
+            && [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]] \
+            && (( _LS_LOCK_UNTIL > new_until )); then
+            new_until="$_LS_LOCK_UNTIL"
+        fi
+        if ! _tavs_lock_write true manual "$new_until" 0 "$_LOCK_BG" "$_LOCK_FG"; then
+            cli_error "Could not write lock state"
+            return 1
+        fi
     fi
 
     if _tavs_visual_restrictions_suspended; then
@@ -227,10 +231,18 @@ _lock_unlock() {
         return 1
     fi
 
-    # _tavs_lock_effective populated _LS_*; preserve everything, set the grant.
-    if ! _tavs_lock_write "$_LS_LOCKED" "$_LS_REASON" "$_LS_LOCK_UNTIL" "$grant_until" "$_LS_BG" "$_LS_FG"; then
-        cli_error "Could not write lock state"
-        return 1
+    # The challenge may take minutes; merge into the current state after it finishes.
+    if [[ "$(uname -s)" == Darwin ]]; then
+        if ! _LS_LOCK_UNTIL=$(_tavs_lock_native_update grant "$grant_until"); then
+            cli_error "Could not write lock state"
+            return 1
+        fi
+    else
+        if ! _tavs_lock_read || ! _tavs_lock_write "$_LS_LOCKED" "$_LS_REASON" \
+            "$_LS_LOCK_UNTIL" "$grant_until" "$_LS_BG" "$_LS_FG"; then
+            cli_error "Could not write lock state"
+            return 1
+        fi
     fi
 
     cli_success "Unlocked until $(_lock_format_until "$grant_until")."

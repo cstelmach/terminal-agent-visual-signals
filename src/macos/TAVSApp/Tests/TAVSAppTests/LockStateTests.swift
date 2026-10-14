@@ -52,7 +52,81 @@ final class LockStateTests: XCTestCase {
         try LockStateWriter.write(state, to: url)
         XCTAssertEqual(LockStateReader.read(at: url), state)
         XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int, 0o600)
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [url.lastPathComponent])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path).sorted(),
+                       [url.lastPathComponent, url.lastPathComponent + ".lock"])
+    }
+
+    func testWriterCannotReplaceStateWhileAnotherMutationHoldsTheLock() throws {
+        let url = tempDir.appendingPathComponent("lock.state")
+        try LockStateWriter.write(makeState(), to: url)
+        let original = try Data(contentsOf: url)
+        let fd = open(url.path + ".lock", O_RDWR | O_CREAT | O_NOFOLLOW, 0o600)
+        XCTAssertGreaterThanOrEqual(fd, 0)
+        defer { flock(fd, LOCK_UN); close(fd) }
+        XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), 0)
+        XCTAssertThrowsError(try LockStateWriter.write(makeState(unlockUntil: 1_500_000), to: url)) {
+            XCTAssertEqual(($0 as? POSIXError)?.code, .ETIMEDOUT)
+        }
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testUpdateReadsAndMergesWhileHoldingTheStableMutex() throws {
+        let url = tempDir.appendingPathComponent("lock.state")
+        try LockStateWriter.write(makeState(lockUntil: 4_000_000, unlockUntil: 1_500_000), to: url)
+        let state = try LockStateWriter.update(at: url) { existing in
+            let fd = open(url.path + ".lock", O_RDWR | O_NOFOLLOW)
+            defer { close(fd) }
+            XCTAssertEqual(flock(fd, LOCK_EX | LOCK_NB), -1)
+            XCTAssertEqual(errno, EWOULDBLOCK)
+            return LockStateMerge.merged(existing: existing, scheduleHardMuted: true,
+                scheduleUntilEpoch: 3_000_000, now: 1_000_000, lockBg: "#123456", lockFg: "")
+        }
+        XCTAssertEqual(state.lockUntilEpoch, 4_000_000)
+        XCTAssertEqual(state.unlockUntilEpoch, 1_500_000)
+        XCTAssertEqual(try LockStateReader.readChecked(at: url), state)
+    }
+
+    func testUpdateDoesNotRewriteEquivalentStateOrPublishAfterItsDeadline() throws {
+        let url = tempDir.appendingPathComponent("lock.state")
+        try LockStateWriter.write(makeState(), to: url)
+        let original = try Data(contentsOf: url)
+        let accepted = try LockStateWriter.update(at: url) { existing in
+            var state = try XCTUnwrap(existing); state.writtenEpoch += 1
+            return state
+        }
+        XCTAssertEqual(try LockStateReader.readChecked(at: url), accepted)
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        XCTAssertThrowsError(try LockStateWriter.update(at: url) { existing in
+            usleep(110_000)
+            return try XCTUnwrap(existing)
+        }) { XCTAssertEqual(($0 as? POSIXError)?.code, .ETIMEDOUT) }
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testUnsafeMutexObjectsCannotAuthorizeMutation() throws {
+        let url = tempDir.appendingPathComponent("linked.state")
+        let other = tempDir.appendingPathComponent("other")
+        try Data().write(to: other)
+        try FileManager.default.createSymbolicLink(at: URL(fileURLWithPath: url.path + ".lock"),
+                                                   withDestinationURL: other)
+        XCTAssertThrowsError(try LockStateWriter.write(makeState(), to: url))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        let fifo = tempDir.appendingPathComponent("fifo.state")
+        XCTAssertEqual(mkfifo(fifo.path + ".lock", 0o600), 0)
+        XCTAssertThrowsError(try LockStateWriter.write(makeState(), to: fifo))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fifo.path))
+    }
+
+    func testHeadlessEntryCanonicalizesColorsBeforeSerializingFields() throws {
+        let url = tempDir.appendingPathComponent("lock.state")
+        let until = Int64(Date().timeIntervalSince1970) + 3600
+        let args = ["TAVSApp", "--lock-state-update", url.path, "now", String(until), " #123abc\n", ""]
+        XCTAssertEqual(try LockStateEntry.update(args), until)
+        XCTAssertEqual(try LockStateReader.readChecked(at: url)?.lockBg, "#123ABC")
+        XCTAssertEqual(try String(contentsOf: url).split(separator: "\n").count, 8)
+        var injected = args; injected[5] = "#123abc\nLOCKED=\"false\""
+        XCTAssertThrowsError(try LockStateEntry.update(injected))
+        XCTAssertEqual(try LockStateReader.readChecked(at: url)?.locked, true)
     }
 
     func testWriterRejectsUnsafeParentAndLeafWithoutReplacingState() throws {
@@ -110,7 +184,8 @@ final class LockStateTests: XCTestCase {
             XCTAssertEqual((error as? POSIXError)?.code, .EFBIG)
         }
         XCTAssertEqual(try Data(contentsOf: url), original)
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [url.lastPathComponent])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path).sorted(),
+                       [url.lastPathComponent, url.lastPathComponent + ".lock"])
     }
 
     // MARK: - Reader robustness (absent/malformed = nil = not locked, D3)

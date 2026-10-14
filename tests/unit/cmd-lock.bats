@@ -30,6 +30,73 @@ state_value() {
     grep "^$1=" "$TEST_RUNTIME/lock.state" | cut -d'"' -f2
 }
 
+@test "unlock rereads the newer lock after the challenge instead of replacing its end" {
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    _tavs_challenge_verify() {
+        _tavs_lock_write true manual "$((NOW + 14400))" 0 '#223344' ''
+    }
+    run _lock_unlock --for 15m
+    [ "$status" -eq 0 ]
+    [ "$(state_value LOCK_UNTIL_EPOCH)" -eq "$((NOW + 14400))" ]
+    [ "$(state_value LOCK_BG)" = '#223344' ]
+    [ "$(state_value UNLOCK_UNTIL_EPOCH)" -gt "$NOW" ]
+}
+
+@test "native lock mutations fail closed when the helper capability is missing" {
+    [[ "$(uname -s)" == Darwin ]] || skip 'Native lock mutations require macOS'
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/before"
+    export TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-helper"
+    run cmd_lock now --for 4h
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'helper unavailable or unsupported'* ]]
+    cmp "$TEST_DIR/before" "$TEST_RUNTIME/lock.state"
+}
+
+@test "native lock capability and mutation remain headless with invalid UI fixture variables" {
+    [[ "$(uname -s)" == Darwin ]] || skip 'Native lock mutations require macOS'
+    run env TAVS_SESSIONS_TEST_ROOT=/invalid "$TAVS_TEST_HELPER_BIN" \
+        --validate-config --lock-state-capabilities
+    [ "$status" -eq 0 ]
+    [ "$output" = tavs-lock-state-schema=1 ]
+    run env TAVS_SESSIONS_TEST_ROOT=/invalid "$TAVS_TEST_HELPER_BIN" \
+        --lock-state-update "$TEST_RUNTIME/lock.state" now "$((NOW + 3600))" '#123456' ''
+    [ "$status" -eq 0 ]
+    [ "$output" -eq "$((NOW + 3600))" ]
+}
+
+@test "native mutation rejects a mutex held by a separate process without changing state" {
+    [[ "$(uname -s)" == Darwin ]] || skip 'Native lock mutations require macOS'
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    python3 - "$TAVS_TEST_HELPER_BIN" "$TEST_RUNTIME/lock.state" "$((NOW + 14400))" <<'PY'
+import fcntl, os, pathlib, subprocess, sys
+state = pathlib.Path(sys.argv[2])
+before = state.read_bytes()
+fd = os.open(str(state) + '.lock', os.O_RDWR)
+try:
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    result = subprocess.run([sys.argv[1], '--lock-state-update', str(state), 'now', sys.argv[3], '#223344', ''],
+                            capture_output=True, timeout=3)
+    assert result.returncode == 1, result.returncode
+    assert state.read_bytes() == before
+finally:
+    os.close(fd)
+PY
+}
+
+@test "invalid native lock mutations preserve accepted state" {
+    [[ "$(uname -s)" == Darwin ]] || skip 'Native lock mutations require macOS'
+    _tavs_lock_write true manual "$((NOW + 3600))" 0 '#111111' ''
+    cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/before"
+    run "$TAVS_TEST_HELPER_BIN" --lock-state-update "$TEST_RUNTIME/lock.state" grant forever
+    [ "$status" -eq 1 ]
+    run "$TAVS_TEST_HELPER_BIN" --lock-state-update "$TEST_RUNTIME/lock.state" now 0 '#111111' ''
+    [ "$status" -eq 1 ]
+    run "$TAVS_TEST_HELPER_BIN" --lock-state-update "$TEST_RUNTIME/lock.state" now "$((NOW + 3600))" 'invalid-color' ''
+    [ "$status" -eq 1 ]
+    cmp "$TEST_DIR/before" "$TEST_RUNTIME/lock.state"
+}
+
 # --- Duration parser ---
 
 @test "duration: 15m, 2h, 2h30m, 1d, 90m parse to seconds" {

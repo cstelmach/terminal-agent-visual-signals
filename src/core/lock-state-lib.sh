@@ -66,10 +66,29 @@ _tavs_lock_effective() {
     return 0
 }
 
+# Native mutations share the app's read/merge/replace transaction, never an unlocked retry.
+_tavs_lock_native_update() {
+    local helper="${TAVS_TEST_HELPER_BIN-/Applications/TAVS.app/Contents/MacOS/TAVSApp}" support=""
+    if [[ -x "$helper" ]]; then
+        support=$(env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
+            -u TAVS_SESSIONS_TEST_TARGETS "$helper" --validate-config --lock-state-capabilities \
+            2>/dev/null) || support=""
+    fi
+    if [[ "$support" != tavs-lock-state-schema=1 ]]; then
+        printf 'tavs: native lock state helper unavailable or unsupported\n' >&2
+        return 1
+    fi
+    "$helper" --lock-state-update "$(_tavs_lock_state_file)" "$@"
+}
+
 # Usage: _tavs_lock_write <locked> <reason> <lock_until> <unlock_until> <bg> <fg>
 # Atomic tmp+mv into the runtime dir (created 0700 when missing).
 _tavs_lock_write() {
     local locked="$1" reason="$2" lock_until="$3" unlock_until="$4" bg="$5" fg="$6"
+    if [[ "$(uname -s)" == Darwin ]]; then
+        _tavs_lock_native_update replace "$locked" "$reason" "$lock_until" "$unlock_until" "$bg" "$fg" >/dev/null
+        return $?
+    fi
     local dir
     dir=$(_tavs_lock_runtime_dir)
     [[ -d "$dir" ]] || mkdir -m 0700 -p "$dir" || return 1

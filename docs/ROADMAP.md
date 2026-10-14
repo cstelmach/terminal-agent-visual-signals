@@ -1,7 +1,14 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.43
+Version: 1.44
+
+Native scheduling and Darwin CLI lock mutations now share a fresh read/merge/replace mutex.
+The watcher retains the accepted projection snapshot, so subsequent grants trigger evaluation.
+The CLI requires the matching headless helper and acquires after a challenge. Verification:
+658 Swift and 29 CLI checks pass; final release passes. Four failures in broader background
+checks remain unattributed despite passing focused controls. Non-Darwin serialization, storage
+trust, native/Linux/headless/palette acceptance and final provider reviews remain open.
 
 Native mute projection now uses trusted bounded I/O and private atomic replacement. Startup
 repair preserves pending cleanup through failures and reconciles safely repaired unknown state

@@ -48,12 +48,56 @@ struct LockStateData: Equatable {
 
 enum LockStateWriter {
     static func write(_ state: LockStateData, to url: URL) throws {
-        let deadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
-        func checkDeadline() throws {
-            guard DispatchTime.now().uptimeNanoseconds < deadline else { throw POSIXError(.ETIMEDOUT) }
+        try transaction(at: url) { deadline in
+            _ = try LockStateReader.readChecked(at: url, deadline: deadline)
+            try replace(state, at: url, deadline: deadline)
         }
+    }
+
+    // Read, merge and replace while holding the same stable lock as headless CLI mutations.
+    static func update(at url: URL, transform: (LockStateData?) throws -> LockStateData) throws -> LockStateData {
+        try transaction(at: url) { deadline in
+            let existing = try LockStateReader.readChecked(at: url, deadline: deadline)
+            let state = try transform(existing)
+            try checkDeadline(deadline)
+            if existing == nil, !state.locked, state.unlockUntilEpoch == 0 { return state }
+            if let current = existing {
+                var normalized = current
+                normalized.writtenEpoch = state.writtenEpoch
+                if normalized == state { return current }
+            }
+            try replace(state, at: url, deadline: deadline)
+            return state
+        }
+    }
+
+    private static func transaction<T>(at url: URL, body: (UInt64) throws -> T) throws -> T {
+        let deadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
         try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), create: true, deadline: deadline)
-        _ = try LockStateReader.readChecked(at: url, deadline: deadline)
+        let fd = open(url.path + ".lock", O_RDWR | O_CREAT | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw POSIXError(.EACCES) }
+        defer { close(fd) }
+        var info = stat()
+        guard fstat(fd, &info) == 0, info.st_mode & S_IFMT == S_IFREG,
+              info.st_uid == geteuid(), info.st_mode & 0o777 == 0o600 else { throw POSIXError(.EACCES) }
+        while true {
+            try checkDeadline(deadline)
+            if flock(fd, LOCK_EX | LOCK_NB) == 0 { break }
+            let error = errno
+            guard error == EWOULDBLOCK || error == EAGAIN || error == EINTR else { throw POSIXError(.EIO) }
+            usleep(1_000)
+        }
+        defer { flock(fd, LOCK_UN) }
+        try checkDeadline(deadline)
+        return try body(deadline)
+    }
+
+    private static func checkDeadline(_ deadline: UInt64) throws {
+        guard DispatchTime.now().uptimeNanoseconds < deadline else { throw POSIXError(.ETIMEDOUT) }
+    }
+
+    private static func replace(_ state: LockStateData, at url: URL, deadline: UInt64) throws {
+        func checkDeadline() throws { try Self.checkDeadline(deadline) }
         let data = Data(state.serialize().utf8)
         guard data.count <= 8_192 else { throw POSIXError(.EFBIG) }
         try checkDeadline()

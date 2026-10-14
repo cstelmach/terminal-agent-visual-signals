@@ -388,6 +388,68 @@ final class SchedulerLifecycleTests: XCTestCase {
         XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
     }
 
+    func testScheduleMergeRetainsExtensionAndGrantPublishedDuringVisualResolution() throws {
+        try writeStandardConfig()
+        let lock = tempDir.appendingPathComponent("lock.state")
+        let now = Int64(clock.now().timeIntervalSince1970)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: now + 3600, unlockUntilEpoch: 0, writtenEpoch: now), to: lock)
+        var publishNewerRule = false
+        var publicationError: Error?
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            lockStateURL: lock, calendar: testCalendar, pauseVisualProvider: {
+                if publishNewerRule {
+                    publishNewerRule = false
+                    do {
+                        try LockStateWriter.write(LockStateData(locked: true, reason: .manual,
+                            lockUntilEpoch: now + 14400, unlockUntilEpoch: now + 60, writtenEpoch: now), to: lock)
+                    } catch { publicationError = error }
+                }
+                return PauseVisual(backgroundColor: "#123456", foregroundColor: nil,
+                                   defaultBackgroundColor: "#123456")
+            })
+        scheduler.start(); XCTAssertTrue(scheduler.isHardLocked)
+        publishNewerRule = true
+        scheduler.loadAndEvaluate()
+        XCTAssertNil(publicationError)
+        XCTAssertEqual(try LockStateReader.readChecked(at: lock)?.lockUntilEpoch, now + 14400)
+        XCTAssertEqual(try LockStateReader.readChecked(at: lock)?.unlockUntilEpoch, now + 60)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+    }
+
+    func testWatcherDoesNotAbsorbAConcurrentGrantBeforeReevaluatingItsSnapshot() throws {
+        try writeStandardConfig()
+        let lock = tempDir.appendingPathComponent("lock.state"), watcher = MockFileWatcher()
+        let now = Int64(clock.now().timeIntervalSince1970)
+        let original = LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: now + 3600, unlockUntilEpoch: 0, writtenEpoch: now)
+        try LockStateWriter.write(original, to: lock)
+        var resolutions = 0, publicationError: Error?
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            lockStateURL: lock, runtimeWatcher: watcher, calendar: testCalendar, pauseVisualProvider: {
+                resolutions += 1
+                if resolutions == 2 {
+                    var grant = original; grant.unlockUntilEpoch = now + 60
+                    do { try LockStateWriter.write(grant, to: lock) }
+                    catch { publicationError = error }
+                }
+                return PauseVisual(backgroundColor: "#123456", foregroundColor: nil,
+                                   defaultBackgroundColor: "#123456")
+            })
+        scheduler.start(); XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertNil(publicationError)
+        XCTAssertEqual(try LockStateReader.readChecked(at: lock)?.unlockUntilEpoch, now + 60)
+        watcher.simulateChange()
+        let callback = expectation(description: "Queued runtime change evaluated")
+        DispatchQueue.main.async { callback.fulfill() }
+        wait(for: [callback], timeout: 1)
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+    }
+
     func testFailedInitialLockWriteCannotOverwriteThePendingMuteSeed() throws {
         try writeStandardConfig()
         try MuteStateWriter.write(MuteStateData(muted: true, reason: .hardLock,

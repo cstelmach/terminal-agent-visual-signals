@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.9
+Version: 1.10
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -141,3 +141,504 @@ FsrDEZ RED4/14; jrJgP6:643/643,17.013s;upHyLW:external release17.16s;Yf2kjw:25/2
 **Scope:**2 source/2 test files;9 new cases;shared review correction;100ms device deadline unchanged.
 Next: legacy mute I/O, GUI/CLI merge races, portable/shell, Linux/headless/palette and native checks.
 Phase9/goal incomplete;2/7/8 Blocked;historical causes unproven;SPEC/PLAN unchanged.
+
+
+### Phase 9 native mute I/O: 2026-10-14 18:48 CEST
+
+bBIGar651/651,16.235s;bG6i3E release18.74s;lJzKjR25/25;H2vewo/ueWFoc REDs retained.
+[Scope/checks/limits](current-codex-review-2026-10-14.md#parent-native-mute-correction-and-verification).
+Next: GUI/CLI, portable/shell, Linux/native/headless/palette;Phase9 incomplete;SPEC/PLAN fixed.
+
+
+## Native lock transaction source checks: 2026-10-14
+
+### Writer reconnaissance
+
+# TAVS lock-state writer and transaction reconnaissance
+
+Last Updated: 2026-10-14 | Version: 1.0
+
+Scope: read-only source exploration at HEAD `ab0fe37`. No tests, native actions,
+CLI mutations, provider reviews, or source edits were executed. Command discovery
+found `python3` and `bats`; `command -v flock` produced no path on this Mac.
+
+## Contract and ownership first
+
+`lock.state` is a finite runtime rule projection, not a terminal output record.
+Both the native Scheduler and CLI own legitimate mutations. Readers use:
+
+```text
+effective = LOCKED && now < LOCK_UNTIL && !(now < UNLOCK_UNTIL)
+```
+
+The record has no app-PID or heartbeat gate. Schedule projection preserves an
+unexpired manual lock and unexpired grant. A newly engaged manual lock preserves
+the later unexpired end and intentionally cancels any existing grant. A grant
+changes the grant end while preserving the current lock fields. Persistent visual
+suspension overrides painting while preserving these saved definitions.
+
+Sources: `LockState.swift:19-46,170-231`, `cmd-lock.sh:89-100,183-238`,
+`docs/reference/hard-lock.md`, `visual-restriction-policy.swift:27-65`.
+
+Atomic replacement prevents torn records, but does not serialize the read,
+decision, and replacement. Correctness requires a single shared critical section
+around all three steps. A second checked read before saving does not help when the
+new record is still derived from the first read.
+
+## Every production shell/portable mutation
+
+| Caller | Read/decision | Publication | Current race |
+|---|---|---|---|
+| `_lock_now` in `src/cli/cmd-lock.sh:66-122` | `now` at 86; latest lock read/max end at 91-95 | `_tavs_lock_write` at 98 | Concurrent later end can be lost; cancellation of a grant belongs to the new lock action, but a later grant can also be overwritten by an older action. |
+| `_lock_unlock` in `src/cli/cmd-lock.sh:165-244` | `_tavs_lock_effective` at 185 populates `_LS_*`; challenge at 194 and optional interactive choice at 212 occur afterward | `_tavs_lock_write` at 231 copies those old fields with new grant | A schedule refresh/manual extension during the human interaction is overwritten. |
+
+Both call the sole production shell publication primitive,
+`src/core/lock-state-lib.sh:71-89`. It creates a missing directory, creates a
+temporary, serializes fields, and `mv -f` replaces the state. It does not acquire
+a mutex. There are no other production `_tavs_lock_write` callers in the source.
+
+The Python ordinary backend does not mutate `lock.state`:
+`portable_policy.py:197-206` reads it for current policy. Typed portable record
+writes target organizer records, not this legacy rule. `cmd-schedule.sh:26` uses
+the effective-lock predicate to gate a schedule edit, but changes `schedule.json`
+rather than `lock.state`. `challenge.sh` has no lock-state calls. The
+lock-state-lib header's suggestion that challenge.sh shares those helpers is not
+a current mutation path. `mute-gate.sh:55-80` reads the rule; shell startup delegates
+to the managed backend. Status commands are readers.
+
+Native mutators, for interoperability:
+
+- `Scheduler.lockNow`, lines 297-317: read, max end, publish.
+- `Scheduler.grantUnlock`, lines 327-341: read, set grant, publish.
+- `Scheduler.finishEvaluation`, lines 388-455: read, schedule merge, calculate
+  mute state, publish.
+- `writeLockStateIfChanged`, lines 618-637: rereads current data, compares a
+  normalized timestamp, then writes the previously derived value. This is the
+  last native publication route, but is too late to begin the transaction.
+- `LockStateWriter.write` provides trusted, bounded atomic replacement, without
+  a shared RMW lock. Test fixtures also call it directly.
+
+## Smallest viable common mechanism
+
+Use an ordinary stable file next to the rule, for example `.lock-state.lock`,
+and the same nonblocking `flock` syscall in Swift and Python. The exact filename
+must be shared by every source writer. Do not lock `lock.state` itself: atomic
+rename changes that inode, so later openers can lock a different object.
+
+The source already demonstrates this pattern:
+
+- Swift `TerminalVisualStateStore.withLock` in `terminal-visual-state.swift:971`
+  uses an owned 0600 regular file, non-following open, bounded nonblocking flock,
+  and a deferred release.
+- Swift `ProcessRunner.swift:160-216` uses the same syscall for physical output.
+- Python `portable_device_writer.py:35-60` uses `fcntl.flock` with a monotonic
+  deadline and descriptor release. This is a usable syscall pattern, but its
+  parent trust checks are weaker than current native RuntimeDirectoryTrust.
+  Do not import that weakness into rule storage merely by calling output_lock.
+
+Recommended transaction boundary:
+
+1. Resolve and validate the existing runtime parent before mutation.
+2. Acquire the stable rule mutex with one finite deadline.
+3. Read the checked current rule while holding the mutex.
+4. Perform the operation's merge against that current rule.
+5. Compare semantic fields and atomically publish if needed, still holding it.
+6. Return the accepted record to the caller, release, and only then repaint,
+   reevaluate, log user-facing success, or enter any human interaction.
+
+Do not nest a transaction lock inside a writer that is already called under it.
+A raw publication helper can remain an internal held-lock primitive; production
+callers must use the transaction API. Shared timestamp normalization and the
+no-file-for-unused-lock shortcut must happen under the lock too.
+
+For native schedule evaluation, retain the merged result returned from the
+transaction when computing mute/UI state. A lock acquisition or storage failure
+must flow through the existing projection failure path, preserving heartbeat
+and expiry timers. Do not replace it with trusted absence or semantic success.
+The lock should not span catalogue enumeration, terminal output, or painting.
+Native and portable policy already ignore a hard mute mirror and consult the
+authoritative finite lock, so an old hard mirror must not resurrect a grant.
+
+## How to give Bash the same transaction
+
+The shell has no native flock builtin, and this Mac has no discovered flock
+executable. The existing ordinary backend already uses Python, but the lock CLI
+currently has no Python/helper dependency.
+
+The least complex portable bridge is a small typed Python rule transaction
+invoked after Bash computes/validates CLI arguments. Give it only operations
+such as manual engagement and grant update, never arbitrary shell code. It owns
+the lock, checked latest read, bounded canonical replacement, and returns the
+accepted fields needed for truthful output. This uses `fcntl.flock` on the same
+stable file as Swift and remains independent of the installed GUI app. It adds
+an explicit Python requirement to these cold CLI mutation paths; missing Python
+must fail clearly, with no old unlocked write fallback.
+
+An alternative is native headless helper verbs for both operations. It maximizes
+Swift storage/merge reuse, but requires a supported source-built or installed
+helper and leaves non-macOS lock CLI support to a separate backend. Ordinary
+helper-selection is not already such an interface: it probes organizer/managed
+capabilities, `portable_helper.py:67-79` rejects non-Darwin, and neither backend
+advertises rule mutations. Do not route lock edits through a device/output verb.
+
+Avoid a general Python command-execution lock wrapper solely to keep the Bash
+read/merge code. It requires reexecution/descriptor lifetime machinery and makes
+direct Bats function tests/stubbed challenges less representative. Typed cold
+operations are a smaller interface. If retaining Bash inside a subprocess is
+chosen instead, the Python process must hold the descriptor across the entire
+read/merge/write callback, not exit before Bash writes.
+
+## Contrasting mkdir and native flock choices
+
+| Choice | Benefit | Cost or failure |
+|---|---|---|
+| Shared native/Python flock | Matches existing source patterns; descriptor close/process exit releases it; same lock remains across atomic rule replacement | All cooperating writers must use it; validate parent and leaf; bounded contention reports failure. |
+| Atomic mkdir mutex | Bash can create it without Python | Native writers must switch to that convention; crashes leave ownership/stale directories requiring recovery and deletion; PID reuse makes stale handling nontrivial. This creates avoidable cleanup policy and is not recommended. |
+| flock only inside `_tavs_lock_write`/`LockStateWriter.write` | Small-looking edit | Incorrect: it serializes replacements of stale snapshots, not RMW. |
+| Per-device/output locks | Existing locks can be reused without a new file | Incorrect domain: lock.state is one global rule and its mutations have no unique device. |
+| Native reread plus max-merge only | Can rescue a particular lock end | Does not consistently order grant assignments, lock cancellation, or all mutation paths. |
+
+## Edge cases that need coverage
+
+- CLI short lock waits behind a native/manual longer lock, then sees the longer
+  end. Opposite ordering produces the same max end.
+- Grant waits behind a new lock and preserves the new end. New lock after grant
+  intentionally clears it. Schedule update after grant preserves it.
+- CLI challenge stub updates the record before returning success; the granted
+  record must preserve that update, proving a post-challenge fresh read.
+- Never hold the mutex during password/puzzle input, preset selection, or stdout
+  reporting. The current CLI captures `now` before challenge; long interaction
+  may consume or expire a requested grant. Recompute duration-derived grant end
+  after interaction if duration means time available after successful unlock.
+- Recheck persistent suspension/unavailable policy at grant commit. Recovery
+  during challenge must keep definitions inert and must not introduce restrictive
+  paint. Existing suspended unlock behavior preserves state without a challenge.
+- Preserve intended assignment semantics for explicit grant lengths; do not
+  invent a max-of-grants rule without a product decision.
+- The lock leaf must be a current-user-owned regular private file, never a
+  symlink/FIFO/directory. Shared writable or linked runtime roots are unavailable.
+- Use one monotonic transaction deadline through acquisition/read/write, rather
+  than resetting 100 ms per step or retrying until success. OS syscall stalls
+  remain cooperative-bound limitations unless a caller-level worker is added.
+- A contended or unsafe mutex cannot mutate state or report success. A subsequent
+  healthy attempt must work without deleting the stable lock file.
+- Descriptor locks should release after both exceptions and normal return;
+  subprocess death can be tested on owned fixtures, not real sessions.
+- Replacing/deleting the stable mutex while writers run would break serialization.
+  Do not add live cleanup of the mutex file.
+- Older installed GUI/CLI writers ignore this new mutex. Source interoperability
+  tests do not establish behavior with an old running installed app.
+
+## Isolated tests and existing hazards
+
+`tests/run-isolated.sh` requires an explicit absolute executable helper. It
+creates private HOME/runtime/tmp/XDG/state roots, clears the inherited environment,
+and preserves command logs. `tests/unit/cmd-lock.bats:6-21` creates children under
+that test TMPDIR, overrides only HOME/runtime/root paths, retains the runner's
+test-root/helper variables, and stubs pgrep. It sources the CLI directly, so no
+real GUI or terminal operation occurs in its lock commands. Its existing teardown
+removes its own fixture directory. A new typed bridge must accept the nested
+private roots and should not require the real installed app.
+
+Safe focused command pattern after the implementation is ready:
+
+```bash
+TAVS_TEST_HELPER_BIN=/absolute/verified/source-built/TAVSApp \
+  tests/run-isolated.sh bats tests/unit/cmd-lock.bats
+
+TAVS_TEST_HELPER_BIN=/absolute/verified/source-built/TAVSApp \
+  tests/run-isolated.sh /opt/homebrew/Caskroom/miniconda/base/bin/python3 \
+  -m unittest discover -s tests/unit -p 'test_portable_policy.py'
+
+/bin/bash -n src/core/lock-state-lib.sh
+/bin/bash -n src/cli/cmd-lock.sh
+```
+
+Use an owned scratch path for Swift focused LockState/SchedulerLock tests and
+the full connected suite, through the same runner. For cross-language tests,
+hold an owned stable lock descriptor with Python while a native transaction
+attempts; require bounded failure with unchanged state, then release and require
+fresh merge success. Test both directions. Use explicit current compiled helper
+paths and deterministic synchronization via pipes/ready signals, not sleep-based
+race attempts.
+
+Do not run `tests/integration/lock-gate.bats` unchanged. Its `run_trigger` at
+lines 62-65 and later direct env-i call discard TAVS_TEST_HELPER_BIN, TAVS_TEST_ROOT,
+TAVS_TMP_DIR, TMPDIR and the private XDG roots. The legacy trigger can therefore
+escape the runner's backend/state isolation. `tests/e2e/hard-lock.sh` is also
+outside this safe scope. This reconnaissance executed no test commands.
+
+## Limits
+
+This report establishes source call ownership and a minimal cooperative
+serialization design. It is not a provider approval or a runtime claim. No
+macOS GUI or Ghostty native acceptance was attempted. Linked-path replacement
+races, ACL restrictions, and non-cooperating prior versions remain separate
+storage/deployment concerns; one shared mutex does not repair those by itself.
+
+## Parent's selected bounded direction and source checks
+
+After the reconnaissance, the parent selected native
+`LockStateWriter.update` around a stable `lock.state.lock`, with one cooperative
+100 ms budget, for schedule/manual/grant updates. Darwin CLI engagement, grants,
+and explicit replacement will use a headless `--lock-state-update` entry and an
+exact capability qualifier. Non-Darwin shell writes remain as a disclosed open
+multi-CLI serialization issue in this Ghostty/macOS slice. This bounded direction
+is viable if the fresh read and operation-specific merge occur inside update.
+
+Source and isolation checks for that direction:
+
+1. Handle both the new capability qualifier and the mutation verb before
+   `TAVSApp.swift:58`'s generic `--validate-config` path loader and before UI/login
+   startup. Otherwise a capability probe looks like a schedule filename; an
+   unrecognized mutation can accidentally launch the app. Malformed arity/verb
+   requests must terminate with failure, not fall through to the UI.
+2. Prefer an exact capability probe against TAVS_TEST_HELPER_BIN when explicitly
+   set, otherwise the installed native executable path, like cmd-recover.sh.
+   Do not reuse `_tavs_helper_call`: its ordinary selection checks unrelated
+   capabilities and can select Python, which rejects this new native verb.
+3. A capability or invocation failure on Darwin must produce an explicit failure
+   with unchanged rule bytes. Falling back to the old shell writer would defeat
+   serialization. Non-Darwin retention must be an explicit platform branch,
+   not an operation-failure fallback.
+4. Acquiring after challenge is essential. Engagement passes an operation and
+   requested end/colors, not a caller-supplied old record. Grant passes its end
+   and updates the current record under the mutex. Explicit replacement remains
+   intentionally replacement semantics for `_tavs_lock_write` fixture/API use;
+   production engagement/grant must not reduce back to that stale snapshot API.
+5. Command output can be canonical accepted rule fields parsed as data with the
+   existing shell key reader. Never source/eval the helper output. A grant's
+   success/reengagement message must use the accepted current lock end rather
+   than the pre-challenge `_LS_LOCK_UNTIL`.
+6. Only private rule I/O is needed. This entry must not enumerate Ghostty, write
+   a TTY, initialize login registration, or require dedicated Ghostty test
+   target IDs. It remains usable when the menu process is hung.
+7. cmd-lock.bats overrides HOME/runtime to nested children of the runner's root
+   but preserves TAVS_TEST_ROOT and the explicit helper. Accept those roots;
+   do not require equality with the runner's top runtime. If new test-root
+   checking uses TAVS_TEST_ROOT, verify containment/trust without rewriting or
+   chowning existing paths. Existing ManagedOutputEntry.validateRoot only checks
+   containment when TAVS_SESSIONS_TEST_* keys exist, so that method alone does
+   not enforce the ordinary runner's TAVS_TEST_ROOT contract.
+8. Rebuild the explicit helper after adding the new entry before any Bats CLI
+   mutation tests; the prior release helper has no new qualifier. Failure with
+   that old executable is a useful unsupported-helper case, not a code regression.
+9. Keep native update's held-lock publication distinct from its public raw
+   write wrapper to avoid recursive reacquisition. Concurrent tests and any
+   injected interleave callback must not try to reacquire the same stable mutex
+   on the same thread while update already holds it.
+10. A stable new rule mutex is an ordinary cross-process concurrency primitive.
+    It requires no manifests, process ownership files, stale-PID tracking, or
+    deletion/cleanup mechanism. Release descriptors on every path.
+
+These are source requirements and implementation checks, not a review verdict.
+The non-Darwin path's retained races must be kept explicitly open in progress.
+
+### Scoped source check and final snapshot disposition
+
+# TAVS shared lock transaction scoped source check
+
+Last Updated: 2026-10-14 | Version: 1.1
+
+Scope: current uncommitted diff over HEAD `ab0fe37`, read-only. Checked
+LockState.swift, lock-state-entry.swift, Scheduler.swift, TAVSApp.swift,
+lock-state-lib.sh, cmd-lock.sh, LockStateTests.swift, SchedulerTests.swift and
+cmd-lock.bats, plus
+RuntimeDirectoryTrust, PauseVisual, helper selection, policy readers, and native
+menu callers. No source changes, tests, native actions, or provider calls were
+performed. This report is a scoped source check, not final provider approval.
+
+## Result
+
+The new transaction scope addresses the native/Darwin stale snapshot overwrite.
+All three production Scheduler mutation paths and both Darwin CLI semantic
+mutations now read the current rule and derive the replacement while holding
+the same stable mutex. Explicit replacement is also serialized, but intentionally
+has replacement semantics. The retained non-Darwin implementation is not serialized.
+
+An initial source snapshot contained a compile-blocking leftover Scheduler
+fragment. It was reported immediately. A later read confirmed that it was removed
+and the transaction failure is connected to the original projection failure path.
+No additional confirmed RMW-scope defect was found in the later snapshot.
+
+## Verified transaction behavior
+
+- `LockStateWriter.update` acquires `url.path + ".lock"` before checked read,
+  transform, semantic comparison, and replacement. `lock.state` is atomically
+  renamed, while the mutex inode remains stable.
+- Acquisition checks the runtime parent through existing RuntimeDirectoryTrust.
+  Mutex open uses O_NOFOLLOW/O_NONBLOCK/O_CLOEXEC; fstat requires regular type,
+  current effective UID, and exact 0600 permissions. Linked leaves cannot be
+  adopted through this open; FIFO/directory leaves cannot pass the type check.
+- Nonblocking flock retries only contention/EINTR, with the original monotonic
+  100 ms deadline. Deferred unlock/close cover transformation exceptions and
+  no-op returns. No mutex file deletion or stale-PID mechanism is introduced.
+- Checked rule read and replacement share that deadline. Transform return is
+  checked before even a semantic no-op. Replacement checks before publication;
+  complete private temporary bytes are renamed with no fallible postcommit
+  permissions step.
+- `write` acquires the same mutex and checks existing storage before explicit
+  replacement. It does not invoke update and cannot recursively reacquire it.
+- `update` skips publication for unused inactive state, and for existing state
+  differing only in writtenEpoch. It returns the proposed semantically equivalent
+  record, so callers must not claim its new timestamp was physically persisted.
+  Current callers only use rule semantics/lock end, not such a claim.
+- Creating the mutex on the unused-state path is a new file side effect, even
+  though lock.state remains absent. Documentation should distinguish the rule
+  shortcut from the presence of the stable synchronization file.
+
+## Native Scheduler integration
+
+The production paths are:
+
+1. `lockNow`: existing current end/max and intentional grant cancellation happen
+   inside update. Colors are resolved before locking; no device work is inside.
+2. `grantUnlock`: the existing record is checked under update, the grant field
+   is changed, and failure returns false. The menu calls this after its challenge.
+3. `finishEvaluation`: schedule merge happens inside update and the accepted
+   merged record drives mute state, published state, and expiry timers.
+
+The old `writeLockStateIfChanged` helper has been removed; no production native
+writer still derives a merge outside update and then submits a stale whole record.
+An unavailable/contended transaction follows the existing projection failure
+path, preserves the pending startup mute seed, rearms heartbeat/transition/prior
+lock and grant expiry timers, and does not claim a saved mute projection.
+
+The initial broken fragment at old current lines 388-393 had an extra closing
+brace and read into the removed `existingLock`. The reread showed one catch
+directly attached to the update do block at current lines 388-403. This finding
+is source-resolved; compilation remains the parent's test responsibility.
+
+## Headless entry and shell bridge
+
+- `LockStateEntry.handle` runs before managed output, generic config validation,
+  test-app UI launch, or normal UI/login initialization in TAVSAppMain.
+- Exact capability arity emits `tavs-lock-state-schema=1`. Exact mutation verb
+  recognition catches malformed requests and exits nonzero; those requests
+  cannot fall through into GUI startup.
+- `now` and `grant` accept finite digit-only Int64 ends strictly after the captured
+  current wall time. `replace` validates Bool/reason/digit epochs and explicit
+  colors before calling the serialized replacement primitive.
+- `_tavs_lock_native_update` uses the explicit test helper when set, otherwise
+  the native installed path. It probes the exact lock qualifier rather than
+  ordinary backend selection, which could choose portable Python.
+- Capability and update failures return failure without an unlocked Darwin
+  fallback. An explicitly empty test helper also fails, rather than falling
+  back to the installed app.
+- Darwin manual engagement gets the accepted later lock end from the helper.
+  Darwin grants get the accepted current lock end, preserving changes made
+  during the challenge and avoiding an old-end reengagement message.
+- Grant acquisition happens after challenge/optional preset input. No human
+  input, GUI lookup, or terminal repaint occurs while holding the rule mutex.
+- Helper output is numeric data used in shell variables, never sourced/evaluated.
+
+## Boundary advice and retained limitations
+
+### Color canonicalization, source-resolved
+
+The initial entry used a regex range match and returned the original color.
+This was sent to the parent as source boundary advice because serialized
+single-line fields should use whole-value validation/canonical output. It was
+not reported as a tested runtime failure. The corrected entry now returns
+PauseVisual.normalizedHexColor for nonempty input, preserving native whitespace
+normalization and uppercase canonical hex. Source reread confirms surrounding
+newline whitespace is trimmed and an internal injected field cannot pass the
+existing normalizer's exact seven-character validation. A new Swift test requires
+canonical #123ABC, eight serialized lines, and rejection of an internal
+LOCKED-field injection without changing the existing locked state. No further
+color publication defect was found in the corrected source.
+
+### Limits outside the RMW correction
+
+- The non-Darwin branch now rereads after challenge, which narrows that stale
+  window, but remains an unlocked Bash read plus temporary/mv replacement. It
+  cannot be claimed safe against concurrent CLI mutations.
+- Existing `_lock_unlock` captures `now` before challenge and preset input. A
+  long interaction consumes a duration-derived grant; the native helper now
+  rejects an already expired end rather than claiming success. Duration start
+  semantics remain a separate existing behavior, not solved by the mutex.
+- A grant requested before recovery can still update saved grant definitions
+  after recovery occurred during the challenge. The helper performs rule I/O
+  only and cannot repaint. Suspension remains authoritative for painting. If
+  product semantics require the unlock command to preserve definitions whenever
+  recovery wins during input, a second policy check is still needed.
+- Scheduler releases the transaction before mute/UI/paint work, correctly keeping
+  device work outside it. Its existing late reread into lastReadLockState can
+  still absorb a newer concurrent change without synchronously reevaluating the
+  UI snapshot. This is a retained watcher/projection timing concern, not lost
+  authoritative rule data. Fresh managed output policy ignores hard mute mirrors.
+- Mutex validation is source-level POSIX trust and cooperative bounding. It does
+  not prove ACL behavior, storage syscalls' hard wall deadlines, same-user directory
+  replacement races, or interoperability with an older installed writer that
+  ignores the mutex.
+- The new headless entry accepts an explicit absolute rule URL and does not
+  enforce organizer UI fixture containment. Its dedicated invalid-UI-variable
+  test intentionally proves that rule I/O does not initialize the UI. Tests must
+  continue supplying private rule URLs and source-built helpers through the
+  isolated runner; this report makes no real-home mutation claim.
+
+## Tests inspected, not executed
+
+New Swift coverage checks held-lock timeout without replacement, that transform
+runs while the stable lock is held, schedule merge preservation of lock end/grant,
+timestamp-only no-op bytes, slow-transform deadline before publication, and
+symlink/FIFO mutex refusal. Existing file-inventory assertions were adjusted for
+the stable mutex. The lock state and temp-file safety tests remain connected.
+
+New Bats coverage uses a challenge stub that updates end/colors, verifies the
+post-challenge grant preserves them, rejects a missing native capability without
+changing bytes, and proves headless behavior with invalid UI fixture variables.
+The unit fixture retains runner helper/test-root variables while nesting HOME and
+runtime under its private TMPDIR. No real terminal/device action appears in these
+new cases. The new native-specific Bats cases require Darwin or an explicit skip
+on non-Darwin; they are not evidence for the retained non-Darwin branch.
+
+A new Scheduler lifecycle regression publishes a longer manual lock and active
+grant from pauseVisualProvider during evaluation. The provider executes before
+the locked current-state read, so the test is a deterministic reproduction of
+the old stale-merge gap without reacquiring the same mutex inside its transform.
+It requires preservation of the newer end/grant, unlocked published state, and
+one clear broadcast. The color normalization case and this lifecycle case were
+read after the parent's corrections; their execution outcomes remain unverified
+by this source check.
+
+Useful remaining test boundaries are wrong-owner/writable mutexes, malformed
+helper operation/arity/epoch/color input, recovery during challenge, and a helper
+held-lock contention case. A writer-only test does not independently prove all
+Scheduler call sites use fresh merge, although the connected source now does.
+Final compilation, focused Bats/Swift results, full regressions, and native visible
+acceptance must be established by the parent. No score or final approval is issued.
+
+## Follow-up disposition: accepted snapshot and watcher cache
+
+Final production and test source was reread after the parent reproduced the
+retained late-snapshot concern. The earlier statements about returning a proposed
+timestamp-only no-op record and absorbing a concurrent change in a late reread
+describe the prior snapshot; both are now source-resolved as follows.
+
+- `LockStateWriter.update` still normalizes writtenEpoch only for its equality
+  decision. On equality it now returns the original checked `current` record,
+  exactly matching the unchanged file, rather than the proposed new timestamp.
+  The updated no-op test requires the accepted return equal checked stored data
+  and the original bytes remain intact.
+- `Scheduler.finishEvaluation` captures whether the locked read found absence,
+  then sets `lastReadLockState` from the accepted transaction result. It uses nil
+  only for the unused absent/inactive/no-grant shortcut, matching the absence
+  left on disk. It no longer rereads a potentially newer CLI record after
+  projecting the earlier record into UI state.
+- The runtime watcher still compares fresh checked data with this accepted
+  snapshot. A grant published afterward now differs and causes reevaluation
+  instead of being silently adopted as already evaluated.
+- The new watcher regression publishes a grant during the second visual
+  resolution, after the lock transaction. It fires the runtime watcher, drains
+  its queued main callback, and requires unlocked state plus one clear broadcast.
+  Publication errors are checked explicitly. The earlier longer-end/grant
+  regression continues injecting before the transaction to cover fresh merge.
+
+The parent reports this watcher case first failed two assertions in `tBfZkL`,
+then the final connected suite passed 658 Swift tests after the correction. This
+follow-up inspected source and test contracts only; it did not execute tests or
+independently inspect that log. No further defect was found in these two changes.
+Non-Darwin serialization, pre-challenge grant-duration timing, cooperative I/O
+bounds/storage trust limits, and prior installed non-cooperating writers remain
+the concrete limitations described above. No provider verdict or score is added.

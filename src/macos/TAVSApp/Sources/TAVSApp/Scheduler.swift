@@ -296,25 +296,15 @@ final class Scheduler: ObservableObject {
     // challenge-gated (spec D7: engaging is one click).
     func lockNow(seconds: Int64 = 3600) {
         let now = Int64(clock.now().timeIntervalSince1970)
-        var until = now + seconds
-        let existing: LockStateData?
-        do { existing = try LockStateReader.readChecked(at: lockStateURL) }
-        catch {
-            statusText = "The lock could not be saved. Repair state storage and try again."
-            return
-        }
-        if let existing = existing,
-           existing.locked, existing.lockUntilEpoch > until, existing.lockUntilEpoch > now {
-            until = existing.lockUntilEpoch
-        }
         let visual = pauseVisualProvider()
-        let state = LockStateData(
-            locked: true, reason: .manual,
-            lockUntilEpoch: until, unlockUntilEpoch: 0,
-            writtenEpoch: now,
-            lockBg: visual.backgroundColor, lockFg: visual.foregroundColor
-        )
-        guard writeLockStateIfChanged(state, existing: nil) else {
+        do {
+            _ = try LockStateWriter.update(at: lockStateURL) { existing in
+                let previousEnd = existing.map { $0.locked ? $0.lockUntilEpoch : 0 } ?? 0
+                return LockStateData(locked: true, reason: .manual,
+                    lockUntilEpoch: max(now + seconds, previousEnd), unlockUntilEpoch: 0,
+                    writtenEpoch: now, lockBg: visual.backgroundColor, lockFg: visual.foregroundColor)
+            }
+        } catch {
             statusText = "The lock could not be saved. Repair state storage and try again."
             return
         }
@@ -325,20 +315,14 @@ final class Scheduler: ObservableObject {
     // grant (spec D5) and re-evaluates immediately.
     @discardableResult
     func grantUnlock(untilEpoch: Int64) -> Bool {
-        let saved: LockStateData?
-        do { saved = try LockStateReader.readChecked(at: lockStateURL) }
-        catch {
-            statusText = "The unlock grant could not be saved: lock state is unavailable."
-            return false
-        }
-        guard var state = saved else {
-            statusText = "The unlock grant could not be saved: lock state is unavailable."
-            return false
-        }
-        let existing = state
-        state.unlockUntilEpoch = untilEpoch
-        state.writtenEpoch = Int64(clock.now().timeIntervalSince1970)
-        guard writeLockStateIfChanged(state, existing: existing) else {
+        do {
+            _ = try LockStateWriter.update(at: lockStateURL) { existing in
+                guard var state = existing else { throw POSIXError(.ENOENT) }
+                state.unlockUntilEpoch = untilEpoch
+                state.writtenEpoch = Int64(clock.now().timeIntervalSince1970)
+                return state
+            }
+        } catch {
             statusText = "The unlock grant could not be saved. Repair state storage and try again."
             return false
         }
@@ -385,14 +369,23 @@ final class Scheduler: ObservableObject {
         visualRestrictionsStatus = visualRestrictionsState.read()
         let restrictionsDisabled = visualRestrictionsStatus.disablesRestrictions
 
-        let existingLock: LockStateData?
         var persistedMute: Bool?, muteSeedReadFailed = false
         if previousMuteSeedPending {
             do { persistedMute = try MuteStateReader.readMutedFlagChecked(at: muteStateURL) }
             catch { muteSeedReadFailed = true }
         }
+        let scheduleHard = result.muted && result.hard
+        let visual = pauseVisualProvider()
+        let scheduleUntil = scheduleHard ? transition.map { Int64($0.timeIntervalSince1970) } ?? 0 : 0
+        let mergedLock: LockStateData
+        var existingLockAbsent = false
         do {
-            existingLock = try LockStateReader.readChecked(at: lockStateURL)
+            mergedLock = try LockStateWriter.update(at: lockStateURL) { existing in
+                existingLockAbsent = existing == nil
+                return LockStateMerge.merged(existing: existing, scheduleHardMuted: scheduleHard,
+                    scheduleUntilEpoch: scheduleUntil, now: nowEpoch,
+                    lockBg: visual.backgroundColor, lockFg: visual.foregroundColor)
+            }
         }
         catch {
             projectionSaved = false
@@ -411,20 +404,6 @@ final class Scheduler: ObservableObject {
             }
             return
         }
-        let scheduleHard = result.muted && result.hard
-        let visual = pauseVisualProvider()
-        let scheduleUntil: Int64 = {
-            guard scheduleHard, let t = transition else { return 0 }
-            return Int64(t.timeIntervalSince1970)
-        }()
-        let mergedLock = LockStateMerge.merged(
-            existing: existingLock,
-            scheduleHardMuted: scheduleHard,
-            scheduleUntilEpoch: scheduleUntil,
-            now: nowEpoch,
-            lockBg: visual.backgroundColor,
-            lockFg: visual.foregroundColor
-        )
         let effectiveLock = mergedLock.isEffectivelyLocked(now: nowEpoch)
         let grantActive = mergedLock.unlockUntilEpoch > nowEpoch
 
@@ -452,7 +431,6 @@ final class Scheduler: ObservableObject {
         }
 
         let wasMuted = previousMuteSeedPending ? (persistedMute ?? previousMuted) : previousMuted
-        let lockSaved = writeLockStateIfChanged(mergedLock, existing: existingLock)
 
         let untilEpoch: Int64
         if requestedMuted {
@@ -467,9 +445,9 @@ final class Scheduler: ObservableObject {
             untilEpoch = 0
         }
 
-        let muteSaved = lockSaved && writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
+        let muteSaved = writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
                                       hardCaused: hardCaused, requestedMuted: requestedMuted)
-        projectionSaved = lockSaved && muteSaved
+        projectionSaved = muteSaved
 
         if projectionSaved {
             previousMuteSeedPending = false
@@ -510,11 +488,9 @@ final class Scheduler: ObservableObject {
         }
         scheduleEpochWake(mergedLock.unlockUntilEpoch, now: nowEpoch)
 
-        do { lastReadLockState = try LockStateReader.readChecked(at: lockStateURL) }
-        catch {
-            projectionSaved = false
-            statusText = "Visual state could not be saved. Terminal updates will retry. " + statusText
-        }
+        // A later CLI change belongs to the next evaluation, not this accepted UI snapshot.
+        lastReadLockState = existingLockAbsent && !mergedLock.locked && mergedLock.unlockUntilEpoch == 0
+            ? nil : mergedLock
     }
 
     private func paintMuted(visual: PauseVisual, effectiveLock: Bool, lockUntil: Int64) {
@@ -610,32 +586,6 @@ final class Scheduler: ObservableObject {
     }
 
     // MARK: - State writing
-
-    // Persists lock.state only on semantic change (writtenEpoch excluded):
-    // the runtime-dir watcher would otherwise feed our own heartbeat rewrite
-    // back into re-evaluation. A machine that never uses locks never gets a
-    // lock.state file at all.
-    private func writeLockStateIfChanged(_ merged: LockStateData, existing: LockStateData?) -> Bool {
-        let current: LockStateData?
-        do {
-            current = try LockStateReader.readChecked(at: lockStateURL)
-        } catch {
-            TAVSLog.muteState.error("lock.state unavailable: not a usable trusted record")
-            return false
-        }
-        if current == nil, existing == nil, !merged.locked, merged.unlockUntilEpoch == 0 { return true }
-        if existing != nil, var normalized = current {
-            normalized.writtenEpoch = merged.writtenEpoch
-            if normalized == merged { return true }
-        }
-        do {
-            try LockStateWriter.write(merged, to: lockStateURL)
-            return true
-        } catch {
-            TAVSLog.muteState.error("lock.state write failed: \(error.localizedDescription, privacy: .public)")
-            return false
-        }
-    }
 
     private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64,
                                 hardCaused: Bool, requestedMuted: Bool) -> Bool {
