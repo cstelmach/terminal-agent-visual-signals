@@ -970,6 +970,8 @@ final class FocusControllerTests: XCTestCase {
     private func unchangedPollsDuringSlowFocus(automatic: Bool, changingCue: Bool = false,
                                              changingForeground: Bool = false) throws {
         let a = try surface(10), b = try surface(20), rows = [a,b]
+        let target = try XCTUnwrap(state.captureTarget(for: b)), (runner, trace) = recordedWriter(target)
+        configureState(runner: runner)
         let queue = DispatchQueue(label: "slow.focus.polls"), guardLock = NSLock()
         let firstEntered = DispatchSemaphore(value: 0), releaseFirst = DispatchSemaphore(value: 0)
         let secondEntered = expectation(description: "Coalesced next lookup held")
@@ -1008,10 +1010,9 @@ final class FocusControllerTests: XCTestCase {
         }
         let finishedAt = clock.now().timeIntervalSince1970
         releaseFirst.signal(); wait(for: [secondEntered], timeout: 2)
-        let target = try XCTUnwrap(state.captureTarget(for: b))
         let first = try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)
         if changingCue || changingForeground { XCTAssertNil(first, "Changed input failed to invalidate old preparation") }
-        else { XCTAssertNotNil(first, "Unchanged polling discarded the completed preparation") }
+        else { XCTAssertNotNil(first, "Unchanged polling discarded the completed preparation\n" + trace().joined(separator: "\n")) }
         if let first = first {
             XCTAssertTrue(first.active); XCTAssertEqual(first.heartbeatAt, finishedAt)
             _ = try read(1)
@@ -1021,7 +1022,10 @@ final class FocusControllerTests: XCTestCase {
         else { XCTAssertEqual(focus.cueSnapshot(for: a.id), initialCues) }
         if !automatic { XCTAssertEqual(focus.workingSet, [a.id]) }
         releaseSecond.signal(); awaitManual(focus); _ = try read(1)
-        focus.focusOff(); XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+        let cleared = expectation(description: "Coalescing fixture cleanup returned")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
     }
 
     func testSlowPreparationCannotPaintWithoutFreshCatalogueCoverage() throws {
@@ -1202,6 +1206,193 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(restarted.mode, .off)
         restarted.focusSelected([a], catalogue: [a,b])
         XCTAssertEqual(restarted.mode, .off)
+    }
+
+    func testSessionsConfirmedRecoveryRetiresOldFocusBeforeResumeAndRefocus() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([a,b])) }, navigate: { _, _ in },
+            visualRestrictionsState: restrictions, focus: focus, recover: { resume, done in
+                done(.success(self.recovery.recover(resume: resume)))
+            })
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let recovered = expectation(description: "Physical recovery report accepted")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in recovered.fulfill() }.store(in: &subscriptions)
+        model.restoreVisibility(); wait(for: [recovered], timeout: 2)
+        XCTAssertEqual(try read(1), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{07}".utf8))
+        let noFailure = expectation(description: "Confirmed restoration needs no old lease retry")
+        noFailure.isInverted = true
+        focus.$focusCleanupError.first { $0 != nil }.sink { _ in noFailure.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [noFailure], timeout: 0.2)
+        XCTAssertNil(focus.focusCleanupError)
+        let resumed = expectation(description: "Explicit resumption accepted")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in resumed.fulfill() }.store(in: &subscriptions)
+        model.restoreVisibility(resume: true); wait(for: [resumed], timeout: 2); _ = try read(1)
+        focus.focusSelected([b], catalogue: [a,b]); awaitManual(focus); _ = try read(0)
+        XCTAssertEqual(focus.workingSet, [b.id]); XCTAssertNil(focus.focusCleanupError)
+        var unchanged = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&unchanged, 1, 20), 0)
+        let cleared = expectation(description: "Fresh focus cleanup completed")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2); _ = try read(0)
+        XCTAssertNil(focus.focusCleanupError)
+    }
+
+    func testSessionsPartialRecoveryRetainsFailedFocusUntilConfirmedRetry() throws {
+        let a = try surface(10), healthy = try surface(20), failed = try surface(30), guardLock = NSLock()
+        var reject = false, opens: [String] = []
+        configureState(runner: SystemProcessRunner(openDevice: { path, flags in
+            guardLock.lock(); opens.append(path); let unavailable = reject && path == failed.tty; guardLock.unlock()
+            if unavailable { errno = EACCES; return -1 }
+            return Darwin.open(path, flags)
+        }))
+        let focus = controller(MockTimerScheduler()), rows = [a,healthy,failed]
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success(rows)) }, navigate: { _, _ in },
+            visualRestrictionsState: restrictions, focus: focus, recover: { resume, done in
+                done(.success(self.recovery.recover(resume: resume)))
+            })
+        focus.focusSelected([a], catalogue: rows); awaitManual(focus); _ = try read(1); _ = try read(2)
+        guardLock.lock(); reject = true; guardLock.unlock()
+        let recovered = expectation(description: "Partial physical recovery accepted")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in recovered.fulfill() }.store(in: &subscriptions)
+        model.restoreVisibility(); wait(for: [recovered], timeout: 2); _ = try read(1)
+        XCTAssertTrue(try XCTUnwrap(model.recoveryStatus).contains("1 failed"))
+        guardLock.lock(); opens.removeAll(); guardLock.unlock()
+        let incomplete = expectation(description: "Failed target still needs physical cleanup")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in incomplete.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [incomplete], timeout: 2)
+        XCTAssertNotNil(focus.focusCleanupError)
+        guardLock.lock(); let retryPaths = opens; reject = false; guardLock.unlock()
+        XCTAssertEqual(retryPaths, [failed.tty!])
+        let retried = expectation(description: "Previously failed recovery confirmed")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in retried.fulfill() }.store(in: &subscriptions)
+        model.restoreVisibility(); wait(for: [retried], timeout: 2); _ = try read(1); _ = try read(2)
+        XCTAssertNil(focus.focusCleanupError)
+        let noFailure = expectation(description: "Confirmed retry releases remaining old lease")
+        noFailure.isInverted = true
+        focus.$focusCleanupError.first { $0 != nil }.sink { _ in noFailure.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [noFailure], timeout: 0.2)
+        XCTAssertNil(focus.focusCleanupError)
+    }
+
+    func testSessionsUnconfirmedRecoveryReportCannotReleasePaintedFocus() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([a,b])) }, navigate: { _, _ in },
+            visualRestrictionsState: restrictions, focus: focus, recover: { _, done in
+                do { try self.restrictions.write(suspended: true) }
+                catch { done(.failure(error)); return }
+                done(.success(VisualRecoveryReport(stateSaved: true, catalogueAvailable: false,
+                    items: [VisualRecoveryItem(target: target, tty: target.tty, status: .unaffected)])))
+            })
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let recovered = expectation(description: "Unconfirmed report displayed")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in recovered.fulfill() }.store(in: &subscriptions)
+        model.restoreVisibility(); wait(for: [recovered], timeout: 2)
+        let incomplete = expectation(description: "Unconfirmed paint obligation retained")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in incomplete.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [incomplete], timeout: 2)
+        XCTAssertNotNil(focus.focusCleanupError)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testRecoveryConfirmationRejectsMissingConflictingAndUnpersistedOutcomes() throws {
+        let a = try surface(10), b = try surface(20), other = try surface(30)
+        let focus = controller(MockTimerScheduler()), target = try XCTUnwrap(state.captureTarget(for: b))
+        let otherTarget = try XCTUnwrap(state.captureTarget(for: other))
+        let reused = TerminalTargetBinding(tty: target.tty, device: target.device,
+            ttyOwner: generation(40), nativeSurface: target.nativeSurface)
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let confirm = focus.cancelForRecovery()
+        try restrictions.write(suspended: true)
+        let restored = VisualRecoveryItem(target: target, tty: target.tty, status: .restored)
+        let failed = VisualRecoveryItem(target: target, tty: target.tty, status: .failed)
+        let reports = [
+            VisualRecoveryReport(stateSaved: false, catalogueAvailable: true, items: [restored]),
+            VisualRecoveryReport(stateSaved: true, catalogueAvailable: false, items: []),
+            VisualRecoveryReport(stateSaved: true, catalogueAvailable: true, items: [restored,failed]),
+            VisualRecoveryReport(stateSaved: true, catalogueAvailable: true,
+                items: [VisualRecoveryItem(tty: target.tty, status: .restored)]),
+            VisualRecoveryReport(stateSaved: true, catalogueAvailable: true,
+                items: [VisualRecoveryItem(target: otherTarget, tty: target.tty, status: .restored)]),
+            VisualRecoveryReport(stateSaved: true, catalogueAvailable: true,
+                items: [VisualRecoveryItem(target: reused, tty: target.tty, status: .restored)])
+        ]
+        for report in reports {
+            confirm(report)
+            let retained = expectation(description: "Unconfirmed outcome retains exact painted lease")
+            focus.$focusCleanupError.dropFirst().first().sink { _ in retained.fulfill() }.store(in: &subscriptions)
+            focus.focusOff(); wait(for: [retained], timeout: 2)
+            XCTAssertNotNil(focus.focusCleanupError)
+        }
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testLateRecoveryConfirmationCannotReleaseAReplacementFocusLease() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        let confirm = focus.cancelForRecovery(), report = recovery.recover(); _ = try read(1)
+        XCTAssertFalse(report.hasFailures)
+        try restrictions.write(suspended: false)
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let replacement = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(replacement.effectID, original.effectID)
+        confirm(report)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
+        let cleared = expectation(description: "Replacement lease still owns its cleanup")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+        XCTAssertNil(focus.focusCleanupError)
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testConfirmedRecoveryDoesNotOverwriteFreshOrdinaryOutput() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        var completion: ((Result<VisualRecoveryReport, Error>) -> Void)?
+        let model = SessionsModel(prioritiesURL: root.appendingPathComponent("priorities.json"),
+            refresh: { $0(.success([a,b])) }, navigate: { _, _ in },
+            visualRestrictionsState: restrictions, focus: focus, recover: { _, done in completion = done })
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        model.restoreVisibility()
+        let report = recovery.recover(); XCTAssertFalse(report.hasFailures); _ = try read(1)
+        clock.advance(by: 1)
+        try recovery.write(.ordinary(OrdinaryBackgroundIntent(tty: target.tty, device: target.device,
+            producer: target.ttyOwner, deliveryID: "fresh", updatedAt: 1_001, background: "#ABCDEF"),
+            synthetic: false, intakeAt: 1_001), to: target)
+        XCTAssertEqual(try read(1), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+        let recovered = expectation(description: "Delayed recovery confirmation accepted")
+        model.$recovering.dropFirst().first { !$0 }.sink { _ in recovered.fulfill() }.store(in: &subscriptions)
+        completion?(.success(report)); wait(for: [recovered], timeout: 2)
+        let noFailure = expectation(description: "Settled lease cannot attempt another reset")
+        noFailure.isInverted = true
+        focus.$focusCleanupError.first { $0 != nil }.sink { _ in noFailure.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [noFailure], timeout: 0.2)
+        XCTAssertNil(focus.focusCleanupError)
+        XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testConfirmedVanishedTargetReleasesCanceledFocusLease() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let confirm = focus.cancelForRecovery()
+        close(ptys[1].master); close(ptys[1].slave)
+        ptys[1] = (-1, -1, ptys[1].path)
+        identities.removeValue(forKey: 20); missingProcesses.insert(20)
+        let report = recovery.recover()
+        XCTAssertFalse(report.hasFailures)
+        XCTAssertEqual(report.items.map(\.status), [.vanished])
+        confirm(report); XCTAssertNil(focus.focusCleanupError)
+        focus.focusOff(); XCTAssertNil(focus.focusCleanupError)
     }
 
     func testCatalogueFailureInvalidatesBlockedAndCoalescedManualUpdates() throws {

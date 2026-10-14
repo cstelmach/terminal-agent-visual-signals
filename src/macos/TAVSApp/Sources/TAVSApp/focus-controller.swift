@@ -187,10 +187,12 @@ final class FocusController: ObservableObject {
         }
     }
 
-    func cancelForRecovery() {
+    @discardableResult
+    func cancelForRecovery() -> (VisualRecoveryReport) -> Void {
         lock.lock(); let old = current; current = nil; manual = nil
         manualWanted.removeAll(); manualBlocked.removeAll()
-        for lease in focusLeases.values { lease.retiring = true }
+        let canceled = Array(focusLeases.values)
+        for lease in canceled { lease.retiring = true }
         lock.unlock()
         // Retain the pinned revision until pending metadata cancellation succeeds.
         if let old = old, !pendingClear.contains(where: { $0 === old }) { pendingClear.append(old) }
@@ -199,6 +201,24 @@ final class FocusController: ObservableObject {
         attention = nil; attentionCues.removeAll(); automaticRevision = nil
         automaticHigh.removeAll(); automaticCatalogue = nil
         manualPending = nil; manualLatest = nil; workingSet.removeAll(); mode = .off; focusStatus = "Focus: Off"
+        return { [weak self] report in
+            guard let self = self, report.stateSaved else { return }
+            let outcomes = Dictionary(grouping: report.items.filter { $0.target != nil },
+                by: { $0.target!.physicalTarget })
+            self.lock.lock()
+            for lease in canceled {
+                let key = lease.target.physicalTarget
+                guard self.focusLeases[key] === lease, let items = outcomes[key],
+                      items.allSatisfy({ $0.status == .restored || $0.status == .vanished }) else { continue }
+                // Marker replacement and metadata cancellation alone do not prove repaint success.
+                lease.ownershipResolved = true; lease.mayHavePainted = false
+                self.focusLeases.removeValue(forKey: key)
+            }
+            let pending = self.focusLeases.values.contains { $0.retiring }
+            self.lock.unlock()
+            self.focusCleanupError = pending
+                ? "Some focus effects could not be cleared. Restore Visibility is available." : nil
+        }
     }
 
     func focusSelected(_ selected: [GhosttySurface], catalogue: [GhosttySurface]) {

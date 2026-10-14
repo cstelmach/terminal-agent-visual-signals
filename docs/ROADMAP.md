@@ -1,7 +1,13 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.33
+Version: 1.34
+
+GUI recovery now settles canceled focus leases from actual per-target outcomes before showing
+the report. Failed or unconfirmed targets remain retryable; late reports preserve replacement
+leases and fresh ordinary output. Owned-PTY regressions verify the change without altering output
+deadlines or renderer semantics. Independent headless bookkeeping and physical acceptance remain
+open.
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).

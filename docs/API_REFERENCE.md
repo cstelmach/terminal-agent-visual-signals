@@ -1,7 +1,18 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.55
+Version: 1.56
+
+## GUI recovery confirmation
+
+`FocusController.cancelForRecovery()` returns a completion closure for that canceled focus-lease
+cohort. SessionsModel invokes it on the main queue before displaying a successful recovery report.
+Only saved-state reports with bound restored/vanished outcomes for the exact physical target
+settle a lease. Conflicting statuses, failures, unaffected results and missing targets retain it.
+A late report cannot remove a replacement lease; existing clear workers own their completion groups.
+Confirmation emits no terminal output. Fresh ordinary colors and newer effects are preserved.
+Independent headless recovery has no GUI report callback; its obsolete-lease bookkeeping remains
+an open source issue. Marker replacement or inactive metadata is not physical recovery proof.
 
 ## Fresh native effect preparation
 

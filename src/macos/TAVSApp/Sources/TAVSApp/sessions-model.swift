@@ -168,7 +168,7 @@ final class SessionsModel: ObservableObject {
 
     func restoreVisibility(resume: Bool = false) {
         guard !recovering else { return }
-        focus?.cancelForRecovery()
+        let confirmedRecovery = focus?.cancelForRecovery()
         recovering = true
         recoveryStatus = resume ? "Re-enabling saved visual rules; focus remains Off." : "Restoring visibility."
         guard let action = recoverAction else {
@@ -178,7 +178,10 @@ final class SessionsModel: ObservableObject {
             return
         }
         action(resume) { [weak self] result in
-            DispatchQueue.main.async { self?.finishRecovery(result) }
+            DispatchQueue.main.async {
+                if case .success(let report) = result { confirmedRecovery?(report) }
+                self?.finishRecovery(result)
+            }
         }
     }
 

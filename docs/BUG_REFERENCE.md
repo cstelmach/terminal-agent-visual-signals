@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.61
+Version: 1.62
+
+## Successful GUI recovery leaves canceled focus leases stuck
+
+Painted leases retained their old marker revision after Restore Visibility. Later Focus Off could
+never restore through that revision, producing a false cleanup failure after successful recovery.
+Marker replacement and canceled metadata alone cannot settle a failed physical target.
+
+The GUI now applies per-target recovery outcomes to its captured canceled cohort. Confirmed
+restored/vanished bindings retire only the same lease object; failed or unconfirmed targets remain
+retryable. Seven regressions cover recovery/resumption/refocus, mixed device failure, uncertain
+reports, owner reuse, late confirmation, fresh ordinary output and proven disappearance.
+Independent headless recovery still lacks outcome feedback to the live controller and remains open.
 
 ## Effects trust cached native associations
 
