@@ -60,11 +60,13 @@ final class VisualRestrictionsStateStore {
             guard errno == ENOENT else { throw VisualRestrictionsStateError.storageUnavailable }
             return VisualRestrictionsRevision(url: url)
         }
-        guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
+        guard info.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(info) else {
+            throw VisualRestrictionsStateError.storageUnavailable
+        }
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { throw VisualRestrictionsStateError.storageUnavailable }
         var current = stat()
-        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG,
+        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(current),
               current.st_dev == info.st_dev, current.st_ino == info.st_ino else {
             close(fd); throw VisualRestrictionsStateError.storageUnavailable
         }
@@ -80,6 +82,11 @@ final class VisualRestrictionsStateStore {
 
     func matches(_ identity: VisualRestrictionsIdentity, deadline: UInt64) throws -> Bool {
         guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
+        do { try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), deadline: deadline) }
+        catch {
+            if DispatchTime.now().uptimeNanoseconds >= deadline { throw VisualRestrictionsStateError.deadlineExceeded }
+            throw VisualRestrictionsStateError.storageUnavailable
+        }
         var info = stat()
         let result: Bool
         if lstat(url.path, &info) != 0 {
@@ -88,7 +95,9 @@ final class VisualRestrictionsStateStore {
             }
             result = identity.inode == 0 && identity.device == 0
         } else {
-            guard info.st_mode & S_IFMT == S_IFREG else { throw VisualRestrictionsStateError.storageUnavailable }
+            guard info.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(info) else {
+                throw VisualRestrictionsStateError.storageUnavailable
+            }
             result = identity.inode != 0 && identity.device == info.st_dev && identity.inode == info.st_ino
         }
         guard DispatchTime.now().uptimeNanoseconds < deadline else { throw VisualRestrictionsStateError.deadlineExceeded }
@@ -97,16 +106,19 @@ final class VisualRestrictionsStateStore {
 
     func read() -> VisualRestrictionsStatus {
         guard url.isFileURL else { return .unavailable }
+        do { try RuntimeDirectoryTrust.check(url.deletingLastPathComponent()) }
+        catch { return .unavailable }
         var before = stat()
         if lstat(url.path, &before) != 0 { return errno == ENOENT ? missingStatus() : .unavailable }
-        guard before.st_mode & S_IFMT == S_IFREG, before.st_size >= 0, before.st_size < 128 else {
+        guard before.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(before),
+              before.st_size >= 0, before.st_size < 128 else {
             return .unavailable
         }
         let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { return .unavailable }
         defer { close(fd) }
         var current = stat()
-        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG,
+        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(current),
               current.st_ino == before.st_ino, current.st_dev == before.st_dev,
               current.st_size >= 0, current.st_size < 128 else { return .unavailable }
         var bytes = [UInt8](repeating: 0, count: 128)
@@ -135,13 +147,14 @@ final class VisualRestrictionsStateStore {
 
     func write(suspended: Bool) throws {
         guard url.isFileURL else { throw VisualRestrictionsStateError.storageUnavailable }
-        var info = stat()
-        if lstat(url.path, &info) == 0, info.st_mode & S_IFMT != S_IFREG {
-            throw VisualRestrictionsStateError.storageUnavailable
-        }
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), create: true)
+            var info = stat()
+            if lstat(url.path, &info) == 0 {
+                guard info.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(info) else {
+                    throw VisualRestrictionsStateError.storageUnavailable
+                }
+            } else if errno != ENOENT { throw VisualRestrictionsStateError.storageUnavailable }
             try Data(Self.serialized(suspended: suspended).utf8).write(to: url, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         } catch { throw VisualRestrictionsStateError.storageUnavailable }

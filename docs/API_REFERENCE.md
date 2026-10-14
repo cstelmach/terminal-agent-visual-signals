@@ -1,7 +1,20 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.62
+Version: 1.63
+
+## Native persistent marker trust
+
+VisualRestrictionsStateStore read, captureRevision, matches and write validate the marker parent
+through RuntimeDirectoryTrust and require effective-UID-owned, non-group/other-writable leaves.
+Unsafe metadata returns unavailable or storageUnavailable; write never repairs that metadata.
+Trusted malformed regular content remains explicitly repairable. Safe absent paths remain active,
+new parent components use 0700, and marker replacement retains 0600 and its existing atomic format.
+
+Revision capture still holds the original descriptor to prevent inode reuse. Matching checks
+directory and leaf trust before accepting an identity, using the original supplied deadline and
+deadlineExceeded on expiry. No schema, resumption, device-write budget or recovery ordering changes.
+These rules cover native marker APIs; portable and shell trust work remains separate.
 
 ## Native runtime directory trust
 
@@ -21,8 +34,8 @@ inside its existing worker and original 100 ms deadline, before callbacks/open a
 open. Lock-parent creation now precedes device admission/open. Lock-file UID checks supplement
 its existing exact 0600 predicate. No target/emergency identity or render schema changes occur.
 
-Scheduler's separate projection readers/writers, persistent marker, portable and shell paths are
-outside this correction. The guard checks POSIX metadata, not ACLs or all path replacement races.
+Scheduler's separate projection readers/writers, portable and shell paths remain outside these
+native guards. The guard checks POSIX metadata, not ACLs or all path replacement races.
 
 ## Record read retries
 

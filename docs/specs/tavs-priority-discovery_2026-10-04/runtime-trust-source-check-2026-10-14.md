@@ -1,7 +1,7 @@
 # Runtime trust source findings and native correction
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.0
+Version: 1.1
 
 The reports below describe their inspected baselines, not the final implementation. The parent
 verified findings against source and controlled fixtures. Final outcomes and open scope follow.
@@ -844,3 +844,35 @@ Synthetic UID metadata tests prove the predicate, not a foreign-account attack. 
 adversarial TOCTOU coverage remain unverified. Native pane/Space/readability, Linux ordinary
 implementation, headless recovery feedback, palette restoration and final review remain open.
 The complete goal stays active and incomplete; SPEC/PLAN bodies and live state were not changed.
+
+## Native persistent marker correction
+
+VisualRestrictionsStateStore now checks parent and leaf trust for reads, captureRevision,
+identity matching and writes. Unavailable metadata disables restrictions and cannot authorize
+revision matching or replacement. Safe missing paths, explicit repair of trusted malformed data,
+atomic 0600 marker replacement and pinned inode lifetimes remain. Matching reuses its deadline.
+No raw device output, new deadline, watcher, schema or restoration fallback was added.
+
+Three cases reproduced writable parent, writable marker and linked existing-parent acceptance.
+Their original bytes remain unchanged after failed writes in the corrected source. The policy
+root fixture now separates its safe marker parent from an unsafe runtime child: otherwise the
+new unavailable marker correctly overrides rule reads, making the old expected throw misleading.
+An existing focus test now waits for successful cleanup publication and inactive metadata before
+its owned fixture is removed. This fixes that fixture lifetime gap, not an established EPERM cause.
+
+- mNJfIe: behavioral RED, 3 tests/15 assertions, 0.125s.
+- I03h0W: connected run, 201 tests/3 assertions (1 unexpected), 4.946s. Two policy expectations
+  failed because their marker was also made unsafe; the other error was fixture teardown EPERM.
+- Owned failed root inspection found mode0700 and no listed immutable flag/ACL on root/organizer.
+  It neither establishes every descendant's metadata nor explains the earlier deletion failure.
+- Id3daK: 131/131 connected/previously failing case checks, 1.903s, after policy fixture repair.
+  The old focus case passed here before its cleanup wait was added; no cause is inferred.
+- 3YczDC: final full Swift suite, 634/634, 15.371s, after cleanup fixture correction.
+- Bv21PX: final serial release, 22.04s.
+- YqetLK: 25/25 isolated marker-parity/background-intent checks with rebuilt helper and owned PTYs.
+
+Logs use the existing /var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.<run>/command.log.
+Native marker trust is now covered; shell and portable marker trust remain open. Scheduler's
+checked-reader/projection/watch correction is still unimplemented. Its full source investigation
+is retained in current-codex-review-2026-10-14.md as a separate source appendix, not a new provider
+review or approval. Other native/Linux/headless/palette/review and timing limits remain open.

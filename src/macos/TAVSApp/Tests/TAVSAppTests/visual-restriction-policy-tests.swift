@@ -53,13 +53,17 @@ final class VisualRestrictionPolicyTests: XCTestCase {
     func testMissingRulesHaveNoRestriction() throws { XCTAssertNil(try current()) }
 
     func testWritableRuntimeDirectoryCannotSupplyARestriction() throws {
+        let runtime = root.appendingPathComponent("runtime")
+        try FileManager.default.createDirectory(at: runtime, withIntermediateDirectories: false,
+                                               attributes: [.posixPermissions: 0o700])
+        lockURL = runtime.appendingPathComponent("lock.state")
         try writeLock()
-        defer { _ = chmod(root.path, 0o700) }
+        defer { _ = chmod(runtime.path, 0o700) }
         for mode: mode_t in [0o770, 0o777] {
-            XCTAssertEqual(chmod(root.path, mode), 0)
+            XCTAssertEqual(chmod(runtime.path, mode), 0)
             XCTAssertThrowsError(try current())
         }
-        XCTAssertEqual(chmod(root.path, 0o755), 0)
+        XCTAssertEqual(chmod(runtime.path, 0o755), 0)
         XCTAssertEqual(try current(), .locked(pause, untilEpoch: 2_000))
     }
 

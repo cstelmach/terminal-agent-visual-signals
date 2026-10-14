@@ -1,12 +1,17 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.40
+Version: 1.41
+
+Native recovery-marker trust now covers reads, revision capture/matching and atomic writes.
+Three regressions plus all 634 Swift tests, release and 25 isolated marker/background checks pass.
+Unsafe paths are preserved; trusted malformed content remains repairable. Scheduler checked
+lock-state reads, portable/shell trust and required native/Linux acceptance remain open.
 
 Native managed storage/policy/output now reject unsafe directory ownership, writable permissions
 and user-linked ancestry. Existing safe roots and macOS system temp aliases remain supported.
 Twelve regressions, 631 Swift tests, release and 19 helper checks pass. Remaining trust work covers
-Scheduler, persistent marker, portable and shell consumers; native/Linux acceptance stays open.
+Scheduler, portable and shell consumers; native/Linux acceptance stays open.
 
 Organizer record reads now stop before retrying an interrupted or partial syscall after the
 original deadline. Three regressions, 619 Swift tests and the release build pass. Earlier suite

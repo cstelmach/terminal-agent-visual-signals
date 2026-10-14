@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 17:10 CEST
-**Version:** 4.44
+**Last Updated:** 2026-10-14 17:34 CEST
+**Version:** 4.45
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 631 Swift pass; prior failures retained;175 portable/19 background | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 634 Swift pass; prior failures retained;175 portable/25 marker-background | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -889,12 +889,12 @@ Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 re
 
 > Finished record-read checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-### Phase 9 native runtime trust: 2026-10-14 17:10 CEST
+> Finished native trust checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-Native storage/rules/managed writer/registry/pending reject unsafe UID/mode/links within old budgets.
-[Reports, draft failures and limits](runtime-trust-source-check-2026-10-14.md) retain all findings.
-EP1Q21:631/631,16.422s; yCpWOG:release20.00s; noTOPS:19/19;12 new cases;100ms unchanged.
-**Scope:** Five production/four test files; shared I/O correction beyond Phase9's original list.
-Finished read-retry block moved unchanged to the existing appendix; reconstruction verified.
-Next: Scheduler/marker/portable/shell trust, Linux/headless/palette fixes and native acceptance.
-Phase9/goal active and incomplete;2/7/8 Blocked; older timing attribution remains open.
+### Phase 9 native marker trust: 2026-10-14 17:34 CEST
+
+Marker read/write/revisions reject unsafe storage; mNJfIe RED3/15; 3YczDC634/634,15.371s.
+Bv21PX release22.04s;YqetLK25/25; I03h0W201/3 failures retained;scope:1 source/3 tests.
+[Checks](runtime-trust-source-check-2026-10-14.md#native-persistent-marker-correction).
+Next: checked Scheduler lock-state/read/write/watch, portable/shell and native/Linux acceptance.
+Phase9/goal incomplete;2/7/8 Blocked; old timing/EPERM causes unproven; SPEC/PLAN unchanged.

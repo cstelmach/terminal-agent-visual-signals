@@ -1191,7 +1191,11 @@ final class FocusControllerTests: XCTestCase {
         let next = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
         XCTAssertNotEqual(next.effectID, old.effectID)
         XCTAssertTrue(state.isSelectiveLeaseActive(next))
-        focus.focusOff()
+        let cleared = expectation(description: "Renewed focus cleanup completed before fixture removal")
+        focus.$focusCleanupError.dropFirst().first { $0 == nil }
+            .sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
     }
 
     func testRecoveryEndsManualWithoutPaintingAndRestartStartsOff() throws {

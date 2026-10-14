@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.6
+Version: 1.7
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -104,3 +104,14 @@ TOldLS:19/19 background-intent checks with the rebuilt helper and private owned 
 17 completed Phase 2 review/scope lines moved unchanged to its appendix; reconstruction verified.
 Earlier timing causes, native/Linux, headless feedback, palette and runtime-root trust stay open.
 Next: root trust and compatibility corrections; Phase9/goal active and incomplete, 2/7/8 Blocked.
+
+
+### Phase 9 native runtime trust: 2026-10-14 17:10 CEST
+
+Native storage/rules/managed writer/registry/pending reject unsafe UID/mode/links within old budgets.
+[Reports, draft failures and limits](runtime-trust-source-check-2026-10-14.md) retain all findings.
+EP1Q21:631/631,16.422s; yCpWOG:release20.00s; noTOPS:19/19;12 new cases;100ms unchanged.
+**Scope:** Five production/four test files; shared I/O correction beyond Phase9's original list.
+Finished read-retry block moved unchanged to the existing appendix; reconstruction verified.
+Next: Scheduler/marker/portable/shell trust, Linux/headless/palette fixes and native acceptance.
+Phase9/goal active and incomplete;2/7/8 Blocked; older timing attribution remains open.

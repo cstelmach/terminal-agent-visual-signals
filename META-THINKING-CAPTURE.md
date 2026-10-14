@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 54 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 62 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 55 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 63 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -5102,3 +5102,62 @@ predicate; it is not a real foreign-account attack. ACL and full adversarial pat
 are unverified. The final source-check report predates the sticky correction and is not fresh
 reviewer approval. P8/P9 were applied; no new pattern or skill is proposed. Full reports and final
 scope are durable. The complete master goal remains active and incomplete.
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · persistent-marker-trust
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported family; exact served variants unobserved
+  interface: Codex desktop
+  thinking: extended effort requested; runtime setting unverified
+  session: 01a10879
+  trace: observed current tool results and diffs; no Claude action-trace output
+
+**Framing [O]**: The active goal continued from clean 4a6dfa9. The previous correction protected
+native managed runtime paths but explicitly left the persistent recovery marker and Scheduler
+projection outside its scope. Current dated state files still recorded incomplete native
+acceptance and Phase 9 work. The chosen source change covers marker read, revision capture,
+identity matching and write using the existing shared directory guard. Original decisions,
+SPEC/PLAN bodies, installed app and real preference/runtime state were preserved.
+
+**Strategy [O]**: Source inspection established separate marker and Scheduler boundaries. One
+explorer investigated the latter while the parent tested marker behavior directly. Three new
+cases used owned private fixtures with a writable parent, writable marker and linked existing
+parent. Before correction they failed fifteen assertions: unsafe storage was read and pinned,
+revision matching was accepted, and writing changed the suspended bytes. The remedy reused
+existing UID/mode/path checks rather than adding a new storage or status framework. Trusted
+malformed regular data remains explicitly repairable; unsafe metadata is unavailable and is
+preserved. Matching keeps its supplied deadline. The Scheduler source report is durable guidance
+for the next atomic feature; its code was not changed during this marker correction.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Read | Goal/state, memory boundary and current source | Previous turn progress; clean baseline |
+| 2 | Explore/test | Scheduler source; three marker cases | Report plus behavioral RED3/15 |
+| 3 | Edit/verify | Existing marker store and connected tests | Marker cases pass; fixture mismatches exposed |
+| 4 | Diagnose/repair | Policy fixture and focus cleanup lifetime | Corrected unsafe-marker test setup; awaited cleanup |
+| 5 | Verify | Full Swift, release, rebuilt-helper Bats | 634/634, build and 25/25 pass |
+| 6 | Record | Existing reports/docs/history and this capture | Failure evidence and next source task retained |
+
+**Failure arcs [O]**: I03h0W ran 201 tests with three failures, one unexpected. The new marker
+parent guard correctly classified an unsafe marker as unavailable and skipped runtime rule reads;
+the old policy fixture had made both stores unsafe while expecting a rule-read exception. Its
+marker now stays in the safe parent while a runtime child alone is made writable. The other
+failure was focus-fixture removal with EPERM. A metadata inspection of the retained root and
+organizer showed mode0700 with no listed immutable flag/ACL at those two locations; it did not
+establish every descendant or the historical cause. Source showed a bare asynchronous focusOff
+before fixture removal. The test now awaits successful cleanup publication and checks inactive
+metadata. A separated run had already passed before that wait was added, so no old EPERM cause
+is claimed. The original log and corrected scope remain recorded.
+
+**Verification [O]**: mNJfIe reproduced RED3/15. Id3daK passed 131 connected checks. Final 3YczDC
+passed all 634 Swift tests in 15.371 seconds; Bv21PX built release in 22.04 seconds; YqetLK
+passed twenty-five isolated marker-parity/background checks with the rebuilt helper and owned
+PTYs. No test accepted a timeout as restoration or relaxed the 100 ms device limit. P8/P9 were
+applied. Completed native history moved unchanged to the existing appendix with reconstruction
+verified. No new pattern or skill is proposed. Native Scheduler, portable/shell trust, Linux,
+headless feedback, palette and physical acceptance remain open. The full goal stays active and
+incomplete; earlier timing and teardown attribution remain unproven.

@@ -59,6 +59,46 @@ final class VisualRestrictionsStateTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.path), [url.lastPathComponent])
     }
 
+    func testWritableMarkerParentCannotAuthorizeReadRevisionOrReplacement() throws {
+        let store = VisualRestrictionsStateStore(url: url)
+        try store.write(suspended: true)
+        let revision = try store.captureRevision(), original = try Data(contentsOf: url)
+        XCTAssertEqual(chmod(directory.path, 0o777), 0)
+        defer { _ = chmod(directory.path, 0o700) }
+        XCTAssertEqual(store.read(), .unavailable)
+        XCTAssertThrowsError(try store.captureRevision())
+        XCTAssertThrowsError(try store.matches(revision, deadline: .max))
+        XCTAssertThrowsError(try store.write(suspended: false))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testWritableMarkerLeafCannotBeReadPinnedOrExplicitlyRepaired() throws {
+        let store = VisualRestrictionsStateStore(url: url)
+        try store.write(suspended: true)
+        let revision = try store.captureRevision(), original = try Data(contentsOf: url)
+        XCTAssertEqual(chmod(url.path, 0o666), 0)
+        defer { _ = chmod(url.path, 0o600) }
+        XCTAssertEqual(store.read(), .unavailable)
+        XCTAssertThrowsError(try store.captureRevision())
+        XCTAssertThrowsError(try store.matches(revision.identity, deadline: .max))
+        XCTAssertThrowsError(try store.write(suspended: false))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testLinkedExistingMarkerParentCannotRedirectRecoveryState() throws {
+        let store = VisualRestrictionsStateStore(url: url)
+        try store.write(suspended: true)
+        let revision = try store.captureRevision(), original = try Data(contentsOf: url)
+        let link = directory.appendingPathComponent("existing-parent-link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: directory)
+        let redirected = VisualRestrictionsStateStore(url: link.appendingPathComponent(url.lastPathComponent))
+        XCTAssertEqual(redirected.read(), .unavailable)
+        XCTAssertThrowsError(try redirected.captureRevision())
+        XCTAssertThrowsError(try redirected.matches(revision.identity, deadline: .max))
+        XCTAssertThrowsError(try redirected.write(suspended: false))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
     func testRevisionDistinguishesMissingAndRepeatedSameValueRecoveryWrites() throws {
         let store = VisualRestrictionsStateStore(url: url)
         let missing = try store.captureRevision()

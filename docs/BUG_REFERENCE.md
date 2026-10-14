@@ -1,7 +1,23 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.68
+Version: 1.69
+
+## Persistent recovery marker trusts writable or linked storage
+
+The native marker reader/writer/revision paths checked file shape but omitted parent and leaf
+ownership/write-permission checks. Three regressions reproduced unsafe reads, accepted revision
+matches and replacement of a suspended marker. They failed 15 assertions before the correction.
+
+All native marker entry points now reuse RuntimeDirectoryTrust and the effective-UID leaf check.
+Unsafe storage is unavailable and is preserved. Trusted malformed regular data can still be
+explicitly repaired; missing trusted paths, atomic replacement, 0600 output and pinned inode
+semantics remain. Matching uses the supplied deadline; no device budget changes.
+
+A policy fixture now keeps its marker safe while testing an unsafe runtime. A focus fixture
+awaits cleanup and verifies inactive metadata before removal. Its earlier EPERM remains retained
+without a claimed cause. All 634 Swift tests, release and 25 isolated marker/background checks pass.
+Scheduler's independent lock projection and portable/shell trust remain open.
 
 ## Native managed paths accept untrusted runtime storage
 
