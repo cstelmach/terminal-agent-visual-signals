@@ -117,6 +117,48 @@ final class ScheduleStoreTests: XCTestCase {
 
     // MARK: - Validation: Invalid configs
 
+    func testEnabledHourlyQuietRequiresBothMinuteBounds() {
+        for bounds: (Int?, Int?) in [(nil, 59), (50, nil), (nil, nil)] {
+            let quiet = QuietPeriod(id: "incomplete-hourly", enabled: true, kind: .hourly,
+                startMinute: bounds.0, endMinute: bounds.1, start: "12:00", end: "13:00", hard: true)
+            let config = ScheduleConfig(version: 1, masterActive: false, allowedWindows: [], quietPeriods: [quiet])
+            XCTAssertThrowsError(try ScheduleStore.validate(config)) { error in
+                XCTAssertEqual(error as? ScheduleValidationError,
+                    .missingQuietBounds(quietId: quiet.id, kind: .hourly))
+            }
+        }
+    }
+
+    func testEnabledDailyQuietRequiresBothTimeBounds() {
+        for bounds: (String?, String?) in [(nil, "13:00"), ("12:00", nil), (nil, nil)] {
+            let quiet = QuietPeriod(id: "incomplete-daily", enabled: true, kind: .fixedDaily,
+                startMinute: 50, endMinute: 59, start: bounds.0, end: bounds.1)
+            let config = ScheduleConfig(version: 1, masterActive: false, allowedWindows: [], quietPeriods: [quiet])
+            XCTAssertThrowsError(try ScheduleStore.validate(config)) { error in
+                XCTAssertEqual(error as? ScheduleValidationError,
+                    .missingQuietBounds(quietId: quiet.id, kind: .fixedDaily))
+            }
+        }
+    }
+
+    func testDisabledIncompleteQuietRowsRemainValidAndUnmodifiedOnRoundTrip() throws {
+        let quiet = [QuietPeriod(id: "hourly", enabled: false, kind: .hourly),
+            QuietPeriod(id: "daily", enabled: false, kind: .fixedDaily)]
+        let config = ScheduleConfig(version: 1, masterActive: false, allowedWindows: [], quietPeriods: quiet)
+        XCTAssertNoThrow(try ScheduleStore.validate(config))
+        let path = tempDir.appendingPathComponent("disabled.json")
+        try ScheduleStore.save(config, to: path)
+        XCTAssertEqual(try ScheduleStore.load(from: path), config)
+    }
+
+    func testCompleteSelectedQuietBoundsDoNotRequireOtherKindFields() {
+        let quiet = [QuietPeriod(id: "one-minute", enabled: true, kind: .hourly, startMinute: 0, endMinute: 0),
+            QuietPeriod(id: "wrap", enabled: true, kind: .hourly, startMinute: 55, endMinute: 5),
+            QuietPeriod(id: "night", enabled: true, kind: .fixedDaily, start: "23:00", end: "01:00")]
+        XCTAssertNoThrow(try ScheduleStore.validate(ScheduleConfig(version: 1, masterActive: false,
+            allowedWindows: [], quietPeriods: quiet)))
+    }
+
     func testInvalidEmptyWindowsWithMasterActive() {
         let config = ScheduleConfig(
             version: 1, masterActive: true,

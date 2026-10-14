@@ -1,6 +1,6 @@
 # Scheduling Reference
 
-**Last Updated:** 2026-04-21 | **Version:** 1.0
+**Last Updated:** 2026-10-14 | **Version:** 1.1
 
 TAVS.app adds time-based muting so terminal visual signals only fire
 during your active work hours. This document covers the schedule file
@@ -98,8 +98,8 @@ Quiet periods carve out muted intervals inside allowed windows.
 | `id` | string | Non-empty |
 | `enabled` | bool | Disabled periods are skipped |
 | `kind` | string | `"hourly"` |
-| `start_minute` | int | 0-59 |
-| `end_minute` | int | 0-59 |
+| `start_minute` | int | Required when enabled; 0-59 |
+| `end_minute` | int | Required when enabled; 0-59 |
 
 #### Fixed Daily
 
@@ -108,8 +108,8 @@ Quiet periods carve out muted intervals inside allowed windows.
 | `id` | string | Non-empty |
 | `enabled` | bool | Disabled periods are skipped |
 | `kind` | string | `"fixed_daily"` |
-| `start` | string | `HH:MM`, same rules as window times |
-| `end` | string | `HH:MM`, must differ from `start` |
+| `start` | string | Required when enabled; `HH:MM`, same rules as window times |
+| `end` | string | Required when enabled; `HH:MM`, must differ from `start` |
 
 Both quiet-period kinds also accept the optional `hard` flag: a hard quiet
 period is a hard lock while inside it (challenge-gated resume, see
@@ -130,6 +130,8 @@ Only enabled entries are validated. Disabled entries skip all checks.
 5. **Zero-length:** `start == end` is invalid (for both windows and
    fixed_daily quiet periods).
 6. **Minute range:** `start_minute` and `end_minute` must be in [0,59].
+7. **Quiet bounds:** Both bounds for the selected kind are required when enabled. Other-kind
+   fields cannot replace them. Disabled incomplete drafts remain allowed.
 
 ---
 

@@ -6,14 +6,8 @@
 
 setup_file() {
     export REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    export SWIFT_PKG="$REPO_ROOT/src/macos/TAVSApp"
-
-    if ! command -v swift &>/dev/null; then
-        skip "swift not available"
-    fi
-
-    swift build -c release --package-path "$SWIFT_PKG" 2>/dev/null
-    export SWIFT_BIN="$SWIFT_PKG/.build/release/TAVSApp"
+    [[ -n "${TAVS_TEST_ROOT:-}" && "${TAVS_TEST_HELPER_BIN:-}" == /* && -x "$TAVS_TEST_HELPER_BIN" ]]
+    export SWIFT_BIN="$TAVS_TEST_HELPER_BIN"
 
     export FIXTURE_DIR="$(mktemp -d)"
     _create_fixtures
@@ -122,6 +116,59 @@ _run_cli_validator() {
     local json
     json=$(cat "$1")
     _schedule_validate "$json" 2>/dev/null
+}
+
+@test "parity: enabled quiet rows reject either or both missing selected bounds" {
+    local kind field other json missing
+    for kind in hourly fixed_daily; do
+        if [[ "$kind" == hourly ]]; then
+            json='{"id":"q","enabled":true,"kind":"hourly","start_minute":50,"end_minute":59,"start":"12:00","end":"13:00"}'
+            field=start_minute; other=end_minute
+        else
+            json='{"id":"q","enabled":true,"kind":"fixed_daily","start":"12:00","end":"13:00","start_minute":50,"end_minute":59}'
+            field=start; other=end
+        fi
+        for missing in "$field" "$other" both; do
+            jq --arg field "$field" --arg other "$other" --arg missing "$missing" \
+                'if $missing == "both" then del(.[$field], .[$other]) else del(.[$missing]) end
+                | {version:1, master_active:false, allowed_windows:[], quiet_periods:[.]}' \
+                <<< "$json" > "$FIXTURE_DIR/missing.json"
+            run _run_swift_validator "$FIXTURE_DIR/missing.json"
+            [ "$status" -ne 0 ]
+            run _run_cli_validator "$FIXTURE_DIR/missing.json"
+            [ "$status" -ne 0 ]
+        done
+    done
+}
+
+@test "parity: disabled incomplete quiet rows and complete edge bounds pass" {
+    cat > "$FIXTURE_DIR/quiet-edges.json" <<'EOF'
+{"version":1,"master_active":false,"allowed_windows":[],"quiet_periods":[{"id":"disabled-hourly","enabled":false,"kind":"hourly"},{"id":"disabled-daily","enabled":false,"kind":"fixed_daily"},{"id":"one-minute","enabled":true,"kind":"hourly","start_minute":0,"end_minute":0},{"id":"wrap","enabled":true,"kind":"hourly","start_minute":55,"end_minute":5},{"id":"night","enabled":true,"kind":"fixed_daily","start":"23:00","end":"01:00"}]}
+EOF
+    run _run_swift_validator "$FIXTURE_DIR/quiet-edges.json"
+    [ "$status" -eq 0 ]
+    run _run_cli_validator "$FIXTURE_DIR/quiet-edges.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "resume: incomplete quiet rule fails without changing saved configuration" {
+    cat > "$HOME/.tavs/schedule.json" <<'EOF'
+{"version":1,"master_active":false,"allowed_windows":[],"quiet_periods":[{"id":"incomplete","enabled":true,"kind":"hourly","start_minute":50}]}
+EOF
+    cp "$HOME/.tavs/schedule.json" "$BATS_TEST_TMPDIR/original.json"
+    run "$REPO_ROOT/tavs" schedule resume
+    [ "$status" -ne 0 ]
+    run cmp "$BATS_TEST_TMPDIR/original.json" "$HOME/.tavs/schedule.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "resume: empty-window bootstrap retains its documented warning" {
+    printf '%s\n' '{"version":1,"master_active":false,"allowed_windows":[],"quiet_periods":[]}' > "$HOME/.tavs/schedule.json"
+    run "$REPO_ROOT/tavs" schedule resume
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"no enabled windows"* ]]
+    run jq -e '.master_active == true' "$HOME/.tavs/schedule.json"
+    [ "$status" -eq 0 ]
 }
 
 # --- Valid fixtures: both must exit 0 ---

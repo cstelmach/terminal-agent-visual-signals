@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.64
+Version: 1.65
+
+## Enabled quiet periods with missing bounds validate but never apply
+
+Both validators checked only values that were present. Missing selected-kind bounds passed,
+while the evaluator returned false and ignored the enabled rule. Six missing-pair cases and the
+scheduler loader reproduced this silent no-op; the shell/native parity case also failed.
+
+Both selected bounds are now required. Disabled drafts remain permitted, and complete ranges keep
+their wrapping/one-minute/overnight behavior. Preferences displays an actionable ID/kind hint.
+The scheduler rejects malformed files without rewriting them and accepts a later repaired rule.
+CLI resume previously accepted all validation warnings; it now allows only its documented empty-
+window exception and preserves the saved file on other validation errors. Private parity tests
+cover that exception and rejection. No schedule schema, timer or focus behavior changed.
 
 ## Failed projection writes consume later repaint transitions
 
@@ -76,7 +89,7 @@ The scheduler now validates a candidate before adopting it. Invalid rules follow
 no-config projection, including continuing manual locks, and status reports schedule rejection.
 Saved files are untouched. Startup and watcher regressions verify no invalid pause, unchanged
 data, subsequent valid reload and continuing manual locks. All 573 isolated Swift tests pass.
-Missing quiet-period bounds remain open. Projection/release retries are corrected above.
+Missing quiet-period bounds and projection/release retries are corrected above.
 
 ## Paint failures lack the original writer result
 

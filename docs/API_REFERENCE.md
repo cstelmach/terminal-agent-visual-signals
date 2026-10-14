@@ -1,7 +1,20 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.58
+Version: 1.59
+
+## Enabled quiet-period bounds
+
+Swift and shell validators require both selected-kind bounds for every enabled quiet period:
+hourly start/end minutes or fixed-daily start/end times. Swift reports missingQuietBounds with
+rule ID and kind; Preferences identifies the values to enter or permits disabling the row.
+Disabled incomplete rows remain valid. Hourly 0/0 and wrapping 55/5, plus daily overnight ranges,
+retain their existing semantics. Inactive-kind fields cannot substitute for the selected pair.
+
+The scheduler and headless --validate-config use the shared Swift check without rewriting invalid
+files. Shell schedule validation agrees. Resume retains its documented empty-window bootstrap
+warning, but rejects other invalid rows before saving. The parity suite requires the explicit
+source-built helper and private test root instead of rebuilding in the checkout.
 
 ## Scheduler projection-write outcomes
 

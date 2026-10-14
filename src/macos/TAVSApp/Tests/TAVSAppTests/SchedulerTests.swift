@@ -563,6 +563,23 @@ final class SchedulerLifecycleTests: XCTestCase {
         scheduler.stop()
     }
 
+    func testMissingQuietBoundIsRejectedWithoutRewritingThenAcceptedAfterRepair() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.quietPeriods[0].startMinute = nil; config.quietPeriods[0].hard = true
+        try ScheduleStore.save(config, to: scheduleURL)
+        let original = try Data(contentsOf: scheduleURL)
+        scheduler.start()
+        XCTAssertTrue(scheduler.statusText.contains("Schedule rejected"), scheduler.statusText)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), original)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        config.quietPeriods[0].startMinute = 0
+        try ScheduleStore.save(config, to: scheduleURL); scheduler.loadAndEvaluate()
+        XCTAssertFalse(scheduler.statusText.contains("Schedule rejected"))
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 1)
+        scheduler.stop()
+    }
+
     func testWatcherRejectsInvalidScheduleAndAcceptsLaterValidReplacement() throws {
         try writeStandardConfig(); scheduler.start()
         var invalid = try ScheduleStore.load(from: scheduleURL)

@@ -65,6 +65,7 @@ enum ScheduleValidationError: Error, Equatable {
     case invalidTime(id: String, value: String)
     case zeroLengthWindow(windowId: String)
     case invalidMinuteRange(quietId: String, value: Int)
+    case missingQuietBounds(quietId: String, kind: QuietKind)
 }
 
 enum ScheduleStore {
@@ -117,25 +118,23 @@ enum ScheduleStore {
 
         switch quiet.kind {
         case .hourly:
-            if let sm = quiet.startMinute {
-                if sm < 0 || sm > 59 {
-                    throw ScheduleValidationError.invalidMinuteRange(quietId: quiet.id, value: sm)
-                }
+            guard let sm = quiet.startMinute, let em = quiet.endMinute else {
+                throw ScheduleValidationError.missingQuietBounds(quietId: quiet.id, kind: quiet.kind)
             }
-            if let em = quiet.endMinute {
-                if em < 0 || em > 59 {
-                    throw ScheduleValidationError.invalidMinuteRange(quietId: quiet.id, value: em)
-                }
+            if sm < 0 || sm > 59 {
+                throw ScheduleValidationError.invalidMinuteRange(quietId: quiet.id, value: sm)
+            }
+            if em < 0 || em > 59 {
+                throw ScheduleValidationError.invalidMinuteRange(quietId: quiet.id, value: em)
             }
 
         case .fixedDaily:
-            if let s = quiet.start {
-                try validateTimeString(s, id: quiet.id)
+            guard let s = quiet.start, let e = quiet.end else {
+                throw ScheduleValidationError.missingQuietBounds(quietId: quiet.id, kind: quiet.kind)
             }
-            if let e = quiet.end {
-                try validateTimeString(e, id: quiet.id)
-            }
-            if let s = quiet.start, let e = quiet.end, s == e {
+            try validateTimeString(s, id: quiet.id)
+            try validateTimeString(e, id: quiet.id)
+            if s == e {
                 throw ScheduleValidationError.zeroLengthWindow(windowId: quiet.id)
             }
         }

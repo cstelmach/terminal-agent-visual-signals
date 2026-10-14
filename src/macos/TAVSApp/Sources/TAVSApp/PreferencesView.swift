@@ -132,6 +132,10 @@ private struct ScheduleTab: View {
         } catch ScheduleValidationError.invalidMinuteRange(let quietId, let value) {
             validationHint = "Minute \(value) out of range [0–59] in \"\(quietId)\""
             isValid = false
+        } catch ScheduleValidationError.missingQuietBounds(let quietId, let kind) {
+            let values = kind == .hourly ? "start and end minutes (0-59)" : "start and end times (HH:MM)"
+            validationHint = "Enter both \(values) for \"\(quietId)\", or disable this quiet period"
+            isValid = false
         } catch {
             validationHint = error.localizedDescription
             isValid = false

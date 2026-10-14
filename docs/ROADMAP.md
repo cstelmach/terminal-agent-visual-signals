@@ -1,7 +1,12 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.36
+Version: 1.37
+
+Enabled quiet rules now require both selected-kind bounds in Swift and the CLI. Preferences
+explains missing values; disabled drafts and existing range semantics are preserved. Scheduler
+rejection is visible and does not rewrite configuration. Resume retains empty-window bootstrapping
+but rejects other invalid rows without saving. Isolated native/shell parity verifies these paths.
 
 Scheduler projection failures now retain transition/paint retry state and expose storage failure.
 Successful required writes gate broadcasts and heartbeat retries; existing timers continue.

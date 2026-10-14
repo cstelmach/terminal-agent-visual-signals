@@ -211,6 +211,11 @@ _schedule_validate() {
                 local sm em
                 sm=$(echo "$json" | jq ".quiet_periods[$i].start_minute // empty")
                 em=$(echo "$json" | jq ".quiet_periods[$i].end_minute // empty")
+                if [[ -z "$sm" || -z "$em" ]]; then
+                    cli_error "quiet period '$qid' requires both start_minute and end_minute"
+                    ((errors++))
+                    continue
+                fi
                 if [[ -n "$sm" ]] && (( sm < 0 || sm > 59 )); then
                     cli_error "quiet period '$qid' has invalid start_minute $sm (must be 0-59)"
                     ((errors++))
@@ -224,6 +229,11 @@ _schedule_validate() {
                 local qs qe
                 qs=$(echo "$json" | jq -r ".quiet_periods[$i].start // empty")
                 qe=$(echo "$json" | jq -r ".quiet_periods[$i].end // empty")
+                if [[ -z "$qs" || -z "$qe" ]]; then
+                    cli_error "quiet period '$qid' requires both start and end times (HH:MM)"
+                    ((errors++))
+                    continue
+                fi
                 if [[ -n "$qs" ]]; then
                     if ! _schedule_validate_time "$qs" "$qid" "start"; then
                         ((errors++))
@@ -383,6 +393,11 @@ _schedule_resume() {
     updated=$(echo "$json" | jq '.master_active = true')
 
     if ! _schedule_validate "$updated"; then
+        local allow_empty
+        allow_empty=$(echo "$updated" | jq '.master_active = false')
+        if ! _schedule_validate "$allow_empty"; then
+            return 1
+        fi
         cli_warn "Schedule resumed but has validation warnings (no enabled windows)."
         cli_info "Add a window: tavs schedule add-window --days mon,fri --start 08:00 --end 20:00"
     fi
