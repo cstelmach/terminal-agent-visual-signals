@@ -1,6 +1,7 @@
 """Strict native schema-1 visual records and their canonical target paths."""
 
 import base64
+import errno
 import json
 import math
 from pathlib import Path
@@ -10,6 +11,11 @@ import unicodedata
 
 from portable_policy import check_deadline, read_regular
 from portable_render import normalized_background, normalized_hex
+
+
+class StaleRecordError(OSError):
+    def __init__(self, message):
+        super().__init__(errno.ESTALE, message)
 
 
 def _object(value, required, optional=()):

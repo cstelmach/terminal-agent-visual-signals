@@ -12,9 +12,20 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
 import portable_device_writer as writer
+from portable_records import StaleRecordError
 
 
 class PortableDeviceWriterTests(unittest.TestCase):
+    def test_worker_preserves_stale_record_category_separately_from_target_errno(self):
+        for error in (StaleRecordError("Stale delivery"), OSError(errno.ESTALE, "Changed target")):
+            def prepare(fd, deadline):
+                raise error
+            with self.assertRaises(OSError) as failure:
+                writer.write_managed(self.path, self.lock, None, prepare)
+            self.assertEqual(isinstance(failure.exception, StaleRecordError), isinstance(error, StaleRecordError))
+            self.assertEqual(failure.exception.errno, errno.ESTALE)
+        self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+
     def setUp(self):
         self.master, self.slave = pty.openpty()
         self.path = os.ttyname(self.slave)

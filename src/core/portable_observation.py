@@ -1,6 +1,5 @@
 """Typed observation publication without painting or creating output authority."""
 
-import errno
 import json
 import time
 
@@ -8,7 +7,7 @@ from portable_context import validate_context
 from portable_device_writer import output_lock
 from portable_policy import check_deadline
 import portable_record_io as records
-from portable_records import decode, key
+from portable_records import StaleRecordError, decode, key
 
 
 def publish_observation(store, context, tty, state):
@@ -26,6 +25,6 @@ def publish_observation(store, context, tty, state):
         current = records.read_latest(store.directory, path, "observation", store.clock(), deadline,
                                       recover_invalid=True)
         if current is not None and record["observedAt"] < current["observedAt"]:
-            raise OSError(errno.ESTALE, "Observation delivery superseded")
+            raise StaleRecordError("Observation delivery superseded")
         records.write(store.directory, path, record, "observation", store.clock(), deadline)
         check_deadline(deadline)

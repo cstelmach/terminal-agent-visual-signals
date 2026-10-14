@@ -12,6 +12,7 @@ import stat
 import time
 
 from portable_process_identity import device_number
+from portable_records import StaleRecordError
 
 
 _children = set()
@@ -132,7 +133,8 @@ def write_managed(path, lock_path, before_open, prepare, after_write=None):
                 result = {"wrote": _perform(path, lock_path, before_open, prepare, deadline, after_write)}
             except Exception as error:
                 result = {"errno": (error.errno or errno.EIO) if isinstance(error, OSError) else errno.EINVAL,
-                          "bytes": getattr(error, "bytes_written", None)}
+                          "bytes": getattr(error, "bytes_written", None),
+                          "stale": isinstance(error, StaleRecordError)}
             try:
                 os.write(write_fd, json.dumps(result).encode("ascii"))
             except OSError:
@@ -149,7 +151,8 @@ def write_managed(path, lock_path, before_open, prepare, after_write=None):
             raise failure
         value = json.loads(os.read(read_fd, 512))
         if "errno" in value:
-            failure = OSError(value["errno"], "Portable device output unavailable")
+            failure = (StaleRecordError("Portable record stale") if value.get("stale") is True
+                       else OSError(value["errno"], "Portable device output unavailable"))
             failure.bytes_written = value["bytes"]
             raise failure
         return value["wrote"]

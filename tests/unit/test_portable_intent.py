@@ -12,10 +12,31 @@ from portable_intent import Intents
 from portable_ownership import Store
 from portable_policy import Policy
 import portable_record_io as records
-from portable_records import key, target_path
+from portable_records import StaleRecordError, key, target_path
 
 
 class PortableIntentTests(unittest.TestCase):
+    def test_synthetic_invalid_observation_file_is_stale_but_storage_and_target_are_not(self):
+        self.observation_path.parent.mkdir(parents=True)
+        os.mkfifo(self.observation_path)
+        with self.assertRaises(StaleRecordError):
+            self.intents.validate_context_unlocked(self.target, self.record, True, 900, self.deadline())
+        with patch("portable_intent.records.read", side_effect=OSError(errno.EACCES, "Storage denied")):
+            with self.assertRaises(OSError) as failure:
+                self.intents.validate_context_unlocked(self.target, self.record, True, 900, self.deadline())
+        self.assertNotIsInstance(failure.exception, StaleRecordError)
+        self.assertEqual(failure.exception.errno, errno.EACCES)
+
+    def test_superseding_delivery_is_stale_record_and_changed_target_is_unavailable(self):
+        self.observe(observedAt=901)
+        with self.assertRaises(StaleRecordError):
+            self.intents.validate_context_unlocked(self.target, self.record, True, 900, self.deadline())
+        self.observe()
+        self.identities[100]["generation"] = dict(self.owner, startSeconds=101)
+        with self.assertRaises(OSError) as failure:
+            self.intents.validate_context_unlocked(self.target, self.record, True, 900, self.deadline())
+        self.assertNotIsInstance(failure.exception, StaleRecordError)
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp(prefix="intent-", dir=os.environ["TAVS_TEST_ROOT"]))
         self.runtime = self.root / "runtime"

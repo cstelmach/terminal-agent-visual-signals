@@ -8,6 +8,10 @@ import stat
 import time
 
 
+class InvalidRegularFileError(OSError):
+    pass
+
+
 def check_deadline(deadline):
     if time.monotonic_ns() >= deadline:
         raise OSError(errno.ETIMEDOUT, "Policy deadline exceeded")
@@ -21,7 +25,7 @@ def open_regular(path, deadline, limit, dir_fd=None):
         check_deadline(deadline)
         return None
     if not stat.S_ISREG(before.st_mode) or not 0 <= before.st_size <= limit:
-        raise OSError(errno.EINVAL, "Unavailable policy file")
+        raise InvalidRegularFileError(errno.EINVAL, "Unavailable policy file")
     check_deadline(deadline)
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dir_fd)
     try:
@@ -29,7 +33,7 @@ def open_regular(path, deadline, limit, dir_fd=None):
         check_deadline(deadline)
         if (not stat.S_ISREG(current.st_mode) or not 0 <= current.st_size <= limit
                 or (before.st_dev, before.st_ino) != (current.st_dev, current.st_ino)):
-            raise OSError(errno.EINVAL, "Changed policy file")
+            raise InvalidRegularFileError(errno.EINVAL, "Changed policy file")
         return fd
     except BaseException:
         os.close(fd)
@@ -49,7 +53,7 @@ def read_fd(fd, deadline, limit):
             return bytes(result)
         result.extend(chunk)
         if len(result) > limit:
-            raise OSError(errno.EFBIG, "Oversized policy file")
+            raise InvalidRegularFileError(errno.EFBIG, "Oversized policy file")
 
 
 def read_regular(path, deadline, limit=1_048_576, dir_fd=None):

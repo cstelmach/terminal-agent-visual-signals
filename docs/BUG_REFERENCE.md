@@ -1,7 +1,17 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.50
+Version: 1.51
+
+## Portable worker discards stale-record failure identity
+
+The internal worker serialized errno alone, but ESTALE represented both obsolete delivery data
+and unavailable targets/owners. Blanket conversion would give incorrect CLI stale code 3 for
+target failure, while nonregular synthetic observations incorrectly lost native stale semantics.
+Typed stale records now survive the existing IPC alongside delivered-byte counts. Metadata leaf
+validation is distinct from storage errors; only synthetic context validation converts invalid
+observation data to stale delivery. Regression tests cover worker category preservation, FIFO
+observation, storage denial and changed target. No routing used the earlier internal interface.
 
 ## Portable no-output draft omits effect-only native identity
 

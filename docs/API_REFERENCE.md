@@ -1,7 +1,20 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.46
+Version: 1.47
+
+## Portable record failure categories (integration pending)
+
+`StaleRecordError` retains stale delivery/observation/intent semantics through the existing
+bounded worker IPC. Generic target/path/owner failures remain unavailable even when their errno
+is ESTALE. Known/unknown delivered-byte counts remain independent of that category. CLI maps
+typed stale records to code 3 and all ordinary unavailability to code 1 without error text replay.
+
+`InvalidRegularFileError` identifies metadata leaf shape/size/inode validation separately from
+actual open/storage/deadline failure. Synthetic context validation converts invalid observation
+records to stale delivery; synthetic publication and ordinary render validation retain their
+native invalid-record failure. Lost producer during render/check context is stale, while targeted
+publication's producer/owner proof remains unavailable. No error-message matching is used.
 
 ## Portable no-output managed operations (integration pending)
 
