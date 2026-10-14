@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 09:56 CEST
-**Version:** 4.32
+**Last Updated:** 2026-10-14 10:52 CEST
+**Version:** 4.33
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 76e79a5; earlier below/appendix | 173 portable; 561 Swift; 135 shell; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 52102fe; earlier below/appendix | 565 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -833,3 +833,32 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 
 > Finished source checkpoints: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
 > Linux/native acceptance and historical initial-paint attribution remain open below.
+
+### Phase 9 continuing focus color refresh: 2026-10-14 10:52 CEST
+
+`52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
+Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
+keeps immutable recipe checks. Unchanged pairs preserve healthy IDs. Failed lookup includes old
+focus in cleanup while retaining Manual/Automatic mode, captured set and attention cues. Run/
+version and source checks reject obsolete results. No schema, watcher or new cache framework.
+DjtXat caught a test Data.hasSuffix mistake; corrected before behavioral red r1e4Su (4 cases,
+28 failures). Focused 3BGNKJ: 4/4; jqWujh: 48/48 after initial-only blocking fixture correction.
+GQNGvE retains the old fixture's repeated-block failure. gPgVPv retains EPERM teardown; normal
+permissions and inactive focus record remain inspectable. Last-closure fixture now awaits both
+renewal and cleanup completion. rEYbJl/9IKEE0 initial-paint failures remain unattributed; a fresh
+process reproduced preview failure first, so prior teardown is not a necessary cause. Test
+recorder preserves physical target after correcting its nil-target draft. Do not widen 100 ms.
+Final aouKnN: **48/48 controller**; PToDKG: **565/565 Swift**, 10.858 seconds. Owned PTYs prove
+fresh dark/light bytes/recipes, cue retention under global mask, lookup failure cleanup and late
+renewal cancellation. Release zdna94 passes in 14.53 seconds; diff and credential checks pass.
+The short source check found no correctness defect in this refresh diff. It identified possible
+supersession of consistently slow lookup by two-second catalogues. [Checks/diagnosis](focus-color-refresh-source-check-2026-10-14.md) retain exact limits and original reports.
+**Scope:** One controller/one test file and API/bug/roadmap, within Phase 9 review corrections.
+No deadline/recipe guard relaxation, new control plane, real settings/schedules/install, app/VM/
+container/native operation or existing-session shutdown. SPEC and PLAN unchanged; goal active.
+Next: instrument original initial-paint Boolean/error and open/prepare timing with exact target
+semantics; verify slow-valid color lookup coalescing. Keep both attribution questions open.
+Linux versioned records/kernel verification still await Docker/Linux-host choice; no startup
+approval answer arrived. Native phases 2/7/8 remain Blocked and phase 9 remains In Progress.
+History maintenance: `d89dfc4` moved 66 finished routing/delivery lines unchanged into a linked
+appendix with exact reconstruction verified. Current main remains under 900 lines.
