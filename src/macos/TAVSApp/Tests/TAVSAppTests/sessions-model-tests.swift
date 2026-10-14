@@ -109,7 +109,7 @@ final class SessionsModelTests: XCTestCase {
                 lockURL: directory.appendingPathComponent("lock.state"), clock: clock),
             processRunner: MockProcessRunner(), clock: clock, controller: instance, nativeSnapshot: { [] })
         return FocusController(state: state, recovery: recovery, restrictions: restrictions,
-            timers: MockTimerScheduler(), clock: clock,
+            timers: MockTimerScheduler(), clock: clock, nativeSnapshot: { [] },
             colors: { _ in TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")! })
     }
 

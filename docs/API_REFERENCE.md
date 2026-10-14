@@ -1,7 +1,23 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.54
+Version: 1.55
+
+## Fresh native effect preparation
+
+FocusController requires an explicit nativeSnapshot closure. Production shares the same scoped
+catalogue closure as recovery; tests supply independent native fixtures. After configured colors,
+one fresh catalogue validates submitted full surface IDs and exact non-nil TTYs. Duplicate IDs,
+shared TTYs, mapping issues and changed associations are unavailable. Fresh foreground PID is used
+for physical binding capture. Window/tab/title changes preserve a surviving surface's identity.
+
+Native preparation precedes the existing 100 ms device transaction. Snapshot caller queue wait
+and subprocess work share a two-second deadline; expired queued snapshots issue no request.
+Preview lifetime and focus heartbeat begin after preparation. Current run/version, physical
+generation/device, revision and automatic-source guards still apply inside output serialization.
+Native query failure stops new renewal while preserving logical sets/cues and recoverable leases.
+Known producer exit is resolved before requiring a fresh emphasized binding. Extra native IDs
+enter through ordinary catalogue refresh, not through the effect revalidation callback.
 
 ## Continuing focus color refresh
 

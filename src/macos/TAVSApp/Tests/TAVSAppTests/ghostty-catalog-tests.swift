@@ -114,7 +114,7 @@ final class GhosttyCatalogTests: XCTestCase {
         let allowed = GhosttySurfaceID(application: app, terminalID: "a")
         runner.boundedHandler = { _, args, timeout in
             XCTAssertFalse(Thread.isMainThread)
-            XCTAssertEqual(timeout, 2)
+            XCTAssertGreaterThan(timeout, 0); XCTAssertLessThanOrEqual(timeout, 2)
             let request = try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(args.last).utf8))
                 as? [String: Any]
             XCTAssertEqual(request?["allowedIDs"] as? [String], ["a"])
@@ -142,6 +142,32 @@ final class GhosttyCatalogTests: XCTestCase {
         XCTAssertThrowsError(try stale.snapshot()) { error in
             XCTAssertEqual(error as? GhosttyCatalogError, .staleApplication)
         }
+    }
+
+    func testSnapshotDeadlineIncludesQueueWaitAndSkipsExpiredQueuedWork() throws {
+        let runner = MockProcessRunner(), entered = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0), data = try reply([row("a")])
+        var calls = 0
+        runner.boundedHandler = { _, _, _ in
+            calls += 1
+            if calls == 1 { entered.signal(); release.wait() }
+            return data
+        }
+        let catalog = GhosttyCatalog(processRunner: runner, application: { self.app })
+        let refreshed = expectation(description: "Blocking refresh finished")
+        catalog.refresh { _ in refreshed.fulfill() }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        defer { release.signal() }
+        // The blocker outlives the snapshot's complete two-second budget.
+        DispatchQueue.global().asyncAfter(deadline: .now() + 2.3) { release.signal() }
+        let start = DispatchTime.now().uptimeNanoseconds
+        XCTAssertThrowsError(try catalog.snapshot()) { error in
+            guard case ProcessRunnerError.processTimedOut = error else { return XCTFail("\(error)") }
+        }
+        XCTAssertLessThan(Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9, 2.2)
+        wait(for: [refreshed], timeout: 1)
+        _ = try catalog.snapshot()
+        XCTAssertEqual(calls, 2, "Expired queued snapshot must not issue a native request")
     }
 
     func testGoToRejectsReusedTTYAndAcceptsConfirmedMovedSurface() throws {

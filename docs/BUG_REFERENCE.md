@@ -1,7 +1,27 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.60
+Version: 1.61
+
+## Effects trust cached native associations
+
+Preview and focus captured physical bindings from the last organizer rows. Current owner/device
+checks did not prove that those native IDs still owned the same TTY. Three regressions reproduced
+paint after native closure, changed association or lookup failure while the old physical owner
+remained valid. Effects now use a fresh exact-ID/TTY catalogue after color preparation, including
+current foreground identity and ambiguity rejection. Surviving moved panes still paint.
+
+The catalogue snapshot's queue wait was previously unbounded despite a bounded subprocess. A
+blocked-queue regression reproduced late success and an expired native call. Queue wait and
+subprocess now share two seconds; expired queued work is skipped. Native work stays outside the
+100 ms writer deadline. A draft checked emphasized capture before classifying a known sole cue
+producer exit; its regression failed, and source validation now runs first. Existing dimming
+clears on exit without another poll. Query failure preserves recoverable ownership and cues.
+
+The historical initial-paint failure recurred in the masked-focus fixture during this verification.
+It now records original writer outcomes and awaits cleanup. The cause remains unestablished;
+passing retry is not attribution. Physical Ghostty and the separate partial-mapping status gap
+remain open.
 
 ## Decodable invalid schedules crash startup or reload
 

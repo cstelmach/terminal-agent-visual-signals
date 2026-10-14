@@ -19,6 +19,7 @@ final class FocusController: ObservableObject {
     private let timers: TimerScheduler
     private let clock: Clock
     private let colors: (ProcessGeneration) throws -> TerminalRenderer.Colors
+    private let nativeSnapshot: () throws -> [GhosttySurface]
     private let queue: DispatchQueue
     private let clearQueue: DispatchQueue
     private let focusClearQueue = DispatchQueue(label: "tavs.focus-clear")
@@ -42,10 +43,11 @@ final class FocusController: ObservableObject {
          restrictions: VisualRestrictionsStateStore, timers: TimerScheduler = SystemTimerScheduler(),
          clock: Clock = SystemClock(), queue: DispatchQueue = DispatchQueue(label: "tavs.preview-start"),
          clearQueue: DispatchQueue = DispatchQueue(label: "tavs.preview-clear", attributes: .concurrent),
+         nativeSnapshot: @escaping () throws -> [GhosttySurface],
          colors: @escaping (ProcessGeneration) throws -> TerminalRenderer.Colors) {
         self.state = state; self.recovery = recovery; self.restrictions = restrictions
         self.timers = timers; self.clock = clock; self.queue = queue
-        self.clearQueue = clearQueue; self.colors = colors
+        self.clearQueue = clearQueue; self.colors = colors; self.nativeSnapshot = nativeSnapshot
     }
 
     func preview(_ rows: [GhosttySurface]) {
@@ -64,7 +66,11 @@ final class FocusController: ObservableObject {
                     throw VisualRecoveryError.targetUnavailable
                 }
                 let colors = try self.colors(application)
-                let targets = rows.compactMap { self.state.captureTarget(for: $0) }
+                guard self.isCurrent(run) else { return }
+                let fresh = try self.validatedNativeRows(rows)
+                guard self.isCurrent(run) else { return }
+                let targets = fresh.compactMap { self.state.captureTarget(for: $0) }
+                guard !targets.isEmpty else { throw VisualRecoveryError.targetUnavailable }
                 let startedAt = self.clock.now().timeIntervalSince1970
                 self.lock.lock()
                 let accepted = self.current === run
@@ -111,6 +117,19 @@ final class FocusController: ObservableObject {
                     self.previewStatus = reason
                 }
             }
+        }
+    }
+
+    private func validatedNativeRows(_ requested: [GhosttySurface]) throws -> [GhosttySurface] {
+        let fresh = try nativeSnapshot()
+        let byID = Dictionary(grouping: fresh, by: \.id)
+        let byTTY = Dictionary(grouping: fresh, by: \.tty)
+        return requested.compactMap { row in
+            guard row.mappingIssue == nil, let tty = row.tty,
+                  let matches = byID[row.id], matches.count == 1,
+                  let current = matches.first, current.tty == tty, current.mappingIssue == nil,
+                  byTTY[tty]?.count == 1 else { return nil }
+            return current
         }
     }
 
@@ -329,21 +348,7 @@ final class FocusController: ObservableObject {
                     throw VisualRecoveryError.targetUnavailable
                 }
                 let outside = rows.filter { !ids.contains($0.id) }
-                let targets = outside.compactMap { self.state.captureTarget(for: $0) }
-                attempted = Set(targets.map(\.physicalTarget))
-                self.lock.lock()
-                if self.manual === run && run.version == version {
-                    self.manualWanted = attempted
-                    self.manualBlocked.removeAll()
-                    for (key, lease) in self.focusLeases where lease.owner === run && !attempted.contains(key) {
-                        lease.retiring = true
-                    }
-                }
-                self.lock.unlock()
                 guard !outside.isEmpty else { return (0, 0, [], false) }
-                guard rows.contains(where: { ids.contains($0.id) && self.state.captureTarget(for: $0) != nil }) else {
-                    throw VisualRecoveryError.targetUnavailable
-                }
                 guard Set(rows.map { $0.id.application }).count == 1, let instance = rows.first?.id.application else {
                     throw VisualRecoveryError.targetUnavailable
                 }
@@ -359,6 +364,21 @@ final class FocusController: ObservableObject {
                     attempted.removeAll()
                     throw error
                 }
+                guard self.matchesManual(run, version: version) else { throw VisualRecoveryError.policyChanged }
+                let fresh = try self.validatedNativeRows(rows)
+                guard self.matchesManual(run, version: version) else { throw VisualRecoveryError.policyChanged }
+                let freshSources = fresh.reduce(into: [GhosttySurfaceID: TerminalTargetBinding]()) { targets, row in
+                    if cues?[row.id] != nil, let target = self.state.captureTarget(for: row) { targets[row.id] = target }
+                }
+                if let cues = cues, !self.automaticSourcesCurrent(cues, targets: freshSources, run: run,
+                    version: version, deadline: DispatchTime.now().uptimeNanoseconds + 100_000_000) {
+                    throw VisualRecoveryError.targetUnavailable
+                }
+                guard fresh.contains(where: { ids.contains($0.id) && self.state.captureTarget(for: $0) != nil }) else {
+                    throw VisualRecoveryError.targetUnavailable
+                }
+                let targets = fresh.filter { !ids.contains($0.id) }.compactMap { self.state.captureTarget(for: $0) }
+                attempted = Set(targets.map(\.physicalTarget))
                 self.lock.lock()
                 let accepted = self.manual === run && run.version == version
                 if accepted {
@@ -368,6 +388,10 @@ final class FocusController: ObservableObject {
                     }
                     run.renewedTargets.removeAll()
                     self.manualWanted = attempted
+                    self.manualBlocked.removeAll()
+                    for (key, lease) in self.focusLeases where lease.owner === run && !attempted.contains(key) {
+                        lease.retiring = true
+                    }
                 }
                 self.lock.unlock()
                 guard accepted else { throw VisualRecoveryError.policyChanged }
@@ -387,7 +411,7 @@ final class FocusController: ObservableObject {
                         guard self.matchesFocusLease(lease, owner: run, version: version),
                               self.clock.now().timeIntervalSince1970 <= preparedAt + 6 else { return false }
                         if let cues = cues,
-                           !self.automaticSourcesCurrent(cues, targets: sources, run: run,
+                           !self.automaticSourcesCurrent(cues, targets: freshSources, run: run,
                                version: version, deadline: deadline) {
                             return false
                         }

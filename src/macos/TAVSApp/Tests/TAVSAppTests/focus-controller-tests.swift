@@ -13,6 +13,8 @@ final class FocusControllerTests: XCTestCase {
     private var missingProcesses = Set<Int32>()
     private var ptys: [(master: Int32, slave: Int32, path: String)] = []
     private var subscriptions = Set<AnyCancellable>()
+    private var nativeRows: [GhosttySurface] = []
+    private var nativeError: Error?
     private func generation(_ pid: Int32) -> ProcessGeneration {
         ProcessGeneration(pid: pid, startSeconds: 100, startMicroseconds: 1)
     }
@@ -57,16 +59,22 @@ final class FocusControllerTests: XCTestCase {
         ptys.append((master, slave, path))
         identities[pid] = ProcessIdentity(generation: generation(pid), parentPID: 1,
             group: UInt32(pid), device: device, foregroundGroup: UInt32(pid))
-        return GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: String(pid)),
+        let row = GhosttySurface(id: GhosttySurfaceID(application: generation(80), terminalID: String(pid)),
             windowID: "window", tabID: "tab", title: "same", directory: "/same", tty: path,
             foregroundPID: pid, tabSelected: true, mappingIssue: nil)
+        nativeRows.removeAll { $0.id == row.id }; nativeRows.append(row)
+        return row
     }
 
     private func controller(_ timers: MockTimerScheduler, queue: DispatchQueue = DispatchQueue(label: "test.preview"),
                             clearQueue: DispatchQueue = DispatchQueue(label: "test.preview-clear", attributes: .concurrent),
+                            snapshot: (() throws -> [GhosttySurface])? = nil,
                             colors: ((ProcessGeneration) throws -> TerminalRenderer.Colors)? = nil) -> FocusController {
         FocusController(state: state, recovery: recovery, restrictions: restrictions, timers: timers,
-            clock: clock, queue: queue, clearQueue: clearQueue, colors: colors ?? { _ in
+            clock: clock, queue: queue, clearQueue: clearQueue, nativeSnapshot: snapshot ?? {
+                if let error = self.nativeError { throw error }
+                return self.nativeRows
+            }, colors: colors ?? { _ in
                 TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
             })
     }
@@ -153,6 +161,200 @@ final class FocusControllerTests: XCTestCase {
         let ready = expectation(description: "Fresh catalogue and coverage accepted")
         model.$refreshing.dropFirst().first { !$0 }.sink { _ in ready.fulfill() }.store(in: &subscriptions)
         model.refresh(); wait(for: [ready], timeout: 2)
+    }
+
+    func testPreviewRejectsNativeClosureAfterColorsEvenWithLivePhysicalOwner() throws {
+        let row = try surface(10), timers = MockTimerScheduler()
+        let focus = controller(timers, colors: { _ in
+            self.nativeRows = []
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.preview([row])
+        let finished = expectation(description: "Fresh native closure reported")
+        focus.$previewStatus.first { $0.contains("unavailable") || $0.contains("previewed") }
+            .sink { _ in finished.fulfill() }.store(in: &subscriptions)
+        wait(for: [finished], timeout: 2)
+        XCTAssertTrue(focus.previewed.isEmpty, focus.previewStatus)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.clearPreview()
+    }
+
+    func testManualRejectsChangedNativeTTYAfterColorsWhileOldOwnerRemainsLive() throws {
+        let a = try surface(10), b = try surface(20), replacement = try surface(30)
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            self.nativeRows = [a, GhosttySurface(id: b.id, windowID: b.windowID, tabID: b.tabID,
+                title: b.title, directory: b.directory, tty: replacement.tty,
+                foregroundPID: replacement.foregroundPID, tabSelected: true, mappingIssue: nil)]
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        for index in [1,2] {
+            var ready = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+        }
+        focus.focusOff()
+    }
+
+    func testAutomaticRejectsFreshNativeLookupFailureWithoutLosingCue() throws {
+        let a = try surface(10), b = try surface(20)
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            self.nativeError = GhosttyCatalogError.nativeUnavailable
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: attention(a,"new-cue")]); awaitManual(focus)
+        XCTAssertEqual(focus.mode, .automatic); XCTAssertEqual(focus.cueSnapshot(for: a.id).count, 1)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.focusOff()
+    }
+
+    func testFreshMovedPaneUsesItsCurrentForegroundProcessWithoutNavigation() throws {
+        let row = try surface(10), device = identities[10]!.device
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            self.identities[10] = ProcessIdentity(generation: self.generation(10), parentPID: 1,
+                group: 10, device: device, foregroundGroup: 11)
+            self.identities[11] = ProcessIdentity(generation: self.generation(11), parentPID: 10,
+                group: 11, device: device, foregroundGroup: 11)
+            self.nativeRows = [GhosttySurface(id: row.id, windowID: "moved-window", tabID: "moved-tab",
+                title: "new title", directory: row.directory, tty: row.tty, foregroundPID: 11,
+                tabSelected: false, mappingIssue: nil)]
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        let cleared = expectation(description: "Moved preview cleaned up")
+        focus.$cleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.clearPreview(); wait(for: [cleared], timeout: 2)
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testFreshAmbiguousNativeIDsAndTTYsRejectPreview() throws {
+        let a = try surface(10), b = try surface(20)
+        let ambiguousTTY = GhosttySurface(id: b.id, windowID: b.windowID, tabID: b.tabID,
+            title: b.title, directory: b.directory, tty: a.tty, foregroundPID: a.foregroundPID,
+            tabSelected: true, mappingIssue: nil)
+        for rows in [[a,a], [a,ambiguousTTY]] {
+            nativeRows = rows
+            let focus = controller(MockTimerScheduler())
+            let finished = expectation(description: "Ambiguity reported")
+            focus.$previewStatus.first { $0.contains("unavailable") }.sink { _ in finished.fulfill() }.store(in: &subscriptions)
+            focus.preview([a]); wait(for: [finished], timeout: 2)
+            XCTAssertTrue(focus.previewed.isEmpty); XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+            var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
+            XCTAssertEqual(poll(&ready, 1, 20), 0)
+            focus.clearPreview()
+        }
+    }
+
+    func testRecoveryCancelsBlockedNativePreparationWithoutPublishingEffects() throws {
+        let a = try surface(10), b = try surface(20)
+        let queue = DispatchQueue(label: "blocked.native.focus"), entered = DispatchSemaphore(value: 0)
+        let release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let focus = controller(MockTimerScheduler(), queue: queue, snapshot: {
+            entered.signal(); release.wait(); return [a,b]
+        })
+        focus.focusSelected([a], catalogue: [a,b])
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus.cancelForRecovery(); try restrictions.write(suspended: true); release.signal()
+        let finished = expectation(description: "Cancelled native preparation returned")
+        queue.async { DispatchQueue.main.async { finished.fulfill() } }
+        wait(for: [finished], timeout: 2)
+        XCTAssertEqual(focus.mode, .off); XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
+    func testFailedNativeRenewalRetainsRecoverableLeaseAndLogicalManualSet() throws {
+        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let prior = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        nativeError = GhosttyCatalogError.permissionDenied
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b]); awaitManual(focus)
+        let unchanged = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertEqual(unchanged.effectID, prior.effectID); XCTAssertEqual(unchanged.heartbeatAt, prior.heartbeatAt)
+        XCTAssertTrue(unchanged.active); XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        let cleared = expectation(description: "Retained lease explicitly cleared")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testFreshNativeMismatchSkipsOnlyThatOutsideTarget() throws {
+        let a = try surface(10), b = try surface(20), c = try surface(30)
+        nativeRows = [a,b]
+        let focus = controller(MockTimerScheduler())
+        focus.focusSelected([a], catalogue: [a,b,c]); awaitManual(focus)
+        _ = try read(1)
+        XCTAssertNotNil(try state.currentEffectUnlocked(try XCTUnwrap(state.captureTarget(for: b)), kind: .focus, deadline: .max))
+        XCTAssertNil(try state.currentEffectUnlocked(try XCTUnwrap(state.captureTarget(for: c)), kind: .focus, deadline: .max))
+        var ready = pollfd(fd: ptys[2].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        let cleared = expectation(description: "Healthy partial focus cleared")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2); _ = try read(1)
+    }
+
+    func testMissingFreshNativeCueCannotAuthorizeOtherHighShellDimming() throws {
+        let a = try surface(10), b = try surface(20), c = try surface(30)
+        nativeRows = [b,c]
+        let focus = controller(MockTimerScheduler())
+        focus.enableAutomatic(rows: [a,b,c], high: [a.id,b.id], coverage: [:]); clock.advance(by: 1)
+        focus.acceptCatalogue([a,b,c], high: [a.id,b.id], coverage: [a.id: attention(a,"missing-native")]); awaitManual(focus)
+        XCTAssertEqual(focus.cueSnapshot(for: a.id).count, 1)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[2].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.focusOff()
+    }
+
+    func testOnlyHighCueExitDuringPreparationClearsCueWithoutAnotherPoll() throws {
+        let a = try surface(10), b = try surface(20)
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            self.identities.removeValue(forKey: 10); self.missingProcesses.insert(10)
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        let cleared = expectation(description: "Only High cue cleared after source exit")
+        focus.$attentionCues.dropFirst().first { $0.isEmpty }.sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: attention(a,"exiting")])
+        wait(for: [cleared], timeout: 2)
+        XCTAssertTrue(focus.attentionCues.isEmpty)
+        XCTAssertEqual(focus.mode, .automatic); XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        focus.focusOff()
+    }
+
+    func testOnlyHighCueExitDuringRenewalClearsExistingDimming() throws {
+        let a = try surface(10), b = try surface(20)
+        var queries = 0
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            queries += 1
+            if queries == 2 { self.identities.removeValue(forKey: 10); self.missingProcesses.insert(10) }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        let sample = attention(a,"exiting-renewal")
+        focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
+        var current = try XCTUnwrap(sample.observation); current.observedAt = clock.now().timeIntervalSince1970
+        let coverage = TerminalVisualCoverage(observation: current, intent: nil, attentionEligible: true, status: "Current")
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: coverage]); awaitManual(focus); _ = try read(1)
+        let cleared = expectation(description: "Exited only cue restores existing dimming")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        clock.advance(by: 2)
+        focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: coverage])
+        wait(for: [cleared], timeout: 2)
+        XCTAssertTrue(focus.attentionCues.isEmpty); XCTAssertEqual(focus.mode, .automatic)
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+        focus.focusOff()
     }
 
     func testSessionsAutomaticNavigationAcknowledgesOnlyItsSnapshotAndKeepsPolling() throws {
@@ -317,16 +519,15 @@ final class FocusControllerTests: XCTestCase {
         focus.enableAutomatic(rows: [a,b,c], high: [a.id,b.id], coverage: [:]); clock.advance(by: 1)
         focus.acceptCatalogue([a,b,c], high: [a.id,b.id], coverage: [a.id: attention(a,"cue")])
         XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
-        let cleared = expectation(description: "Invalid source cleanup completed")
-        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
         identities.removeValue(forKey: 10)
         missingProcesses.insert(10)
         XCTAssertEqual(state.validateTarget(binding), .valid)
         release.signal()
         let drained = expectation(description: "Cue source checked after lookup")
-        queue.async { DispatchQueue.main.async { drained.fulfill() } }; wait(for: [drained,cleared], timeout: 2)
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }; wait(for: [drained], timeout: 2)
         XCTAssertTrue(state.cachedRecords().effects.isEmpty)
         XCTAssertTrue(focus.attentionCues.isEmpty)
+        XCTAssertNil(focus.focusCleanupError)
         var ready = pollfd(fd: ptys[2].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
         focus.focusOff()
@@ -486,10 +687,15 @@ final class FocusControllerTests: XCTestCase {
     }
 
     func testGlobalMaskedFocusRenewsItsMetadataWithoutRotatingTheEffect() throws {
-        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let a = try surface(10), b = try surface(20)
+        let (runner, trace) = recordedWriter(try XCTUnwrap(state.captureTarget(for: b)))
+        configureState(runner: runner)
+        let focus = controller(MockTimerScheduler())
         focus.enableAutomatic(rows: [a,b], high: [a.id], coverage: [:]); clock.advance(by: 1)
         let sample = attention(a,"cue")
         focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        XCTAssertTrue(trace().contains { $0.contains("caller returned true") },
+                      focus.focusStatus + "\n" + trace().joined(separator: "\n"))
         _ = try read(1)
         let target = try XCTUnwrap(state.captureTarget(for: b))
         let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
@@ -509,7 +715,10 @@ final class FocusControllerTests: XCTestCase {
         clock.advance(by: 2)
         focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
         XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.effectID, original.effectID)
-        _ = try read(1); focus.focusOff(); _ = try read(1)
+        _ = try read(1)
+        let cleared = expectation(description: "Masked focus cleanup completed")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2); _ = try read(1)
     }
 
     func testFocusOffDuringFinalCueMetadataCheckPreventsLatePaint() throws {
@@ -1177,7 +1386,7 @@ final class FocusControllerTests: XCTestCase {
         let queue = DispatchQueue(label: "preview.expired-start")
         let delayedClock = PreviewExpiryBoundaryClock(clock)
         let focus = FocusController(state: state, recovery: recovery, restrictions: restrictions,
-            timers: timers, clock: delayedClock, queue: queue, colors: { _ in
+            timers: timers, clock: delayedClock, queue: queue, nativeSnapshot: { [row] }, colors: { _ in
                 TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
             })
         focus.preview([row])

@@ -1,10 +1,16 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.32
+Version: 1.33
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
+
+Preview/Manual/Automatic effects now validate a fresh native ID/TTY mapping after colors and
+before binding capture. Snapshot queue/subprocess work is bounded separately from device output.
+Moved panes remain eligible; missing/ambiguous mappings and query failure cannot authorize new
+effects. Recoverable leases and logical cues survive query failure. Owned-PTY regressions cover
+these paths and producer exit ordering. Physical Ghostty acceptance remains pending.
 
 Schedule startup/reload now validates decoded rules before evaluation, preventing an observed
 malformed-time trap. Rejection is visible, files stay intact and a valid replacement is accepted.

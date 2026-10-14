@@ -212,7 +212,8 @@ extension SessionsModel {
         let configDirectories = [configRoot.appendingPathComponent("ghostty"),
             home.appendingPathComponent("Library/Application Support/com.mitchellh.ghostty")]
         let configFiles = configDirectories.flatMap { folder in ["config", "config.ghostty"].map { folder.appendingPathComponent($0) } }
-        let focus = FocusController(state: state, recovery: recovery, restrictions: restrictions, clock: clock, colors: { instance in
+        let focus = FocusController(state: state, recovery: recovery, restrictions: restrictions, clock: clock,
+            nativeSnapshot: snapshot, colors: { instance in
             guard launch?.fixture == nil else { throw TerminalConfigurationError.unavailable }
             return try TerminalRenderer.configuredColors(executable: GhosttyCatalog.executable(for: instance),
                 configurationFiles: configFiles, runner: runner)

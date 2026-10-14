@@ -73,11 +73,17 @@ final class GhosttyCatalog {
     // Headless recovery cannot wait for refresh's main-thread completion callback.
     func snapshot() throws -> [GhosttySurface] {
         let completion = SnapshotCompletion()
+        let deadline = DispatchTime.now() + .seconds(2)
         queue.async {
-            completion.result = Result { try self.enumerate() }
+            completion.result = Result {
+                guard DispatchTime.now() < deadline else { throw ProcessRunnerError.processTimedOut }
+                return try self.enumerate(deadline: deadline.uptimeNanoseconds)
+            }
             completion.finished.signal()
         }
-        completion.finished.wait()
+        guard completion.finished.wait(timeout: deadline) == .success, DispatchTime.now() < deadline else {
+            throw ProcessRunnerError.processTimedOut
+        }
         return try completion.result!.get()
     }
 
@@ -86,9 +92,10 @@ final class GhosttyCatalog {
         var result: Result<[GhosttySurface], Error>?
     }
 
-    private func enumerate() throws -> [GhosttySurface] {
+    private func enumerate(deadline: UInt64? = nil) throws -> [GhosttySurface] {
         let instance = try application()
-        return try request(["action": "enumerate", "pid": instance.pid], instance: instance).surfaces
+        return try request(["action": "enumerate", "pid": instance.pid], instance: instance,
+                           deadline: deadline).surfaces
     }
 
     private func performRefresh(_ completions: [(Result<[GhosttySurface], Error>) -> Void]) {
@@ -127,17 +134,23 @@ final class GhosttyCatalog {
         }
     }
 
-    private func request(_ values: [String: Any], instance: ProcessGeneration) throws -> Reply {
+    private func request(_ values: [String: Any], instance: ProcessGeneration, deadline: UInt64? = nil) throws -> Reply {
         var values = values
         if let allowed = allowedSurfaces {
             values["allowedIDs"] = allowed.filter { $0.application == instance }.map(\.terminalID)
         }
         let json = try JSONSerialization.data(withJSONObject: values)
+        let now = DispatchTime.now().uptimeNanoseconds
+        if let deadline = deadline, now >= deadline { throw ProcessRunnerError.processTimedOut }
+        let timeout = deadline.map { min(2, Double($0 - now) / 1e9) } ?? 2
         let data = try processRunner.runBounded(
             executableURL: URL(fileURLWithPath: "/usr/bin/osascript"),
-            arguments: ["-l", "JavaScript", "-e", Self.script, String(decoding: json, as: UTF8.self)], timeout: 2
+            arguments: ["-l", "JavaScript", "-e", Self.script, String(decoding: json, as: UTF8.self)], timeout: timeout
         )
         guard try application() == instance else { throw GhosttyCatalogError.staleApplication }
+        if let deadline = deadline, DispatchTime.now().uptimeNanoseconds >= deadline {
+            throw ProcessRunnerError.processTimedOut
+        }
         let surfaces = try Self.decode(data, application: instance).filter { allowedSurfaces?.contains($0.id) != false }
         let focused = try JSONDecoder().decode(Payload.self, from: data).focused
         return Reply(surfaces: surfaces, focused: focused)
