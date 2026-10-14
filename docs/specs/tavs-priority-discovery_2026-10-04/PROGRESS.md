@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 11:17 CEST
-**Version:** 4.34
+**Last Updated:** 2026-10-14 11:32 CEST
+**Version:** 4.35
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 0c8ca92; earlier below/appendix | 570 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 434c1fc; earlier below/appendix | 570 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -40,6 +40,8 @@ Resolve Phase 3 with `git log --grep='test: Isolate shell and Python test roots'
 Checkpoints report hashes without separate self-referencing state commits.
 
 ## Appendices
+
+- [PROGRESS_appendix_phase-9_focus-poll-coalescing.md](PROGRESS_appendix_phase-9_focus-poll-coalescing.md): completed polling source fix.
 
 - [PROGRESS_appendix_phase-9_ordinary-helper-routing.md](PROGRESS_appendix_phase-9_ordinary-helper-routing.md): completed core and standalone routing.
 
@@ -863,25 +865,34 @@ approval answer arrived. Native phases 2/7/8 remain Blocked and phase 9 remains 
 History maintenance: `d89dfc4` moved 66 finished routing/delivery lines unchanged into a linked
 appendix with exact reconstruction verified. Current main remains under 900 lines.
 
-### Phase 9 slow focus preparation coalescing: 2026-10-14 11:17 CEST
+### Phase 9 slow focus preparation coalescing
 
-`0c8ca92` preserves in-flight preparation through identical rendering inputs while refreshing
-catalogue coverage. Titles/directory/grouping are display-only; native ID/TTY/PID/mapping,
-emphasized-set and cue changes still invalidate work. Accepted preparation starts its heartbeat
-at completion. Each paint still requires catalogue coverage within six seconds; one active and
-one latest pending update remain. No 100 ms deadline or recipe/identity guard was relaxed.
-OycIzx's immutable-title compile error was corrected before behavioral RED j9XSwt (two positive
-cases lacked the initial effect). T3CnTw passed both cases; the unused tuple warning was removed.
-Five final cases cover eight virtual seconds of Manual/Automatic polls, changed foreground PID,
-new cue on identical surfaces and stale coverage without polling. The held second lookup cannot
-hide loss of the first. YgOuTa: **53/53 controller**, 1.987 seconds. 9EJ6KJ: **570/570 Swift**,
-11.760 seconds. Release T163Yn passes in 26.05 seconds. Diff, credential and punctuation checks
-pass. API 1.54, bug 1.58 and roadmap 1.30 document the correction and remaining limits.
-The [source check](focus-poll-coalescing-source-check-2026-10-14.md) found no new paint-safety
-defect; its two suggested timing/binding test gaps are now covered. Its native claims remain limited.
-**Scope:** One controller/one test file plus existing API/bug/roadmap, Phase 9 review correction.
-No app/native/VM/container/install/settings/schedule operation or existing-session shutdown.
-SPEC/PLAN unchanged; phases 2/7/8 retain native blockers and phase 9 remains In Progress.
-Next: instrument initial-paint Boolean/error and open/prepare timing with exact physical-target
-semantics, preserving the 100 ms limit. Linux kernel/versioned-record checks still await the
-pending Docker/Linux-host answer; no Docker startup occurred. Full goal remains active.
+> Finished source checkpoint: [focus poll appendix](PROGRESS_appendix_phase-9_focus-poll-coalescing.md).
+> Native/Linux acceptance and historical timing attribution remain open in current entries.
+
+### Phase 9 paint outcome diagnostics and revision fixtures: 2026-10-14 11:32 CEST
+
+`434c1fc` adds a test-local recorder for initial Manual/late-preview paints: Boolean/original
+error, open/beforeOpen/prepare outcomes, elapsed time and supplied deadline remainder. Exact
+physical target, emergency:false, nil callbacks, flags/errno and Data are preserved. Normal
+preview/focus clears now await controller completion. No production code/deadline change.
+Seven fresh instrumented pairs pass: 8x3WjO, MNZYMg, lAxPbf, EKuMHz, nNohET, O3FRsJ, HbNQcQ.
+No initial-paint failure reproduced; historical rEYbJl/9IKEE0 and EPERM attribution stay open.
+Full TJMEY4 retained **570 tests, 3 unexpected failures**: forced-reset queued result timed out;
+queued-render's later fresh render exceeded organizer deadline and its following read timed out.
+The revision fixtures' paused-open barrier required full independent recovery/reset assertions
+inside 100 ms. They now publish once under a bounded call, gate outside the device transaction,
+then use the original prepare with exact target and a fresh real writer deadline. Captured revision
+still must reject old style/title after full recover/resume. This changes test scope, not production
+budgets. It does not explain the subsequent fresh-render timeout, which remains unattributed.
+Mycxxb: **4/4 focused**, 0.138 seconds. Final 0c67dG: **570/570 Swift**, 18.460 seconds.
+Source inspection validates the barrier and warns against accepting timeout as revision evidence.
+[Source check and disposition](initial-paint-source-check-2026-10-14.md) preserve the limits.
+BUG 1.59/ROADMAP 1.31 updated; diff, punctuation and credential checks pass. Test-only change;
+release build/shell/portable checks not repeated. Latest release T163Yn remains the prior result.
+**Scope:** Two existing test files and bug/roadmap, within Phase 9 review/verification corrections.
+SPEC/PLAN unchanged; no native/app/install/settings/schedule/VM/container operation.
+One finished polling block moved unchanged to the linked appendix; exact reconstruction passed.
+Next: scoped final review of current source, or Linux kernel checks after the pending host/Docker
+answer. Capture original initial/fresh writer failures if they recur; passing retries cannot close
+attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and incomplete.

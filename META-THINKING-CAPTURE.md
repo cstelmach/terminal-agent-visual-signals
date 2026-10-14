@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 44 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 52 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 45 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 53 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4454,3 +4454,63 @@ ordering/readability, Linux runtime and the independent intermittent first-paint
 open. The pending Docker choice received no answer, so no startup occurred. P8/P9 recur;
 no new skill or profile was created. [R] The transferable move is to distinguish freshness
 refresh from semantic invalidation and test the held first result before allowing its replacement.
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · paint-diagnostic-fixtures
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported [R], system family description; no provider model census
+  interface: Codex desktop
+  thinking: unknown; thorough work requested
+  session: 01a10879
+  trace: observed tool/diff outputs
+
+**Framing [O].** The continuation goal remained active after a verified source correction. Git
+was clean and the dated state named initial-paint diagnosis as the next bounded slice. The older
+manual and late-preview failures had generic recovery text and no original writer outcome.
+The task therefore began with observation rather than a production timing change. Source and
+saved failure logs were retrieved again; no previous passing suite was treated as proof that
+the original defect had disappeared. Native and Linux acceptance were still unavailable.
+
+**Strategy [O/R].** A scoped explorer inspected callbacks and result translation independently.
+The parent edited two known reproducing fixtures, preserving physical target, non-emergency
+admission, nil beforeOpen and original Data. Open logging restores errno after recording.
+Monotonic stage offsets and supplied deadline remainder distinguish pre-open, preparation and
+final caller outcomes. [R] Keeping the recorder test-local limits exposure and avoids a logging
+framework for an error whose cause is not yet known. Successful cleanup now awaits controller
+publication rather than treating restored bytes alone as proof of lifecycle completion.
+
+**Action trace [O].**
+
+| Move | Object | Result |
+|---|---|---|
+| Reorient | Goal, SPEC/PLAN/PROGRESS, Git and connected writer | Phase 9; no dirty baseline |
+| Instrument | Manual/late-preview fixtures | Original Boolean/error and stage timing retained |
+| Bounded reproduction | Seven fresh isolated pair processes | All passed; original error not reproduced |
+| Run full suite | TJMEY4 | Three failures in two other recovery cases |
+| Verify interpretation | Exact assertion lines and source-check addendum | One error was the later fresh render |
+| Correct semantic fixtures | Publication barrier before new device budget | Four focused and 570 full tests passed |
+| Preserve state | Existing docs, report, history and capture | Unattributed errors remain open |
+
+**Failure arc [O/R].** TJMEY4 produced a device timeout in the queued forced-reset result,
+then an organizer deadline error and missing bytes in the queued-render case. Initial inspection
+could have attributed both to the paused open. The reviewer traced the exact lines and showed
+that the render error occurred in a later fresh write. [R] This distinction prevented a broader
+causal claim than the evidence permits. The paused-open fixtures nevertheless contain a real
+coupling: full recovery and reset assertions consume a held writer's 100 ms budget.
+
+**Decision points [O].** Accepting any timeout would allow elapsed time to stand in for revision
+rejection. Invoking full recovery while prepare owns the output lock risks reentry/contended
+locks. The chosen fixture publishes original metadata once under a bounded call, gates outside
+the device budget, then invokes original prepare with the captured revision and a fresh real
+writer. Full recovery, reset, optional resume and old-output assertions remain. This is explicitly
+a revision-boundary test; production still uses one deadline and other writer cases cover late
+open. The subsequent fresh-render failure remains unestablished despite a final passing run.
+
+**Verification and residue [O].** Mycxxb passed four targeted cases; 0c67dG passed all 570 tests
+in 18.460 seconds. No production code changed, so release/shell/portable checks were not repeated.
+The owned source/test/docs commit is 434c1fc. Credentials and punctuation checks passed. One
+finished progress block was moved unchanged with exact reconstruction before the next append.
+Historical first-paint/EPERM, fresh-render timing and physical/Linux acceptance remain open.
+P8/P9 recur; no new skill/profile or runtime control plane was created. [R] The reusable move
+is to identify exactly which assertion failed before treating a nearby timing remedy as its cause.
