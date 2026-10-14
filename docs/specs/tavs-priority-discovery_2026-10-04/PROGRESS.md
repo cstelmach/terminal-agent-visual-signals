@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 16:18 CEST
-**Version:** 4.42
+**Last Updated:** 2026-10-14 16:34 CEST
+**Version:** 4.43
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 616 Swift executed (full failures);175 portable/19 background;prior parity below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 619 Swift pass; prior 616 failures retained;175 portable/19 background | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -79,13 +79,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 > Finished Sessions source/build checkpoint: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
-Independent Codex review completed successfully with the configured Sol/high route. Its original
-CONCERN 7/10 finding assumed successful empty rows confirmed closure. Source verification falsified
-that assumption: upstream Ghostty returns empty collections when scripting is disabled. The model
-already reports unavailable coverage and disables navigation/edits. Finding dismissed, original
-score retained. The wrapper's source evaluation is 8/10, Low risk, with no confirmed defects;
-no revised provider approval is claimed. Installed-build equivalence is unproven.
-Full outcome/disposition: [Phase 2 review](reviews/PHASE2-CODEX-REVIEW.md).
+> Finished review: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
 Live checks are unverified. `cua.getApp("Ghostty")` was denied for safety. Selecting the separate
 fixture bundle then failed because the Mac is locked and automatic unlock could not complete.
@@ -126,13 +120,7 @@ discovery, settings and login registration, not merely substitute a temporary re
 > Completed isolation notes. [Detailed log](PROGRESS_appendix_phase-3.md).
 
 ### Phase 2
-
-- Seven planned source/test paths changed. The additional report is ordinary review documentation.
-- The isolated launch branch is required by PLAN step 5; changing only HOME/registry would still
-  construct the scheduler and register a temporary app at login. No adapter framework was added.
-- SPEC changes are tracking frontmatter only; PLAN and the root hard-lock state remain untouched.
-- Unit/build verification permits a source checkpoint, not a DONE phase or live acceptance claim.
-  Recovery and previews remain future work; no OSC is added in this slice.
+> Finished scope notes: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
 ### Phase 1
 
@@ -898,3 +886,14 @@ Prior LsYHBP614/14 timing failures remain unattributed in [its checks](quiet-bou
 ### Phase 9 ordinary-provider synthetic compatibility: 2026-10-14 16:18 CEST
 `6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
 Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 remain incomplete; next diagnose timing/root trust and compatibility, with headless/Linux/native/palette limits open. No live actions.
+
+### Phase 9 record read retry deadlines: 2026-10-14 16:34 CEST
+
+The read loop now checks the original deadline before each syscall, including EINTR/partial retries.
+RED jhc4kO: 3 cases/2 assertions; cpDRTk:201/201; xMoxpJ:619/619,17.133s; dKefZH:release23.81s.
+TOldLS:19/19 background-intent checks with the rebuilt helper and private owned PTYs.
+[Source report and limits](initial-paint-source-check-2026-10-14.md) preserve historical failures.
+**Scope:** One production/one test file plus existing docs/capture; no budget/schema/live changes.
+17 completed Phase 2 review/scope lines moved unchanged to its appendix; reconstruction verified.
+Earlier timing causes, native/Linux, headless feedback, palette and runtime-root trust stay open.
+Next: root trust and compatibility corrections; Phase9/goal active and incomplete, 2/7/8 Blocked.

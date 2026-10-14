@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 52 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 60 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 53 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 61 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4975,3 +4975,65 @@ process guard is inferred. A size assertion prevented an over-limit write; finis
 text moved unchanged with reconstruction verified, retaining its unresolved timing note. Next
 work must address timing/root trust and remaining compatibility, headless/Linux/native/palette
 limits rather than redefine success around these passing component suites.
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · record-read-retry-deadlines
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported; environment family only, exact served variant unobserved
+  interface: Codex desktop
+  thinking: user requested extended effort; actual runtime setting unverified
+  session: 01a10879
+  trace: observed tool results and current diffs; no Claude action-trace output
+
+**Framing [O]**: The user requested resumption of the active full implementation goal. Current
+Git was clean at 8ab30a0. The dated SPEC, PLAN, PROGRESS and GOAL still placed native acceptance
+outside completed source work. Two prior full Swift runs failed, while separated controls passed.
+The resumption preserved both kinds of evidence instead of treating a later pass as an explanation.
+Runtime and terminal-session boundaries were checked against the memory registry and current plan.
+No real settings, app replacement, native terminal action or external process termination occurred.
+
+**Strategy [O]**: A running explorer supplied a read-only map of the shared device budget and
+metadata operations. Its full report was retrieved from disk and compared with the actual reader.
+The source had no deadline check inside its interrupted/partial-read loop. Historical logs did not
+record EINTR or stage timestamps. The selected correction therefore addressed that independent
+gap; it did not claim to fix the previously observed deadline failures. A small syscall injection
+was added to the existing store, with Darwin.read as its default. No filesystem framework,
+production tracing service, deadline extension or new scheduling layer was introduced.
+
+**Action trace [O]**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Read | Goal, dated state, Git and memory boundary | Active incomplete goal; clean source |
+| 2 | Read/source check | Explorer report and record reader | Missing retry deadline confirmed |
+| 3 | Test first | Three injected syscall cases | Two expiry assertions fail; normal retry passes |
+| 4 | Edit | Existing read loop | Original deadline checked before each attempt |
+| 5 | Verify | Swift, release and rebuilt-helper Bats | 201/201, 619/619, build and 19/19 pass |
+| 6 | Record | Existing docs, history and this capture | Historical failures and live limits retained |
+
+**Decision points [O]**: The device's 100 ms budget was retained. The tests observe attempt count,
+so accepting an eventual deadline error cannot hide an extra expired syscall. A separate positive
+case covers an interruption followed by real partial reads. Cached bytes remain unchanged in all
+three cases. The regression uses a supplied original deadline; it does not restart the budget or
+accept skipped work as restoration. The reader's existing opened-descriptor validation remains.
+
+**Failure arc [O]**: jhc4kO executed three cases with two failed assertions. Both expiry cases
+reported two read attempts instead of one. The next edit added one deadline check at the loop
+head. cpDRTk then passed all 201 connected store/recovery/writer cases. xMoxpJ passed all 619
+Swift cases and dKefZH built release in 23.81 seconds. This proves the new controlled cases and
+current suite outcome. It does not recover absent historical stage measurements or establish
+why earlier complete runs failed. A syscall already in progress remains non-preemptible.
+
+**Heuristics [O]**: P8 guided source verification before selecting the remedy. P9 kept state bound
+to the incoming SPEC. Documentation-size inspection measured changed lines over fourteen commits:
+5,870 docs/capture, 276 production and 1,096 tests, including unchanged moves. Those reports
+produced seven connected source fixes, so the recorded result did not meet the zero-benefit
+condition for retiring a process instruction. Existing documents were reused for the full report.
+Seventeen finished Phase 2 lines moved unchanged to its existing appendix, with reconstruction
+verified; unresolved cases remain in the main progress file.
+
+**Confidence and limits [O]**: Source behavior and test outcomes are observed. Exact model variant,
+old timing causes, physical Ghostty acceptance and Linux compatibility are unverified. No new
+pattern or skill is proposed. The master goal remains active and incomplete.

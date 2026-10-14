@@ -1291,6 +1291,52 @@ final class TerminalVisualStateTests: XCTestCase {
         return try XCTUnwrap(files.first { $0.lastPathComponent == filename })
     }
 
+    func testRecordReadStopsAfterInterruptedReadExhaustsOriginalDeadline() throws {
+        try assertRecordReadStopsAtDeadline(interrupted: true)
+    }
+
+    func testRecordReadStopsAfterPartialReadExhaustsOriginalDeadline() throws {
+        try assertRecordReadStopsAtDeadline(interrupted: false)
+    }
+
+    private func assertRecordReadStopsAtDeadline(interrupted: Bool) throws {
+        let writer = makeStore()
+        let target = try XCTUnwrap(writer.captureTarget(tty: tty, owner: generation(11)))
+        try writer.cacheTargetUnlocked(target, deadline: deadline())
+        let url = try targetRecordURL("target.json"), original = try Data(contentsOf: url)
+        var attempts = 0, budget: UInt64 = 0
+        let reader = makeStore(readDescriptor: { fd, buffer, count in
+            attempts += 1
+            guard attempts == 1 else { return 0 }
+            let now = DispatchTime.now().uptimeNanoseconds
+            if now < budget { Thread.sleep(forTimeInterval: Double(budget - now) / 1e9 + 0.005) }
+            if interrupted { errno = EINTR; return -1 }
+            return Darwin.read(fd, buffer, min(count, 1))
+        })
+        budget = deadline()
+        XCTAssertThrowsError(try reader.cacheTargetUnlocked(target, deadline: budget)) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.deadlineExceeded.description)
+        }
+        XCTAssertEqual(attempts, 1, "Expired reads must not issue another system call")
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testInterruptedRecordReadRetriesWithinOriginalDeadline() throws {
+        let writer = makeStore()
+        let target = try XCTUnwrap(writer.captureTarget(tty: tty, owner: generation(11)))
+        try writer.cacheTargetUnlocked(target, deadline: deadline())
+        let url = try targetRecordURL("target.json"), original = try Data(contentsOf: url)
+        var attempts = 0
+        let reader = makeStore(readDescriptor: { fd, buffer, count in
+            attempts += 1
+            if attempts == 1 { errno = EINTR; return -1 }
+            return Darwin.read(fd, buffer, min(count, 64))
+        })
+        try reader.cacheTargetUnlocked(target, deadline: deadline())
+        XCTAssertGreaterThan(attempts, 2, "An interruption and partial reads must still complete")
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
     private func deadline() -> UInt64 { DispatchTime.now().uptimeNanoseconds + 100_000_000 }
 
     private func effect(_ binding: TerminalTargetBinding, id: String = "effect-43") -> TerminalEffectRecord {
@@ -1300,12 +1346,14 @@ final class TerminalVisualStateTests: XCTestCase {
 
     private var organizer: URL { root.appendingPathComponent("organizer") }
 
-    private func makeStore(directory: URL? = nil) -> TerminalVisualStateStore {
+    private func makeStore(directory: URL? = nil,
+                           readDescriptor: @escaping (Int32, UnsafeMutableRawPointer?, Int) -> Int = { Darwin.read($0, $1, $2) })
+        -> TerminalVisualStateStore {
         TerminalVisualStateStore(runtimeDirectory: directory ?? root, clock: clock,
             lookup: { self.records[$0] }, device: { self.devices[$0] },
             deviceMissing: { self.missingDevices.contains($0) },
             processMissing: { self.missingProcesses.contains($0) },
-            descriptorDevice: { self.descriptorDevices[$0] })
+            descriptorDevice: { self.descriptorDevices[$0] }, readDescriptor: readDescriptor)
     }
 
     private func generation(_ pid: Int32, start: UInt64 = 100,

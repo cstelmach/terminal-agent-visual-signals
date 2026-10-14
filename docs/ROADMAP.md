@@ -1,7 +1,11 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.38
+Version: 1.39
+
+Organizer record reads now stop before retrying an interrupted or partial syscall after the
+original deadline. Three regressions, 619 Swift tests and the release build pass. Earlier suite
+timing failures remain unattributed; Linux, storage trust and physical Ghostty acceptance stay open.
 
 Existing Gemini/OpenCode/unknown ordinary contexts can now publish the observations needed for
 synthetic idle/error updates in native and portable readers. Exact stale-context checks remain.

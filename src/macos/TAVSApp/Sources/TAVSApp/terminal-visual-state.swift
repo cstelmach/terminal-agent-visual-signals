@@ -92,6 +92,7 @@ final class TerminalVisualStateStore {
     private let deviceMissing: (String) -> Bool
     private let processMissing: (Int32) -> Bool
     private let descriptorDevice: (Int32) -> UInt32?
+    private let readDescriptor: (Int32, UnsafeMutableRawPointer?, Int) -> Int
     private static let sizeLimit = 8_192
     private static let states: Set<String> = [
         "processing", "permission", "complete", "idle", "compacting", "reset", "subagent", "tool_error"
@@ -107,7 +108,8 @@ final class TerminalVisualStateStore {
          device: @escaping (String) -> UInt32? = ProcessIdentity.deviceNumber,
          deviceMissing: @escaping (String) -> Bool = TerminalVisualStateStore.knownDeviceMissing,
          processMissing: @escaping (Int32) -> Bool = TerminalVisualStateStore.knownProcessMissing,
-         descriptorDevice: @escaping (Int32) -> UInt32? = TerminalVisualStateStore.characterDevice) {
+         descriptorDevice: @escaping (Int32) -> UInt32? = TerminalVisualStateStore.characterDevice,
+         readDescriptor: @escaping (Int32, UnsafeMutableRawPointer?, Int) -> Int = { Darwin.read($0, $1, $2) }) {
         directory = runtimeDirectory.appendingPathComponent("organizer", isDirectory: true)
         self.clock = clock
         self.lookup = lookup
@@ -115,6 +117,7 @@ final class TerminalVisualStateStore {
         self.deviceMissing = deviceMissing
         self.processMissing = processMissing
         self.descriptorDevice = descriptorDevice
+        self.readDescriptor = readDescriptor
     }
 
     func lockURL(forTTY tty: String) throws -> URL {
@@ -1048,7 +1051,8 @@ final class TerminalVisualStateStore {
         var buffer = [UInt8](repeating: 0, count: Self.sizeLimit + 1)
         var data = Data()
         while data.count <= Self.sizeLimit {
-            let count = Darwin.read(fd, &buffer, buffer.count - data.count)
+            try checkDeadline(deadline)
+            let count = readDescriptor(fd, &buffer, buffer.count - data.count)
             if count == 0 { break }
             if count < 0 {
                 if errno == EINTR { continue }

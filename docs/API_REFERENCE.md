@@ -1,7 +1,15 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.60
+Version: 1.61
+
+## Record read retries
+
+TerminalVisualStateStore checks the supplied monotonic deadline before every record read syscall,
+including retries after EINTR and partial reads. It throws deadlineExceeded before another attempt
+when the original budget is exhausted. The original budget and record schema stay the same.
+A defaulted internal readDescriptor closure enables syscall-level regression
+tests; production callers continue using Darwin.read. Existing fd/type/inode/size checks remain.
 
 ## Ordinary provider observation compatibility
 

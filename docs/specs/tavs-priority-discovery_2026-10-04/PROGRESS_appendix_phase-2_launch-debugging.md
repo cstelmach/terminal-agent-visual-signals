@@ -81,3 +81,25 @@ code-sign validation passed. Two invalid-environment binary launches exited 1 be
 Logs, build and the fixture test bundle are in `/tmp/tavs-phase2-20261012T092559/`.
 
 Live acceptance remains recorded in [PROGRESS.md](PROGRESS.md).
+
+
+## Completed Phase 2 review and scope notes
+
+Independent Codex review completed successfully with the configured Sol/high route. Its original
+CONCERN 7/10 finding assumed successful empty rows confirmed closure. Source verification falsified
+that assumption: upstream Ghostty returns empty collections when scripting is disabled. The model
+already reports unavailable coverage and disables navigation/edits. Finding dismissed, original
+score retained. The wrapper's source evaluation is 8/10, Low risk, with no confirmed defects;
+no revised provider approval is claimed. Installed-build equivalence is unproven.
+Full outcome/disposition: [Phase 2 review](reviews/PHASE2-CODEX-REVIEW.md).
+
+### Phase 2
+
+- Seven planned source/test paths changed. The additional report is ordinary review documentation.
+- The isolated launch branch is required by PLAN step 5; changing only HOME/registry would still
+  construct the scheduler and register a temporary app at login. No adapter framework was added.
+- SPEC changes are tracking frontmatter only; PLAN and the root hard-lock state remain untouched.
+- Unit/build verification permits a source checkpoint, not a DONE phase or live acceptance claim.
+  Recovery and previews remain future work; no OSC is added in this slice.
+
+Current acceptance and unverified cases remain in [PROGRESS.md](PROGRESS.md).

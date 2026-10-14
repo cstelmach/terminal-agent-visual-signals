@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.66
+Version: 1.67
+
+## Record reads retry after the caller's deadline
+
+The organizer reader checked its deadline around the complete read, but omitted the check inside
+the loop. Interrupted or partial reads could issue further system calls after expiry. Two injected
+syscall cases reproduced the extra attempt; neither establishes the earlier full-suite failures'
+cause. The loop now checks the original deadline before every attempt.
+
+A narrow read-syscall injection retains Darwin.read by default. Three regressions cover expiry
+after EINTR, expiry after a partial read, and successful interrupted/partial reads within budget.
+They preserve cached bytes and the 100 ms deadline. All 619 Swift tests and the release build pass.
+Nineteen isolated background-intent checks also pass with the rebuilt helper.
+Synchronous syscalls remain non-preemptible; this fix prevents subsequent attempts after expiry.
 
 ## Existing provider contexts cannot publish observations for synthetic updates
 
