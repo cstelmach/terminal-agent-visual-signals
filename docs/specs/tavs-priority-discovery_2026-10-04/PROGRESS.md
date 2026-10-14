@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 18:18 CEST
-**Version:** 4.46
+**Last Updated:** 2026-10-14 18:48 CEST
+**Version:** 4.47
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 643 Swift pass; prior failures retained;175 portable/25 marker-background | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 651 Swift pass; prior failures retained;175 portable/25 marker-background | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -891,10 +891,10 @@ Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 re
 
 > Finished marker checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-### Phase 9 checked Scheduler state: 2026-10-14 18:18 CEST
+> Finished checked-Scheduler checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-FsrDEZ RED4/14; jrJgP6:643/643,17.013s;upHyLW:external release17.16s;Yf2kjw:25/25.
-[Source checks and limits](current-codex-review-2026-10-14.md#parent-scheduler-correction-and-final-verification).
-**Scope:**2 source/2 test files;9 new cases;shared review correction;100ms device deadline unchanged.
-Next: legacy mute I/O, GUI/CLI merge races, portable/shell, Linux/headless/palette and native checks.
-Phase9/goal incomplete;2/7/8 Blocked;historical causes unproven;SPEC/PLAN unchanged.
+### Phase 9 native mute I/O: 2026-10-14 18:48 CEST
+
+bBIGar651/651,16.235s;bG6i3E release18.74s;lJzKjR25/25;H2vewo/ueWFoc REDs retained.
+[Scope/checks/limits](current-codex-review-2026-10-14.md#parent-native-mute-correction-and-verification).
+Next: GUI/CLI, portable/shell, Linux/native/headless/palette;Phase9 incomplete;SPEC/PLAN fixed.

@@ -713,8 +713,13 @@ final class FocusControllerTests: XCTestCase {
         try "MUTED=\"false\"\nSCHEMA_VERSION=\"1\"\n".write(to: root.appendingPathComponent("mute.state"),
             atomically: true, encoding: .utf8)
         clock.advance(by: 2)
+        let releaseTraceStart = trace().count
         focus.acceptCatalogue([a,b], high: [a.id], coverage: [a.id: sample]); awaitManual(focus)
+        XCTAssertTrue(trace().dropFirst(releaseTraceStart).contains { $0.contains("caller returned true") },
+                      focus.focusStatus + "\n" + trace().joined(separator: "\n"))
         XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.effectID, original.effectID)
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.heartbeatAt,
+                       clock.now().timeIntervalSince1970, trace().joined(separator: "\n"))
         _ = try read(1)
         let cleared = expectation(description: "Masked focus cleanup completed")
         focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)

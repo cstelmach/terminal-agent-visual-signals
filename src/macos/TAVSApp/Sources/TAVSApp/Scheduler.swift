@@ -189,6 +189,7 @@ final class Scheduler: ObservableObject {
 
     private var config: ScheduleConfig?
     private var previousMuted: Bool = false
+    private var previousMuteSeedPending = true
     private var projectionSaved = false
     private var nextTransitionDate: Date?
     private var wakeObserver: NSObjectProtocol?
@@ -255,9 +256,7 @@ final class Scheduler: ObservableObject {
         // correctly detects a muted→unmuted transition. Without this, a crash
         // while muted followed by a relaunch while the schedule is active
         // would leave terminals painted grey forever (no transition fires).
-        if let persisted = MuteStateReader.readMutedFlag(at: muteStateURL) {
-            previousMuted = persisted
-        }
+        previousMuteSeedPending = true
         loadAndEvaluate()
         startFileWatch()
         startRuntimeWatch()
@@ -387,7 +386,14 @@ final class Scheduler: ObservableObject {
         let restrictionsDisabled = visualRestrictionsStatus.disablesRestrictions
 
         let existingLock: LockStateData?
-        do { existingLock = try LockStateReader.readChecked(at: lockStateURL) }
+        var persistedMute: Bool?, muteSeedReadFailed = false
+        if previousMuteSeedPending {
+            do { persistedMute = try MuteStateReader.readMutedFlagChecked(at: muteStateURL) }
+            catch { muteSeedReadFailed = true }
+        }
+        do {
+            existingLock = try LockStateReader.readChecked(at: lockStateURL)
+        }
         catch {
             projectionSaved = false
             if restrictionsDisabled {
@@ -395,7 +401,7 @@ final class Scheduler: ObservableObject {
                 updatePublishedState(muted: false, reason: .none, transitionDate: transition)
                 statusText = "Visual state could not be saved. Terminal updates will retry. " + statusText
             } else {
-                statusText = "Visual state could not be saved. Lock state is unavailable; terminal updates will retry."
+                statusText = "Visual state could not be saved. State storage is unavailable; terminal updates will retry."
             }
             scheduleHeartbeat()
             scheduleTransitionTimer(transition, now: now)
@@ -445,7 +451,7 @@ final class Scheduler: ObservableObject {
             projectedReason = .none
         }
 
-        let wasMuted = previousMuted
+        let wasMuted = previousMuteSeedPending ? (persistedMute ?? previousMuted) : previousMuted
         let lockSaved = writeLockStateIfChanged(mergedLock, existing: existingLock)
 
         let untilEpoch: Int64
@@ -461,18 +467,19 @@ final class Scheduler: ObservableObject {
             untilEpoch = 0
         }
 
-        let muteSaved = writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
+        let muteSaved = lockSaved && writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
                                       hardCaused: hardCaused, requestedMuted: requestedMuted)
         projectionSaved = lockSaved && muteSaved
 
         if projectionSaved {
+            previousMuteSeedPending = false
             previousMuted = projectedMuted
             if restrictionsDisabled {
                 lastPaintedPauseVisual = nil
                 lastPaintedWasLock = false
             }
             // Managed reconciliation reads only successfully saved rule projections.
-            if wasMuted && !projectedMuted {
+            if (wasMuted || muteSeedReadFailed) && !projectedMuted {
                 clearPausedVisualAndReplayPending()
             }
 
@@ -632,17 +639,6 @@ final class Scheduler: ObservableObject {
 
     private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64,
                                 hardCaused: Bool, requestedMuted: Bool) -> Bool {
-        let dir = muteStateURL.deletingLastPathComponent()
-        do {
-            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        } catch {
-            // .alreadyExists is the common path; only log surprising errors.
-            let nsErr = error as NSError
-            if nsErr.code != NSFileWriteFileExistsError {
-                TAVSLog.muteState.error("mute.state dir create failed: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-
         // Keep the requested rule's resolved colors for independent resumption.
         let visual: PauseVisual? = requestedMuted ? pauseVisualProvider() : nil
         let state = MuteStateData(

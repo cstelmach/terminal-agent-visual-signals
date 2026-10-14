@@ -1,7 +1,7 @@
 # TAVS current implementation Codex review
 
 Last Updated: 2026-10-14T12:31:58
-Version: 1.1
+Version: 1.2
 
 ## Invocation and result
 
@@ -406,3 +406,277 @@ that later delta. Native MuteStateReader/Writer and writeMuteState still use leg
 trust/bounds remain open. GUI/CLI merge serialization, portable/shell trust, Linux ordinary,
 headless recovery feedback, palette/physical acceptance and final reviews also remain open.
 Older timing/teardown causes are not established by these passes. Full goal remains incomplete.
+
+
+## Native mute baseline exploration
+
+Source-only evidence, separate from the original provider review. No provider approval is implied.
+
+# Native mute-state I/O: focused source report
+
+Last Updated:2026-10-14 (Europe/Vienna)
+Version:1.0
+Baseline:3df675a. Workspace:/Users/cs/local/code/apps/terminal-agent-visual-signals.
+Scope:read-only MuteState/Scheduler source and tests. No execution, edits or scores.
+Working files changed during investigation, so final baseline checks used git show3df675a.
+This report is baseline recon, not verification of the in-flight mute correction.
+
+## Minimal correction
+
+Reuse RuntimeDirectoryTrust, existing checked LockState read/write patterns and one startup
+pending-seed/reconciliation Boolean. Do not add a generic I/O framework or availability model.
+Trust checks must distinguish unsafe storage from trusted malformed generated mute content.
+The latter remains repairable by the canonical projection writer.
+
+## Confirmed baseline gaps and callers
+
+MuteState.swift:59-69 reads String(contentsOf:) with no parent/UID/mode/size/deadline guard,
+follows leaf links and returns nil on all I/O or flag parse failures. The sole production
+reader caller is Scheduler.start:258; other native references inspected are passive test checks.
+MuteStateWriter.write:43-45 atomically replaces supplied destination without trust checks.
+Scheduler.writeMuteState:635-643 creates parent recursively before calling this unchecked writer.
+Its create failure is logged but not an early return. Trust must therefore precede creation.
+The writer is also called directly by native policy/recovery/Broadcaster tests, so guarding only
+Scheduler leaves that entry unprotected.
+
+## Why trusted malformed mute projection remains repairable
+
+Mute-state is generated output of current schedule plus checked lock state; it is not the
+manual hard-lock/grant definition that must be merged and preserved. Baseline atomic write
+already replaces arbitrary existing content. Adding a successful parse prerequisite would
+turn a recoverable malformed projection into permanent failure until external removal.
+
+Recommended writer rule: check/create trusted parent, lstat destination, permit absent or a
+regular effective-UID-owned non-group/other-writable file. Reject link/FIFO/directory/foreign/
+writable leaves. Do not require reading or parsing its existing contents before replacement.
+A trusted malformed, invalid-UTF8 or oversized regular projection can be replaced with bounded
+canonical new bytes; a wrong-owner/writable record cannot be repaired into compliance.
+This also permits repair of a trusted unreadable generated leaf when its parent permits atomic
+replacement. Do not transfer the stricter LockStateWriter parse-preservation rule to mute output.
+
+Use a private0600 unique temporary file, bounded serialized output and partial-write/EINTR
+handling with one original monotonic deadline, then rename as the commit point. The current
+in-flight LockState writer pattern is available locally; no fallible chmod should follow commit.
+Do not claim deadline checks interrupt a blocked syscall or make path operations race-free.
+Move parent creation responsibility into guarded MuteStateWriter, removing Scheduler's earlier
+unchecked create attempt. Preserve its returned false on failure and projectionSaved gating.
+
+## Checked startup flag read
+
+Add readMutedFlagChecked using the local no-follow, regular-file, UID/mode, inode/device and
+8192-byte/deadline pattern. Preserve a legacy optional wrapper for passive callers.
+A strict checked reader can return nil only for trusted ENOENT and throw for unusable present
+flag/invalid UTF8/oversize, without changing the writer's permission to repair trusted content.
+Retain the existing flag interpretation; full schema validation is unnecessary for seeding
+previousMuted, and old/dead APP_PID must not defeat restart cleanup of a true persisted flag.
+Never open a FIFO or follow a linked leaf to discover startup state.
+
+An initial checked read failure must not certify previousMuted=false as an absent seed, nor
+invent previousMuted=true. Keep a single pending startup seed/reconciliation flag.
+Retry that checked seed before a subsequent evaluation overwrites old mute bytes. On trusted
+valid true/false, seed exactly that value. On trusted absence, resolve to the existing no-prior
+state behavior, retaining no-clear fresh startup and normal first pause paint.
+
+If read still fails but writer can safely repair a trusted malformed projection, successful
+canonical projection can resolve the pending startup work through explicit reconciliation:
+when current projected state is unmuted, perform the existing clear/reconcile path once;
+when muted, the normal new restrictive paint establishes the current state. Consume pending
+only after the existing projectionSaved success gate. Do not name this a successful old-state
+read or claim its unknown value was true/false.
+Unsafe storage makes guarded projection fail, so pending remains for heartbeat/storage repair.
+After repair, retry the seed before replacing a now-readable prior true flag; otherwise that
+flag can be overwritten by false before its required cleanup transition is recognized.
+
+## Preserve startup, suspension and retries
+
+Do not abort start before discover/watch/wake/timer setup merely because the seed failed.
+Existing discover/reconcile is independently guarded and remains useful for cached effects.
+Keep loadAndEvaluate running so trusted malformed mute output can be repaired. Writer failure
+keeps projectionSaved=false, preserves previousMuted/lastPainted state and prevents paint or
+release consumption; existing heartbeat/transition timers must remain armed.
+
+Suspended or unavailable restrictions still publish isMuted=false, isHardLocked=false and
+reason none, while retaining their status message. Valid prior MUTED=true still produces
+[discover,broadcastPausedClear,broadcast] once after successful projection, even in those modes.
+Do not gate valid seeding/reconciliation solely on restrictions being active. On failed unsafe
+storage, disabled UI remains visible but output cannot be certified; device retry stays disabled.
+A persisted unlock grant remains accepted even if generated mute projection later fails.
+
+## Delete API actual use
+
+Search of native source/tests found no production MuteStateWriter.delete caller.
+Only MuteStateTests:194 and:200 call it, for owned-file removal and nonexistent no-op.
+Baseline delete uses fileExists then removeItem, so it lacks root/leaf trust and can accept
+objects beyond a regular file. Do not add deletion to Scheduler or recovery, and do not remove
+this API as unrelated cleanup. If the slice promises all MuteState I/O is guarded, apply the
+same parent/regular-owned-leaf check and unlink a validated file; trusted ENOENT remains no-op.
+No deletion was performed by this investigation. API hardening is not authorization for live
+cleanup or deletion of unsafe storage.
+
+## Existing test constraints at3df675a
+
+- MuteStateTests131-183:atomic create/overwrite and concurrent readers see complete10-line schema.
+- :188-200:owned delete and absent no-op; no production deletion flow is implied.
+- SchedulerTests345-361:failed pause projection paints nothing; heartbeat repair retries once.
+- :476-491:failed release does not consume old paint; repair clears/reconciles once.
+- :626-645:persisted grant true survives failed mute projection, then repair/expiry works.
+- :795-815:suspended startup seeds old true, writes false, clears once; repeated startup stays inert.
+- :841-860:unavailable marker startup still reconciles prior true without rewriting marker/rules.
+- :1539-1562:restart with true muted projection must clear when current schedule is active.
+- :1599 onward:true absence retains first muted-start paint and does not invent an old transition.
+Add discriminating safe-malformed repair, unsafe startup pending/repair, FIFO/link/oversize bounded
+read, wrong-mode/owner non-replacement, and no-duplicate reconciliation tests. Tests were not run.
+
+## Limits
+
+Parent is inspecting persistent marker separately. Shell/portable roots, ACL grants, cross-user
+exploitation, descriptor-anchored TOCTOU and live rendering remain separate. Plain file deadline
+checks do not prove absolute100ms syscall completion. This report requests no execution or cleanup.
+
+
+## Native mute scoped source check
+
+Source-only evidence, separate from the original provider review. No provider approval is implied.
+
+# Native mute-state correction: scoped source check
+
+Last Updated:2026-10-14 (Europe/Vienna)
+Version:1.0
+Target:uncommitted MuteState.swift/Scheduler.swift and added tests on3df675a.
+Workspace:/Users/cs/local/code/apps/terminal-agent-visual-signals.
+Scope:read-only source inspection; no tests, edits, live actions, scores or approval verdict.
+Final MuteState source was reread after parent's parsing-deadline correction.
+
+## Finding and correction
+
+Initially readMutedFlagChecked returned true/false after decoding/scanning without a final
+check of the supplied deadline. I reported that source gap. Parent added checkDeadline after
+value trimming at MuteState.swift:147, before both successful returns. The final read confirms
+this correction in source. No behavioral reproduction or historical cause is claimed.
+No further confirmed source defect was found in the requested trust/repair/startup paths.
+
+## Parent and leaf guards
+
+Reader validates parent through RuntimeDirectoryTrust, then accepts only trusted ENOENT as nil.
+Existing regular leaf must be effective-UID-owned, non-group/other-writable and<=8192 bytes.
+Leaf symlinks/FIFOs/directories/oversize fail before open. No-follow/nonblocking open and
+fstat inode/device/type/size/owner/mode correlation retain the observed object check.
+The legacy readMutedFlag wrapper remains lossy for passive callers, but Scheduler uses checked read.
+
+Writer:44-70 checks/creates trusted parent with its one100ms deadline and validateDestination.
+Destination validation is metadata-only: absent or regular owned/non-writable leaves are allowed.
+It never requires valid previous MUTED text. Trusted malformed, invalid-UTF8, oversized or
+unreadable generated regular content therefore remains canonically repairable. Unsafe owner,
+write mode, links or special objects remain rejected rather than repaired into compliance.
+Scheduler's earlier unguarded parent creation was removed; writer owns safe creation.
+
+Delete:73-89 checks parent and the same regular-owned/non-writable leaf before unlink.
+Trusted ENOENT is a no-op. No recursive removeItem remains. It has no production caller found
+in this investigation; existing and added tests exercise it. No deletion was performed here.
+
+## Private atomic writer and bounds
+
+Serialized new bytes are capped8192 before staging. Temp uses O_CREAT|O_EXCL|O_NOFOLLOW|O_CLOEXEC,
+0600 creation plus fchmod0600 on the owned descriptor before any bytes/rename. Partial writes
+advance offset; EINTR returns to the same deadline-checked loop. One check precedes rename.
+Successful rename is the commit point; there is no fallible permission/deadline step afterward.
+The defer closes/unlinks the owned temporary name. Oversize new output leaves old bytes intact.
+Reader caps accumulated bytes and checks deadline before/after every read, including EINTR.
+The new final parsing check prevents reporting a successful flag after the parse stage expired.
+
+## Startup pending seed and success gating
+
+previousMuteSeedPending starts true and is reset by start. Each pending finishEvaluation attempts
+checked seed before reading/merging lock state or overwriting mute bytes (:388-395).
+Valid flags are used in wasMuted without inventing a value for failed reads. Trusted absence
+retains no-prior-state behavior. Error is kept as muteSeedReadFailed for this evaluation.
+Pending is consumed only inside projectionSaved at:474-476, after lock/mute persistence succeeds.
+
+Mute write is short-circuited by lockSaved&&writeMuteState at:470. A failed lock save cannot
+replace the still-pending prior mute projection. Read/save failure retains pending for later
+heartbeat repair. On repair the seed is retried before canonical bytes replace the prior state.
+
+A successfully repaired unknown seed with unmuted current projection uses the explicit
+(wasMuted||muteSeedReadFailed)&&!projectedMuted reconciliation condition (:482).
+After success pending=false and previousMuted=false, so later healthy evaluations do not repeat
+that cleanup. A muted projection follows the normal pause paint and establishes current state.
+Existing restrictive state, rules and grants are not derived from the untrusted prior flag.
+
+## Suspension, grant and timer behavior
+
+Checked lock failure still rearms heartbeat/transition/prior trusted expiry wakes and skips merge/
+projection. Mute save failure flows through existing projectionSaved=false, preserving previous
+paint state and pending release. Timers remain armed through the existing evaluation tail.
+Disabled restriction UI still publishes false/none and its restriction message on lock failures;
+normal disabled projection suppresses restrictive paint and heartbeat device retries.
+A valid persisted true startup flag still clears/reconciles once even while suspended/unavailable.
+No startup read failure aborts discover/watch/wake setup. grantUnlock semantics are unchanged:
+a persisted grant stays accepted even if later generated mute projection fails.
+
+## Added assertions inspected, not executed
+
+Tests cover unsafe parent/leaf preservation, linked parents, special read/write/delete objects,
+true absence versus malformed/UTF8/oversize/expired reads, private0600 output, safe malformed repair,
+oversized output preserving bytes/no leftover temp, unsafe startup seed repair, failed initial
+lock save preserving prior mute, and one-time malformed startup reconciliation.
+Existing suspended/unavailable startup, genuine absent startup, saved grant and timer/repair tests
+remain applicable. Test source does not prove actual cross-user, syscall-stall or live rendering behavior.
+
+## Exact limits
+
+POSIX checks do not inspect ACL grants or anchor all operations to held parent descriptors.
+Metadata-check/use and concurrent trusted-writer races remain; no transaction/compare-and-swap was added.
+Deadlines bound retry checks, not an already blocked syscall. Rename may finish after its preceding
+check; returning success reflects committed complete private bytes, not a hard100ms wall guarantee.
+Delete has no explicit operation deadline; this slice adds its trust/type guard, not live cleanup.
+A flag read preserves legacy flag interpretation, not full-schema validation of all mute fields.
+Physical restoration and full-suite success were not verified here. Parent handles those results.
+
+## Parent native mute correction and verification
+
+Native mute flag read now validates storage and bounds regular-file input/UTF8/flag parsing.
+The passive optional wrapper remains; Scheduler retries a checked pending startup seed before
+replacing old bytes. Pending is consumed only after projectionSaved. Failed lock persistence
+skips mute writing. Safely repaired unknown startup state uses one explicit reconciliation when
+current projection is unmuted, without asserting the old Boolean. Fresh trusted absence stays
+no-prior-state. Existing suspension/unavailable UI, grant acceptance and timers remain.
+
+Writer/delete validate parent and leaf metadata. Trusted malformed generated bytes remain
+repairable; unsafe metadata does not. Writer stages bounded private0600 output before rename;
+there is no fallible permission step afterward. The delete API remains unused in production;
+its existing owned-file tests and new rejection tests do not authorize live cleanup.
+
+Exact isolated runs:
+
+- H2vewo:initial RED3/9 failed assertions,0.534s; unsafe reads/replacement and startup consumption.
+- Tai1lI:87/87 connected,0.420s with initial trust/pending implementation.
+- ueWFoc:RED2/5,0.133s; failed initial lock write overwrote pending mute and malformed repair
+  omitted reconciliation. Short-circuiting mute write and explicit unknown-seed cleanup fixed both.
+- ziBMkj:89/89 connected,0.653s.
+- 7bS15i:651/651 full Swift,15.388s before final parsing-deadline check.
+- zWROWf:651 tests/2 assertions (1 unexpected),17.515s. Existing masked-focus release read
+  found no bytes and timed out at focus-controller-tests.swift:718/93. No writer outcome was
+  asserted specifically for that release; historical cause remains unproven.
+- shatpL:focused failed-case/mute/Scheduler control passed before instrumentation. It establishes
+  that separated run's outcome, not attribution of zWROWf.
+- bBIGar:final651/651,16.235s after the release fixture records fresh writer Boolean/error trace
+  and requires its current heartbeat before the unchanged PTY byte assertion.
+- bG6i3E:final external scratch release18.74s.
+- lJzKjR:25/25 rebuilt-helper marker/background checks on private owned PTYs.
+
+The source check reported the final flag-return deadline gap; the parent had just added that
+check and the report reread it. No further source defect was reported in the scoped paths.
+Eight new cases cover unsafe/linked/special storage, checked invalid/oversized/expired input,
+private atomic output, trusted malformed repair, pending startup repair and failed-save seeding.
+A test-only release recorder change preserves physical target/emergency/nil-callback/errno and
+100ms semantics; no production focus/render behavior changed.
+
+Logs use /var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.<run>/command.log.
+Release scratch remains on the external drive under tavs-scheduler-external-0mbyhflj/build;
+semantic runtime/preference roots remain private local paths. No installed app/state changed.
+Scope:two production/three test files, shared Phase9 correction beyond its initial file list.
+
+Plain-file deadlines do not preempt blocked syscalls. ACL/TOCTOU and concurrent writer/GUI-CLI
+merge races remain outside this guard. Portable/shell trust, Linux ordinary, headless feedback,
+palette/physical acceptance and final reviews remain open. The earlier missing-byte failure and
+older timing/teardown causes are not attributed by these passes. Full goal remains incomplete.

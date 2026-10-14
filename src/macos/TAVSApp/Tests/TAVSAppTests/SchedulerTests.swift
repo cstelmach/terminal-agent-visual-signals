@@ -361,6 +361,68 @@ final class SchedulerLifecycleTests: XCTestCase {
         scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
     }
 
+    func testUnsafeStartupMuteSeedStaysPendingUntilRepairReleasesPriorPaint() throws {
+        try writeStandardConfig()
+        let parent = tempDir.appendingPathComponent("mute-runtime")
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
+        muteStateURL = parent.appendingPathComponent("mute.state")
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused,
+            untilEpoch: 0, writtenEpoch: 0, appPID: 43), to: muteStateURL)
+        let original = try Data(contentsOf: muteStateURL)
+        try FileManager.default.setAttributes([.posixPermissions: 0o777], ofItemAtPath: parent.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path) }
+        let marker = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            lockStateURL: tempDir.appendingPathComponent("lock.state"), visualRestrictionsState: marker,
+            calendar: testCalendar)
+        scheduler.start()
+        XCTAssertEqual(try Data(contentsOf: muteStateURL), original)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { $0.repeating })
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(MuteStateReader.readMutedFlag(at: muteStateURL), false)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+    }
+
+    func testFailedInitialLockWriteCannotOverwriteThePendingMuteSeed() throws {
+        try writeStandardConfig()
+        try MuteStateWriter.write(MuteStateData(muted: true, reason: .hardLock,
+            untilEpoch: 0, writtenEpoch: 0, appPID: 43), to: muteStateURL)
+        let original = try Data(contentsOf: muteStateURL), folder = tempDir.appendingPathComponent("readonly-lock")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        let lock = folder.appendingPathComponent("lock.state"), now = Int64(clock.now().timeIntervalSince1970)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: now - 1, unlockUntilEpoch: 0, writtenEpoch: 0), to: lock)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            lockStateURL: lock, calendar: testCalendar)
+        scheduler.start()
+        XCTAssertEqual(try Data(contentsOf: muteStateURL), original)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+    }
+
+    func testTrustedMalformedStartupMuteIsRepairedAndReconciledOnlyOnce() throws {
+        try writeStandardConfig()
+        try Data("unparseable-owned-projection".utf8).write(to: muteStateURL)
+        scheduler.start()
+        XCTAssertEqual(MuteStateReader.readMutedFlag(at: muteStateURL), false)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertEqual(broadcaster.broadcastCallCount, 1)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+    }
+
     func testUnsafeRuntimeAbsenceCannotCertifyProjectionAndHeartbeatRepairsWatch() throws {
         try writeStandardConfig()
         var config = try ScheduleStore.load(from: scheduleURL)

@@ -1,7 +1,24 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.70
+Version: 1.71
+
+## Native mute projection bypasses storage trust and startup repair
+
+Mute flag reads and projection writes followed linked parents and accepted unsafe UID/write
+permissions. Three regressions failed nine assertions. Checked reads now bound trusted regular
+input; writer/delete guard actual objects. Canonical projection can repair trusted malformed
+bytes, while unsafe objects remain preserved. Private bytes are staged before atomic rename.
+
+Startup seeding remains pending through failed projection. A failed lock save now skips mute
+replacement, preserving the old flag for repair. A successful canonical repair of an unknown
+seed reconciles once without claiming its old value. Two further cases reproduced lost seeding
+and missing cleanup (five assertions). Existing suspension, grants and timer semantics remain.
+
+Eight new cases and all 651 Swift tests pass. One intervening full run failed the existing masked-
+focus release-byte case; its log is retained and cause unproven. That fixture now records actual
+release writer outcome/heartbeat before its PTY assertion. Final release/helper checks pass.
+GUI/CLI merge races, portable/shell trust and required native/Linux acceptance remain open.
 
 ## Scheduler treats unavailable lock data as absence
 

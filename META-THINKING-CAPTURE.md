@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 56 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 64 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 57 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 65 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -5226,3 +5226,75 @@ final private writer, which the parent verified; no later reviewer approval is c
 mute I/O, GUI/CLI merge races, portable/shell, Linux/headless/palette and physical checks remain.
 P8/P9 apply; no new pattern or skill is proposed. History moves reconstruct exactly. The goal
 stays active and incomplete, with older timing/teardown attribution unproven.
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · native-mute-io
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported; environment attribution, served variant unobserved
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed source, reports and command logs; earlier sequence reconstructed
+
+**Framing [O]**: The active goal remains the nine-phase Ghostty specification. This
+checkpoint addresses native mute-state trust and restart repair within Phase 9. The
+saved progress still identifies missing native acceptance and other source defects.
+Current Git status agrees with the interrupted checkpoint: two production files,
+three test files and supporting documentation are modified. No installed app or
+live terminal state was changed during this continuation.
+
+**Strategy [O]**: Reused RuntimeDirectoryTrust and the existing Scheduler projection
+success gate. The checked reader distinguishes trusted absence from unsafe storage
+or invalid input. The writer can repair malformed generated bytes only when the
+parent and existing regular file pass ownership and mode checks. It stages private
+bounded output before rename. The optional legacy reader remains for passive callers.
+No extra persistence service, journal or dependency was introduced.
+
+**Decision points [O]**: Reading malformed content and replacing unsafe objects have
+different contracts. Trusted generated content can be repaired without interpreting
+its old Boolean. Scheduler retains the pending startup seed until accepted projection
+writes complete. Failed lock persistence short-circuits mute writing, preserving the
+seed for another evaluation. An unknown seed repaired to an unmuted projection invokes
+one reconciliation; it never asserts that the old value was true or false. Deadline
+checks include parsing before a successful flag return, while blocked syscalls remain
+outside the cooperative guarantee.
+
+**Failure arcs [O]**: Saved RED logs expose unsafe replacement and premature seed
+consumption, followed by separate regressions for overwritten pending state and omitted
+cleanup. The corresponding production changes and eight new cases are present in the
+diff. A later full run retained two failed assertions around masked-focus release and
+missing PTY bytes. A separated passing control did not establish their cause. The
+fixture now records that release's fresh writer result and heartbeat before retaining
+its physical-byte assertion. No production focus behavior or 100 ms device budget
+changed. That historical timing failure remains unattributed.
+
+**Continuation correction [O]**: A documentation size preflight stopped the proposed
+902-line progress update. The saved result uses a pointer to a finished entry moved
+unchanged into the existing appendix, with reconstruction recorded, leaving 900 lines.
+This continuation retrieved final command-log tails and the actual source diff before
+preparing a commit; carried summaries alone did not establish passing evidence.
+
+**Verification [O]**: Final logs confirm 651 Swift tests pass in 16.235 seconds,
+25 isolated marker/background checks pass, and the external scratch release build
+finishes in 18.74 seconds. Earlier failed runs remain documented. No claim follows
+about ACL protection, concurrent trusted writers, hard syscall deadlines, Linux ordinary
+support, physical Ghostty rendering or completed final independent reviews.
+
+**Heuristics [O]**: P8 and P9 recur: verify proposed remedies against connected source
+and keep the dated SPEC's state authoritative. Existing workflow coverage makes another
+skill unnecessary here. No new pattern or model-profile tendency was inferred.
+
+**Confidence**: Source, saved reports and log outcomes are observed. Earlier action order
+is reconstructed from the saved checkpoint. Internal reasoning is not recorded.
+
+**Compact action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient | Goal, Git, dated progress | Active incomplete goal; interrupted diff retained |
+| Inspect | MuteState and Scheduler | Trusted repair, checked reads and pending seed gate |
+| Verify | Final command-log tails | 651 Swift, 25 isolated checks, release pass |
+| Preserve | Reports and progress | Earlier failures and acceptance limits retained |
+| Check | Owned diff and capture | Exact paths prepared for one correction commit |

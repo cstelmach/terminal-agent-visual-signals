@@ -1,7 +1,27 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.64
+Version: 1.65
+
+## Checked native mute projection I/O
+
+MuteStateReader.readMutedFlagChecked returns nil for trusted absence and throws for unavailable
+storage or unusable flag data. It preserves the legacy flag interpretation, with parent/leaf
+trust, no-follow regular-file/inode checks, 8192-byte input and one supplied cooperative deadline.
+Successful flag parsing checks the original deadline. Passive readMutedFlag retains optional
+semantics; Scheduler uses the checked method for pending startup seeding.
+
+MuteStateWriter validates metadata before creation/replacement and deliberately permits trusted
+malformed generated content to be canonically repaired. New output is capped at 8192 and staged
+0600 through its descriptor before atomic rename. Unsafe links, special objects, ownership and
+writable metadata are not repaired. The existing delete API checks the same objects before unlink;
+it has no production caller. Safe absence remains a no-op. No live cleanup flow was added.
+
+Scheduler retries pending startup reads before overwrite and consumes them only when projection
+is saved. Lock-save failure skips mute writing. A safely repaired unknown startup value triggers
+one explicit reconciliation for an unmuted current projection, without inferring its old Boolean.
+Suspended/unavailable restriction UI, grants and retry timers remain. Device100ms is unchanged;
+file checks do not interrupt blocked syscalls or serialize concurrent GUI/CLI merge transactions.
 
 ## Checked native lock-state I/O
 
@@ -24,7 +44,7 @@ private bytes; no fallible permission operation follows. Existing unsafe/unparse
 are preserved. No-file/unchanged shortcuts inspect current data; readonly unchanged state is valid.
 
 The terminal device deadline remains 100 ms. GUI/CLI read-merge-write is not yet serialized;
-late reread failures cannot undo dispatched work. Legacy mute-state and portable/shell I/O remain.
+late reread failures cannot undo dispatched work. Portable/shell I/O remain outside this scope.
 
 ## Native persistent marker trust
 
@@ -57,8 +77,8 @@ inside its existing worker and original 100 ms deadline, before callbacks/open a
 open. Lock-parent creation now precedes device admission/open. Lock-file UID checks supplement
 its existing exact 0600 predicate. No target/emergency identity or render schema changes occur.
 
-Legacy mute-state readers/writers, portable and shell paths remain outside these native guards.
-The guard checks POSIX metadata, not ACLs or all path replacement races.
+Portable and shell paths remain outside these native guards. The guard checks POSIX metadata,
+not ACLs or all path replacement races.
 
 ## Record read retries
 

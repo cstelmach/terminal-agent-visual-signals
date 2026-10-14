@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 @testable import TAVSApp
 
 final class MuteStateTests: XCTestCase {
@@ -137,6 +138,7 @@ final class MuteStateTests: XCTestCase {
         let content = try String(contentsOf: path, encoding: .utf8)
         XCTAssertTrue(content.contains("MUTED=\"true\""))
         XCTAssertTrue(content.contains("REASON=\"schedule_window\""))
+        XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: path.path)[.posixPermissions] as? Int, 0o600)
     }
 
     func testAtomicWriteOverwritesExisting() throws {
@@ -151,6 +153,86 @@ final class MuteStateTests: XCTestCase {
         let content = try String(contentsOf: path, encoding: .utf8)
         XCTAssertTrue(content.contains("MUTED=\"false\""))
         XCTAssertTrue(content.contains("WRITTEN_EPOCH=\"300\""))
+    }
+
+    func testUnsafeParentAndLeafCannotAuthorizeReadOrReplaceMuteState() throws {
+        let parent = tempDir.appendingPathComponent("unsafe")
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
+        let path = parent.appendingPathComponent("mute.state")
+        let state = MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0, writtenEpoch: 0, appPID: 43)
+        try MuteStateWriter.write(state, to: path)
+        let original = try Data(contentsOf: path)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o777], ofItemAtPath: parent.path)
+        XCTAssertNil(MuteStateReader.readMutedFlag(at: path))
+        XCTAssertThrowsError(try MuteStateWriter.write(state, to: path))
+        XCTAssertEqual(try Data(contentsOf: path), original)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: path.path)
+        XCTAssertNil(MuteStateReader.readMutedFlag(at: path))
+        XCTAssertThrowsError(try MuteStateWriter.write(state, to: path))
+        XCTAssertEqual(try Data(contentsOf: path), original)
+    }
+
+    func testLinkedExistingParentCannotRedirectMuteState() throws {
+        let path = tempDir.appendingPathComponent("mute.state")
+        let state = MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0, writtenEpoch: 0, appPID: 43)
+        try MuteStateWriter.write(state, to: path)
+        let original = try Data(contentsOf: path), link = tempDir.appendingPathComponent("parent-link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: tempDir)
+        let redirected = link.appendingPathComponent(path.lastPathComponent)
+        XCTAssertNil(MuteStateReader.readMutedFlag(at: redirected))
+        XCTAssertThrowsError(try MuteStateWriter.write(state, to: redirected))
+        XCTAssertEqual(try Data(contentsOf: path), original)
+    }
+
+    func testCheckedFlagReadDistinguishesAbsenceFromInvalidDataAndDeadline() throws {
+        let path = tempDir.appendingPathComponent("checked.state")
+        XCTAssertNil(try MuteStateReader.readMutedFlagChecked(at: path))
+        for data in [Data("MUTED=\"unknown\"\n".utf8), Data([0xFF]), Data(repeating: 0x61, count: 8_193)] {
+            try data.write(to: path, options: .atomic)
+            XCTAssertThrowsError(try MuteStateReader.readMutedFlagChecked(at: path))
+            XCTAssertEqual(try Data(contentsOf: path), data)
+        }
+        XCTAssertThrowsError(try MuteStateReader.readMutedFlagChecked(at: path,
+            deadline: DispatchTime.now().uptimeNanoseconds - 1)) { error in
+                XCTAssertEqual((error as? POSIXError)?.code, .ETIMEDOUT)
+            }
+    }
+
+    func testSpecialMuteObjectsCannotBeReadWrittenOrDeleted() throws {
+        let target = tempDir.appendingPathComponent("target.state")
+        let state = MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0, writtenEpoch: 0, appPID: 43)
+        try MuteStateWriter.write(state, to: target)
+        let original = try Data(contentsOf: target), link = tempDir.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+        let fifo = tempDir.appendingPathComponent("fifo")
+        XCTAssertEqual(mkfifo(fifo.path, 0o600), 0)
+        for path in [link, fifo] {
+            XCTAssertThrowsError(try MuteStateReader.readMutedFlagChecked(at: path))
+            XCTAssertThrowsError(try MuteStateWriter.write(state, to: path))
+            XCTAssertThrowsError(try MuteStateWriter.delete(at: path))
+            var info = stat(); XCTAssertEqual(lstat(path.path, &info), 0)
+        }
+        XCTAssertEqual(try Data(contentsOf: target), original)
+    }
+
+    func testTrustedMalformedProjectionCanBeRepairedButOversizedOutputPreservesIt() throws {
+        let path = tempDir.appendingPathComponent("mute.state")
+        let state = MuteStateData(muted: false, reason: .none, untilEpoch: 0, writtenEpoch: 0, appPID: 43)
+        for data in [Data("invalid-owned-projection".utf8), Data([0xFF]), Data(repeating: 0x61, count: 8_193)] {
+            try data.write(to: path, options: .atomic)
+            try MuteStateWriter.write(state, to: path)
+            XCTAssertEqual(try MuteStateReader.readMutedFlagChecked(at: path), false)
+        }
+        let original = try Data(contentsOf: path)
+        var oversized = state; oversized.pauseBg = String(repeating: "A", count: 8_193)
+        XCTAssertThrowsError(try MuteStateWriter.write(oversized, to: path))
+        XCTAssertEqual(try Data(contentsOf: path), original)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [path.lastPathComponent])
     }
 
     func testConcurrentReaderSeesCompleteFile() throws {

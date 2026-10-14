@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.8
+Version: 1.9
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -132,3 +132,12 @@ Finished Sessions source/build text moved unchanged; unresolved failure history 
 `6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
 
 Current source scope and unresolved acceptance remain in [PROGRESS.md](PROGRESS.md).
+
+
+### Phase 9 checked Scheduler state: 2026-10-14 18:18 CEST
+
+FsrDEZ RED4/14; jrJgP6:643/643,17.013s;upHyLW:external release17.16s;Yf2kjw:25/25.
+[Source checks and limits](current-codex-review-2026-10-14.md#parent-scheduler-correction-and-final-verification).
+**Scope:**2 source/2 test files;9 new cases;shared review correction;100ms device deadline unchanged.
+Next: legacy mute I/O, GUI/CLI merge races, portable/shell, Linux/headless/palette and native checks.
+Phase9/goal incomplete;2/7/8 Blocked;historical causes unproven;SPEC/PLAN unchanged.
