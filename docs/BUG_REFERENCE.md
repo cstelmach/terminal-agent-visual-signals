@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.72
+Version: 1.73
+
+## Delivery failures lose their diagnostic stage and physical oracle
+
+Managed helper exceptions collapsed to one message; three owned fixtures discarded failure
+output. Worker checks accepted retained intent without requiring delivered color bytes. Fixed
+caller-stage and allowlisted error labels now preserve privacy and return contracts. Fixtures
+retain statuses, require rendered completion plus physical bytes, and use inherited ERR traps.
+The four historical combined-run failures remain unattributed. A later diagnostic run reaches
+all intended colors but fails a separate delayed tool-error timestamp assertion; its records
+are retained. A final control also captures a native caller deadline at the newer render.
+Reporting fixes do not establish its internal stage or either historical delivery cause.
 
 ## Concurrent lock mutations overwrite newer grants and lock ends
 

@@ -64,10 +64,24 @@ def _flag(value):
     return value == "1"
 
 
+def _failure_label(error):
+    # Exception messages and subclass names can contain private caller data.
+    if isinstance(error, OSError):
+        code = error.errno
+        return "os-"+str(code) if type(code) is int and 1 <= code <= 4095 else "os"
+    for kind, label in ((UnicodeError, "unicode"), (ValueError, "value"), (TypeError, "type"),
+                        (KeyError, "key"), (OverflowError, "overflow"),
+                        (RecursionError, "recursion"), (RuntimeError, "runtime")):
+        if isinstance(error, kind):
+            return label
+    return "other"
+
+
 def run(args, environment=None):
     environment = dict(os.environ if environment is None else environment)
     verb = args[1] if len(args) > 1 else ""
     organizer = verb.startswith("--organizer-")
+    stage = "request"
     try:
         if (sys.platform == "darwin" and not _SCOPE_KEYS.intersection(environment) and len(args) == 3
                 and args[1:] == ["--validate-config", "--portable-ordinary-capabilities"]):
@@ -107,19 +121,24 @@ def run(args, environment=None):
                         record[field] = context[field]
                 Intents(store).publish_unbound(record, _flag(args[5]), context["observedAt"])
             return 0, b"", b""
+        stage = "roots"
         marker, runtime = _roots(args[2], args[3], environment)
+        stage = "identity"
         tty = args[4]
         device = device_number(tty)
         if device is None:
             raise ValueError("Concrete helper device unavailable")
         if verb in {"--managed-register", "--managed-current", "--managed-reconcile"}:
             caller = caller_ancestor(_pid(args[5]), None if verb == "--managed-reconcile" else device)
+            stage = "setup"
             renderer = Renderer(Store(runtime, Policy(marker, runtime)))
+            stage = "write"
             if verb == "--managed-reconcile":
                 wrote = renderer.reconcile(tty)
             else:
                 wrote = (renderer.register if verb == "--managed-register" else renderer.current)(tty, caller)
         else:
+            stage = "context"
             context = decode_context(args[5], time.time())
             producer = context.get("producer")
             if producer is None or context.get("device") is None:
@@ -140,9 +159,12 @@ def run(args, environment=None):
             record = {"schema": 1, "tty": tty, "device": device, "producer": producer,
                       "deliveryID": context["deliveryID"], "updatedAt": time.time(), "background": background}
             intake = context["observedAt"]
+            stage = "input"
             display = (Render(read_input(limit=16_384, timeout=0.1, regular_or_pipe=True))
                        if verb == "--managed-render" else None)
+            stage = "setup"
             renderer = Renderer(Store(runtime, Policy(marker, runtime)))
+            stage = "write"
             if verb == "--managed-render":
                 wrote = renderer.render(display, record, synthetic, intake)
             elif verb == "--managed-background":
@@ -155,8 +177,9 @@ def run(args, environment=None):
         return 0, (output+"\n").encode(), b""
     except StaleRecordError:
         return 3, b"", b"" if organizer else b"Managed output stale.\n"
-    except (OSError, ValueError, UnicodeError, TypeError, KeyError, OverflowError, RecursionError, RuntimeError):
-        return 1, b"", b"Organizer metadata unavailable.\n" if organizer else b"Managed output unavailable.\n"
+    except (OSError, ValueError, UnicodeError, TypeError, KeyError, OverflowError, RecursionError, RuntimeError) as error:
+        diagnostic = "Managed output unavailable. stage="+stage+" failure="+_failure_label(error)+".\n"
+        return 1, b"", b"Organizer metadata unavailable.\n" if organizer else diagnostic.encode()
 
 
 def main():

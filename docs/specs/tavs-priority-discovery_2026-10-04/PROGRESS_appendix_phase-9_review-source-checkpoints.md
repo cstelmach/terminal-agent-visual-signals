@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.10
+Version: 1.11
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -642,3 +642,10 @@ independently inspect that log. No further defect was found in these two changes
 Non-Darwin serialization, pre-challenge grant-duration timing, cooperative I/O
 bounds/storage trust limits, and prior installed non-cooperating writers remain
 the concrete limitations described above. No provider verdict or score is added.
+
+
+### Phase 9 shared lock transaction: 2026-10-14
+
+658 Swift/29 CLI pass;54 Bats/4 failures retained;controls4/4;release19.15s.
+[Scope/results](current-codex-review-2026-10-14.md#parent-native-lock-transaction-correction).
+Next: portable/shell trust and delivery; native/Linux/headless/palette remain open.

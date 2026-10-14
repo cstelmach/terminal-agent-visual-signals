@@ -16,6 +16,7 @@ final class ManagedOutputEntryTests: XCTestCase {
     private var factoryCalls = 0
     private var nativeCalls = 0
     private var failFactory = false
+    private var processRunner: ProcessRunner = SystemProcessRunner()
 
     override func setUpWithError() throws {
         root = URL(fileURLWithPath: try XCTUnwrap(ProcessInfo.processInfo.environment["TMPDIR"]))
@@ -71,7 +72,7 @@ final class ManagedOutputEntryTests: XCTestCase {
             Set(try JSONDecoder().decode([GhosttySurfaceID].self, from: Data($0.utf8)))
         }
         return VisualRecovery(runtimeDirectory: runtime, restrictions: restrictions, state: state,
-            policy: policy, processRunner: SystemProcessRunner(), clock: SystemClock(),
+            policy: policy, processRunner: processRunner, clock: SystemClock(),
             controller: generation(90), allowedSurfaces: allowed, nativeSnapshot: {
                 self.nativeCalls += 1
                 return self.rows
@@ -124,6 +125,35 @@ final class ManagedOutputEntryTests: XCTestCase {
         let stale = ManagedOutputEntry.run(command, factory: factory,
             lookup: { self.identities[$0] }, renderInput: { self.renderData("#123456") })
         XCTAssertEqual(stale?.code, 3)
+        noBytes()
+    }
+
+    func testInputFailureReportsFixedStageWithoutExceptionDetails() throws {
+        let command = args("--managed-render", tty, try token(context()), "0")
+        let result = ManagedOutputEntry.run(command, factory: factory,
+            lookup: { self.identities[$0] }, renderInput: {
+                throw NSError(domain: "BODY_SENTINEL", code: 43,
+                              userInfo: [NSLocalizedDescriptionKey: "BODY_SENTINEL"])
+            })
+        XCTAssertEqual(result?.code, 1)
+        XCTAssertEqual(result?.output, "")
+        XCTAssertEqual(result?.error, "Managed output unavailable. stage=input failure=other.\n")
+        XCTAssertEqual(factoryCalls, 0)
+        noBytes()
+    }
+
+    func testDeviceFailureReportsStageAndBoundedCodeWithoutItsPrivatePath() throws {
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { _, _, _, _ in
+            throw ProcessRunnerError.deviceIOFailed("BODY_SENTINEL", EIO)
+        }
+        processRunner = runner
+        let command = args("--managed-render", tty, try token(context()), "0")
+        let result = ManagedOutputEntry.run(command, factory: factory,
+            lookup: { self.identities[$0] }, renderInput: { self.renderData() })
+        XCTAssertEqual(result?.code, 1)
+        XCTAssertEqual(result?.output, "")
+        XCTAssertEqual(result?.error, "Managed output unavailable. stage=write failure=device-io-5.\n")
         noBytes()
     }
 
@@ -201,6 +231,8 @@ final class ManagedOutputEntryTests: XCTestCase {
         let report = try JSONDecoder().decode(VisualRecoveryReport.self, from: Data(result.output.utf8))
         XCTAssertTrue(report.stateSaved)
         XCTAssertTrue(report.hasFailures)
+        XCTAssertEqual(report.items.first?.reason,
+                       "Managed restoration unavailable. stage=setup failure=target.")
         XCTAssertEqual(nativeCalls, 0)
         noBytes()
     }

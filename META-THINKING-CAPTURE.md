@@ -22,14 +22,14 @@ Model Profiles) only. The Session Log is append-only evidence.
 | ID | Pattern | Rule | Count | Models | Sessions |
 |----|---------|------|-------|--------|----------|
 | P1 | verify-constants-by-computing | Never hardcode a hash/digest/magic value in a test without computing it in the shell first | 1 | fable-5 | 2026-07-13 |
-| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 3 | fable-5; gpt-6 (self-reported; variant unverified) | 2026-07-13; Phase 5 suspension; shell helper delivery |
+| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 4 | fable-5; gpt-6 (self-reported; variant unverified) | 2026-07-13; Phase 5 suspension; shell helper delivery; delivery diagnostics |
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 58 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 66 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 59 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 67 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -5376,3 +5376,89 @@ recorded. The cause of the broader delivery failures remains unknown.
 | Check and reproduce | Color boundary and watcher snapshot | Canonical fields; watcher RED then correction |
 | Verify | Swift, release, 54 Bats and focused control | 658 pass; CLI29 pass; four broader failures retained |
 | Preserve | Reports, progress, bug history and capture | Source findings and unfinished acceptance retained |
+
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · managed-delivery-diagnostics
+
+meta:
+  model: gpt-6 (self-reported; variant unverified)
+  model_source: self-reported; environment attribution, served variant unobserved
+  interface: Codex desktop
+  thinking: unknown; ultrathink requested
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tools, source, retained reports and command logs
+
+**Framing [O]**: Continued Phase 9 from the clean shared-lock commit. The outstanding
+four-case delivery failure had passed in a separated control, leaving its cause open.
+The next step retrieved the original failure log rather than treating that control
+as a diagnosis. Parallel read-only explorers traced native failure paths and the
+shell/portable fixtures. Both reports found insufficient stage evidence and no
+production cause explaining all four failures.
+
+**Strategy [O]**: The investigation identified a concrete reporting gap. Native and
+portable helpers collapse different failures into a generic message, while three
+fixtures omit captured child output. Caller-local fixed stages and allowlisted error
+categories distinguish boundaries without dumping exception descriptions, paths,
+titles, payloads, tokens or dynamic class names. Existing return codes, stdout,
+stale behavior, identity checks, publication and deadlines remain. Tests inject
+private error data through existing seams and require empty output and zero bytes
+on failure. No new production injection interface was introduced.
+
+**Decision points [O]**: A write-stage diagnostic describes the caller boundary; it
+cannot identify queueing, publication, opening, locking or bytes inside the worker.
+No shared asynchronous stage variable was added. Portable exceptions receive fixed
+families rather than a claimed cause; a ValueError can represent an input timeout.
+Numeric errno fragments are bounded. Native partial recovery still reports persisted
+suspension and a failed item, with an added fixed reason instead of inferred recovery.
+
+Worker acceptance now combines retained intent, returned rendered status and actual
+expected PTY color bytes. The existing real-helper seam records only a finite outcome
+and status. Non-render calls bypass command substitution to preserve binary/NUL output.
+The original fixture polling bound and device deadline were retained. This fixes an
+acceptance gap without asserting that it caused the historical failed deliveries.
+
+**Failure arcs [O]**: Native RED coverage failed three assertions; two new Python cases
+failed for missing diagnostics. Connected tests passed after the formatter changes.
+A source check found that the fixture ERR traps lacked inheritance inside functions.
+A Bash probe printed status7 and exited7 under set -eE; both affected headers were
+updated while workers still use set +e. These labels can appear for handled nonzero
+returns and do not independently prove a terminating failure.
+
+The rebuilt-helper focused four-case run passed, with three worker logs recording
+rendered completion. A later combined run passed 53/54. Its one failed case delivered
+all four expected synchronous/worker colors, then failed a delayed tool-error intent
+timestamp assertion. Retained records show the same delivery and a 0.317-second delta
+from observation to the last intent, still the error color. That establishes the
+sampled restore was missing. It does not distinguish timer delay, context rejection
+or a helper failure. A one-case control passed after finer labels and transparent
+non-render forwarding; neither combined failure was erased or attributed by that pass. The final four-case control passed three cases and failed the newer permission
+render with stage=write failure=device-deadline. This identifies the native caller-budget
+error class while leaving its internal queue/publication/open/lock/prepare/byte stage open.
+
+**Verification and state [O]**: All 660 Swift and 177 portable Python tests pass, and the
+release build succeeds. Bats now retains per-case files through its existing option.
+The historical four failures and current later assertion remain documented separately.
+The source concern about a portable parent parsing ready results after its deadline
+needs a deterministic check. Required native acceptance and other remaining defects
+still prevent goal completion. No installed app, real preferences or working terminals
+were changed.
+
+**Heuristics [O]**: P2, P8 and P9 recur through the empirical shell probe, verified
+review remedies and dated state orientation. Existing workflows cover these moves;
+no new skill or process instruction was proposed. A tracked whole-goal footprint
+measurement was 3.95 process lines per production addition, below the stated review
+threshold; no process cleanup was inferred from this one correction.
+
+**Confidence**: The source changes, logs and limits are observed. No internal reasoning
+is recorded, and historical failure causes remain unknown.
+
+**Compact action trace [O]**
+
+| Move | Object | Result |
+|---|---|---|
+| Orient and diagnose | Saved failures, native and shell paths | Missing stage and physical-oracle evidence |
+| Reproduce | Input/write/privacy checks | Native3 assertions and Python2 cases fail |
+| Implement | Fixed diagnostics and worker fixture | Contracts retained; bytes required |
+| Probe and correct | ERR inheritance and binary forwarding | Exit status retained; non-render output direct |
+| Verify | 660 Swift, 177 Python, release and Bats | Combined53/54; final control3/4; deadline captured |
+| Preserve | Reports, sampled records, progress and capture | Distinct open causes and next tests recorded |

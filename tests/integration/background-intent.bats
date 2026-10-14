@@ -37,6 +37,27 @@ finally:
 PY
 }
 
+_write_worker_capture() {
+    cat > "$CASE_DIR/worker-capture.sh" <<'SH'
+_tavs_helper_call() {
+    _tavs_helper_select || return 1
+    if [[ "$1" != --managed-render ]]; then
+        "$_TAVS_HELPER_BIN" "$@"
+        return $?
+    fi
+    local response status outcome=other
+    response=$("$_TAVS_HELPER_BIN" "$@")
+    status=$?
+    case "$response" in rendered|restricted|unaffected) outcome="$response" ;; esac
+    if [[ "$1" == --managed-render ]]; then
+        printf 'worker-render status=%s outcome=%s\n' "$status" "$outcome" >&2
+    fi
+    printf '%s\n' "$response"
+    return "$status"
+}
+SH
+}
+
 @test "background helper records colors and resets even while muted" {
     cat > "$CASE_DIR/check.sh" <<'SCRIPT'
 set -e
@@ -71,8 +92,11 @@ SCRIPT
 
 _ordinary_provider_updates() {
     local backend="$1"
+    _write_worker_capture
     cat > "$CASE_DIR/ordinary-provider.sh" <<'SH'
-set -e
+set -eE
+fixture_stage=setup
+trap 'printf "fixture stage=%s status=%s\n" "$fixture_stage" "$?" >&2' ERR
 export TTY_DEVICE="$(tty)"
 if [[ "$3" == portable ]]; then
     export TAVS_TEST_HELPER_BIN="$2/missing-native"
@@ -81,11 +105,15 @@ source "$1/src/core/terminal-osc-sequences.sh"
 for provider in gemini opencode unknown; do
     export TAVS_AGENT="$provider"
     unset TAVS_ORGANIZER_CONTEXT TAVS_ORGANIZER_INTAKE TAVS_ORGANIZER_SYNTHETIC
+    fixture_stage=observation
     _tavs_organizer_begin complete
+    fixture_stage=backend
     test "$_TAVS_HELPER_BACKEND" = "$3"
+    fixture_stage=initial
     send_osc_bg '#112233'
     cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
     export TAVS_ORGANIZER_SYNTHETIC=1
+    fixture_stage=synthetic
     send_osc_bg '#AABBCC'
     cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
     grep -q '#AABBCC' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
@@ -99,22 +127,27 @@ for provider in gemini opencode unknown; do
         UNIFIED_CHECK_INTERVAL=0.05
         UNIFIED_STAGE_DURATIONS=(0 60)
         UNIFIED_STAGE_COLORS=('#AABBCC' '#CCBBDD')
-        (set +e; unified_timer_worker "$TTY_DEVICE") > "$2/worker.log" 2>&1 &
+        fixture_stage=worker
+        (set +e; source "$2/worker-capture.sh"; unified_timer_worker "$TTY_DEVICE") > "$2/worker.log" 2>&1 &
         worker_pid=$!
         trap 'kill "$worker_pid" 2>/dev/null || :; wait "$worker_pid" 2>/dev/null || :; cat "$2/worker.log" >&2' EXIT
         for ((attempt=0; attempt<40; attempt++)); do
-            grep -q '#CCBBDD' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json && break
+            if grep -q '#CCBBDD' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json \
+                && grep -q '^worker-render status=0 outcome=rendered$' "$2/worker.log"; then break; fi
             sleep 0.05
         done
         grep -q '#CCBBDD' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
+        grep -q '^worker-render status=0 outcome=rendered$' "$2/worker.log"
         cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before-$provider.json"
+        fixture_stage=worker-cleanup
         kill "$worker_pid"; wait "$worker_pid"; trap - EXIT
     fi
 done
 SH
     run _owned_pty /bin/bash "$CASE_DIR/ordinary-provider.sh" "$REPO_ROOT" "$CASE_DIR" "$backend"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 0 ] || { printf 'owned fixture status=%s\n%s\n' "$status" "$output" >&2; return 1; }
     [[ "$output" == *$'\033]11;#AABBCC'* ]]
+    [[ "$output" == *$'\033]11;#CCBBDD'* ]]
 }
 
 @test "native ordinary provider synthetic updates preserve observations and emit background" {
@@ -170,7 +203,7 @@ PAUSE_BG="#314159"
 SCHEMA_VERSION="1"
 STATE
     run _owned_pty bash -c 'source "$1/src/core/terminal-osc-sequences.sh"; send_osc_bg reset' _ "$REPO_ROOT"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 0 ] || { printf 'standalone reset status=%s\n%s\n' "$status" "$output" >&2; return 1; }
     [[ "$output" == *']11;#314159'* && "$output" != *$'\033]111'* ]]
     python3 - "$TAVS_RUNTIME_DIR/organizer" <<'PY'
 import json,pathlib,sys
@@ -216,8 +249,11 @@ PY
 }
 
 @test "owned PTY synthetic colors preserve the observation and reject a superseded delivery" {
+    _write_worker_capture
     cat > "$CASE_DIR/pty-check.sh" <<'SH'
-set -e
+set -eE
+fixture_stage=initial
+trap 'printf "fixture stage=%s status=%s\n" "$fixture_stage" "$?" >&2' ERR
 export TTY_DEVICE="$(tty)" TAVS_AGENT=claude
 source "$1/src/core/terminal-osc-sequences.sh"
 _tavs_organizer_begin complete
@@ -227,6 +263,7 @@ cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before.json"
 export TAVS_ORGANIZER_SYNTHETIC=1
 _TAVS_SUPPRESS_OUTPUT=1
 _TAVS_PENDING_BUFFER="$2/pending"
+fixture_stage=synthetic
 send_osc_bg '#445566'
 cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before.json"
 test ! -e "$2/pending"
@@ -241,23 +278,29 @@ UNIFIED_CHECK_INTERVAL=0.05
 UNIFIED_STAGE_DURATIONS=(0 60)
 UNIFIED_STAGE_COLORS=('#112233' '#AABBCC')
 # Match the production worker's shell flags; keep assertions in the set-e parent.
-(set +e; unified_timer_worker "$TTY_DEVICE") > "$2/worker.log" 2>&1 &
+fixture_stage=worker
+(set +e; source "$2/worker-capture.sh"; unified_timer_worker "$TTY_DEVICE") > "$2/worker.log" 2>&1 &
 worker_pid=$!
 trap 'kill "$worker_pid" 2>/dev/null || :; wait "$worker_pid" 2>/dev/null || :; cat "$2/worker.log" >&2' EXIT
 for ((attempt=0; attempt<40; attempt++)); do
-    grep -q '#AABBCC' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json && break
+    if grep -q '#AABBCC' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json \
+        && grep -q '^worker-render status=0 outcome=rendered$' "$2/worker.log"; then break; fi
     sleep 0.05
 done
 grep -q '#AABBCC' "$TAVS_RUNTIME_DIR"/organizer/intent-*.json
+grep -q '^worker-render status=0 outcome=rendered$' "$2/worker.log"
 cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/before.json"
+fixture_stage=worker-cleanup
 kill "$worker_pid"
 wait "$worker_pid"
 trap - EXIT
 unset TAVS_ORGANIZER_SYNTHETIC
+fixture_stage=newer
 _tavs_organizer_begin permission
 send_osc_bg '#778899'
 cp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/latest.json"
 export TAVS_ORGANIZER_CONTEXT="$old_context" TAVS_ORGANIZER_SYNTHETIC=1
+fixture_stage=stale
 send_osc_bg reset
 cmp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/latest.json"
 test ! -s "$2/pending"
@@ -266,11 +309,13 @@ send_osc_bg reset
 cmp "$TAVS_RUNTIME_DIR"/organizer/intent-*.json "$2/latest.json"
 test ! -s "$2/pending"
 unset TAVS_ORGANIZER_CONTEXT
+fixture_stage=tool-error
 printf '%s' '{"hook_event_name":"PostToolUseFailure","tool_input":{"x":"ERROR_BODY_SENTINEL"}}' |
     bash "$1/src/agents/claude/trigger.sh" tool_error
 cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/error-observation.json"
 sleep 2.3
 cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/error-observation.json"
+fixture_stage=tool-error-check
 python3 - "$TAVS_RUNTIME_DIR/organizer" "$2" <<'CHECK'
 import json,pathlib,sys
 root=pathlib.Path(sys.argv[1]); case=pathlib.Path(sys.argv[2])
@@ -300,6 +345,7 @@ try:
         if got: status=code; break
     assert status is not None, 'owned child exceeded deadline'
     assert os.waitstatus_to_exitcode(status)==0, output.decode(errors='replace')
+    assert b'\x1b]11;#AABBCC' in output, 'worker intent was published without its expected bytes'
 finally:
     if status is None:
         os.kill(pid,signal.SIGKILL); os.waitpid(pid,0)

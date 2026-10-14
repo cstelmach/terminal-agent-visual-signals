@@ -102,6 +102,33 @@ class PortableHelperTests(unittest.TestCase):
             result = helper.run(["helper", "--organizer-intake", "claude", str(os.getpid())], self.environment)
         self.assertEqual(result, (1, b"", b"Organizer metadata unavailable.\n"))
 
+    def test_managed_failure_reports_stage_and_bounded_errno_without_exception_text(self):
+        args = ["helper", "--managed-register", self.marker, self.runtime, "/dev/ttys043", str(os.getpid())]
+        private_error = type("BODY_SENTINEL", (ValueError,), {})
+        for error, label in ((OSError(errno.EIO, "BODY_SENTINEL"), "os-5"),
+                             (OSError(99999, "BODY_SENTINEL"), "os"),
+                             (private_error("BODY_SENTINEL"), "value")):
+            with patch("portable_helper.device_number", return_value=43), \
+                    patch("portable_helper.caller_ancestor", return_value={}), \
+                    patch("portable_helper.Renderer") as renderer:
+                renderer.return_value.register.side_effect = error
+                result = helper.run(args, self.environment)
+            expected = ("Managed output unavailable. stage=write failure="+label+".\n").encode()
+            self.assertEqual(result, (1, b"", expected))
+        self.assertFalse(Path(self.runtime).exists())
+
+    def test_managed_input_failure_reports_stage_without_payload_or_exception_text(self):
+        producer = {"pid": 43, "startSeconds": 1, "startMicroseconds": 1}
+        context = dict(self.context, producer=producer, device=43)
+        args = ["helper", "--managed-render", self.marker, self.runtime, "/dev/ttys043",
+                encode_context(context, time.time()), "1"]
+        with patch("portable_helper.device_number", return_value=43), \
+                patch("portable_helper.inspect", return_value={"generation": producer, "device": 43}), \
+                patch("portable_helper.read_input", side_effect=ValueError("BODY_SENTINEL")):
+            result = helper.run(args, self.environment)
+        self.assertEqual(result, (1, b"", b"Managed output unavailable. stage=input failure=value.\n"))
+        self.assertFalse(Path(self.runtime).exists())
+
     def test_invalid_provider_is_rejected_before_consuming_input(self):
         with patch("portable_helper.read_input") as read:
             result = helper.run(["helper", "--organizer-intake", "unsupported", str(os.getpid())], self.environment)
@@ -129,7 +156,10 @@ class PortableHelperTests(unittest.TestCase):
         loop.symlink_to(loop)
         args = ["helper", "--managed-register", str(loop / "marker"), self.runtime,
                 "/dev/ttys043", str(os.getpid())]
-        self.assertEqual(helper.run(args, self.environment), (1, b"", b"Managed output unavailable.\n"))
+        result = helper.run(args, self.environment)
+        self.assertEqual(result[:2], (1, b""))
+        self.assertTrue(result[2].startswith(b"Managed output unavailable. stage=roots failure="))
+        self.assertNotIn(str(loop).encode(), result[2])
 
     def test_observation_publication_remains_data_only_and_stale_has_code_three(self):
         token = encode_context(self.context, time.time())
@@ -341,7 +371,7 @@ class PortableHelperPTYTests(fixture.OwnedPTYFixture, unittest.TestCase):
             process.wait(timeout=1)
             self.assertEqual(process.returncode, 1)
             self.assertEqual(process.stdout.read(), b"")
-            self.assertEqual(process.stderr.read(), b"Managed output unavailable.\n")
+            self.assertEqual(process.stderr.read(), b"Managed output unavailable. stage=input failure=value.\n")
         finally:
             if process.poll() is None:
                 process.kill()

@@ -11,6 +11,7 @@ enum ManagedOutputEntry {
     typealias Factory = (URL, URL, [String: String]) throws -> VisualRecovery
     private static let scopeKeys = ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_TARGETS", "TAVS_SESSIONS_TEST_FIXTURE"]
     private enum Failure: Error { case unavailable, stale }
+    private enum Stage: String { case request, roots, policy, identity, context, input, setup, target, write }
 
     static func handle(_ args: [String]) -> Bool {
         guard let result = run(args) else { return false }
@@ -29,6 +30,7 @@ enum ManagedOutputEntry {
         }
         guard args.count > 1, args[1].hasPrefix("--managed-") || args[1] == "--visual-recover" else { return nil }
         var persisted = false
+        var stage = Stage.request
         do {
             let verb = args[1]
             let count: Int
@@ -40,12 +42,15 @@ enum ManagedOutputEntry {
             default: throw Failure.unavailable
             }
             guard args.count == count else { throw Failure.unavailable }
+            stage = .roots
             let marker = try absoluteURL(args[2]), runtime = try absoluteURL(args[3])
             try validateRoot(marker: marker, runtime: runtime, environment: environment)
             if verb == "--visual-recover" {
                 guard args[4] == "recover" || args[4] == "resume" else { throw Failure.unavailable }
+                stage = .policy
                 try VisualRestrictionsStateStore(url: marker).write(suspended: args[4] == "recover")
                 persisted = true
+                stage = .setup
                 _ = try isolation(environment)
                 let recovery = try factory(marker, runtime, environment)
                 let operation: ManagedVisualOperation = args[4] == "recover"
@@ -55,6 +60,7 @@ enum ManagedOutputEntry {
                                                    items: applied.items))
             }
             _ = try isolation(environment)
+            stage = .identity
             let tty = args[4]
             guard let number = ProcessIdentity.deviceNumber(tty), tty != "/dev/tty",
                   tty.utf8.count <= 128, tty.rangeOfCharacter(from: .controlCharacters) == nil else {
@@ -72,6 +78,7 @@ enum ManagedOutputEntry {
                 default: operation = .reconcile(resetLegacy: true, clearSelective: false)
                 }
             } else {
+                stage = .context
                 let context = try OrganizerIntake.decodedContext(args[5])
                 guard let producer = context.producer, let expected = context.device,
                       producer.pid > 0, producer.startSeconds > 0, producer.startMicroseconds < 1_000_000 else {
@@ -106,12 +113,14 @@ enum ManagedOutputEntry {
                     color = "reset"
                 }
                 if !synthetic {
+                    stage = .identity
                     guard try ancestor(producer.pid, device: number, lookup: lookup) == producer else { throw Failure.stale }
                 }
                 owner = producer
                 let intent = OrdinaryBackgroundIntent(tty: tty, device: number, producer: producer,
                     deliveryID: context.deliveryID, updatedAt: Date().timeIntervalSince1970, background: color)
                 if verb == "--managed-render" {
+                    stage = .input
                     let style = try TerminalRender(renderInput())
                     render = (style, intent, synthetic, context.observedAt)
                     operation = .render(style, intent, synthetic: synthetic, intakeAt: context.observedAt)
@@ -123,10 +132,13 @@ enum ManagedOutputEntry {
                     operation = .ordinary(intent, synthetic: synthetic, intakeAt: context.observedAt)
                 }
             }
+            stage = .setup
             let recovery = try factory(marker, runtime, environment)
+            stage = .target
             let orphanedReset = verb == "--managed-forced-reset" && lookup(owner.pid)?.generation != owner
             let target = verb == "--managed-reconcile" || orphanedReset ? try recovery.cachedTarget(tty: tty)
                 : try recovery.target(tty: tty, owner: owner)
+            stage = .write
             if let (style, intent, synthetic, intakeAt) = render {
                 let result = try recovery.render(style, intent: intent, synthetic: synthetic,
                     intakeAt: intakeAt, to: target)
@@ -141,12 +153,53 @@ enum ManagedOutputEntry {
         catch TerminalVisualStateError.staleObservation { return stale() }
         catch TerminalVisualStateError.staleEffect { return stale() }
         catch {
+            let diagnostic = "stage=\(stage.rawValue) failure=\(failureLabel(error))."
             if persisted {
                 return report(VisualRecoveryReport(stateSaved: true, catalogueAvailable: false,
-                    items: [VisualRecoveryItem(status: .failed, reason: "Managed restoration unavailable.")]))
+                    items: [VisualRecoveryItem(status: .failed, reason: "Managed restoration unavailable. \(diagnostic)")]))
             }
-            return ManagedOutputResult(code: 1, output: "", error: "Managed output unavailable.\n")
+            return ManagedOutputResult(code: 1, output: "", error: "Managed output unavailable. \(diagnostic)\n")
         }
+    }
+
+    // Report fixed categories only; error messages and associated paths may contain private input.
+    private static func failureLabel(_ error: Error) -> String {
+        if let error = error as? TerminalVisualStateError {
+            switch error {
+            case .invalidRecord: return "record"
+            case .storageUnavailable: return "storage"
+            case .lockUnavailable: return "lock"
+            case .targetUnavailable: return "target"
+            case .deadlineExceeded: return "state-deadline"
+            case .staleDelivery, .staleIntent, .staleObservation, .staleEffect: return "stale"
+            }
+        }
+        if let error = error as? ProcessRunnerError {
+            switch error {
+            case .deviceNotWritable: return "device-unavailable"
+            case .deviceWriteTimedOut: return "device-deadline"
+            case .deviceIOFailed(_, let code):
+                return (1...4095).contains(code) ? "device-io-\(code)" : "device-io"
+            default: return "process"
+            }
+        }
+        if let error = error as? POSIXError { return "posix-\(error.code.rawValue)" }
+        if let error = error as? VisualRestrictionsStateError {
+            return error == .deadlineExceeded ? "marker-deadline" : "marker-storage"
+        }
+        if let error = error as? VisualRestrictionPolicyError {
+            return error == .timedOut ? "policy-deadline" : "policy"
+        }
+        if let error = error as? VisualRecoveryError {
+            switch error {
+            case .vanished, .targetUnavailable: return "target"
+            case .scopeUnavailable: return "scope"
+            case .policyChanged, .previewBlocked: return "policy"
+            case .previewUnavailable, .focusUnavailable: return "effect"
+            }
+        }
+        if error is Failure { return "unavailable" }
+        return "other"
     }
 
     private static func stale() -> ManagedOutputResult {
