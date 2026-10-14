@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 13:45 CEST
-**Version:** 4.37
+**Last Updated:** 2026-10-14 14:18 CEST
+**Version:** 4.38
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | c747c42; earlier below/appendix | 585 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 9ee0ef0; earlier below/appendix | 592 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -830,20 +830,14 @@ permissions and inactive focus record remain inspectable. Last-closure fixture n
 renewal and cleanup completion. rEYbJl/9IKEE0 initial-paint failures remain unattributed; a fresh
 process reproduced preview failure first, so prior teardown is not a necessary cause. Test
 recorder preserves physical target after correcting its nil-target draft. Do not widen 100 ms.
-Final aouKnN: **48/48 controller**; PToDKG: **565/565 Swift**, 10.858 seconds. Owned PTYs prove
-fresh dark/light bytes/recipes, cue retention under global mask, lookup failure cleanup and late
-renewal cancellation. Release zdna94 passes in 14.53 seconds; diff and credential checks pass.
-The short source check found no correctness defect in this refresh diff. It identified possible
-supersession of consistently slow lookup by two-second catalogues. [Checks/diagnosis](focus-color-refresh-source-check-2026-10-14.md) retain exact limits and original reports.
-**Scope:** One controller/one test file and API/bug/roadmap, within Phase 9 review corrections.
-No deadline/recipe guard relaxation, new control plane, real settings/schedules/install, app/VM/
-container/native operation or existing-session shutdown. SPEC and PLAN unchanged; goal active.
+> Finished source 3: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 Next: instrument original initial-paint Boolean/error and open/prepare timing with exact target
 semantics; verify slow-valid color lookup coalescing. Keep both attribution questions open.
 Linux versioned records/kernel verification still await Docker/Linux-host choice; no startup
 approval answer arrived. Native phases 2/7/8 remain Blocked and phase 9 remains In Progress.
-History maintenance: `d89dfc4` moved 66 finished routing/delivery lines unchanged into a linked
-appendix with exact reconstruction verified. Current main remains under 900 lines.
+> Finished source 4: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 
 ### Phase 9 slow focus preparation coalescing
 
@@ -852,10 +846,8 @@ appendix with exact reconstruction verified. Current main remains under 900 line
 
 ### Phase 9 paint outcome diagnostics and revision fixtures: 2026-10-14 11:32 CEST
 
-`434c1fc` adds a test-local recorder for initial Manual/late-preview paints: Boolean/original
-error, open/beforeOpen/prepare outcomes, elapsed time and supplied deadline remainder. Exact
-physical target, emergency:false, nil callbacks, flags/errno and Data are preserved. Normal
-preview/focus clears now await controller completion. No production code/deadline change.
+> Finished source 5: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 Seven fresh instrumented pairs pass: 8x3WjO, MNZYMg, lAxPbf, EKuMHz, nNohET, O3FRsJ, HbNQcQ.
 No initial-paint failure reproduced; historical rEYbJl/9IKEE0 and EPERM attribution stay open.
 Full TJMEY4 retained **570 tests, 3 unexpected failures**: forced-reset queued result timed out;
@@ -865,14 +857,8 @@ inside 100 ms. They now publish once under a bounded call, gate outside the devi
 then use the original prepare with exact target and a fresh real writer deadline. Captured revision
 still must reject old style/title after full recover/resume. This changes test scope, not production
 budgets. It does not explain the subsequent fresh-render timeout, which remains unattributed.
-Mycxxb: **4/4 focused**, 0.138 seconds. Final 0c67dG: **570/570 Swift**, 18.460 seconds.
-Source inspection validates the barrier and warns against accepting timeout as revision evidence.
-[Source check and disposition](initial-paint-source-check-2026-10-14.md) preserve the limits.
-BUG 1.59/ROADMAP 1.31 updated; diff, punctuation and credential checks pass. Test-only change;
-release build/shell/portable checks not repeated. Latest release T163Yn remains the prior result.
-**Scope:** Two existing test files and bug/roadmap, within Phase 9 review/verification corrections.
-SPEC/PLAN unchanged; no native/app/install/settings/schedule/VM/container operation.
-One finished polling block moved unchanged to the linked appendix; exact reconstruction passed.
+> Finished source 6: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 Next: scoped final review of current source, or Linux kernel checks after the pending host/Docker
 answer. Capture original initial/fresh writer failures if they recur; passing retries cannot close
 attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and incomplete.
@@ -891,10 +877,23 @@ Linux ordinary code remains incomplete. Native 2/7/8 remain Blocked, 9 In Progre
 settings/schedules/native action or shutdown. SPEC/PLAN unchanged; full goal active and incomplete.
 
 ### Phase 9 fresh native effect validation: 2026-10-14 13:45 CEST
-`c747c42` validates full native ID/TTY after colors, with current foreground and bounded snapshot.
-Final w82n5q: **585/585 Swift**,20.127s; release3bZq5y:28.26s. Twelve new cases;100ms unchanged.
-[Checks, failures and scope](effect-native-revalidation-source-check-2026-10-14.md) retain REDs,
-sole-High draft ordering correction and unestablished vpyTDw initial-paint cause. API1.55/BUG1.61/
-ROADMAP1.33, credential checks and capture recorded. Finished source blocks moved unchanged;
-reconstruction passed. Next: recovery bookkeeping, projection/release retry and compatibility.
-SPEC/PLAN fixed; no live changes. Native2/7/8 Blocked,9 active; Linux/native acceptance incomplete.
+> Finished source 7: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
+vpyTDw initial-paint attribution remains open in [its source check](effect-native-revalidation-source-check-2026-10-14.md).
+
+### Phase 9 GUI recovery confirmation: 2026-10-14 14:18 CEST
+`9ee0ef0` settles only the canceled cohort from saved, bound restored/vanished outcomes. Failed,
+unaffected/absent/conflicting results retain obligations; late reports preserve replacement leases.
+Confirmation emits no output. Independent headless bookkeeping remains open; marker/metadata
+changes alone never prove restoration. [Source check](final-review-corrections-2026-10-13.md#gui-recovery-cohort-correction-2026-10-14) preserves the full agent report.
+RED KDzUuy: 3 cases, 8 assertions; HCrV4K: 3/3. Seven final cases plus two old timing cases pass
+in 8ntSqD: 9/9. L6WuHa: **592/592 Swift**, 26.732s; release 9Cp0Yc: **79.82s**.
+eoVi2e retains 190 tests, 5 failures (1 unexpected): unchanged Manual preparation produced no
+paint; intake-during-open exceeded its 20 ms fixture bound, then returned deviceNotWritable.
+The Manual fixture now records writer outcomes and awaits cleanup. Neither cause is established.
+**Scope:** Two production files, one test file and API/bug/roadmap; one verified GUI correction.
+Connected cohort tests stay together despite >200 additions; renderer/schema/100ms are unchanged.
+API1.56/BUG1.62/ROADMAP1.34, source report and capture saved. Finished progress blocks moved
+unchanged to the existing appendix with exact reconstruction verified. SPEC/PLAN fixed.
+Next: independent headless cleanup, projection/release retry and compatibility. No live actions.
+Native2/7/8 Blocked, 9 In Progress, Linux ordinary incomplete; full goal active and incomplete.

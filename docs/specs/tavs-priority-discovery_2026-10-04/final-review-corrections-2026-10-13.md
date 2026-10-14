@@ -1,7 +1,7 @@
 # Final review leads and verified corrections
 
-Last Updated: 2026-10-13 (Europe/Vienna)
-Version: 1.16
+Last Updated: 2026-10-14 (Europe/Vienna)
+Version: 1.17
 Original review target: `5bd0bd2`, implementation base `e113fb8`.
 First corrected product target: `71e0f60`.
 Current product checkpoint: `927a746`.
@@ -479,3 +479,404 @@ Repair lock-gate's env-i fixture before any run; do not use workstation defaults
 
 Physical native acceptance, Linux kernel checks and historical initial-paint/EPERM/fresh-render
 attribution remain open. Passing tests and completed review workflow are not product approval.
+
+## GUI recovery cohort correction: 2026-10-14
+
+Claude R2 is confirmed for the GUI. The remedy now captures the canceled lease objects and uses
+bound restored/vanished outcomes only when state persistence succeeded. Conflicting or absent
+results retain obligations. SessionsModel applies the callback on main before reporting recovery
+completion. No renderer, marker, device deadline, schema or cross-process receipt was changed.
+
+`KDzUuy` reproduced eight assertions in three initial cases. HCrV4K passed 3/3.
+Seven final regressions cover actual partial open failure, failed-only retry, uncertain reports,
+owner reuse, late confirmation, fresh post-recovery ordinary output and confirmed disappearance.
+The focused 8ntSqD run passed 9/9, including the two old timing cases identified below. Final
+L6WuHa passed 592/592 Swift in 26.732 seconds. Native/visual acceptance remains unverified.
+
+eoVi2e retained 190 tests with five assertions, one unexpected: the existing unchanged-Manual
+preparation produced no initial effect/bytes, and the existing intake-during-open fixture exceeded
+its 20 ms publication deadline, then reported deviceNotWritable. The former now uses the existing
+writer outcome recorder and awaits cleanup. The latter source is untouched. Passing later checks
+do not attribute either failure. Independent headless recovery still lacks feedback to the live
+controller's canceled leases; this narrow GUI correction does not resolve that source finding.
+
+Full read-only source exploration and implementation check follow unchanged. Its inspected test
+inventory was three cases; the parent subsequently added four further cases, all executed above.
+
+# TAVS recovery outcomes and obsolete focus leases
+
+Date: 2026-10-14
+Scope: Read-only source exploration. No tests, live terminal operations, installations, preferences,
+or repository edits were performed.
+
+## Conclusion
+
+Claude R2 confirms a real cleanup path: a painted FocusController lease can remain retiring after
+successful recovery because its old marker revision makes `.clearFocus` return no output. The
+controller correctly refuses to equate that no-output result with completed cleanup.
+
+The suggested alternative of treating marker mismatch as recovery success is unsafe. Marker
+replacement proves only that the marker identity changed. It can happen before helper discovery,
+before target enumeration, or before a failed physical write. Inactive effect metadata also does
+not prove physical output completed.
+
+Keep the existing controller retirement predicate. The smallest narrow GUI fix can use successful
+per-target recovery items for the canceled cohort. A fix covering independent headless recovery
+must instead let obsolete leases obtain an actual cleanup result through the shared renderer, or
+add an explicit per-target outcome source. The current source contains no cross-process physical
+success receipt to read. Do not infer such a receipt from existing metadata.
+
+## Current outcome contract
+
+Source root: `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
+
+### Renderer and physical writer
+
+- `src/macos/TAVSApp/Sources/TAVSApp/visual-recovery.swift:39-54`: item statuses are `restored`,
+  `vanished`, `unaffected`, and `failed`. `hasFailures` means failed persistence or an item marked
+  failed. `catalogueAvailable == false` is a separate limitation.
+- `visual-recovery.swift:553-589`: fanout groups aliases by `physicalTarget`, validates the target,
+  rejects conflicting live owners on one TTY, and reports one physical result. A completed managed
+  write returning true maps to restored. A prepare callback returning nil maps to unaffected.
+  Proven disappearance maps to vanished; errors map to failed.
+- `terminal-visual-state.swift:35-43`: `physicalTarget` preserves TTY path, device number, and owner
+  process generation, stripping only the native alias. Match results by this value, never by TTY
+  string alone.
+- `ProcessRunner.swift:159-168`: beforeOpen metadata work precedes admission and device open.
+- `ProcessRunner.swift:193-210`: descriptor preparation runs under the stable writer lock.
+  Returning nil skips output. Returning bytes is not itself success; writeToDescriptor must finish
+  before true is returned.
+- `ProcessRunner.swift:217-228`: the original 100 ms deadline covers the whole device operation.
+  Timeout is failure even if earlier metadata work completed.
+- `ProcessRunner.swift:239-251`: physical-target admission retains a separate emergency attempt.
+  This is not a reason to loosen the deadline or target validation.
+
+Here, restored proves writer completion under these checks. It does not prove the terminal emulator
+visually rendered the bytes or that the user accepted its appearance.
+
+### GUI Restore Visibility and Resume Visual Rules
+
+- `sessions-model.swift:169-182`: the GUI calls cancelForRecovery before dispatching the action.
+  Its logical focus state becomes Off before physical recovery begins.
+- `TAVSApp.swift:221-234`: a serial recovery queue validates the root, saves the marker, prepares
+  fixture scope where relevant, and delegates to recoverHeadlessly.
+- `visual-recovery.swift:74-96`: recoverHeadlessly saves the marker before probing the helper.
+  It checks capability support and preserves a decoded partial report when helper exit code is 1
+  and report.hasFailures is true. A Swift `.success(report)` can therefore contain target failures.
+- `sessions-model.swift:185-197`: finishRecovery displays status counts, the catalogue limitation,
+  and a failure reason. It never passes the per-target outcomes to FocusController.
+- `sessions-model.swift:174-177`: even the missing-action path saves the marker and then reports
+  helper failure. Marker replacement cannot certify physical recovery.
+
+### Headless helper
+
+- `managed-output-entry.swift:45-55`: `--visual-recover` saves the marker first, validates isolation,
+  constructs the recovery object, and applies emergencyReset or resume reconciliation.
+- `managed-output-entry.swift:143-146`: a failure after persistence becomes a report with
+  stateSaved true and a failed item. This can be an unbound item with no target.
+- `managed-output-entry.swift:182-186`: encoded reports use exit code 1 for hasFailures, otherwise 0.
+- `visual-recovery.swift:426-436`: the direct recovery method follows the same persist-first model.
+  Suspension uses emergencyReset; resume uses reconcile(resetLegacy: true, clearSelective: true).
+- `visual-recovery.swift:239-243`: emergencyReset cancels effect records and invalidates pending
+  output before returning full reset bytes to the physical writer.
+- `visual-recovery.swift:319-337`: resume can cancel selective records, then create a current global
+  restriction record and return its bytes. Again the state mutation precedes physical completion.
+
+An independent helper has no reference to the live GUI FocusController. Existing marker/effect
+state prevents obsolete focus publication, but does not carry a successful physical-write result
+back to its in-memory leases.
+
+### Scheduler and broadcaster
+
+- `Scheduler.swift:238-242`: the scheduler receives item results through Broadcaster.resultChanged
+  and exposes terminalUpdateIssue, including target failure count and catalogue limitation.
+- `Scheduler.swift:403-434`: suspension suppresses the projected restrictive paint. On a prior
+  muted-to-unmuted transition it invokes managed clearing/reconciliation against the new policy.
+- `Scheduler.swift:480-483`: clearing enqueues broadcastPausedClear and broadcast.
+- `Broadcaster.swift:37-42,117-126`: those operations use the same VisualRecovery apply paths.
+- `Broadcaster.swift:131-150`: failure state is keyed by physical target. Only restored or vanished
+  removes a prior failure. Unaffected and registration results cannot erase a failed paint.
+- `Scheduler.swift:494-498`: targeted restriction retry runs while muted and restrictions remain
+  enabled. It does not automatically settle in-memory GUI focus leases after external recovery.
+
+The broadcaster already demonstrates the honest per-target policy that focus retirement needs.
+
+## R2 source verification
+
+Review source:
+`docs/specs/tavs-priority-discovery_2026-10-04/current-claude-native-2026-10-14.md:150-169`.
+
+1. `focus-controller.swift:190-202`: cancelForRecovery marks all focus leases retiring and clears
+   logical run state, but retains the leases. It deliberately starts no device cleanup.
+2. `focus-controller.swift:308-320,579-592`: later focusOff or an existing cleanup path invokes
+   clearManual and attempts clearFocusLease.
+3. `focus-controller.swift:557-565`: that request carries the original lease revision. didCancel
+   marks ownershipResolved; restoreBackground returns the conservative mayHavePainted flag.
+4. `visual-recovery.swift:190-203`: beforeOpen cancellation resolves exact old ownership using
+   effect kind, effect ID, controller generation, and original revision. This can complete before
+   device failure.
+5. `visual-recovery.swift:295-302`: prepare checks the original revision even when restoration is
+   explicitly requested. Marker replacement makes that check false and returns nil.
+6. `focus-controller.swift:566-576`: unaffected is not restored. A lease whose mayHavePainted flag
+   remains true stays in focusLeases, even when ownershipResolved is true.
+7. `focus-controller.swift:596-602`: the remaining retiring lease produces the cleanup error.
+
+This confirms the conditional false-error case after actual successful recovery. It also confirms
+the error is truthful after a failed target. R2's word "never" has a limit: an explicit new focus
+request can transfer the remaining paint obligation to a new lease after ownership is resolved
+(`focus-controller.swift:535-551`). The old retiring lease otherwise has no successful automatic
+physical-result path across marker replacement.
+
+The marker check uses inode and device (`visual-restrictions-state.swift:75-95`), not recovery
+outcomes. Writes are atomic (`:136-147`), and holding the old revision descriptor prevents inode
+reuse (`:71-72`). Repeated writes can change identity even when the boolean state is unchanged.
+
+## Smallest source and test changes
+
+### Narrow GUI fix, if that is the chosen scope
+
+Modify FocusController and SessionsModel, with tests in focus-controller-tests.swift:
+
+- Have cancelForRecovery identify the exact existing lease cohort for this action. Apply its
+  returned report only to that cohort, keyed by physical target and existing lease object identity.
+- On a report with stateSaved true, resolve only cohort leases with explicit restored or vanished
+  items. Preserve failed, unaffected, absent, and unbound results. Do not use !report.hasFailures
+  as a blanket success condition, because the report may cover only known targets.
+- Do not overwrite a new lease created after the action. Existing pre-recovery publications remain
+  fenced by the marker revision and exact cancellation rules.
+- Keep original lease revisions available until metadata ownership has been resolved. A successful
+  physical item is usable for physical cleanup; it does not justify relaxing old publication guards.
+
+This fixes the GUI false error without re-emitting retained ordinary colors after successful reset.
+It does not cover independently invoked headless recovery. Document that scope honestly if used.
+
+### Shared renderer repair for all recovery entry points
+
+The smallest useful shared repair is in performWrite's clearFocus branch, plus renderer/controller
+tests. Preserve the original revision for exact metadata cancellation, but distinguish it from a
+fresh current marker revision for a new cleanup transaction. Validate that cleanup revision and
+the opened target under the existing writer lock and original deadline. Never renew the obsolete
+focus recipe. Let clearFocusLease retire only after its actual restored/vanished result, as it
+already does at :566-576. Failed output must retain the obligation for retry.
+
+This is a new physical cleanup, not a claim that prior recovery succeeded. It reaches the GUI,
+independent helper, and scheduler-triggered controller cleanup without wiring every recovery path
+to the GUI.
+
+There is a concrete compositing decision to test before implementing this option:
+
+- While active, compose current pause/lock, current preview or focus, or latest ordinary background
+  through the existing precedence rules. Do not restore the old recipe or snapshot.
+- While suspended, replaying retained pre-recovery ordinary intent would violate the existing
+  recovery behavior. An unconditional default reset can instead overwrite a fresh ordinary render
+  that arrived after successful recovery but before delayed cleanup.
+- Existing state has no affirmative physical outcome or per-recovery ordinary-render boundary
+  that can simply be read to distinguish both histories. Marker mismatch and inactive records
+  must not be substituted for that missing evidence.
+
+Therefore a one-line removal of the old revision guard is not a complete repair. Either make the
+cleanup's suspended compositing semantics explicit and verify them against fresh output, or use
+the narrow GUI outcome fix and leave the all-entry-point cleanup gap open. No new cross-process
+receipt mechanism is needed for the narrow fix, and one should not be introduced by inference.
+
+### Discriminating cases
+
+| Case | Required observation |
+|------|----------------------|
+| Painted focus, successful recover, later Focus Off | No false cleanup error; old publication remains impossible |
+| Painted A and B, recover writes A but fails B | A settles; B remains pending; retry clears B once writable |
+| Marker replacement only, helper absent | Painted lease remains an obligation |
+| Cancellation metadata saved, physical output fails | Inactive record does not clear the lease's paint obligation |
+| Independent headless successful recovery, GUI refresh | No dependence on a GUI-owned recovery callback for any claimed all-path fix |
+| Same paths, failed external recovery | Logical focus becomes Off; unresolved painted target is retained honestly |
+| Resume into requested pause/lock | Old focus cannot reappear; successful cleanup preserves current rule |
+| Fresh suspended preview | Old focus cleanup cannot overwrite the current preview |
+| Successful recovery then fresh ordinary render before delayed cleanup | Cleanup preserves fresh output and cannot replay retained pre-recovery intent |
+| Reused TTY or ambiguous owner metadata | Compare complete physical binding; proven end is vanished, uncertainty is failed |
+
+## Existing tests to extend and preserve
+
+- `visual-recovery-tests.swift:81-94`: failed recovery changes policy and prevents revival without
+  proving output or requiring old focus metadata to have been canceled.
+- `visual-recovery-tests.swift:97-111`: cancellation callback and inactive focus record can exist
+  before a physical device failure. This disproves metadata-only retirement.
+- `visual-recovery-tests.swift:283-294`: explicit missing-record restoration currently restores
+  latest intent with a matching revision, then deliberately rejects the changed revision. A shared
+  repair must replace the second assertion with a policy-specific bounded-cleanup assertion.
+- `visual-recovery-tests.swift:322-339`: old clear cannot cancel a newer focus ID; alias recovery
+  writes once and cancels both relevant records.
+- `visual-recovery-tests.swift:782-804`: headless client preserves partial report and saves marker
+  before helper probe.
+- `visual-recovery-tests.swift:897-912,958-970`: suspended stale effects reset defaults while a
+  current suspended preview remains intact.
+- `visual-recovery-tests.swift:1138-1156`: healthy fanout completes despite failed and uncertain
+  targets; target metadata remains retryable.
+- `visual-recovery-tests.swift:1209-1224`: resume paints the current requested rule and cancels old
+  selective ownership.
+- `visual-recovery-tests.swift:1729-1748`: proven old-owner end is vanished; unknown process
+  metadata remains failed and does not authorize retirement.
+- `focus-controller-tests.swift:1193-1205`: successful recovery ends Manual focus, but does not
+  call Focus Off afterwards on the same controller or assert absence of cleanupError. Extend it.
+- `focus-controller-tests.swift:1258-1275`: external marker change switches Manual Off, but merely
+  waits for publication of cleanupError without asserting it is nil. Extend it with a real recovery
+  and contrasting failed target.
+- `focus-controller-tests.swift:1701-1725`: GUI displays partial report, but currently tests preview
+  cancellation rather than settlement of painted focus leases. Add focus target outcomes.
+- `BroadcasterTests.swift:183-205,222-253`: delayed suspended reconciliation cannot replay old
+  intent or overwrite fresh ordinary complete render. Shared cleanup must preserve these cases.
+- `BroadcasterTests.swift:429-448`: unaffected registration/retry does not erase a failed paint.
+
+## Exploration trace and limits
+
+Observed: searched the current recovery, controller, writer, state, GUI, scheduler and test source;
+read R2 at its exact report path; compared its remedies with cancellation ordering and existing
+regression cases. Tests were inspected, not executed. No claims of current runtime or visual
+acceptance are made. Repository meta capture remains the parent task's responsibility because this
+delegation explicitly prohibited edits.
+
+The previous TAVS memory entry was used only to reinforce the read-only runtime boundary. All code
+claims and line pointers above come from source retrieved during this exploration.
+
+## Addendum: selected narrow GUI cohort closure
+
+The parent selected the narrow GUI fix: cancelForRecovery returns a completion closure containing
+only its canceled lease cohort; SessionsModel invokes it for a stateSaved report; only explicit
+restored/vanished physical-target items settle those old leases. No renderer, marker, schema or
+independent-helper outcome mechanism is changed. That scope is supported by the current source.
+
+### In-flight canceled publication
+
+Capture the cohort inside the same NSLock critical section that sets manual to nil and marks
+leases retiring (`focus-controller.swift:190-194`). focusLease creation checks manual/owner/version
+under that lock (`:523-524`) before inserting a lease (`:549-552`). A canceled run therefore cannot
+insert a new missed lease after the snapshot. A lease allocated immediately before cancellation is
+already in the captured map.
+
+Slow color or catalogue preparation rechecks matchesManual before requesting focus leases
+(`:367-397`). A prepared focus request rechecks current run and old marker identity in the writer
+(`visual-recovery.swift:274-290`). If it has already passed those checks and entered its metadata
+publication, didRenew can conservatively set mayHavePainted (`focus-controller.swift:420-429`).
+That does not make a successful recovery report premature: a restored reset needs the same stable
+writer lock (`ProcessRunner.swift:193-210`). Either the old focus write completes first and reset
+follows, or the recovery marker invalidates the delayed old operation before its output. If a
+blocked writer prevents recovery from completing, the target is failed and remains in the cohort.
+Do not remove the old publication checks.
+
+### Concurrent clear and replacement
+
+- Completion must check `focusLeases[key] === capturedLease` before changing/removing a map entry.
+  A fresh explicit request can transfer an outstanding repaint obligation and install a different
+  lease at the same physical key (`focus-controller.swift:535-551`). An old recovery report must
+  not drop it.
+- Do not enter or leave capturedLease.finished from report completion. The old clear worker owns
+  its pairing (`:583`, `:575`) and may still be running.
+- Existing clearFocusLease can finish after report settlement. Its own identity check at :571
+  already prevents removing a replacement. It may update the detached old lease object, but that
+  object cannot regain ownership of the map.
+- GUI action completion is delivered on main (`sessions-model.swift:180-181`). Publish cleanupError
+  on main too, deriving it under lock from all still-retiring current map entries, not from the
+  captured cohort or report counts alone. An unrelated failed/new retiring lease remains visible.
+- Keep mode, workingSet and new runs unchanged in the result closure. cancelForRecovery already
+  put the canceled logical state Off; a later explicit request is separate.
+- Ordinary GUI focus controls are already disabled while recovering (`sessions-model.swift:51-61`).
+  The identity check still protects direct calls and future callers without relying on UI gating.
+
+### Partial and incomplete results
+
+Swift Result.success does not imply all targets succeeded. stateSaved true also does not imply any
+physical target succeeded. A report with restored A and failed B must remove only the captured A
+entry and retain B. Unaffected, absent, and unbound items cannot certify the captured B binding.
+catalogueAvailable false does not prevent using an explicit bound restored A item, but forbids
+assuming anything about an unreported B.
+
+Vanished is already an accepted terminal cleanup outcome (`focus-controller.swift:566`). Match
+the complete physical binding so the same TTY path with a different device or owner generation
+cannot settle an old or replacement lease by name alone.
+
+### Minimal tests for this choice
+
+1. Extend the existing same-controller recovery test at :1193: paint, cancel, perform actual
+   successful recovery, apply the returned closure, then Focus Off. Assert no new paint and no
+   cleanup error. The current test restarts a new controller, hiding the old retained lease.
+2. Paint two outside targets. Return a report with explicit restored A and failed B. Assert B's
+   cleanup remains pending; after its writer becomes available retry it without repainting A.
+3. Repeat with unaffected B, absent B, unbound restored item, and a different owner generation at
+   the same TTY. None may settle B.
+4. Capture closure 1, then explicitly resume/request fresh focus for the same target before
+   invoking it. A late restored item from closure 1 must preserve the new effect ID and dimming.
+5. Block old publication before prepare, cancel and recover, then release it. It must publish no
+   old focus bytes/metadata after the completed reset. Also cover cancellation after didRenew with
+   a failing physical writer: only the report's target result can settle the retained obligation.
+6. Let an old clear worker complete after the report closure. Its DispatchGroup must balance and
+   its identity check must preserve any new lease.
+
+The independent headless path remains explicitly open. No report/schema receipt is proposed for
+that path as part of this slice.
+
+## Addendum: actual implementation source check
+
+Read-only check of the current diff after implementation. No tests were run and no source was
+edited. At the time of this read, three new focus-controller tests existed. The parent was separately
+adding table-driven unconfirmed outcomes and a late-report replacement regression.
+
+### Source findings
+
+No blocking defect found in the inspected change:
+
+- `focus-controller.swift:190-196` captures Array(focusLeases.values) under the lock that cancels
+  manual publication and marks the cohort retiring. This satisfies the in-flight lease creation
+  boundary described above.
+- `focus-controller.swift:204-207` requires stateSaved and discards unbound report items from
+  confirmation matching. Grouping uses the complete physical binding, including device and owner
+  generation. The target force unwrap is safe because the immediately preceding filter excludes
+  nil targets; no input mutation occurs between them.
+- `focus-controller.swift:209-215` requires map object identity and a matching nonempty group of
+  outcomes. Dictionary(grouping:) does not create empty groups, so allSatisfy cannot vacuously
+  release an absent target. All statuses for that physical target must be restored or vanished;
+  mixed restored/failed or restored/unaffected items are conservatively retained.
+- Assigning ownershipResolved true and mayHavePainted false is supported by the actual recovery
+  operations' successful per-target contract. emergencyReset cancels metadata before successful
+  reset, resume reconciliation clears selective ownership before successful current composition,
+  and vanished is already an accepted retirement result.
+- The callback removes only the captured object still installed at its original physical key.
+  A replaced lease's transferred obligation cannot be deleted by this older report.
+- `focus-controller.swift:217-220` computes pending cleanup from the full current map while locked.
+  Healthy successful targets settle even in a partial report, and any retained retiring target
+  keeps the cleanup error. It does not infer blanket success from catalogue availability or global
+  hasFailures.
+- The callback does not enter or leave a DispatchGroup. Existing clear workers retain their own
+  balanced lifetime and old-object identity checks. A worker evaluating restoration after the
+  callback sees the old lease unpainted, but cannot remove a replacement map object.
+- `sessions-model.swift:171,180-184` binds the closure to this action and invokes it on main only
+  for Result.success reports. It runs before finishRecovery publishes recovering false. The
+  FocusController guard, not Swift Result.success, decides whether persistence permits settling
+  any targets.
+- Missing action and Result.failure paths never apply confirmation. They preserve obligations.
+  Existing publication checks, marker revisions, target validation, stable locks and 100 ms writer
+  budget remain untouched.
+
+The returned closure does not enforce main-thread use itself, matching the controller's existing
+public API assumptions. Its production caller explicitly dispatches to main. Direct test or future
+callers must preserve that existing ObservableObject publication requirement.
+
+### Three inspected new tests
+
+- `focus-controller-tests.swift:1207`: uses actual recovery, checks reset bytes, calls Focus Off on
+  the same controller, explicitly resumes, re-focuses the formerly outside target, and checks no
+  stray output there. It directly covers the R2 false-error path hidden by the old restart-only test.
+- `focus-controller-tests.swift:1237`: injects a real failed device open for one painted target.
+  It checks the partial report, subsequent Focus Off retry targeting only that unresolved device,
+  and a later successful recovery releasing its remaining obligation. It does not use marker or
+  metadata success as physical proof.
+- `focus-controller-tests.swift:1275`: returns an unaffected item after only marker replacement.
+  It checks that Focus Off still reports a cleanup obligation and emits no bytes. This rejects
+  R2's unsafe marker-mismatch retirement alternative.
+
+The pending table should include unbound restored, absent target, different owner generation,
+stateSaved false, and conflicting statuses sharing one physical key. A positive vanished item
+checks the other accepted retirement status. The late-report test should install a distinct new
+lease for the same physical key and apply the captured old action closure afterwards, proving its
+object-identity guard preserves the new effect ID and dimming.
+
+No new renderer behavior or cross-process receipt is present. Independent headless recovery still
+has no callback to the live GUI cohort, as explicitly scoped by the parent.
