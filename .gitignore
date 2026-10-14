@@ -45,3 +45,6 @@ CLAUDE.md
 # Internal development docs
 docs/specs/
 docs/archive/
+# project-watermarking source exclusions
+CLAUDE.md
+AGENTS.md
