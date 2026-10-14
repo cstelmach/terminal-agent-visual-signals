@@ -49,6 +49,8 @@ sync_fixture() {
         [[ "$output" == *'tavs recover --resume'* ]]
     done
     cmp "$REPO_ROOT/src/shell/tavs-shellrc.sh" "$HOME/.tavs/shellrc"
+    cmp "$REPO_ROOT/src/core/helper-selection.sh" "$HOME/.tavs/shell-helper/helper-selection.sh"
+    cmp "$REPO_ROOT/src/core/portable_helper.py" "$HOME/.tavs/shell-helper/portable_helper.py"
     [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
     [ "$(cat "$HOME/.tavs/schedule.json")" = 'saved schedule 43' ]
     [ "$(cat "$TAVS_RUNTIME_DIR/lock.state")" = 'saved lock 43' ]
@@ -220,5 +222,40 @@ HELPER
     run bash -c 'source "$1/src/core/organizer-state.sh"; _tavs_managed_helper' _ "$CACHE"
     [ "$status" -eq 0 ]
     run bash -c 'source "$HOME/.tavs/shellrc"; _tavs_shellrc_managed_helper'
+    [ "$status" -eq 0 ]
+}
+
+@test "installed helper resources remain usable when both copied plugin roots move offline" {
+    sync_fixture
+    local file shell
+    for file in helper-selection.sh portable_helper.py portable_context.py portable_metadata.py \
+        portable_observation.py portable_intent.py portable_records.py portable_record_io.py \
+        portable_render.py portable_renderer.py portable_ownership.py portable_policy.py \
+        portable_device_writer.py portable_process_identity.py; do
+        cmp "$REPO_ROOT/src/core/$file" "$HOME/.tavs/shell-helper/$file"
+    done
+    mv "$CACHE" "$TEST_DIR/offline-cache"
+    mv "$MARKET" "$TEST_DIR/offline-marketplace"
+    export TAVS_ROOT="$TEST_DIR/missing-checkout" TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-native"
+    for shell in bash zsh; do
+        run "$shell" -fc 'source "$HOME/.tavs/shellrc"; _tavs_shellrc_managed_helper; printf "%s" "$_TAVS_HELPER_BACKEND"'
+        [ "$status" -eq 0 ]
+        [ "$output" = portable ]
+    done
+}
+
+@test "sync propagates installed helper delivery failure without reporting success" {
+    printf 'blocking file\n' > "$HOME/.tavs/shell-helper"
+    run bash "$REPO_ROOT/tavs" sync
     [ "$status" -eq 1 ]
+    [[ "$output" != *'Plugin cache synced'* ]]
+    [ "$(cat "$HOME/.tavs/shellrc")" = 'old installed shellrc' ]
+}
+
+@test "sync refuses a linked helper before generic core copying can overwrite its target" {
+    ln -s "$HOME/.tavs/user.conf" "$CACHE/src/core/helper-selection.sh"
+    run bash "$REPO_ROOT/tavs" sync
+    [ "$status" -eq 1 ]
+    [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
+    [[ "$output" != *'Plugin cache synced'* ]]
 }

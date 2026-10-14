@@ -1,7 +1,29 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.51
+Version: 1.52
+
+## Standalone shell helper delivery
+
+Install and sync use one explicit copy list for the selector and all 13 portable modules.
+The standalone shellrc lives at `~/.tavs/shellrc`; adjacent dependencies live under
+`~/.tavs/shell-helper/`. The entry point is copied after its dependencies. Required copy failures
+return nonzero and do not publish a new shellrc or add fences. Updates may leave earlier helper
+copies applied; this is ordinary source copying, not an atomic multi-file installation.
+Linked or directory helper leaves are refused instead of writing through them. Removal retains
+helper resources for a later reinstall while removing the existing shellrc and rc fences.
+
+Interactive startup loads the shared selector lazily after the kill switch and TTY registration.
+Source `tavs-shellrc.sh` uses the neighboring core; installed `shellrc` uses adjacent resources.
+Both support bare, relative and absolute source paths. Backend selection remains private and
+global to that shell even when the selector is loaded inside a function. Registration/current
+failures retain the selected backend and report unavailability without raw output.
+
+Native preference requires both schemas; portable startup permits ordinary registration/no-rule
+checks on macOS. Native controlled rules remain unavailable in the portable backend. Suspension
+still omits current-policy requests; the persistent reader and native-only recovery are unchanged.
+Owned Bash/zsh PTYs prove registration, no bytes and retained suspension. They do not prove visible
+Ghostty effects or Linux runtime support.
 
 ## Shared ordinary helper selection and core routing
 
@@ -22,8 +44,8 @@ portable probe and operation retains scope so unsupported dedicated scope remain
 The core bridge routes context/intake, observation, render, context validation, forced reset and
 reconciliation through that choice. Sync distinguishes portable ordinary support from native
 organizer/focus/recovery. Recovery remains native-only and persists suspension before its probe.
-Standalone installed-shell resources and Linux runtime support remain pending. Owned macOS PTY
-tests verify real hook intake/render bytes, not visible Ghostty colors or native navigation.
+Standalone installed-shell resources are delivered; Linux runtime support remains pending.
+Owned macOS PTY tests verify real hook intake/render bytes, not visible Ghostty colors or native navigation.
 
 ## Portable ordinary capability and copied delivery
 
@@ -37,9 +59,9 @@ Source sync copies all 13 existing portable helper modules together and makes th
 The copied helper probes without importing files from the source checkout. Fake installation
 tests compare each copied file and preserve preferences, schedules and lock state. Copied core
 intake now selects the portable backend without the original checkout. Installed-shell resource
-delivery remains pending; no real installation was synchronized during verification.
+delivery is shared with install; no real installation was synchronized during verification.
 
-## Portable unbound intent publication (integration pending)
+## Portable unbound intent publication
 
 `Intents.publish_unbound` and helper `--organizer-intent tty token background synthetic` retain
 only latest ordinary intent under the shared per-TTY metadata lock. Ordinary publication permits
@@ -53,7 +75,7 @@ device rather than a mis-keyed cached TTY field. Stale data is code 3; invalid r
 code 1. The whole portable metadata operation retains one 100 ms budget, tighter than native legacy
 post-lock publication. CLI success is empty output and grants no independent rendering authority.
 
-## Portable helper dispatcher (core routing; standalone startup pending)
+## Portable helper dispatcher
 
 `python3 src/core/portable_helper.py` handles finite organizer intake/context/observe/intent and managed
 register/current/reconcile/check-context/background/render/forced-reset requests. Argument counts,
@@ -72,10 +94,10 @@ a pre-open render revision. Unavailable suspension disables restrictions for thi
 live native control still refuses output. Full render/reset retain frozen revision, and initial
 replacement returns unaffected without paint. Reconcile retains its after-open strict revision.
 Symlink-loop failures remain private. Native capabilities/recovery and Linux schema remain
-unsupported. Core hooks use this entry after its distinct ordinary capability check; standalone
-installed-shell resources remain pending.
+unsupported. Core hooks and standalone shell startup use this entry after its distinct ordinary
+capability check.
 
-## Portable record failure categories (integration pending)
+## Portable record failure categories
 
 `StaleRecordError` retains stale delivery/observation/intent semantics through the existing
 bounded worker IPC. Generic target/path/owner failures remain unavailable even when their errno
@@ -88,7 +110,7 @@ records to stale delivery; synthetic publication and ordinary render validation 
 native invalid-record failure. Lost producer during render/check context is stale, while targeted
 publication's producer/owner proof remains unavailable. No error-message matching is used.
 
-## Portable no-output managed operations (integration pending)
+## Portable no-output managed operations
 
 `Renderer.register`, `current` and `check_context` open the exact device under the existing
 100 ms writer deadline/lock and validate current binding/descriptor before returning no bytes.
@@ -103,9 +125,9 @@ retains valid effect-only native identity hints, including preference and ambigu
 Invalid regular hints can be ignored for this identity-only operation; files are not repaired.
 Current rereads its slots strictly. Ordinary/reconcile output admission retains full strict reads.
 Actual owned macOS PTYs verify absent device bytes, target-cache ordering/preservation and alias
-boundaries. Dispatcher/isolation, CLI stale-versus-storage classification and routing remain open.
+boundaries. Dispatcher isolation, CLI stale/storage classification and routing are now connected above.
 
-## Portable helper caller proof (integration pending)
+## Portable helper caller proof
 
 `portable_process_identity.caller_ancestor(caller, device=None)` starts at the helper's process,
 visits at most 16 parent identities and rechecks the requested caller's generation/device before
@@ -113,9 +135,9 @@ returning. Unrelated callers, cycles, missing identity, changed birth/device and
 refuse. The proof is separate from foreground identity and continuing terminal ownership.
 Its native-style 100 ms ancestry phase precedes the separate original 100 ms device transaction;
 neither promises an aggregate 100 ms command runtime. Dispatch must authenticate before mutation
-and before forking a writer, preserving helper-PID ancestry semantics. Routing remains pending.
+and before forking a writer, preserving helper-PID ancestry semantics. Core routing is connected above.
 
-## Portable observation publication (integration pending)
+## Portable observation publication
 
 `publish_observation(store, context, tty, state)` creates only a strict typed observation, under
 the existing per-TTY output lock. It rejects older observation times, accepts equal times and
@@ -127,9 +149,9 @@ Body, display metadata, intent, target and effects are not published by this ope
 regular data can be replaced; links, nonregular paths, storage errors and timeouts cannot. Strict
 synthetic intent reads do not recover invalid data. Observation validation/lock/read/write share
 one 100 ms metadata deadline. Owned/private tests verify ordering, regular repair, FIFO/link
-refusal and lock timeout. Helper entry points and routing remain pending.
+refusal and lock timeout. The helper entry and core routing use this publisher.
 
-## Portable organizer context (integration pending)
+## Portable organizer context
 
 `portable_metadata.decode_intake` parses bounded top-level metadata once, returning legacy
 display fields plus recognized event/response fields. Legacy selection remains available through
@@ -145,9 +167,9 @@ Optional event/response strings preserve native intake's length/NUL contract; ob
 validation remains separate. Context data alone grants no live rendering or attention authority.
 
 Owned macOS PTYs verify native foreground agreement and cross-language context/observation
-compatibility. Linux scope/executable encoding, helper verbs and hook routing remain pending.
+compatibility. Helper verbs and hook routing are connected; Linux scope/executable support remains pending.
 
-## Portable reconcile transaction (integration pending)
+## Portable reconcile transaction
 
 `Renderer.reconcile(tty, reset_legacy=True, clear_selective=False)` selects an existing current
 cached target. It captures suspension after device open under the shared lock, so recovery queued
@@ -163,9 +185,9 @@ or audible alert is replayed. All steps share the original 100 ms deadline.
 The current TTY's pending OSC slot is invalidated through held parent descriptors without reading
 its body. Linked/nonregular paths fail; other slots remain intact. Failed writes retain active
 cleanup records for retry. Unavailable suspension state remains an explicit failure. Owned macOS
-PTYs verify these branches; helper/hook routing and Linux scope remain pending.
+PTYs verify these branches; helper/hook routing is connected and Linux scope remains pending.
 
-## Portable forced-reset transaction (integration pending)
+## Portable forced-reset transaction
 
 `Renderer.forced_reset` reuses the existing bounded transaction. Missing/replaced generations
 may select a current cached target; a live same-generation producer on another device refuses
@@ -175,7 +197,7 @@ background/title; foreground resets only for residual global presentation. No au
 historical stream is added. An owned producer exits while its parent terminal remains live in
 the physical PTY test. Helper/hook integration remains pending.
 
-## Portable bound reset authority (integration pending)
+## Portable bound reset authority
 
 `Intents.publish_forced_reset_unlocked` requires reset intent and a current target. A live
 producer uses the existing synthetic delivery checks. An invalid/exited producer requires exact
@@ -184,7 +206,7 @@ equal to latest. It retains reset intent and updates binding under the original 
 Missing PID alone grants no authority. `Store.cached_target` selects only current cached lifetimes
 and refuses absent, conflicting, unknown or ambiguous mappings. No plain lifetime is invented.
 
-## Portable ordinary transaction (integration pending)
+## Portable ordinary transaction
 
 `portable_renderer.Renderer.render` connects finite decoding, current ownership, intent and the
 bounded worker. It pins recovery revision and publishes background intent under the shared lock
@@ -199,7 +221,7 @@ portable writes. Completion failure reports delivered bytes accurately and retai
 records. All steps share the original 100 ms budget. Owned Mac PTYs verify this transaction;
 helper verbs, hook routing and Linux record integration remain pending.
 
-## Portable worker completion (integration pending)
+## Portable worker completion
 
 `portable_device_writer.output_lock` reuses the stable owned per-TTY lock with the supplied
 deadline. A before-open publisher releases it before bounded device open and output admission.
@@ -207,7 +229,7 @@ deadline. A before-open publisher releases it before bounded device open and out
 lock and original 100 ms budget. Completion errors retain known written-byte counts, including
 complete output with failed metadata completion. Parent timeout retains unknown output status.
 
-## Portable intent publication (integration pending)
+## Portable intent publication
 
 `portable_intent.Intents` requires the existing per-TTY lock and original deadline. Publication
 checks current producer/owner and target aliases, normalizes background intent and rejects stale
@@ -223,7 +245,7 @@ and effect contents while preserving directory/link checks. It grants no renderi
 `ordinary_ownership` always reads all control records. Helper verbs, hook routing and Linux scope
 integration remain pending.
 
-## Portable record replacement (integration pending)
+## Portable record replacement
 
 `portable_record_io` reads and replaces bounded typed records through held parent descriptors.
 Writes create private directories and an exclusive 0600 sibling temporary, then atomically
@@ -232,7 +254,7 @@ Reads do not create directories. Encoding, reads, writes and replacement share t
 deadline. Cleanup attempts removal of only the owned temporary even when closing it fails.
 A failure after replacement may mean the record committed; it never authorizes raw output.
 
-## Portable ownership guard (integration pending)
+## Portable ownership guard
 
 `portable_ownership.Store` resolves the current continuing physical owner and prefers one exact
 native alias when present. It scans every owner branch in the requested TTY bucket, including
@@ -245,10 +267,10 @@ Recent unknown controllers refuse output; proven exit, reuse, expiry or disabled
 release obsolete ownership. A current suspended preview may still own the background.
 The method returns obsolete active records for cancellation; it does not cancel or paint them.
 The caller must handle residual global foreground/palette reset before ordinary rendering.
-Actual owned macOS PTYs verify current output and recovery rejection. Linux scope, publication,
-cleanup and hook routing remain pending; this guard advertises no capability.
+Actual owned macOS PTYs verify current output and recovery rejection. Publication, cleanup and
+hook routing use this guard. Linux scope remains pending; the guard itself advertises no capability.
 
-## Portable record decoder (integration pending)
+## Portable record decoder
 
 `portable_records.decode` validates native schema-1 target, effect, observation, intent and
 adoption records, including nested allowlists, required fields, scalar types, generation bounds,
@@ -260,11 +282,11 @@ outside this internal reader's accepted subset. Linux scope-bearing generations 
 `read_record` uses bounded 8 KiB regular-file reads and checks the original deadline after JSON
 decoding. Missing data is distinct from invalid or unreadable data. `target_path` reproduces
 native base64/owner/surface placement; decoding does not establish liveness or attention authority.
-Live ownership, placement checks and writer integration are still required before backend use.
+Live ownership, placement checks and writer integration remain required for every backend operation.
 An optional held parent `dir_fd` anchors record and sibling reads during directory enumeration;
 an absolute path is used for canonical placement, not to reopen a previously verified parent.
 
-## Portable policy reader (integration pending)
+## Portable policy reader
 
 `portable_policy.Policy` reads the persistent marker, runtime lock and home mute files without
 shell evaluation. Recovery suspension wins; otherwise effective hard locks precede fresh soft
@@ -275,9 +297,9 @@ quoted rule selects no rule, matching the native predicate. Suspension must rema
 its filesystem device/inode, detecting atomic replacement even when the boolean is unchanged.
 Missing markers require an accessible directory. `read_regular` validates a no-follow regular
 file before bounded reads. All operations share the caller's original monotonic deadline.
-These readers do not publish rules, repaint terminals or provide a standalone backend yet.
+These readers do not publish rules or repaint terminals; the standalone helper uses them.
 
-## Portable render decoder (integration pending)
+## Portable render decoder
 
 `portable_render.Render` accepts the same finite 23-field, NUL-terminated request as the native
 render helper, bounded to 16 KiB. It validates colors, palette actions, title text, image paths
@@ -285,7 +307,7 @@ and alert flags before encoding OSC in native order. Synthetic requests suppress
 the iTerm2 image command keeps its required terminator. Empty background and explicit default
 reset remain separate. It does not interpret arbitrary OSC streams or advertise a capability.
 
-## Portable primitives (integration pending)
+## Portable primitives
 
 `portable_process_identity.inspect` reads macOS libproc with the existing generation fields.
 Linux uses boot-relative tick parts with a +1 seconds offset, plus `linuxScope` containing boot
@@ -362,7 +384,7 @@ After copying, sync uses the shared ordinary selector described above. Native or
 schemas are checked together. Portable support is reported separately from native controls; no
 helper availability claim exposes probe output. Sync copies all portable modules, not just the
 legacy metadata reader. Core hooks can now use portable typed intake and rendering independently
-of the original source checkout. Installed-shell resource delivery and Linux support remain open.
+of the original source checkout. Standalone shell resources are delivered; Linux support remains open.
 
 If neither backend is supported, intake retains the bounded metadata-only reader: four legacy
 fields, unavailable organizer coverage and no context/intake authority. A missing Python runtime or
@@ -372,10 +394,10 @@ intake carries its fixed choice with intake `0` and no context. Core validates t
 and hint before removing cache exports. The hints do not authenticate hostile complete environment
 tuples or guarantee safety against same-path executable replacement.
 
-Standalone shell startup and public recovery still query native managed-output support directly.
+Public recovery still queries native managed-output support directly.
 The known `--validate-config --managed-output-capabilities` branch requires exactly
 `tavs-managed-output-schema=1`; unknown support is an explicit failure. Headless entry runs before
-GUI or login initialization. Ordinary core hooks additionally require the native organizer schema.
+GUI or login initialization. Ordinary core hooks and startup also require the native organizer schema.
 
 The internal `--managed-render` request receives one bounded UTF-8 NUL-delimited stdin payload:
 

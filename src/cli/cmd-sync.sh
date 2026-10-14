@@ -8,7 +8,7 @@
 # Only needed after code changes — user.conf changes take effect immediately.
 # ==============================================================================
 
-source "$CLI_DIR/cli-utils.sh"
+source "$CLI_DIR/cmd-install-shell-integration.sh"
 
 cmd_sync() {
     # Handle --help
@@ -65,8 +65,8 @@ EOF
 
     # --- Target 3: Installed shell integration (only when present) ---
     if [[ -f "$HOME/.tavs/shellrc" && -f "$TAVS_ROOT/src/shell/tavs-shellrc.sh" ]]; then
-        cp "$TAVS_ROOT/src/shell/tavs-shellrc.sh" "$HOME/.tavs/shellrc" || return 1
-        echo "  Synced ~/.tavs/shellrc"
+        _tavs_install_shellrc_files || return 1
+        echo "  Synced ~/.tavs/shellrc and required helpers"
     fi
 
     echo ""
@@ -106,15 +106,9 @@ _sync_to_target() {
     done
 
     # Core modules and their required challenge data.
+    _tavs_copy_ordinary_helper_files "$target_dir/src/core" || return 1
     cp "$TAVS_ROOT/src/core/"*.sh "$target_dir/src/core/" || return 1
     cp "$TAVS_ROOT/src/core/"*.txt "$target_dir/src/core/" || return 1
-    for file in portable_helper.py portable_context.py portable_metadata.py portable_observation.py \
-        portable_intent.py portable_records.py portable_record_io.py portable_render.py \
-        portable_renderer.py portable_ownership.py portable_policy.py portable_device_writer.py \
-        portable_process_identity.py; do
-        cp "$TAVS_ROOT/src/core/$file" "$target_dir/src/core/$file" || return 1
-    done
-    chmod +x "$target_dir/src/core/portable_helper.py" || return 1
     echo "  Synced src/core/*.sh (+ data and ordinary helper modules)"
 
     # Config files

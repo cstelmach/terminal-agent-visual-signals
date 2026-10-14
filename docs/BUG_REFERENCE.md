@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.55
+Version: 1.56
 
 ## Restore test rejects a legitimate completion timer transition
 
@@ -14,6 +14,23 @@ The completion case now checks allowed forward state progression, matching prior
 time and the exact new live timer. Other cases retain byte equality. Stale code 3, counter,
 observation, graduated color and delivery checks remain required. Original deleted case artifacts
 prevent definitive attribution of every historical failure; the reproduced mechanism is confirmed.
+
+## Shell startup drops its helper choice inside the loader function
+
+Sourcing the shared selector inside the shellrc loader made plain `typeset +x` localize the cache
+to that function. Later registration/current calls therefore probed again and could replace the
+chosen backend. The new function-source regression failed before correction. Bash now removes
+exports with `export -n`; zsh uses global `typeset -g +x`. Both preserve a private shell-wide cache.
+
+The source check also reproduced a bare-filename loader failure: stripping a directory from
+`tavs-shellrc.sh` or `helper-selection.sh` left the filename rather than `.`. Prefixing `./` only
+when there is no slash preserves shell source semantics. Both-shell regressions cover this case.
+Install and sync now copy every adjacent helper dependency before the standalone entry point;
+failed copying cannot publish a new shellrc or fences. A linked helper leaf cannot overwrite
+unrelated preferences. Owned Bash/zsh PTYs verify actual installed registration and suspension
+without a checkout. Physical Ghostty and Linux acceptance remain pending.
+Sync's generic core copy initially preceded the new helper-leaf guard. A linked selection module
+regression confirmed unrelated preference overwrite. Guarded helper delivery now runs first.
 
 ## Core ordinary routing still requires the native companion
 

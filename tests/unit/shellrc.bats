@@ -26,8 +26,13 @@ setup() {
     export TAVS_TEST_HELPER_BIN="$TEST_DIR/helper" SHELLRC_TEST_LOG="$TEST_DIR/calls"
     cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
 #!/bin/bash
-if [[ "$1" == --validate-config && "$2" == --managed-output-capabilities ]]; then
-    printf 'tavs-managed-output-schema=1\n'; exit 0
+if [[ "$1" == --validate-config ]]; then
+    case "$2" in
+        --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+        --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+        *) exit 1 ;;
+    esac
+    exit 0
 fi
 [[ "$2" == "$HOME/.tavs/visual-restrictions.state" && "$3" == "$TAVS_RUNTIME_DIR" ]] || exit 1
 case "$1" in --managed-register|--managed-current) printf '%s\n' "$1" >> "$SHELLRC_TEST_LOG" ;; *) exit 1 ;; esac
@@ -220,7 +225,9 @@ write_visual_suspension() {
 }
 
 @test "suspension: copied standalone shellrc has no repository dependency" {
-    cp "$SHELLRC" "$TEST_HOME/.tavs/shellrc"
+    source "$CLI_DIR/cmd-install-shell-integration.sh"
+    run cmd_install_shell_integration
+    [ "$status" -eq 0 ]
     SHELLRC="$TEST_HOME/.tavs/shellrc"
     export TAVS_ROOT="$TEST_DIR/no-source-modules"
     write_lock_state true $((NOW + 300)) 0
@@ -233,6 +240,82 @@ write_visual_suspension() {
     [[ "$output" != *']11;'* && "$output" != *'locked until'* ]]
     [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
     [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+}
+
+@test "install: delivers complete adjacent helper resources and remains portable without checkout" {
+    source "$CLI_DIR/cmd-install-shell-integration.sh"
+    run cmd_install_shell_integration
+    [ "$status" -eq 0 ]
+    local file shell
+    for file in helper-selection.sh portable_helper.py portable_context.py portable_metadata.py \
+        portable_observation.py portable_intent.py portable_records.py portable_record_io.py \
+        portable_render.py portable_renderer.py portable_ownership.py portable_policy.py \
+        portable_device_writer.py portable_process_identity.py; do
+        cmp "$REPO_ROOT/src/core/$file" "$TEST_HOME/.tavs/shell-helper/$file"
+    done
+    [ -x "$TEST_HOME/.tavs/shell-helper/portable_helper.py" ]
+    export TAVS_ROOT="$TEST_DIR/missing-checkout" TAVS_TEST_HELPER_BIN="$TEST_DIR/missing-native"
+    for shell in bash zsh; do
+        run "$shell" -fc 'source "$HOME/.tavs/shellrc"; _tavs_shellrc_managed_helper; printf "%s" "$_TAVS_HELPER_BACKEND"'
+        [ "$status" -eq 0 ]
+        [ "$output" = portable ]
+    done
+}
+
+@test "install: helper copy failure leaves the existing shellrc and fences untouched" {
+    printf 'retained old shellrc\n' > "$TEST_HOME/.tavs/shellrc"
+    printf 'existing shell setup\n' > "$TEST_HOME/.zshrc"
+    printf 'blocking file\n' > "$TEST_HOME/.tavs/shell-helper"
+    source "$CLI_DIR/cmd-install-shell-integration.sh"
+    run cmd_install_shell_integration
+    [ "$status" -eq 1 ]
+    [ "$(cat "$TEST_HOME/.tavs/shellrc")" = 'retained old shellrc' ]
+    [ "$(cat "$TEST_HOME/.zshrc")" = 'existing shell setup' ]
+}
+
+@test "install: linked helper destination cannot overwrite an unrelated file" {
+    printf 'unrelated preferences 43\n' > "$TEST_HOME/preferences"
+    mkdir -p "$TEST_HOME/.tavs/shell-helper"
+    ln -s "$TEST_HOME/preferences" "$TEST_HOME/.tavs/shell-helper/helper-selection.sh"
+    source "$CLI_DIR/cmd-install-shell-integration.sh"
+    run cmd_install_shell_integration
+    [ "$status" -eq 1 ]
+    [ "$(cat "$TEST_HOME/preferences")" = 'unrelated preferences 43' ]
+    [ ! -e "$TEST_HOME/.tavs/shellrc" ]
+    [ ! -e "$TEST_HOME/.zshrc" ]
+}
+
+@test "startup: registration failure keeps the selected backend and never uses raw output" {
+    cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
+#!/bin/bash
+printf '%s\n' "$1" >> "$SHELLRC_TEST_LOG"
+if [[ "$1" == --validate-config ]]; then
+    case "$2" in
+        --organizer-capabilities) printf 'tavs-organizer-schema=1\n' ;;
+        --managed-output-capabilities) printf 'tavs-managed-output-schema=1\n' ;;
+    esac
+    exit 0
+fi
+exit 1
+HELPER
+    local shell
+    for shell in bash zsh; do
+        : > "$SHELLRC_TEST_LOG"
+        run "$shell" -fic 'TTY=/dev/ttys901; source "$1"; [[ "$_TAVS_HELPER_BACKEND" == native ]]' _ "$SHELLRC"
+        [ "$status" -eq 0 ]
+        [ "$(grep -c '^--validate-config$' "$SHELLRC_TEST_LOG")" -eq 2 ]
+        [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-register*--managed-current* ]]
+        [[ "$output" == *'terminal registration unavailable'* && "$output" != *$'\033]'* ]]
+    done
+}
+
+@test "source shellrc can find the shared selector when sourced by a bare filename" {
+    local shell
+    for shell in bash zsh; do
+        run "$shell" -fc 'cd "$1/src/shell"; source tavs-shellrc.sh; _tavs_shellrc_managed_helper; printf "%s" "$_TAVS_HELPER_BACKEND"' _ "$REPO_ROOT"
+        [ "$status" -eq 0 ]
+        [ "$output" = native ]
+    done
 }
 
 @test "suspension: fresh shell and recreated runtime honor the persistent marker" {

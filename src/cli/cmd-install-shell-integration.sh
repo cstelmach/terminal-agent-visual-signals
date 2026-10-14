@@ -17,6 +17,25 @@ _TAVS_SHELLRC_DEST="$HOME/.tavs/shellrc"
 _TAVS_FENCE_BEGIN="# >>> tavs shell integration >>>"
 _TAVS_FENCE_END="# <<< tavs shell integration <<<"
 
+_tavs_copy_ordinary_helper_files() {
+    local destination="$1" file
+    mkdir -p "$destination" || return 1
+    for file in helper-selection.sh portable_helper.py portable_context.py portable_metadata.py \
+        portable_observation.py portable_intent.py portable_records.py portable_record_io.py \
+        portable_render.py portable_renderer.py portable_ownership.py portable_policy.py \
+        portable_device_writer.py portable_process_identity.py; do
+        [[ ! -L "$destination/$file" && ! -d "$destination/$file" ]] || return 1
+        cp "$TAVS_ROOT/src/core/$file" "$destination/$file" || return 1
+    done
+    chmod +x "$destination/portable_helper.py"
+}
+
+_tavs_install_shellrc_files() {
+    # Publish the entry point only after every adjacent dependency copies successfully.
+    _tavs_copy_ordinary_helper_files "$HOME/.tavs/shell-helper" || return 1
+    cp "$_TAVS_SHELLRC_SRC" "$_TAVS_SHELLRC_DEST"
+}
+
 _tavs_shell_rc_files() {
     # zshrc is always a target (created if missing: zsh is the macOS default
     # shell). bashrc only when the user already has one.
@@ -66,12 +85,12 @@ Usage:
   tavs install shell-integration --remove   Remove the rc blocks and ~/.tavs/shellrc
 
 What it does:
-  1. Copies the TAVS shellrc to ~/.tavs/shellrc
+  1. Copies the TAVS shellrc and its required helpers into ~/.tavs
   2. Adds a fenced source block to ~/.zshrc (and ~/.bashrc if present)
 
-Every new interactive terminal then registers itself with TAVS and paints the
-current lock/pause state immediately at open, even without any agent session.
-Cost: native helper calls at shell startup; latency depends on runtime and cached targets.
+Every new interactive terminal then registers itself with TAVS and requests
+the current visuals, even without any agent session. Unavailable visuals are reported.
+Startup latency depends on helper availability and cached targets.
 EOF
         return 0
     fi
@@ -96,8 +115,7 @@ EOF
     fi
 
     cli_bold "Installing TAVS shell integration..."
-    mkdir -p "$HOME/.tavs"
-    cp "$_TAVS_SHELLRC_SRC" "$_TAVS_SHELLRC_DEST"
+    _tavs_install_shellrc_files || return 1
     echo "  Installed $_TAVS_SHELLRC_DEST"
 
     local rc
@@ -107,6 +125,6 @@ EOF
 
     echo ""
     cli_success "Shell integration installed."
-    cli_info "New terminals register + self-paint from now on. Re-run after TAVS updates,"
+    cli_info "New terminals register and request current visuals. Re-run after TAVS updates,"
     cli_info "or use ./tavs sync (it refreshes ~/.tavs/shellrc too)."
 }

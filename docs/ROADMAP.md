@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.27
+Version: 1.28
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -11,7 +11,10 @@ native capability pair is unavailable. Adapter intake retains that choice across
 leaking the private cache into later children. Copied plugin roots work independently; sync reports
 portable ordinary support separately from native controls. An owned macOS PTY verifies routed
 intake, observation and current render. Recovery remains native-only. Standalone shell resource
-delivery, Linux runtime checks and physical Ghostty acceptance remain open.
+delivery is now connected through the same selector. Install/sync ship adjacent dependencies
+independently of the checkout. Owned Bash/zsh PTYs verify registration without paint and retain
+suspension; loader-function cache and bare-path regressions pass. Linux runtime checks and physical
+Ghostty acceptance remain open.
 
 ## Verified source
 

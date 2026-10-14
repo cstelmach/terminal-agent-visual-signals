@@ -5,6 +5,7 @@ if [[ -n "${BASH_VERSION:-}" ]]; then
 else
     _tavs_helper_source="${(%):-%x}"
 fi
+[[ "$_tavs_helper_source" == */* ]] || _tavs_helper_source="./$_tavs_helper_source"
 _TAVS_HELPER_DIR="$(cd "${_tavs_helper_source%/*}" && pwd -P)"
 unset _tavs_helper_source
 
@@ -36,7 +37,12 @@ case "$(typeset -p _TAVS_HELPER_CHECKED 2>/dev/null)" in
         fi
         unset _tavs_import_candidate _tavs_import_intake ;;
 esac
-typeset +x _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
+# Sourcing inside shell startup must not make the cache local to its loader function.
+if [[ -n "${BASH_VERSION:-}" ]]; then
+    export -n _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
+else
+    typeset -g +x _TAVS_HELPER_CHECKED _TAVS_HELPER_BIN _TAVS_HELPER_BACKEND
+fi
 
 _tavs_helper_select() {
     if [[ "${_TAVS_HELPER_CHECKED:-0}" != 1 ]]; then

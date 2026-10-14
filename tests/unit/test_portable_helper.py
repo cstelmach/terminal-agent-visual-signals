@@ -185,10 +185,7 @@ class PortableHookRoutingTests(unittest.TestCase):
         core = Path(__file__).resolve().parents[2] / "src/core/organizer-state.sh"
         env = dict(os.environ, HOME=str(root / "home"), TAVS_RUNTIME_DIR=str(root / "runtime"),
                    TAVS_TEST_HELPER_BIN=str(root / "missing-native"), TAVS_AGENT="claude")
-        actor, master = pty.fork()
-        if actor == 0:
-            env["TTY_DEVICE"] = os.ttyname(0)
-            os.execve("/bin/bash", ["bash", "-c", '''
+        data = self.owned_shell(["/bin/bash", "-c", '''
 set -e
 source "$1"
 _tavs_organizer_intake claude "$$" <<< '{"hook_event_name":"Stop","session_id":"hook-43","prompt":"BODY_SENTINEL"}'
@@ -198,6 +195,53 @@ _tavs_render_begin
 _tavs_render_queue background '#123456'
 _tavs_render_flush
 ''', "_", str(core)], env)
+        self.assertEqual(data, b"\x1b]11;#123456\x1b\\")
+        directory = root / "runtime/organizer"
+        observation = json.loads(next(directory.glob("observation-*.json")).read_bytes())
+        intent = json.loads(next(directory.glob("intent-*.json")).read_bytes())
+        self.assertEqual(observation["deliveryID"], intent["deliveryID"])
+        self.assertFalse(observation["verifiedAgent"])
+        self.assertNotIn("BODY_SENTINEL", str(observation)+str(intent))
+        self.assertFalse((root / "home/.tavs/visual-restrictions.state").exists())
+
+    def test_installed_shell_startup_registers_owned_pty_without_checkout_in_bash_and_zsh(self):
+        repo = Path(__file__).resolve().parents[2]
+        for shell in ("/bin/bash", "/bin/zsh"):
+            for suspended in (False, True):
+                with self.subTest(shell=shell, suspended=suspended):
+                    root = Path(tempfile.mkdtemp(prefix="shell-startup-", dir=os.environ["TAVS_TEST_ROOT"]))
+                    (root / "home/.tavs").mkdir(parents=True)
+                    env = dict(os.environ, HOME=str(root / "home"), ZDOTDIR=str(root / "home"),
+                               TAVS_RUNTIME_DIR=str(root / "runtime"), TAVS_TEST_HELPER_BIN=str(root / "missing-native"))
+                    marker = root / "home/.tavs/visual-restrictions.state"
+                    if suspended:
+                        marker.write_bytes(b'SCHEMA_VERSION="1"\nSUSPENDED="true"\n')
+                    install = subprocess.run(["/bin/bash", str(repo / "tavs"), "install", "shell-integration"],
+                                             env=env, capture_output=True, timeout=5)
+                    self.assertEqual(install.returncode, 0, install.stderr)
+                    env["TAVS_ROOT"] = str(root / "missing-checkout")
+                    flags = ["--norc", "-ic"] if shell == "/bin/bash" else ["-fic"]
+                    data = self.owned_shell([shell, *flags, '''
+source "$HOME/.tavs/shellrc"
+[[ "$_TAVS_HELPER_BACKEND" == portable ]] || exit 43
+'''], env)
+                    self.assertEqual(data, b"")
+                    directory = root / "runtime/organizer/targets"
+                    targets = list(directory.glob("**/target.json"))
+                    self.assertEqual(len(targets), 1)
+                    target = json.loads(targets[0].read_bytes())["target"]
+                    self.assertTrue((root / "runtime/active-ttys" / target["tty"].replace("/", "_")).is_file())
+                    self.assertFalse((root / "runtime/organizer" / ("intent-"+key(target["tty"])+".json")).exists())
+                    if suspended:
+                        self.assertEqual(marker.read_bytes(), b'SCHEMA_VERSION="1"\nSUSPENDED="true"\n')
+                    else:
+                        self.assertFalse(marker.exists())
+
+    def owned_shell(self, args, env):
+        actor, master = pty.fork()
+        if actor == 0:
+            env["TTY_DEVICE"] = os.ttyname(0)
+            os.execve(args[0], args, env)
         data = bytearray()
         deadline = time.monotonic() + 5
         status = None
@@ -215,14 +259,7 @@ _tavs_render_flush
                     break
             self.assertIsNotNone(status, "Owned hook shell did not finish")
             self.assertEqual(os.waitstatus_to_exitcode(status), 0, data)
-            self.assertEqual(data, b"\x1b]11;#123456\x1b\\")
-            directory = root / "runtime/organizer"
-            observation = json.loads(next(directory.glob("observation-*.json")).read_bytes())
-            intent = json.loads(next(directory.glob("intent-*.json")).read_bytes())
-            self.assertEqual(observation["deliveryID"], intent["deliveryID"])
-            self.assertFalse(observation["verifiedAgent"])
-            self.assertNotIn("BODY_SENTINEL", str(observation)+str(intent))
-            self.assertFalse((root / "home/.tavs/visual-restrictions.state").exists())
+            return bytes(data)
         finally:
             if status is None:
                 os.kill(actor, signal.SIGKILL)

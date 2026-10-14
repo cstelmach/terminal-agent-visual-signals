@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# TAVS — Shell Integration (installed to ~/.tavs/shellrc)
+# TAVS - Shell Integration (installed to ~/.tavs/shellrc)
 # ==============================================================================
 # Sourced by interactive zsh/bash via the fenced block that
 # `tavs install shell-integration` appends to ~/.zshrc / ~/.bashrc.
@@ -13,7 +13,7 @@
 #
 # The managed helper paints the resolved TTY under shared output serialization.
 #
-# Enabled active startup invokes capability, registration and current-policy helpers.
+# Enabled active startup selects one helper, then requests registration and current policy.
 # Suspension omits current-policy. Bash may invoke tty; registry creation invokes mkdir.
 # Latency depends on helper startup and cached targets, including when no rules exist.
 # Must stay source-compatible with BOTH zsh and bash 3.2.
@@ -60,17 +60,20 @@ _tavs_visual_restrictions_suspended() {
 
 
 _tavs_shellrc_managed_helper() {
-    local helper support=""
-    if [[ "${TAVS_TEST_HELPER_BIN+x}" == x ]]; then helper="$TAVS_TEST_HELPER_BIN"
-    else helper=/Applications/TAVS.app/Contents/MacOS/TAVSApp
+    local location selector
+    if [[ -n "${BASH_VERSION:-}" ]]; then location="${BASH_SOURCE[0]}"
+    else location="${(%):-%x}"
     fi
-    if [[ -x "$helper" ]]; then
-        support=$(env -u TAVS_SESSIONS_TEST_ROOT -u TAVS_SESSIONS_TEST_FIXTURE \
-            -u TAVS_SESSIONS_TEST_TARGETS "$helper" --validate-config --managed-output-capabilities \
-            2>/dev/null) || support=""
-    fi
-    [[ "$support" == tavs-managed-output-schema=1 ]] || return 1
-    _TAVS_SHELLRC_MANAGED_HELPER="$helper"
+    [[ "$location" == */* ]] || location="./$location"
+    case "${location##*/}" in
+        tavs-shellrc.sh) selector="${location%/*}/../core/helper-selection.sh" ;;
+        shellrc) selector="${location%/*}/shell-helper/helper-selection.sh" ;;
+        *) return 1 ;;
+    esac
+    [[ -r "$selector" ]] || return 1
+    source "$selector" || return 1
+    _tavs_helper_select || return 1
+    _TAVS_SHELLRC_MANAGED_HELPER="$_TAVS_HELPER_BIN"
 }
 
 _tavs_shellrc_main() {
@@ -104,8 +107,8 @@ _tavs_shellrc_main() {
         printf 'tavs: managed output helper unavailable or unsupported.\n' >&2
         return 0
     fi
-    # The native helper rechecks current policy and the opened TTY under one output lock.
-    "$_TAVS_SHELLRC_MANAGED_HELPER" --managed-register "$HOME/.tavs/visual-restrictions.state" \
+    # The selected helper rechecks the opened TTY under the shared output lock.
+    _tavs_helper_call --managed-register "$HOME/.tavs/visual-restrictions.state" \
         "$_rt" "$_tty" "$$" >/dev/null || printf 'tavs: terminal registration unavailable.\n' >&2
     if _tavs_visual_restrictions_suspended; then
         if [[ "$_TAVS_VISUAL_RESTRICTIONS_STATUS" == unavailable ]]; then
@@ -113,7 +116,7 @@ _tavs_shellrc_main() {
         fi
         return 0
     fi
-    "$_TAVS_SHELLRC_MANAGED_HELPER" --managed-current "$HOME/.tavs/visual-restrictions.state" \
+    _tavs_helper_call --managed-current "$HOME/.tavs/visual-restrictions.state" \
         "$_rt" "$_tty" "$$" >/dev/null || printf 'tavs: current visual policy unavailable.\n' >&2
     return 0
 }

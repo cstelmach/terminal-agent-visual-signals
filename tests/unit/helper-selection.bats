@@ -75,6 +75,16 @@ _select() {
     done
 }
 
+@test "module sourced by a bare filename resolves its adjacent portable helper" {
+    export NATIVE_MODE=unsupported
+    local shell
+    for shell in /bin/bash /bin/zsh; do
+        run "$shell" -c 'cd "$1"; source helper-selection.sh; _tavs_helper_select || exit; printf "%s" "$_TAVS_HELPER_BIN"' _ "$FIXTURE"
+        [ "$status" -eq 0 ]
+        [ "$output" = "$FIXTURE/portable_helper.py" ]
+    done
+}
+
 @test "selected operation failure is returned without changing backend or reprobe" {
     export NATIVE_MODE=unsupported
     local shell
@@ -91,6 +101,23 @@ _tavs_helper_select
         [ "$status" -eq 0 ]
         [ "$(wc -l < "$CALLS")" -eq 4 ]
         [ "$(tail -1 "$CALLS")" = 'portable:--managed-current:marker' ]
+    done
+}
+
+@test "selection survives sourcing the module inside a function in Bash and zsh" {
+    local shell
+    for shell in /bin/bash /bin/zsh; do
+        : > "$CALLS"
+        run "$shell" -c '
+load_selector() { source "$1/helper-selection.sh"; _tavs_helper_select; }
+load_selector "$1" || exit 42
+NATIVE_MODE=unsupported
+_tavs_helper_call --managed-current marker || result=$?
+[[ "$result" == 1 && "$_TAVS_HELPER_BACKEND" == native ]]
+' _ "$FIXTURE"
+        [ "$status" -eq 0 ]
+        [ "$(wc -l < "$CALLS")" -eq 3 ]
+        [[ "$(cat "$CALLS")" != *portable:* ]]
     done
 }
 
