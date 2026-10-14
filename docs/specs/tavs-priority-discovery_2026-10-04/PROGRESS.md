@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 17:34 CEST
-**Version:** 4.45
+**Last Updated:** 2026-10-14 18:18 CEST
+**Version:** 4.46
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 634 Swift pass; prior failures retained;175 portable/25 marker-background | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 643 Swift pass; prior failures retained;175 portable/25 marker-background | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -858,8 +858,7 @@ exited 1 with empty diagnostics. No retry/substitute. AGY's developer fingerprin
 still blocks provider dispatch; neither source review establishes UAT.
 > Finished source 2: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-**Scope:** Scheduler/its tests and bug/roadmap, shared-code correction from the Phase 9 review.
-Finished Sessions source/build text moved unchanged; unresolved failure history stays current.
+> Finished schedule-load scope: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 Next: fresh native/recovery checks, projection/release retries and compatibility/isolation fixes.
 Linux ordinary code remains incomplete. Native 2/7/8 remain Blocked, 9 In Progress. No real install,
 settings/schedules/native action or shutdown. SPEC/PLAN unchanged; full goal active and incomplete.
@@ -883,18 +882,19 @@ Active legacy cleanup can still reset fresh palette; [limits](release-retry-sour
 > Finished quiet validation: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 Prior LsYHBP614/14 timing failures remain unattributed in [its checks](quiet-bounds-source-check-2026-10-14.md).
 
-### Phase 9 ordinary-provider synthetic compatibility: 2026-10-14 16:18 CEST
-`6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
+> Finished provider checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 remain incomplete; next diagnose timing/root trust and compatibility, with headless/Linux/native/palette limits open. No live actions.
 
 > Finished record-read checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
 > Finished native trust checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-### Phase 9 native marker trust: 2026-10-14 17:34 CEST
+> Finished marker checkpoint: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-Marker read/write/revisions reject unsafe storage; mNJfIe RED3/15; 3YczDC634/634,15.371s.
-Bv21PX release22.04s;YqetLK25/25; I03h0W201/3 failures retained;scope:1 source/3 tests.
-[Checks](runtime-trust-source-check-2026-10-14.md#native-persistent-marker-correction).
-Next: checked Scheduler lock-state/read/write/watch, portable/shell and native/Linux acceptance.
-Phase9/goal incomplete;2/7/8 Blocked; old timing/EPERM causes unproven; SPEC/PLAN unchanged.
+### Phase 9 checked Scheduler state: 2026-10-14 18:18 CEST
+
+FsrDEZ RED4/14; jrJgP6:643/643,17.013s;upHyLW:external release17.16s;Yf2kjw:25/25.
+[Source checks and limits](current-codex-review-2026-10-14.md#parent-scheduler-correction-and-final-verification).
+**Scope:**2 source/2 test files;9 new cases;shared review correction;100ms device deadline unchanged.
+Next: legacy mute I/O, GUI/CLI merge races, portable/shell, Linux/headless/palette and native checks.
+Phase9/goal incomplete;2/7/8 Blocked;historical causes unproven;SPEC/PLAN unchanged.

@@ -1,7 +1,30 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.63
+Version: 1.64
+
+## Checked native lock-state I/O
+
+LockStateReader.readChecked returns nil only for trusted absence. Parent/leaf trust, regular-file
+type, no-follow open, inode/device matching, 8192-byte input, UTF-8 and parse acceptance are required.
+Its optional supplied monotonic deadline covers retry/size checks; the default is 100 ms. Blocking
+syscalls are not preempted. The legacy read wrapper keeps optional semantics for passive callers;
+all Scheduler decisions and watches use the throwing method. Pure parsing remains unchanged.
+
+Failed reads stop evaluation before merging or writing projections. Existing paint bookkeeping
+and trusted state snapshots remain; heartbeat/transition and known expiry timers rearm. Disabled
+restrictions still publish false/none with their status. Watch callbacks retry failed projections
+after unchanged-state repair, and heartbeat retries skipped watch startup. Existing save-failure
+and grant-acceptance behavior remains. No watcher success Boolean or new state framework is added.
+
+LockStateWriter validates current storage, bounds output and writes an exclusive private temporary
+through its descriptor. fchmod applies 0600 before rename, including under restrictive umasks.
+The same cooperative deadline covers preparation/writes. Successful rename commits complete
+private bytes; no fallible permission operation follows. Existing unsafe/unparseable destinations
+are preserved. No-file/unchanged shortcuts inspect current data; readonly unchanged state is valid.
+
+The terminal device deadline remains 100 ms. GUI/CLI read-merge-write is not yet serialized;
+late reread failures cannot undo dispatched work. Legacy mute-state and portable/shell I/O remain.
 
 ## Native persistent marker trust
 
@@ -34,8 +57,8 @@ inside its existing worker and original 100 ms deadline, before callbacks/open a
 open. Lock-parent creation now precedes device admission/open. Lock-file UID checks supplement
 its existing exact 0600 predicate. No target/emergency identity or render schema changes occur.
 
-Scheduler's separate projection readers/writers, portable and shell paths remain outside these
-native guards. The guard checks POSIX metadata, not ACLs or all path replacement races.
+Legacy mute-state readers/writers, portable and shell paths remain outside these native guards.
+The guard checks POSIX metadata, not ACLs or all path replacement races.
 
 ## Record read retries
 

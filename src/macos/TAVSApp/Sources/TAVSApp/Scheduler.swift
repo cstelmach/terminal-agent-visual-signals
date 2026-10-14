@@ -298,7 +298,13 @@ final class Scheduler: ObservableObject {
     func lockNow(seconds: Int64 = 3600) {
         let now = Int64(clock.now().timeIntervalSince1970)
         var until = now + seconds
-        if let existing = LockStateReader.read(at: lockStateURL),
+        let existing: LockStateData?
+        do { existing = try LockStateReader.readChecked(at: lockStateURL) }
+        catch {
+            statusText = "The lock could not be saved. Repair state storage and try again."
+            return
+        }
+        if let existing = existing,
            existing.locked, existing.lockUntilEpoch > until, existing.lockUntilEpoch > now {
             until = existing.lockUntilEpoch
         }
@@ -320,7 +326,13 @@ final class Scheduler: ObservableObject {
     // grant (spec D5) and re-evaluates immediately.
     @discardableResult
     func grantUnlock(untilEpoch: Int64) -> Bool {
-        guard var state = LockStateReader.read(at: lockStateURL) else {
+        let saved: LockStateData?
+        do { saved = try LockStateReader.readChecked(at: lockStateURL) }
+        catch {
+            statusText = "The unlock grant could not be saved: lock state is unavailable."
+            return false
+        }
+        guard var state = saved else {
             statusText = "The unlock grant could not be saved: lock state is unavailable."
             return false
         }
@@ -374,7 +386,25 @@ final class Scheduler: ObservableObject {
         visualRestrictionsStatus = visualRestrictionsState.read()
         let restrictionsDisabled = visualRestrictionsStatus.disablesRestrictions
 
-        let existingLock = LockStateReader.read(at: lockStateURL)
+        let existingLock: LockStateData?
+        do { existingLock = try LockStateReader.readChecked(at: lockStateURL) }
+        catch {
+            projectionSaved = false
+            if restrictionsDisabled {
+                isHardLocked = false
+                updatePublishedState(muted: false, reason: .none, transitionDate: transition)
+                statusText = "Visual state could not be saved. Terminal updates will retry. " + statusText
+            } else {
+                statusText = "Visual state could not be saved. Lock state is unavailable; terminal updates will retry."
+            }
+            scheduleHeartbeat()
+            scheduleTransitionTimer(transition, now: now)
+            if let previous = lastReadLockState {
+                if previous.locked { scheduleEpochWake(previous.lockUntilEpoch, now: nowEpoch) }
+                scheduleEpochWake(previous.unlockUntilEpoch, now: nowEpoch)
+            }
+            return
+        }
         let scheduleHard = result.muted && result.hard
         let visual = pauseVisualProvider()
         let scheduleUntil: Int64 = {
@@ -473,7 +503,11 @@ final class Scheduler: ObservableObject {
         }
         scheduleEpochWake(mergedLock.unlockUntilEpoch, now: nowEpoch)
 
-        lastReadLockState = LockStateReader.read(at: lockStateURL)
+        do { lastReadLockState = try LockStateReader.readChecked(at: lockStateURL) }
+        catch {
+            projectionSaved = false
+            statusText = "Visual state could not be saved. Terminal updates will retry. " + statusText
+        }
     }
 
     private func paintMuted(visual: PauseVisual, effectiveLock: Bool, lockUntil: Int64) {
@@ -503,6 +537,7 @@ final class Scheduler: ObservableObject {
 
     private func heartbeatTick() {
         loadAndEvaluate()
+        startRuntimeWatch()
         if projectionSaved && !visualRestrictionsStatus.disablesRestrictions {
             broadcaster.retryFailedRestrictions()
         }
@@ -542,18 +577,15 @@ final class Scheduler: ObservableObject {
     private func startRuntimeWatch() {
         guard let runtimeWatcher = runtimeWatcher else { return }
         let dir = lockStateURL.deletingLastPathComponent()
-        try? FileManager.default.createDirectory(
-            at: dir,
-            withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700]
-        )
+        do { try RuntimeDirectoryTrust.check(dir, create: true) }
+        catch { runtimeWatcher.stop(); return }
         runtimeWatcher.start(watching: dir) { [weak self] in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                let current = LockStateReader.read(at: self.lockStateURL)
-                if current != self.lastReadLockState {
-                    self.loadAndEvaluate()
-                }
+                do {
+                    let current = try LockStateReader.readChecked(at: self.lockStateURL)
+                    if current != self.lastReadLockState || !self.projectionSaved { self.loadAndEvaluate() }
+                } catch { self.loadAndEvaluate() }
             }
         }
     }
@@ -577,33 +609,17 @@ final class Scheduler: ObservableObject {
     // back into re-evaluation. A machine that never uses locks never gets a
     // lock.state file at all.
     private func writeLockStateIfChanged(_ merged: LockStateData, existing: LockStateData?) -> Bool {
-        var info = stat()
-        if lstat(lockStateURL.path, &info) == 0 {
-            guard info.st_mode & S_IFMT == S_IFREG, info.st_size >= 0, info.st_size <= 8_192,
-                  LockStateReader.read(at: lockStateURL) != nil else {
-                TAVSLog.muteState.error("lock.state unavailable: not a usable regular record")
-                return false
-            }
-        } else {
-            guard errno == ENOENT else { return false }
-            if existing == nil && !merged.locked && merged.unlockUntilEpoch == 0 { return true }
+        let current: LockStateData?
+        do {
+            current = try LockStateReader.readChecked(at: lockStateURL)
+        } catch {
+            TAVSLog.muteState.error("lock.state unavailable: not a usable trusted record")
+            return false
         }
-        if var normalized = existing {
+        if current == nil, existing == nil, !merged.locked, merged.unlockUntilEpoch == 0 { return true }
+        if existing != nil, var normalized = current {
             normalized.writtenEpoch = merged.writtenEpoch
             if normalized == merged { return true }
-        }
-        let dir = lockStateURL.deletingLastPathComponent()
-        do {
-            try FileManager.default.createDirectory(
-                at: dir,
-                withIntermediateDirectories: true,
-                attributes: [.posixPermissions: 0o700]
-            )
-        } catch {
-            let nsErr = error as NSError
-            if nsErr.code != NSFileWriteFileExistsError {
-                TAVSLog.muteState.error("lock.state dir create failed: \(error.localizedDescription, privacy: .public)")
-            }
         }
         do {
             try LockStateWriter.write(merged, to: lockStateURL)

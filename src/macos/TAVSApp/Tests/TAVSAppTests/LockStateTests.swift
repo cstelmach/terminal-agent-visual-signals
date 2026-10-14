@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 @testable import TAVSApp
 
 final class LockStateTests: XCTestCase {
@@ -50,6 +51,66 @@ final class LockStateTests: XCTestCase {
         let state = makeState(reason: .schedule, unlockUntil: 1_500_000)
         try LockStateWriter.write(state, to: url)
         XCTAssertEqual(LockStateReader.read(at: url), state)
+        XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: url.path)[.posixPermissions] as? Int, 0o600)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [url.lastPathComponent])
+    }
+
+    func testWriterRejectsUnsafeParentAndLeafWithoutReplacingState() throws {
+        let parent = tempDir.appendingPathComponent("unsafe")
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
+        let url = parent.appendingPathComponent("lock.state"), state = makeState()
+        try LockStateWriter.write(state, to: url)
+        let original = try Data(contentsOf: url)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o777], ofItemAtPath: parent.path)
+        XCTAssertThrowsError(try LockStateWriter.write(makeState(locked: false), to: url))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o666], ofItemAtPath: url.path)
+        XCTAssertThrowsError(try LockStateWriter.write(makeState(locked: false), to: url))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testCheckedReadSeparatesTrustedAbsenceFromUnparseableOrOversizedFiles() throws {
+        let url = tempDir.appendingPathComponent("checked.state")
+        XCTAssertNil(try LockStateReader.readChecked(at: url))
+        for data in [Data("invalid-lock".utf8), Data([0xFF]), Data(repeating: 0x61, count: 8_193)] {
+            try data.write(to: url, options: .atomic)
+            XCTAssertThrowsError(try LockStateReader.readChecked(at: url))
+            XCTAssertNil(LockStateReader.read(at: url))
+            XCTAssertEqual(try Data(contentsOf: url), data)
+            XCTAssertThrowsError(try LockStateWriter.write(makeState(), to: url))
+        }
+    }
+
+    func testCheckedReadRejectsLinksFIFOsAndExpiredDeadlineBeforeUnsafeIO() throws {
+        let target = tempDir.appendingPathComponent("target.state")
+        try LockStateWriter.write(makeState(), to: target)
+        let link = tempDir.appendingPathComponent("link"), fifo = tempDir.appendingPathComponent("fifo")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+        XCTAssertEqual(mkfifo(fifo.path, 0o600), 0)
+        XCTAssertThrowsError(try LockStateReader.readChecked(at: link))
+        XCTAssertThrowsError(try LockStateReader.readChecked(at: fifo))
+        XCTAssertThrowsError(try LockStateReader.readChecked(at: target,
+            deadline: DispatchTime.now().uptimeNanoseconds - 1)) { error in
+                XCTAssertEqual((error as? POSIXError)?.code, .ETIMEDOUT)
+            }
+        XCTAssertEqual(try LockStateReader.readChecked(at: target), makeState())
+    }
+
+    func testWriterRejectsOversizedOutputWithoutChangingExistingState() throws {
+        let url = tempDir.appendingPathComponent("lock.state")
+        try LockStateWriter.write(makeState(), to: url)
+        let original = try Data(contentsOf: url)
+        var oversized = makeState(); oversized.lockBg = String(repeating: "A", count: 8_193)
+        XCTAssertThrowsError(try LockStateWriter.write(oversized, to: url)) { error in
+            XCTAssertEqual((error as? POSIXError)?.code, .EFBIG)
+        }
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: tempDir.path), [url.lastPathComponent])
     }
 
     // MARK: - Reader robustness (absent/malformed = nil = not locked, D3)

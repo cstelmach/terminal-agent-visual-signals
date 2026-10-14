@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 // ==============================================================================
 // Hard-lock state: /tmp/tavs-$UID/lock.state (runtime dir, cleared by reboot).
@@ -47,8 +48,33 @@ struct LockStateData: Equatable {
 
 enum LockStateWriter {
     static func write(_ state: LockStateData, to url: URL) throws {
+        let deadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
+        func checkDeadline() throws {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else { throw POSIXError(.ETIMEDOUT) }
+        }
+        try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), create: true, deadline: deadline)
+        _ = try LockStateReader.readChecked(at: url, deadline: deadline)
         let data = Data(state.serialize().utf8)
-        try data.write(to: url, options: .atomic)
+        guard data.count <= 8_192 else { throw POSIXError(.EFBIG) }
+        try checkDeadline()
+        let temporary = url.deletingLastPathComponent().appendingPathComponent(".lock-state-\(UUID().uuidString).tmp")
+        let fd = open(temporary.path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        guard fd >= 0 else { throw POSIXError(.EACCES) }
+        defer { close(fd); unlink(temporary.path) }
+        guard fchmod(fd, 0o600) == 0 else { throw POSIXError(.EACCES) }
+        try data.withUnsafeBytes { bytes in
+            var offset = 0
+            while offset < bytes.count {
+                try checkDeadline()
+                let count = Darwin.write(fd, bytes.baseAddress!.advanced(by: offset), bytes.count - offset)
+                if count < 0, errno == EINTR { continue }
+                guard count > 0 else { throw POSIXError(.EIO) }
+                offset += count
+            }
+        }
+        try checkDeadline()
+        guard rename(temporary.path, url.path) == 0 else { throw POSIXError(.EIO) }
+        // A successful rename commits complete private bytes; no fallible permission step follows.
     }
 }
 
@@ -56,8 +82,55 @@ enum LockStateReader {
     // Returns nil for absent, unreadable, or malformed content (missing/non-
     // numeric LOCK_UNTIL_EPOCH, unknown schema). nil always means "not locked".
     static func read(at url: URL) -> LockStateData? {
-        guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return nil }
-        return parse(contents)
+        try? readChecked(at: url)
+    }
+
+    // Mutation decisions distinguish trusted absence from unavailable existing storage.
+    static func readChecked(at url: URL,
+                            deadline: UInt64 = DispatchTime.now().uptimeNanoseconds + 100_000_000) throws -> LockStateData? {
+        func checkDeadline() throws {
+            guard DispatchTime.now().uptimeNanoseconds < deadline else { throw POSIXError(.ETIMEDOUT) }
+        }
+        try checkDeadline()
+        try RuntimeDirectoryTrust.check(url.deletingLastPathComponent(), deadline: deadline)
+        var before = stat()
+        if lstat(url.path, &before) != 0 {
+            let error = errno
+            try checkDeadline()
+            if error == ENOENT { return nil }
+            throw POSIXError(.EACCES)
+        }
+        guard before.st_mode & S_IFMT == S_IFREG, RuntimeDirectoryTrust.owned(before),
+              before.st_size >= 0, before.st_size <= 8_192 else { throw POSIXError(.EINVAL) }
+        try checkDeadline()
+        let fd = open(url.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard fd >= 0 else { try checkDeadline(); throw POSIXError(.EACCES) }
+        defer { close(fd) }
+        try checkDeadline()
+        var current = stat()
+        guard fstat(fd, &current) == 0, current.st_mode & S_IFMT == S_IFREG,
+              RuntimeDirectoryTrust.owned(current), current.st_dev == before.st_dev,
+              current.st_ino == before.st_ino, current.st_size >= 0, current.st_size <= 8_192 else {
+            throw POSIXError(.EINVAL)
+        }
+        var data = Data(), buffer = [UInt8](repeating: 0, count: 8_193)
+        while true {
+            try checkDeadline()
+            let count = Darwin.read(fd, &buffer, buffer.count - data.count), error = errno
+            try checkDeadline()
+            if count == 0 { break }
+            if count < 0 {
+                if error == EINTR { continue }
+                throw POSIXError(.EIO)
+            }
+            guard data.count + count <= 8_192 else { throw POSIXError(.EFBIG) }
+            data.append(contentsOf: buffer.prefix(count))
+        }
+        guard let text = String(data: data, encoding: .utf8), let result = parse(text) else {
+            throw POSIXError(.EINVAL)
+        }
+        try checkDeadline()
+        return result
     }
 
     static func parse(_ contents: String) -> LockStateData? {

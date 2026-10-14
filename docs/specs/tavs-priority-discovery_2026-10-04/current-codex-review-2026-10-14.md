@@ -1,7 +1,7 @@
 # TAVS current implementation Codex review
 
 Last Updated: 2026-10-14T12:31:58
-Version: 1.0
+Version: 1.1
 
 ## Invocation and result
 
@@ -232,3 +232,177 @@ failed-read timer/paint preservation. Synthetic foreign UID is not a foreign-acc
 No tests ran here. POSIX UID/mode helper does not provide ACL-complete or descriptor-anchored
 TOCTOU protection. Persistent marker, shell/portable roots and live installation remain separate.
 Source read-only scope excludes session-log edits; parent can capture the combined session.
+
+
+## Follow-up checked Scheduler source check
+
+This source inspection is separate from the original provider review and predates the final
+private temporary writer. Its hypotheses were verified in source and isolated tests.
+
+# Checked Scheduler state: scoped source check
+Last Updated: 2026-10-14 (Europe/Vienna)
+Version:1.0
+Target:current uncommitted LockState.swift/Scheduler.swift and added tests.
+Workspace:/Users/cs/local/code/apps/terminal-agent-visual-signals.
+Scope:source/diff inspection only. No tests, edits, live actions, scores or approval verdict.
+## Findings
+No confirmed source defect was found in the requested absence/failure/repair paths.
+The checked reader and Scheduler shortcuts implement the intended distinction and gating.
+The limits below remain material; this source check is not behavioral or latency verification.
+
+## Checked absence versus unavailable
+
+LockState.swift:67-111:readChecked first validates the parent with RuntimeDirectoryTrust.
+Only a subsequent ENOENT leaf result returns nil. Existing linked/FIFO/directory/writable/
+foreign-owned/oversized leaves throw; invalid UTF-8 or parse rejection also throws.
+The reader uses no-follow/nonblocking open, fstat inode/device/type/owner/mode correlation,
+a8192-byte maximum, and original deadline checks around each read/EINTR iteration.
+The legacy read wrapper (:62-63) intentionally collapses errors to nil for passive callers.
+All inspected Scheduler decision/watch reads use readChecked, not that lossy wrapper.
+Pure parse semantics remain unchanged, including legacy nil rejection and field defaults.
+
+## Actual-current-data shortcuts
+
+Scheduler.swift:611-629 performs a fresh checked read before either successful shortcut.
+The no-file branch (:619) requires current==nil AND existing==nil plus no requested lock/grant.
+Thus an unsafe parent with no leaf cannot certify success, and a newly existing leaf is not
+mistaken for absence merely because the earlier merge snapshot was nil.
+The no-change branch (:620-622) normalizes current.writtenEpoch, not the earlier existing
+snapshot. existing!=nil is only the flag allowing a projection no-op; lockNow keeps existing:nil
+so its manual action does not silently skip persistence.
+A valid unchanged lock in owned0500 storage returns before writer invocation. No owner-write
+requirement was added merely to certify a readable unchanged record.
+These branches remain path-based observations, not a transaction with concurrent CLI writers.
+
+## Pre-merge failure suppression and timers
+
+finishEvaluation reads checked state at:390 before merge, lock projection or mute projection.
+The catch (:391-406) sets projectionSaved=false, reports storage failure and returns without
+those writes, broadcasts, previousMuted updates or lastPainted state consumption.
+It rearms heartbeat and known schedule transition after loadAndEvaluate canceled timers.
+It also rearms future expiry/grant wakes from lastReadLockState, which is a previously trusted
+snapshot rather than newly accepted error-as-nil data.
+For active restrictions, existing published state remains the last accepted state with an
+unavailable/save-failure message; the code does not publish a newly inferred unlocked state.
+
+For disabled restrictions, the failure branch sets isHardLocked=false, publishes muted:false,
+reason:none and retains the restriction message with save-failure text. Repeating/wake timers
+continue, while projectionSaved=false prevents heartbeat device retries. Existing physical paint
+is not claimed restored by this UI change; the failing runtime cannot certify device output.
+
+The healthy path retains lock save, mute save, projectionSaved=lockSaved&&muteSaved before
+paint/release transitions (:466-480). previousMuted/paint state is consumed only inside that gate.
+
+## Manual lock and grant semantics
+
+lockNow uses checked state before its later-end comparison. Trusted absence permits a finite
+manual lock. A valid later unexpired end survives. Read failure reports save failure and returns
+before reevaluation; successful state cancels grants and retains existing:nil forced-write intent.
+A write failure also returns before reevaluation, preserving existing timers and avoiding UI
+claims that the new manual lock was accepted.
+
+grantUnlock checked read throws/absence return false. For valid state it changes grant/written
+time, persists, then calls loadAndEvaluate and returns true. Therefore a successfully persisted
+grant remains accepted if the later mute projection fails. Failed persistence does not consume
+or shorten the readable prior lock/grant and does not cancel its existing timers.
+LockStateMerge and finite expiry behavior were not changed by this diff.
+
+## Watch and heartbeat repair
+
+startRuntimeWatch (:577-591) validates/creates the parent through the shared guard before watch.
+It stops/skips watching on unsafe parent. heartbeatTick reattempts startRuntimeWatch after
+evaluation (:538-542), permitting repaired startup storage to gain a watcher without restart.
+The successful callback compares checked current state with the trusted lastReadLockState,
+OR reevaluates when projectionSaved is false. Identical bytes or nil after permission/storage
+repair therefore retry pending work; healthy unchanged registry/pending churn stays suppressed.
+On callback read error it reevaluates through the same failure/timer path rather than saving nil.
+The heartbeat still retries failed devices only with successful projection and restrictions active.
+FileWatcher.start is idempotent but returns no success status; actual watch attachment is not
+proved merely by calling it. Its existing event mask lacks .attrib, so heartbeat remains required
+for permission-only repair and a previously skipped watch.
+
+## Writer root and leaf guard
+
+LockStateWriter.write (:50-55) checks/creates parent with RuntimeDirectoryTrust and invokes the
+checked reader before replacement. Unsafe/unparseable/oversized existing destination therefore
+throws before Data.atomic; it is not silently repaired or chmodded into compliance.
+After atomic write, the newly produced path receives0600 mode. Parent/leaf checks support
+owned0755 roots and safe missing roots while rejecting writable/linked/foreign storage.
+Readonly unchanged projections avoid this writer. An actual grant/manual mutation in readonly
+storage can fail as expected, preserving existing failure semantics.
+
+## Added test source inspected
+
+LockStateTests adds writer unsafe-parent/leaf preservation, checked trusted absence versus
+invalid/UTF-8/oversize files, link/FIFO rejection and already-expired deadline tests.
+SchedulerTests adds unsafe absent-root projection/watch rejection plus heartbeat repair, unreadable
+lock preserving mute bytes/pending release, writable-lock grant/projection rejection, disabled UI/
+retry suppression, and identical-lock watcher repair. Existing readonly unchanged-lock, failed
+manual/grant and saved-grant-despite-mute-failure tests remain applicable.
+These assertions were inspected but not executed by this source check. No cross-user actor,
+repeated EINTR injector, blocked syscall, real watcher or terminal rendering was exercised here.
+
+## Exact limits
+
+The final checked reread (:506-509) occurs after success-gated broadcasts/paint-state updates.
+A later read failure sets projectionSaved=false and status failure but cannot undo already
+queued broadcasts. This is a late-change observation, not pre-merge suppression.
+Checks/merge/atomic write do not form a transaction. A concurrent trusted CLI mutation between
+reads and replacement can still race; the diff fixes stale-data no-op certification but does
+not introduce shared locking or compare-and-swap around the complete merge.
+Data.atomic followed by setAttributes is not a single permission-bound commit. A chmod failure
+can be reported after content replacement. Same-UID/root/path races and ACL grants remain outside
+this POSIX guard. Directory and file checks are not descriptor-anchored traversal.
+The read deadline bounds retry checks and size, not an already blocked syscall. Writer atomic
+write/permission change and watch startup have no outer wall-clock completion guard; do not claim
+all Scheduler I/O is bounded100ms. The managed terminal writer's100ms deadline was not modified.
+Persistent marker trust, shell/portable roots and live deployment are separate parent work.
+Session-log edits were excluded; parent can capture the combined session.
+
+## Parent Scheduler correction and final verification
+
+LockStateReader.readChecked distinguishes trusted ENOENT from unavailable existing state and
+uses the existing guard plus bounded regular-file I/O. Scheduler read failures suppress merges,
+lock/mute writes, transitions and bookkeeping consumption, then rearm existing timers. Disabled
+restrictions keep false/none and their message. Manual errors preserve state/timers; successful
+grants remain accepted. Watch callbacks retry failed projections after identical-state repair,
+and heartbeat reattempts skipped watch startup. Current checked data controls both save shortcuts.
+
+The source check's permission-commit concern was addressed afterward: the final writer creates
+an exclusive temporary, fchmods its descriptor0600 before writing, bounds output8192, writes with
+one cooperative preparation/write deadline, then atomically renames. No fallible permission step
+follows commit. Readonly unchanged state bypasses writing. This is local I/O in the existing
+module, not a new filesystem framework. Concurrent GUI/CLI merge transactions and late state
+changes remain outside this correction; no full transaction/race-proof guarantee is claimed.
+
+Exact isolated runs:
+
+- FsrDEZ: RED4 cases/14 failed assertions,0.190s. Unsafe absence certified pause/watch, unavailable
+  lock changed mute bytes/state, and writable state was accepted for grants/replacement.
+- HrVrdm:88/88 connected,0.540s;4GsvuZ:92/92,1.015s after further reader/repair cases.
+- HRgM71:642/642 full Swift,18.442s, before the private temporary writer.
+- iFNHUT: intermediate release18.42s, superseded by the final writer.
+- QhTbiH:642/642,16.589s with private temporary; jrJgP6:final643/643,17.013s after fchmod/output bound.
+- A final local release launch failed at mktemp with ENOSPC before compiler invocation. No new
+  log directory existed. The next capacity snapshot showed214MiB local and207GiB external free.
+- upHyLW:final fresh external scratch release17.16s. Test state stayed in private local roots.
+- Yf2kjw:25/25 rebuilt-helper marker/background checks on private owned PTYs.
+
+Logs remain under /var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/tavs-isolated.<run>/command.log.
+Final build/patch/docs backups are under:
+/Volumes/external/data/archive/tmp-by-day/2026-10-14/tavs-scheduler-external-0mbyhflj/.
+No original scratch, report, directory or other process was deleted, moved or terminated.
+The scratch relocation requires no exception to runtime-directory trust because only compiler
+output is external; semantic runtime/preferences/test roots remain private local paths.
+
+Nine new cases cover unsafe parent/leaf preservation, absent versus unparseable/UTF8/oversized
+files, links/FIFO/expired deadline, bounded private output, pending release preservation, startup
+watch repair, identical-state callback repair and suspended failure. Existing readonly unchanged,
+manual/grant failure, saved-grant/expiry and timer cases pass. Terminal100ms remains unchanged.
+Scope:two production/two test files, a shared Phase9 correction beyond its initial file list.
+
+The final source check was not rerun against the private writer, and is not reviewer approval of
+that later delta. Native MuteStateReader/Writer and writeMuteState still use legacy I/O; their
+trust/bounds remain open. GUI/CLI merge serialization, portable/shell trust, Linux ordinary,
+headless recovery feedback, palette/physical acceptance and final reviews also remain open.
+Older timing/teardown causes are not established by these passes. Full goal remains incomplete.

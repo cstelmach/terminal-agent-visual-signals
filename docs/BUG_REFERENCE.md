@@ -1,7 +1,24 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.69
+Version: 1.70
+
+## Scheduler treats unavailable lock data as absence
+
+The optional lock reader collapsed unavailable/unparseable storage into nil. Evaluation could
+merge it as absence, rewrite mute state, consume published state, or certify a no-file shortcut.
+Unsafe storage could also receive grants and watches. Four regressions failed 14 assertions.
+
+The checked reader now distinguishes trusted absence from failure, validates parent/leaf trust
+and bounds regular-file input. Scheduler failure preserves writes, paint bookkeeping and trusted
+snapshots while rearming retry/transition/expiry timers. Suspension remains visible and inert.
+Watch callbacks retry failed projections even for identical repaired bytes; heartbeat retries
+watch startup. Manual lock/grant errors preserve timers, and successful grants remain accepted.
+
+Success shortcuts use freshly checked data. Lock replacement now writes bounded private bytes
+through an owned temporary descriptor, sets 0600 before commit and atomically renames it. No
+fallible permission step follows rename. Nine new cases and all 643 Swift tests pass, as do final
+release and 25 isolated helper checks. Concurrent GUI/CLI merge races and legacy mute I/O remain.
 
 ## Persistent recovery marker trusts writable or linked storage
 

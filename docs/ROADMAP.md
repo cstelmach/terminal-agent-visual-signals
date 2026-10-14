@@ -1,12 +1,17 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.41
+Version: 1.42
+
+Scheduler lock-state reads now distinguish trusted absence from unavailable storage and preserve
+pending work through failure/repair. Checked atomic writes commit private bytes; watch/heartbeat
+repair stays within existing scheduling. Nine new cases, 643 Swift tests, final external release
+and 25 helper checks pass. Native mute I/O, GUI/CLI merge serialization and live acceptance remain.
 
 Native recovery-marker trust now covers reads, revision capture/matching and atomic writes.
 Three regressions plus all 634 Swift tests, release and 25 isolated marker/background checks pass.
-Unsafe paths are preserved; trusted malformed content remains repairable. Scheduler checked
-lock-state reads, portable/shell trust and required native/Linux acceptance remain open.
+Unsafe paths are preserved; trusted malformed content remains repairable. Legacy mute I/O,
+GUI/CLI lock merge races, portable/shell trust and required native/Linux acceptance remain open.
 
 Native managed storage/policy/output now reject unsafe directory ownership, writable permissions
 and user-linked ancestry. Existing safe roots and macOS system temp aliases remain supported.

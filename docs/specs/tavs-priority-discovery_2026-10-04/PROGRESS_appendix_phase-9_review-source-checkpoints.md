@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.7
+Version: 1.8
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -115,3 +115,20 @@ EP1Q21:631/631,16.422s; yCpWOG:release20.00s; noTOPS:19/19;12 new cases;100ms un
 Finished read-retry block moved unchanged to the existing appendix; reconstruction verified.
 Next: Scheduler/marker/portable/shell trust, Linux/headless/palette fixes and native acceptance.
 Phase9/goal active and incomplete;2/7/8 Blocked; older timing attribution remains open.
+
+
+### Phase 9 native marker trust: 2026-10-14 17:34 CEST
+
+Marker read/write/revisions reject unsafe storage; mNJfIe RED3/15; 3YczDC634/634,15.371s.
+Bv21PX release22.04s;YqetLK25/25; I03h0W201/3 failures retained;scope:1 source/3 tests.
+[Checks](runtime-trust-source-check-2026-10-14.md#native-persistent-marker-correction).
+Next: checked Scheduler lock-state/read/write/watch, portable/shell and native/Linux acceptance.
+Phase9/goal incomplete;2/7/8 Blocked; old timing/EPERM causes unproven; SPEC/PLAN unchanged.
+
+**Scope:** Scheduler/its tests and bug/roadmap, shared-code correction from the Phase 9 review.
+Finished Sessions source/build text moved unchanged; unresolved failure history stays current.
+
+### Phase 9 ordinary-provider synthetic compatibility: 2026-10-14 16:18 CEST
+`6e0aaee` accepts existing ordinary observations without expanding automatic eligibility;83 native/175 portable/19 background checks and release13.99s pass. [Full checks](provider-synthetic-source-check-2026-10-14.md).
+
+Current source scope and unresolved acceptance remain in [PROGRESS.md](PROGRESS.md).
