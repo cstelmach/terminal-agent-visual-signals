@@ -1,7 +1,24 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.63
+Version: 1.64
+
+## Failed projection writes consume later repaint transitions
+
+Scheduler ignored lock/mute write errors and advanced previousMuted and last-painted state anyway.
+A later successful storage repair could then save the requested pause without repainting it.
+Heartbeat terminal retries also continued after failed persistence, reading stale rules.
+
+Both writers now report outcomes. Transition/paint bookkeeping and terminal retries advance only
+after required persistence succeeds. Timers and disk observations remain active; an existing status
+message exposes storage failure. Direct lock/grant callers propagate failure, and durable grants
+remain accepted if a subsequent projection fails. No-op lock checks distinguish usable absence or
+unchanged regular records from unavailable/unknown paths without overwriting those records.
+
+Seven initial cases failed 13 assertions. Thirteen final regressions cover failure/repair, pause
+color changes, suspension, invalid paths, direct grants and expiry. Owned-PTY integration proves
+one requested paint after repair and no duplicate heartbeat paint. All 609 Swift tests pass.
+Broader reader/root trust and live native acceptance remain separate work.
 
 ## Failed release clears receive no active heartbeat retry
 
@@ -14,7 +31,7 @@ unmuted state. Targeted reconciliation restores current policy/background and ha
 global metadata after a failed prepared write. Healthy targets are untouched. Four owned-PTY
 cases and the heartbeat caller test cover failure stages, failed-only retry, fresh background,
 no historical title/bell and suspended preservation. The 100 ms writer deadline is unchanged.
-Suspended/unbound recovery feedback and failed projection persistence remain separate issues.
+Suspended/unbound recovery feedback remains separate; projection retries are corrected above.
 
 ## Successful GUI recovery leaves canceled focus leases stuck
 
@@ -59,8 +76,7 @@ The scheduler now validates a candidate before adopting it. Invalid rules follow
 no-config projection, including continuing manual locks, and status reports schedule rejection.
 Saved files are untouched. Startup and watcher regressions verify no invalid pause, unchanged
 data, subsequent valid reload and continuing manual locks. All 573 isolated Swift tests pass.
-Missing quiet-period bounds
-and failed projection/release retries are separate review findings and remain open.
+Missing quiet-period bounds remain open. Projection/release retries are corrected above.
 
 ## Paint failures lack the original writer result
 

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Darwin
 
 enum ScheduleEvaluator {
     struct Result: Equatable {
@@ -188,6 +189,7 @@ final class Scheduler: ObservableObject {
 
     private var config: ScheduleConfig?
     private var previousMuted: Bool = false
+    private var projectionSaved = false
     private var nextTransitionDate: Date?
     private var wakeObserver: NSObjectProtocol?
 
@@ -307,22 +309,30 @@ final class Scheduler: ObservableObject {
             writtenEpoch: now,
             lockBg: visual.backgroundColor, lockFg: visual.foregroundColor
         )
-        writeLockStateIfChanged(state, existing: nil)
+        guard writeLockStateIfChanged(state, existing: nil) else {
+            statusText = "The lock could not be saved. Repair state storage and try again."
+            return
+        }
         loadAndEvaluate()
     }
 
     // Called after the challenge was passed: writes the time-boxed unlock
     // grant (spec D5) and re-evaluates immediately.
-    func grantUnlock(untilEpoch: Int64) {
-        guard var state = LockStateReader.read(at: lockStateURL) else { return }
+    @discardableResult
+    func grantUnlock(untilEpoch: Int64) -> Bool {
+        guard var state = LockStateReader.read(at: lockStateURL) else {
+            statusText = "The unlock grant could not be saved: lock state is unavailable."
+            return false
+        }
+        let existing = state
         state.unlockUntilEpoch = untilEpoch
         state.writtenEpoch = Int64(clock.now().timeIntervalSince1970)
-        do {
-            try LockStateWriter.write(state, to: lockStateURL)
-        } catch {
-            TAVSLog.muteState.error("grant write failed: \(error.localizedDescription, privacy: .public)")
+        guard writeLockStateIfChanged(state, existing: existing) else {
+            statusText = "The unlock grant could not be saved. Repair state storage and try again."
+            return false
         }
         loadAndEvaluate()
+        return true
     }
 
     // MARK: - Core evaluation loop
@@ -403,14 +413,10 @@ final class Scheduler: ObservableObject {
         if restrictionsDisabled {
             projectedMuted = false
             projectedReason = .none
-            lastPaintedPauseVisual = nil
-            lastPaintedWasLock = false
         }
 
         let wasMuted = previousMuted
-        previousMuted = projectedMuted
-
-        writeLockStateIfChanged(mergedLock, existing: existingLock)
+        let lockSaved = writeLockStateIfChanged(mergedLock, existing: existingLock)
 
         let untilEpoch: Int64
         if requestedMuted {
@@ -425,21 +431,22 @@ final class Scheduler: ObservableObject {
             untilEpoch = 0
         }
 
-        writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
-                       hardCaused: hardCaused, requestedMuted: requestedMuted)
+        let muteSaved = writeMuteState(muted: projectedMuted, reason: projectedReason, untilEpoch: untilEpoch,
+                                      hardCaused: hardCaused, requestedMuted: requestedMuted)
+        projectionSaved = lockSaved && muteSaved
 
-        // Managed reconciliation must read the new rule projection, not the pause it clears.
-        if wasMuted && !projectedMuted {
-            clearPausedVisualAndReplayPending()
-        }
+        if projectionSaved {
+            previousMuted = projectedMuted
+            if restrictionsDisabled {
+                lastPaintedPauseVisual = nil
+                lastPaintedWasLock = false
+            }
+            // Managed reconciliation reads only successfully saved rule projections.
+            if wasMuted && !projectedMuted {
+                clearPausedVisualAndReplayPending()
+            }
 
-        if !wasMuted && projectedMuted {
-            paintMuted(visual: visual, effectiveLock: effectiveLock, lockUntil: mergedLock.lockUntilEpoch)
-        } else if wasMuted && projectedMuted {
-            // Still muted, but the visual may have changed (Preferences,
-            // ./tavs set) or the state upgraded/downgraded between plain
-            // pause and hard lock. Repaint only on an actual change.
-            if visual != lastPaintedPauseVisual || effectiveLock != lastPaintedWasLock {
+            if projectedMuted && (!wasMuted || visual != lastPaintedPauseVisual || effectiveLock != lastPaintedWasLock) {
                 paintMuted(visual: visual, effectiveLock: effectiveLock, lockUntil: mergedLock.lockUntilEpoch)
             }
         }
@@ -453,6 +460,9 @@ final class Scheduler: ObservableObject {
             effectiveLock: effectiveLock,
             grantActive: grantActive
         )
+        if !projectionSaved {
+            statusText = "Visual state could not be saved. Terminal updates will retry. " + statusText
+        }
 
         scheduleHeartbeat()
         scheduleTransitionTimer(transition, now: now)
@@ -493,7 +503,7 @@ final class Scheduler: ObservableObject {
 
     private func heartbeatTick() {
         loadAndEvaluate()
-        if !visualRestrictionsStatus.disablesRestrictions {
+        if projectionSaved && !visualRestrictionsStatus.disablesRestrictions {
             broadcaster.retryFailedRestrictions()
         }
     }
@@ -566,13 +576,21 @@ final class Scheduler: ObservableObject {
     // the runtime-dir watcher would otherwise feed our own heartbeat rewrite
     // back into re-evaluation. A machine that never uses locks never gets a
     // lock.state file at all.
-    private func writeLockStateIfChanged(_ merged: LockStateData, existing: LockStateData?) {
-        if existing == nil && !merged.locked && merged.unlockUntilEpoch == 0 {
-            return
+    private func writeLockStateIfChanged(_ merged: LockStateData, existing: LockStateData?) -> Bool {
+        var info = stat()
+        if lstat(lockStateURL.path, &info) == 0 {
+            guard info.st_mode & S_IFMT == S_IFREG, info.st_size >= 0, info.st_size <= 8_192,
+                  LockStateReader.read(at: lockStateURL) != nil else {
+                TAVSLog.muteState.error("lock.state unavailable: not a usable regular record")
+                return false
+            }
+        } else {
+            guard errno == ENOENT else { return false }
+            if existing == nil && !merged.locked && merged.unlockUntilEpoch == 0 { return true }
         }
         if var normalized = existing {
             normalized.writtenEpoch = merged.writtenEpoch
-            if normalized == merged { return }
+            if normalized == merged { return true }
         }
         let dir = lockStateURL.deletingLastPathComponent()
         do {
@@ -589,13 +607,15 @@ final class Scheduler: ObservableObject {
         }
         do {
             try LockStateWriter.write(merged, to: lockStateURL)
+            return true
         } catch {
             TAVSLog.muteState.error("lock.state write failed: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 
     private func writeMuteState(muted: Bool, reason: MuteReason, untilEpoch: Int64,
-                                hardCaused: Bool, requestedMuted: Bool) {
+                                hardCaused: Bool, requestedMuted: Bool) -> Bool {
         let dir = muteStateURL.deletingLastPathComponent()
         do {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -622,10 +642,12 @@ final class Scheduler: ObservableObject {
         )
         do {
             try MuteStateWriter.write(state, to: muteStateURL)
+            return true
         } catch {
             // The shell side will eventually treat us as dead via the 120s
             // staleness window if writes keep failing — see mute-gate.sh.
             TAVSLog.muteState.error("mute.state write failed: \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 

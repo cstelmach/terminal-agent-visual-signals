@@ -1,7 +1,24 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.57
+Version: 1.58
+
+## Scheduler projection-write outcomes
+
+Scheduler attempts both lock/mute projections before advancing transition or paint caches.
+Only successful required writes permit broadcasting or heartbeat terminal retries. Failure uses
+existing status text to report unavailable storage while retaining requested/suspended UI state.
+Heartbeat, transition, grant/lock expiry timers and actual disk readback remain active for repair.
+No extra retry timer or two-file transaction is introduced; partial persistence is not rolled back.
+
+A benign missing lock remains a no-file no-op. No-op equality requires a parsed regular lock file
+within the managed reader's size limit. Nonregular, unknown or unavailable records fail explicitly
+and are preserved. This local check does not replace root trust or eliminate reader races.
+
+`grantUnlock(untilEpoch:)` now returns a discardable Bool: true means the grant was persisted,
+even if the following mute projection fails. False preserves the existing lock and reports failure.
+`lockNow` likewise stops on a failed lock write. Existing callers continue to display status text.
+Thirteen regressions include real Scheduler/Broadcaster/owned-PTY output after storage repair.
 
 ## GUI recovery confirmation
 

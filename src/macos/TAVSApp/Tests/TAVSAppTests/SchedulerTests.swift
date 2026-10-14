@@ -342,6 +342,213 @@ final class SchedulerLifecycleTests: XCTestCase {
         try ScheduleStore.save(config, to: scheduleURL)
     }
 
+    func testFailedMuteProjectionRetriesUnchangedPauseAfterStorageRepair() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        try FileManager.default.createDirectory(at: muteStateURL, withIntermediateDirectories: true)
+        scheduler.start()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"), scheduler.statusText)
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { $0.repeating })
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.retryCallCount, 0)
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("blocked-mute"))
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(MuteStateReader.readMutedFlag(at: muteStateURL), true)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+    }
+
+    func testFailedReleaseProjectionRetainsTransitionUntilStorageRepair() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL); scheduler.start()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("previous-mute"))
+        try FileManager.default.createDirectory(at: muteStateURL, withIntermediateDirectories: true)
+        config.masterActive = true; try ScheduleStore.save(config, to: scheduleURL)
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("blocked-mute"))
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(MuteStateReader.readMutedFlag(at: muteStateURL), false)
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+    }
+
+    func testFailedHardLockProjectionRetriesAfterBothStateFilesBecomeWritable() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL)
+        config.quietPeriods[0].startMinute = 0; config.quietPeriods[0].hard = true
+        try ScheduleStore.save(config, to: scheduleURL)
+        let lockURL = tempDir.appendingPathComponent("lock.state")
+        try FileManager.default.createDirectory(at: lockURL, withIntermediateDirectories: true)
+        scheduler.start()
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { $0.repeating })
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { !$0.repeating })
+        try FileManager.default.moveItem(at: lockURL, to: tempDir.appendingPathComponent("blocked-lock"))
+        scheduler.loadAndEvaluate()
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.locked, true)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 1)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+    }
+
+    func testUnavailableNoLockDestinationCannotCertifySuccessfulProjection() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let lockURL = tempDir.appendingPathComponent("lock.state")
+        try FileManager.default.createDirectory(at: lockURL, withIntermediateDirectories: true)
+        scheduler.start()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        try FileManager.default.moveItem(at: lockURL, to: tempDir.appendingPathComponent("blocked-lock"))
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: lockURL.path))
+    }
+
+    func testSuspensionStillDisablesPaintWhileProjectionStorageFailsAndRecovers() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let restrictions = VisualRestrictionsStateStore(url: tempDir.appendingPathComponent("visual-restrictions.state"))
+        try restrictions.write(suspended: true)
+        try FileManager.default.createDirectory(at: muteStateURL, withIntermediateDirectories: true)
+        scheduler.start()
+        XCTAssertFalse(scheduler.isMuted); XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertTrue(scheduler.statusText.contains("suspended"))
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("blocked-mute"))
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(MuteStateReader.readMutedFlag(at: muteStateURL), false)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertEqual(broadcaster.retryCallCount, 0)
+        XCTAssertEqual(restrictions.read(), .suspended)
+        try restrictions.write(suspended: false); scheduler.loadAndEvaluate()
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+    }
+
+    func testFailedManualLockWriteReportsFailureWithoutReevaluation() throws {
+        try writeStandardConfig(); scheduler.start()
+        let lockURL = tempDir.appendingPathComponent("lock.state")
+        try FileManager.default.createDirectory(at: lockURL, withIntermediateDirectories: true)
+        scheduler.lockNow()
+        XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"), scheduler.statusText)
+    }
+
+    func testUnreadableExistingLockIsPreservedRatherThanTreatedAsAbsent() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        let lockURL = tempDir.appendingPathComponent("lock.state")
+        let unsupported = Data("SCHEMA_VERSION=\"2\"\nLOCKED=\"true\"\n".utf8)
+        try unsupported.write(to: lockURL)
+        scheduler.start()
+        XCTAssertEqual(try Data(contentsOf: lockURL), unsupported)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        try FileManager.default.moveItem(at: lockURL, to: tempDir.appendingPathComponent("unsupported-lock"))
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+    }
+
+    func testChangedPauseVisualIsNotConsumedByFailedProjection() throws {
+        try writeStandardConfig()
+        var config = try ScheduleStore.load(from: scheduleURL); config.masterActive = false
+        try ScheduleStore.save(config, to: scheduleURL)
+        var visual = PauseVisual(backgroundColor: "#123456", foregroundColor: nil,
+            defaultBackgroundColor: "#123456")
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            calendar: testCalendar, pauseVisualProvider: { visual })
+        scheduler.start(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("previous-mute"))
+        try FileManager.default.createDirectory(at: muteStateURL, withIntermediateDirectories: true)
+        visual = PauseVisual(backgroundColor: "#112244", foregroundColor: nil, defaultBackgroundColor: "#112244")
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 1)
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("blocked-mute"))
+        scheduler.loadAndEvaluate(); XCTAssertEqual(broadcaster.broadcastPausedCallCount, 2)
+        XCTAssertEqual(broadcaster.lastPausedBackgroundColor, "#112244")
+    }
+
+    func testGrantWithoutReadableLockReportsPersistenceFailure() throws {
+        try writeStandardConfig(); scheduler.start()
+        let accepted = scheduler.grantUnlock(untilEpoch: Int64(clock.now().timeIntervalSince1970) + 60)
+        XCTAssertFalse(accepted); XCTAssertFalse(scheduler.isHardLocked)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertTrue(timerScheduler.scheduledTimers.contains { $0.repeating })
+    }
+
+    func testFailedGrantWriteKeepsReadableUnchangedLockAndItsExistingTimers() throws {
+        try writeStandardConfig()
+        let folder = tempDir.appendingPathComponent("readonly-lock")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let lockURL = folder.appendingPathComponent("lock.state"), now = Int64(clock.now().timeIntervalSince1970)
+        let visual = PauseVisual(backgroundColor: "#123456", foregroundColor: nil, defaultBackgroundColor: "#123456")
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: now + 3600,
+            unlockUntilEpoch: 0, writtenEpoch: now, lockBg: visual.backgroundColor,
+            lockFg: visual.foregroundColor), to: lockURL)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: folder.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path) }
+        scheduler = Scheduler(clock: clock, timerScheduler: timerScheduler, fileWatcher: fileWatcher,
+            broadcaster: broadcaster, muteStateURL: muteStateURL, scheduleURL: scheduleURL,
+            lockStateURL: lockURL, calendar: testCalendar, pauseVisualProvider: { visual })
+        scheduler.start()
+        XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"), scheduler.statusText)
+        let timers = timerScheduler.scheduledTimers.count
+        XCTAssertFalse(scheduler.grantUnlock(untilEpoch: now + 60))
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.unlockUntilEpoch, 0)
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.lockUntilEpoch, now + 3600)
+        XCTAssertEqual(timerScheduler.scheduledTimers.count, timers)
+        XCTAssertTrue(scheduler.isHardLocked)
+    }
+
+    func testSavedGrantRemainsAcceptedWhenMuteProjectionFailsThenExpiresNormally() throws {
+        try writeStandardConfig(); scheduler.start(); scheduler.lockNow()
+        let lockURL = tempDir.appendingPathComponent("lock.state")
+        let originalEnd = try XCTUnwrap(LockStateReader.read(at: lockURL)).lockUntilEpoch
+        let grantEnd = Int64(clock.now().timeIntervalSince1970) + 60
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("previous-mute"))
+        try FileManager.default.createDirectory(at: muteStateURL, withIntermediateDirectories: true)
+        XCTAssertTrue(scheduler.grantUnlock(untilEpoch: grantEnd))
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.unlockUntilEpoch, grantEnd)
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.lockUntilEpoch, originalEnd)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 0)
+        try FileManager.default.moveItem(at: muteStateURL, to: tempDir.appendingPathComponent("blocked-mute"))
+        timerScheduler.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertEqual(broadcaster.broadcastPausedClearCallCount, 1)
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+        clock.advance(by: 60)
+        timerScheduler.scheduledTimers.first { !$0.repeating && $0.delay == 60 }?.handler()
+        XCTAssertEqual(LockStateReader.read(at: lockURL)?.unlockUntilEpoch, 0)
+        XCTAssertTrue(scheduler.isHardLocked)
+    }
+
+    func testSymlinkLockCannotCertifyProjectionOrAcceptAnUnlockGrant() throws {
+        try writeStandardConfig()
+        let target = tempDir.appendingPathComponent("real-lock"), lockURL = tempDir.appendingPathComponent("lock.state")
+        let now = Int64(clock.now().timeIntervalSince1970)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: now + 3600, unlockUntilEpoch: 0, writtenEpoch: now), to: target)
+        let data = try Data(contentsOf: target)
+        try FileManager.default.createSymbolicLink(at: lockURL, withDestinationURL: target)
+        scheduler.start()
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved"))
+        XCTAssertFalse(scheduler.grantUnlock(untilEpoch: now + 60))
+        XCTAssertEqual(try Data(contentsOf: target), data)
+        XCTAssertEqual(try FileManager.default.destinationOfSymbolicLink(atPath: lockURL.path), target.path)
+    }
+
     func testStartupRejectsDecodableInvalidScheduleWithoutPaintingOrChangingIt() throws {
         try writeStandardConfig()
         var invalid = try ScheduleStore.load(from: scheduleURL)

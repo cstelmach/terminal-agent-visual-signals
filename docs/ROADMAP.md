@@ -1,7 +1,13 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.35
+Version: 1.36
+
+Scheduler projection failures now retain transition/paint retry state and expose storage failure.
+Successful required writes gate broadcasts and heartbeat retries; existing timers continue.
+Direct grants report durable acceptance independently of later mute failures. Thirteen regressions
+include an owned-PTY paint after storage repair. Broader reader trust and native acceptance remain
+open; no new transaction framework or retry timer was added.
 
 GUI recovery now settles canceled focus leases from actual per-target outcomes before showing
 the report. Failed or unconfirmed targets remain retryable; late reports preserve replacement
@@ -137,7 +143,7 @@ coverage. Existing heartbeats now retry failed bound targets after release while
 marker remains active. Reconciliation handles canceled global records and current background;
 suspended/unbound failures retain explicit Restore Visibility. No-output registration cannot erase
 a paint failure. Unresolved legacy cleanup can reset a fresh active palette; suspended fresh renders
-are preserved. Projection persistence and cross-process recovery feedback remain open.
+are preserved. Projection persistence now retries; cross-process recovery feedback remains open.
 Focus clear exposes locked exact-ownership cancellation separately from physical output. The
 controller now retains one lease per physical target and coalesces its cleanup. Failed peers do
 not rotate healthy IDs; unresolved ownership prevents replacement, and outstanding repaint work

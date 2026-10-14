@@ -426,6 +426,36 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(failed)
     }
 
+    func testSchedulerStorageRepairActuallyPaintsItsRequestedPauseOnce() throws {
+        let target = try terminal(10); try cache(target, color: "#456789")
+        let muteURL = root.appendingPathComponent("home/mute.state")
+        let lockURL = root.appendingPathComponent("lock.state"), scheduleURL = root.appendingPathComponent("schedule.json")
+        try ScheduleStore.save(ScheduleConfig(version: 1, masterActive: false,
+            allowedWindows: [], quietPeriods: []), to: scheduleURL)
+        try FileManager.default.createDirectory(at: muteURL, withIntermediateDirectories: true)
+        let service = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
+            policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: muteURL,
+                lockURL: lockURL, clock: clock),
+            processRunner: SystemProcessRunner(), clock: clock, controller: generation(90), nativeSnapshot: { [] })
+        let broadcaster = Broadcaster(recovery: service), timers = MockTimerScheduler()
+        let scheduler = Scheduler(clock: clock, timerScheduler: timers, fileWatcher: MockFileWatcher(),
+            broadcaster: broadcaster, muteStateURL: muteURL, scheduleURL: scheduleURL,
+            lockStateURL: lockURL, visualRestrictionsState: restrictions,
+            pauseVisualProvider: { PauseVisual(backgroundColor: "#123456", foregroundColor: "#ABCDEF",
+                defaultBackgroundColor: "#123456") })
+        defer { scheduler.stop() }
+        scheduler.start(); XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        XCTAssertTrue(scheduler.statusText.contains("could not be saved")); try noBytes(target)
+        try FileManager.default.moveItem(at: muteURL, to: root.appendingPathComponent("blocked-mute"))
+        timers.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
+        XCTAssertEqual(try read(target), Data(("\u{1B}]104\u{07}\u{1B}]10;#ABCDEF\u{07}"
+            + "\u{1B}]11;#123456\u{07}\u{1B}]1337;SetBackgroundImageFile=\u{07}").utf8))
+        XCTAssertFalse(scheduler.statusText.contains("could not be saved"))
+        timers.scheduledTimers.first { $0.repeating }?.handler()
+        XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
+    }
+
     func testRegistrationAndUnaffectedRetryCannotEraseFailedPaint() throws {
         let target = try terminal(10); try cache(target); try writeMute(true)
         let runner = MockProcessRunner()
