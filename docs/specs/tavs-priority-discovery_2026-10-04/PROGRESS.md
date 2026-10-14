@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 15:08 CEST
-**Version:** 4.40
+**Last Updated:** 2026-10-14 15:46 CEST
+**Version:** 4.41
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | ab00c35; earlier below/appendix | 609 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 506cddb; earlier below/appendix | 614 Swift;22 parity; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -891,10 +891,10 @@ Neither timing cause is established; [full source/failure notes](final-review-co
 > Finished release retry: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 Active legacy cleanup can still reset fresh palette; [limits](release-retry-source-check-2026-10-14.md) remain unresolved.
 
-### Phase 9 projection-write retries: 2026-10-14 15:08 CEST
-`ab00c35` gates transition/paint caches and heartbeat retries on required persistence; timers/readback continue.
-[Source checks and failures](projection-retry-source-check-2026-10-14.md): tlK6dw RED7/13 assertions; mupO0o65/65; D6toCz **609/609**,16.301s; hj0ZJJ release29.58s.
-**Scope:** One production/two test files and API/bug/roadmap;13 new cases include owned-PTY repair, direct grant outcomes and expiry.
-API1.58/BUG1.64/ROADMAP1.36, full source report and capture saved; finished release block moves unchanged with verified reconstruction.
-Next: missing quiet-period bounds and compatibility/storage trust findings. Headless feedback, native/Linux and timing limits remain open.
-SPEC/PLAN fixed; no live app/install/preferences/schedules/native/session/VM actions. Full goal active and incomplete.
+> Finished projection retry: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
+### Phase 9 quiet-bound validation: 2026-10-14 15:46 CEST
+`506cddb` closes missing bounds/resume bypass (3 production/3 test/4 doc files); disabled drafts/range edges/empty-window warning remain.
+[Checks and failures](quiet-bounds-source-check-2026-10-14.md): RED ebEMby3/7 assertions, AJrV2b parity; l1xmDk **614/614**,23.588s;1nDFbD22/22;0xpWqp release223.51s.
+LsYHBP614/14 failures (6 unexpected) and load/swap snapshot are retained; GaF3m3 five separated cases pass. Causes remain open.
+Next: provider compatibility/storage trust and other material findings. Headless/native/Linux, palette and timing limits remain open; goal active/incomplete; no live actions.
