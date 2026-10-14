@@ -1,7 +1,19 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.57
+Version: 1.58
+
+## Identical catalogue polls discard slow focus preparation
+
+Every catalogue tick incremented the active focus version, even when all rendering inputs were
+identical. A color lookup spanning two-second polls could finish successfully and still lose its
+version before painting. Two blocked-preparation regressions reproduced missing initial effects.
+
+The controller now coalesces identical in-flight rendering inputs while refreshing catalogue age.
+Display-only title changes do not cancel painting. Actual binding, emphasized-set or cue changes
+still invalidate work. Heartbeats start after preparation, and each write requires fresh catalogue
+coverage. Five regressions cover Manual/Automatic polling beyond six seconds, a new cue, changed
+foreground PID and expired coverage without polling. No device deadline was widened.
 
 ## Continuing focus reuses its initial configured colors indefinitely
 
@@ -16,7 +28,7 @@ Lookup failure clears old owned focus through existing cleanup, preserving the l
 working set and cues. Changed colors under a global mask remain ready for later unmasking.
 Blocked renewal after Focus Off cannot publish or paint. The old catalogue-failure fixture now
 blocks only its initial preparation, allowing the newly required later lookup. Native reload and
-readability acceptance remain open, as does repeated slow-lookup supersession timing.
+readability acceptance remain open. Slow identical polling is covered by the correction above.
 
 ## Restore test rejects a legitimate completion timer transition
 

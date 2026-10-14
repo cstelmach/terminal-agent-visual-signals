@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.29
+Version: 1.30
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -20,7 +20,10 @@ Continuing Manual/Automatic updates now resolve configured colors afresh once pe
 Changed recipes use existing exact lease retirement; unchanged recipes keep healthy IDs.
 Unavailable lookup clears old focus while preserving captured sets and cues. Owned-PTY tests
 cover dark/light changes, global masking, failure recovery and blocked renewal cancellation.
-Repeated slow-lookup supersession and visible native readability remain pending.
+Identical in-flight catalogue polls now preserve preparation while refreshing coverage; actual
+bindings, emphasized sets and cues still invalidate it. Heartbeats start after preparation and
+stale catalogue coverage refuses paint. Five regressions and all 570 isolated Swift tests pass.
+Visible native readability and the separate intermittent initial-paint diagnosis remain pending.
 
 ## Verified source
 

@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.53
+Version: 1.54
 
 ## Continuing focus color refresh
 
@@ -17,9 +17,14 @@ later valid updates can replace the old recipe. Obsolete lookup results cannot c
 run/version. Foreground, palette and titles are untouched by these background operations.
 Global masking retains the new recipe and restores only its current rule's background.
 
-Lookups remain bounded separately from the original 100 ms device transaction. Repeated slow
-lookups can be superseded by the two-second catalogue cycle; that timing limit still requires
-targeted verification. Configuration is a guide, not a getter for arbitrary running colors.
+Lookups remain bounded separately from the original 100 ms device transaction. While preparation
+is active, identical rendering inputs refresh catalogue coverage without superseding that work.
+Title/directory/grouping changes are display-only. Changed native IDs, TTYs, foreground PIDs,
+mapping availability, emphasized IDs or attention cues still invalidate the captured version.
+Only one active preparation and one latest pending update are retained. Accepted preparation
+starts its heartbeat at completion, and each paint still requires catalogue coverage within six
+seconds. Four two-second identical polls, changed bindings/cues and expired coverage have
+controller regressions. Configuration is a guide, not a getter for arbitrary running colors.
 Owned-PTY dark/light, masked cue, unavailable lookup and cancellation tests verify source behavior;
 visible reload/readability and native timing acceptance remain open.
 

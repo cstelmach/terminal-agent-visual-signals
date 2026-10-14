@@ -706,6 +706,96 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(poll(&ready, 1, 20), 0)
     }
 
+    func testUnchangedManualPollsDoNotStarveSlowPreparationAndUseFreshHeartbeat() throws {
+        try unchangedPollsDuringSlowFocus(automatic: false)
+    }
+
+    func testUnchangedAutomaticPollsRetainCueAndDoNotStarveSlowPreparation() throws {
+        try unchangedPollsDuringSlowFocus(automatic: true)
+    }
+
+    func testNewAutomaticCueStillInvalidatesBlockedPreparationOnIdenticalSurfaces() throws {
+        try unchangedPollsDuringSlowFocus(automatic: true, changingCue: true)
+    }
+
+    func testForegroundProcessChangeStillInvalidatesBlockedPreparationWithSameSurfaceCount() throws {
+        try unchangedPollsDuringSlowFocus(automatic: false, changingForeground: true)
+    }
+
+    private func unchangedPollsDuringSlowFocus(automatic: Bool, changingCue: Bool = false,
+                                             changingForeground: Bool = false) throws {
+        let a = try surface(10), b = try surface(20), rows = [a,b]
+        let queue = DispatchQueue(label: "slow.focus.polls"), guardLock = NSLock()
+        let firstEntered = DispatchSemaphore(value: 0), releaseFirst = DispatchSemaphore(value: 0)
+        let secondEntered = expectation(description: "Coalesced next lookup held")
+        let releaseSecond = DispatchSemaphore(value: 0)
+        var queries = 0
+        let focus = controller(MockTimerScheduler(), queue: queue, colors: { _ in
+            guardLock.lock(); queries += 1; let call = queries; guardLock.unlock()
+            if call == 1 { firstEntered.signal(); releaseFirst.wait() }
+            if call == 2 { secondEntered.fulfill(); releaseSecond.wait() }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer { releaseFirst.signal(); releaseSecond.signal() }
+        var coverage: [GhosttySurfaceID: TerminalVisualCoverage]
+        if automatic {
+            focus.enableAutomatic(rows: rows, high: [a.id], coverage: [:]); clock.advance(by: 1)
+            coverage = [a.id: attention(a,"slow-cue")]
+            focus.acceptCatalogue(rows, high: [a.id], coverage: coverage)
+        } else {
+            coverage = [:]; focus.focusSelected([a], catalogue: rows)
+        }
+        XCTAssertEqual(firstEntered.wait(timeout: .now() + 1), .success)
+        let initialCues = focus.cueSnapshot(for: a.id)
+        var displayedRows = rows
+        for tick in 1...4 {
+            clock.advance(by: 2)
+            if changingForeground && tick == 1 {
+                identities[21] = ProcessIdentity(generation: generation(21), parentPID: 1,
+                    group: 21, device: identities[20]!.device, foregroundGroup: 21)
+            }
+            displayedRows[1] = GhosttySurface(id: b.id, windowID: b.windowID, tabID: b.tabID,
+                title: "spinner \(tick)", directory: b.directory, tty: b.tty,
+                foregroundPID: changingForeground ? 21 : b.foregroundPID,
+                tabSelected: b.tabSelected, mappingIssue: b.mappingIssue)
+            if changingCue && tick == 1 { coverage[a.id] = attention(a,"new-cue") }
+            focus.acceptCatalogue(displayedRows, high: automatic ? [a.id] : [], coverage: coverage)
+        }
+        let finishedAt = clock.now().timeIntervalSince1970
+        releaseFirst.signal(); wait(for: [secondEntered], timeout: 2)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let first = try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)
+        if changingCue || changingForeground { XCTAssertNil(first, "Changed input failed to invalidate old preparation") }
+        else { XCTAssertNotNil(first, "Unchanged polling discarded the completed preparation") }
+        if let first = first {
+            XCTAssertTrue(first.active); XCTAssertEqual(first.heartbeatAt, finishedAt)
+            _ = try read(1)
+        }
+        XCTAssertEqual(focus.mode, automatic ? .automatic : .manual)
+        if changingCue { XCTAssertNotEqual(focus.cueSnapshot(for: a.id), initialCues) }
+        else { XCTAssertEqual(focus.cueSnapshot(for: a.id), initialCues) }
+        if !automatic { XCTAssertEqual(focus.workingSet, [a.id]) }
+        releaseSecond.signal(); awaitManual(focus); _ = try read(1)
+        focus.focusOff(); XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testSlowPreparationCannotPaintWithoutFreshCatalogueCoverage() throws {
+        let a = try surface(10), b = try surface(20)
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            self.clock.advance(by: 7)
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
+        XCTAssertTrue(focus.focusStatus.contains("unavailable"))
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+        let cleared = expectation(description: "Unpainted stale lease cleanup finished")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+    }
+
     func testNewOutsideSurfaceAndConfirmedLastClosureEndManualFocus() throws {
         let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)

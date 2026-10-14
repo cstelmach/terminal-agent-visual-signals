@@ -227,6 +227,7 @@ final class FocusController: ObservableObject {
                          coverage: [GhosttySurfaceID: TerminalVisualCoverage] = [:]) {
         guard mode != .off else { return }
         let now = clock.now().timeIntervalSince1970
+        let priorCues = attentionCues
         let ids: Set<GhosttySurfaceID>
         if mode == .manual {
             workingSet.formIntersection(rows.map(\.id))
@@ -253,8 +254,16 @@ final class FocusController: ObservableObject {
         if restrictions.read() != .active || (try? restrictions.matches(old.revision, deadline: .max)) != true {
             focusOff(); return
         }
+        let sameInputs = manualUpdating && manualLatest.map { previous in
+            previous.1 == ids && previous.0.count == rows.count
+                && zip(previous.0, rows).allSatisfy {
+                    $0.0.id == $0.1.id && $0.0.tty == $0.1.tty
+                        && $0.0.foregroundPID == $0.1.foregroundPID && $0.0.mappingIssue == $0.1.mappingIssue
+                }
+        } == true
         lock.lock()
-        manual?.version += 1
+        if !sameInputs || priorCues != attentionCues { manual?.version += 1 }
+        manual?.catalogueAt = now
         lock.unlock()
         manualPending = (rows, ids, now)
         manualLatest = manualPending
@@ -293,7 +302,7 @@ final class FocusController: ObservableObject {
     }
 
     private func updateManual() {
-        guard !manualUpdating, let (rows, ids, at) = manualPending else { return }
+        guard !manualUpdating, let (rows, ids, _) = manualPending else { return }
         lock.lock(); let run = manual; let version = run?.version; lock.unlock()
         guard let run = run, let version = version else { return }
         let cues = mode == .automatic ? attentionCues : nil
@@ -303,7 +312,11 @@ final class FocusController: ObservableObject {
             guard let self = self else { return }
             var attempted = Set<TerminalTargetBinding>()
             let result: Result<(Int, Int, [VisualRecoveryItem], Bool), Error> = Result {
-                guard self.matchesManual(run, version: version), self.clock.now().timeIntervalSince1970 <= at + 6 else {
+                self.lock.lock()
+                let currentCatalogue = self.manual === run && run.version == version
+                    && self.clock.now().timeIntervalSince1970 <= run.catalogueAt + 6
+                self.lock.unlock()
+                guard currentCatalogue else {
                     throw VisualRecoveryError.policyChanged
                 }
                 let sourceDeadline = DispatchTime.now().uptimeNanoseconds + 100_000_000
@@ -358,32 +371,33 @@ final class FocusController: ObservableObject {
                 }
                 self.lock.unlock()
                 guard accepted else { throw VisualRecoveryError.policyChanged }
+                let preparedAt = self.clock.now().timeIntervalSince1970
                 var requests: [TerminalTargetBinding: (FocusLease, Bool)] = [:]
                 let items = self.recovery.applyFocus(to: targets) { target in
-                    guard let lease = self.focusLease(target, owner: run, version: version, at: at) else {
+                    guard let lease = self.focusLease(target, owner: run, version: version, at: preparedAt) else {
                         self.lock.lock()
                         if self.manual === run && run.version == version { self.manualBlocked.insert(target.physicalTarget) }
                         self.lock.unlock()
                         throw VisualRecoveryError.targetUnavailable
                     }
                     self.lock.lock(); requests[target.physicalTarget] = (lease, lease.mayHavePainted); self.lock.unlock()
-                    return TerminalFocusRequest(effectID: lease.id, heartbeatAt: at, colors: colors,
+                    return TerminalFocusRequest(effectID: lease.id, heartbeatAt: preparedAt, colors: colors,
                     revision: lease.revision, isCurrent: { [weak self] deadline in
                         guard let self = self else { return false }
                         guard self.matchesFocusLease(lease, owner: run, version: version),
-                              self.clock.now().timeIntervalSince1970 <= at + 6 else { return false }
+                              self.clock.now().timeIntervalSince1970 <= preparedAt + 6 else { return false }
                         if let cues = cues,
                            !self.automaticSourcesCurrent(cues, targets: sources, run: run,
                                version: version, deadline: deadline) {
                             return false
                         }
                         return self.matchesFocusLease(lease, owner: run, version: version)
-                            && self.clock.now().timeIntervalSince1970 <= at + 6
+                            && self.clock.now().timeIntervalSince1970 <= preparedAt + 6
                     }, didRenew: { [weak self] target in
                         guard let self = self else { return }
                         self.lock.lock(); defer { self.lock.unlock() }
                         // Record actual saves even when a newer catalogue invalidated this update.
-                        lease.lastHeartbeat = at
+                        lease.lastHeartbeat = preparedAt
                         lease.mayHavePainted = true
                         if self.manual === run && run.version == version
                             && self.focusLeases[target.physicalTarget] === lease && !lease.retiring {
@@ -475,6 +489,7 @@ final class FocusController: ObservableObject {
         lock.lock(); defer { lock.unlock() }
         return manual === owner && owner.version == version && !lease.retiring
             && focusLeases[lease.target.physicalTarget] === lease
+            && clock.now().timeIntervalSince1970 <= owner.catalogueAt + 6
     }
 
     private func focusLease(_ target: TerminalTargetBinding, owner: Run, version: Int,
@@ -587,6 +602,7 @@ final class FocusController: ObservableObject {
         var targets: [TerminalTargetBinding] = []
         var lastFocusColors: TerminalRenderer.Colors?
         var version = 0
+        var catalogueAt = 0.0
         var invalidSourcesVersion: Int?
         var renewedTargets = Set<TerminalTargetBinding>()
         init(revision: VisualRestrictionsRevision) { self.revision = revision }
