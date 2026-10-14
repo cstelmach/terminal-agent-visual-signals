@@ -278,12 +278,17 @@ class Store:
                                reconcile=True, clear_selective=clear_selective)
 
     def _ownership(self, target, revision, descriptor, deadline, reconcile=False, clear_selective=False):
-        if not self.policy.matches(revision, deadline):
+        if revision is not None and not self.policy.matches(revision, deadline):
             raise OSError(errno.ESTALE, "Visual suspension revision changed")
         _, effects = self._current(target, deadline, descriptor)
-        if self.policy.restricted(deadline):
+        if self.policy.restricted(deadline, unavailable_disabled=revision is None):
             raise OSError(errno.EBUSY, "Native visual rule owns output")
-        suspended = self.policy.suspended(deadline)
+        try:
+            suspended = self.policy.suspended(deadline)
+        except OSError as error:
+            if revision is not None or error.errno == errno.ETIMEDOUT:
+                raise
+            suspended = True
         obsolete = []
         for path, effect in effects:
             check_deadline(deadline)
@@ -293,7 +298,16 @@ class Store:
             age = self.clock() - effect["heartbeatAt"]
             live = live and age >= 0 and (age < 2 if effect["kind"] == "preview" else age <= 6)
             identity = effect.get("revision")
-            live = live and (identity is None or (identity["device"], identity["inode"]) == revision.identity)
+            if live and identity is not None:
+                if revision is None:
+                    try:
+                        live = self.policy.matches_identity((identity["device"], identity["inode"]), deadline)
+                    except OSError as error:
+                        if error.errno == errno.ETIMEDOUT:
+                            raise
+                        live = False
+                else:
+                    live = (identity["device"], identity["inode"]) == revision.identity
             if clear_selective or (reconcile and suspended and identity is None):
                 live = False
             if live:
@@ -309,7 +323,8 @@ class Store:
             if live:
                 raise OSError(errno.EBUSY, "Native visual effect owns output")
             obsolete.append((path, effect))
-        if not self.policy.matches(revision, deadline) or self.status(target, deadline, descriptor) != "valid":
+        if ((revision is not None and not self.policy.matches(revision, deadline))
+                or self.status(target, deadline, descriptor) != "valid"):
             raise OSError(errno.ESTALE, "Visual ownership changed")
         check_deadline(deadline)
         return effects, obsolete, suspended

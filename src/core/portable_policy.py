@@ -161,15 +161,19 @@ class Policy:
         check_deadline(deadline)
         if revision.path != self.marker:
             raise OSError(errno.EINVAL, "Wrong suspension revision")
+        return self.matches_identity(revision.identity, deadline)
+
+    def matches_identity(self, identity, deadline):
+        check_deadline(deadline)
         try:
             info = os.lstat(self.marker)
         except FileNotFoundError:
             _missing_accessible(self.marker, deadline)
-            return revision.identity == (0, 0)
+            return identity == (0, 0)
         if not stat.S_ISREG(info.st_mode):
             raise OSError(errno.EINVAL, "Unavailable suspension state")
         check_deadline(deadline)
-        return revision.identity[1] != 0 and revision.identity == (info.st_dev, info.st_ino)
+        return identity[1] != 0 and identity == (info.st_dev, info.st_ino)
 
     def suspended(self, deadline):
         data = read_regular(self.marker, deadline, 127)

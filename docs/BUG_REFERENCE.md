@@ -1,7 +1,20 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.51
+Version: 1.52
+
+## Portable dispatcher draft misses EOF, background and path boundaries
+
+The reader checked time before readiness but accepted a delayed EOF after the input deadline.
+A deterministic clock/readiness fixture reproduced that acceptance. It now checks time after
+wait/read and before EOF. The background wrapper also inherited full render's pre-open revision,
+incorrectly suppressing ordinary writes after queued suspension and rejecting unavailable marker
+before intent retention. Native ordinary uses current policy; the wrapper now follows that route
+while full render/reset stay frozen and reconcile stays strict after open. Owned-PTY regressions
+reproduced and verified both branches. Finally, Python 3.11 symlink-loop resolution escaped as a
+RuntimeError exposing the path; the fixed private error boundary catches it. The source reports
+were preserved separately after two agents wrote the same temporary filename. Routing/capabilities
+never used these drafts.
 
 ## Portable worker discards stale-record failure identity
 

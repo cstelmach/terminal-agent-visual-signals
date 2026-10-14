@@ -5,15 +5,20 @@ import fcntl
 import json
 import os
 import select
+import stat
 import sys
 import time
 import unicodedata
 
 
-def read_input():
+def read_input(limit=1_048_576, timeout=2, regular_or_pipe=False):
     fd = sys.stdin.fileno()
+    if regular_or_pipe:
+        mode = os.fstat(fd).st_mode
+        if not (stat.S_ISREG(mode) or stat.S_ISFIFO(mode)):
+            raise ValueError("Render input unavailable")
     flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    deadline = time.monotonic() + 2
+    deadline = time.monotonic() + timeout
     data = bytearray()
     try:
         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
@@ -21,14 +26,18 @@ def read_input():
             remaining = deadline - time.monotonic()
             if remaining <= 0 or not select.select([fd], [], [], remaining)[0]:
                 raise ValueError("Metadata input unavailable")
+            if time.monotonic() >= deadline:
+                raise ValueError("Metadata input unavailable")
             try:
-                chunk = os.read(fd, min(16_384, 1_048_577 - len(data)))
+                chunk = os.read(fd, min(16_384, limit + 1 - len(data)))
             except (InterruptedError, BlockingIOError):
                 continue
+            if time.monotonic() >= deadline:
+                raise ValueError("Metadata input unavailable")
             if not chunk:
                 return data
             data.extend(chunk)
-            if len(data) > 1_048_576:
+            if len(data) > limit:
                 raise ValueError("Metadata input unavailable")
     finally:
         fcntl.fcntl(fd, fcntl.F_SETFL, flags)

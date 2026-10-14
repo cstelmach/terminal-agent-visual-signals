@@ -22,6 +22,12 @@ class Renderer:
     def render(self, display, record, synthetic, intake_at):
         return self._execute(display, record, synthetic, intake_at)
 
+    def background(self, record, synthetic, intake_at):
+        fields = [""]*23
+        fields[0], fields[18], fields[22] = record["background"], "0", "0"
+        display = Render(("\0".join(fields)+"\0").encode())
+        return self._execute(display, record, synthetic, intake_at, ordinary_only=True)
+
     def register(self, tty, producer):
         return self._no_output(tty, producer, "register")
 
@@ -156,7 +162,7 @@ class Renderer:
                           "effect", self.store.clock(), deadline)
         check_deadline(deadline)
 
-    def _execute(self, display, record, synthetic, intake_at, forced=False):
+    def _execute(self, display, record, synthetic, intake_at, forced=False, ordinary_only=False):
         if not isinstance(display, Render):
             raise OSError(errno.EINVAL, "Invalid finite render")
         incoming = dict(record)
@@ -167,7 +173,7 @@ class Renderer:
         context = {}
 
         def before_open(deadline):
-            context["revision"] = self.store.policy.capture(deadline)
+            context["revision"] = None if ordinary_only else self.store.policy.capture(deadline)
             with output_lock(lock_path, deadline):
                 producer = incoming.get("producer")
                 current = self.store._lookup(producer["pid"], deadline) if producer is not None else None
@@ -182,11 +188,11 @@ class Renderer:
 
         def prepare(fd, deadline):
             target, revision = context["target"], context["revision"]
-            if not self.store.policy.matches(revision, deadline):
-                raise OSError(errno.ESTALE, "Visual suspension revision changed")
+            if revision is not None and not self.store.policy.matches(revision, deadline):
+                return None
             if forced:
                 self.intents.publish_forced_reset_unlocked(target, incoming, intake_at, deadline)
-            else:
+            elif not ordinary_only:
                 self.intents.validate_context_unlocked(target, incoming, synthetic, intake_at, deadline)
             if not forced and display.background is not None:
                 self.intents.publish_unlocked(target, incoming, synthetic, intake_at, deadline)
@@ -197,7 +203,9 @@ class Renderer:
                 rendered.background = self.intents.ordinary_background_unlocked(target, deadline) or "reset"
             prefix = b"\x1b]104\a\x1b]110\a" if legacy else b"\x1b]104\a" if forced else b""
             data = prefix + rendered.encode(synthetic=synthetic)
-            if (not self.store.policy.matches(revision, deadline)
+            if ordinary_only and self.store.policy.restricted(deadline, unavailable_disabled=True):
+                raise OSError(errno.EBUSY, "Native visual rule owns output")
+            if ((revision is not None and not self.store.policy.matches(revision, deadline))
                     or self.store.status(target, deadline, fd) != "valid"):
                 raise OSError(errno.ESTALE, "Visual target changed")
             context["obsolete"] = obsolete

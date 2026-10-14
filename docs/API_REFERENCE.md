@@ -1,7 +1,28 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.47
+Version: 1.48
+
+## Portable helper dispatcher (integration pending)
+
+`python3 src/core/portable_helper.py` handles finite organizer intake/context/observe and managed
+register/current/reconcile/check-context/background/render/forced-reset requests. Argument counts,
+types, absolute roots, concrete device and parent-side identity proof precede worker mutation.
+`TAVS_TEST_ROOT` confines filesystem operations to an owned temporary directory; any native
+Sessions test-scope key is unsupported and refuses before input or identity work.
+
+Success uses the existing NUL metadata pairs, Base64 context or rendered/restored/unaffected
+line protocol. Stale record code 3 remains distinct from unavailable code 1. Errors contain only
+fixed private text. Render stdin is a regular file/pipe, at most 16 KiB through EOF within its
+original 100 ms input phase; checks after wait/read prevent delayed EOF acceptance. Intake keeps
+its 1 MiB/two-second phase. Ancestry, input and device phases do not renew the device deadline.
+
+`Renderer.background` follows native ordinary publication/current-policy timing without freezing
+a pre-open render revision. Unavailable suspension disables restrictions for this ordinary route;
+live native control still refuses output. Full render/reset retain frozen revision, and initial
+replacement returns unaffected without paint. Reconcile retains its after-open strict revision.
+Symlink-loop failures remain private. Capability queries, native recovery, legacy organizer-intent
+and Linux schema remain unsupported; no hook/backend selection or installation uses this entry yet.
 
 ## Portable record failure categories (integration pending)
 

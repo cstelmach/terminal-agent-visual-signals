@@ -125,9 +125,7 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
                 replacement.replace(self.marker)
             return original_open(path, flags, *args, **kwargs)
         with patch("portable_device_writer.os.open", side_effect=recover_during_open):
-            with self.assertRaises(OSError) as failure:
-                self.render()
-        self.assertEqual(failure.exception.errno, errno.ESTALE)
+            self.assertFalse(self.render())
         self.assertFalse(select.select([self.master], [], [], 0.05)[0])
 
     def test_expired_preview_clears_to_latest_background_without_legacy_reset(self):
@@ -369,6 +367,39 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
         self.assertTrue(pending.exists())
         self.assertTrue(records.read(self.store.directory, path, "effect", time.time(),
                                      time.monotonic_ns()+100_000_000)["active"])
+
+    def test_ordinary_background_publication_keeps_its_native_context_boundary(self):
+        record = self.record()
+        path = self.store.directory / ("observation-"+key(self.tty)+".json")
+        path.parent.mkdir(parents=True)
+        path.write_bytes(b"invalid observation")
+        record["background"] = "#123456"
+        self.assertTrue(Renderer(self.store).background(record, False, record["updatedAt"]))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+        with self.assertRaises(OSError):
+            self.render(record=record)
+        self.assertEqual(path.read_bytes(), b"invalid observation")
+
+    def test_ordinary_background_reads_current_suspension_after_open_without_frozen_revision(self):
+        record = dict(self.record(), background="#123456")
+        original_open = os.open
+        def recover(path, flags, *args, **kwargs):
+            if str(path) == self.tty:
+                replacement = self.root / "replacement"
+                replacement.write_bytes(Policy._marker(True))
+                replacement.replace(self.marker)
+            return original_open(path, flags, *args, **kwargs)
+        with patch("portable_device_writer.os.open", side_effect=recover):
+            self.assertTrue(Renderer(self.store).background(record, False, record["updatedAt"]))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+
+    def test_ordinary_background_disables_unavailable_marker_but_full_render_refuses(self):
+        self.marker.write_bytes(b"unavailable suspension state")
+        record = dict(self.record(), background="#123456")
+        self.assertTrue(Renderer(self.store).background(record, False, record["updatedAt"]))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+        with self.assertRaises(OSError):
+            self.render(record=record)
 
     def test_recovery_during_background_composition_rejects_reconcile_paint(self):
         self.assertTrue(self.render())
