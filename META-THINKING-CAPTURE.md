@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 48 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 56 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 49 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 57 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4708,3 +4708,64 @@ Actions/results are observed; motives and the scope tradeoff are reconstructed. 
 Linux ordinary compatibility, external recovery bookkeeping and historical timing attribution
 remain unfinished. No install, real preferences, schedules, VM/container or user-session action
 was performed. Five finished progress blocks moved unchanged with exact reconstruction verified.
+
+## 2026-10-14 · gpt-6 (self-reported) · active-release-retry
+
+meta:
+  model: gpt-6 (self-reported; served variant unobserved)
+  model_source: self-reported
+  interface: codex-desktop
+  thinking: extended requested; internal computation unobserved
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool calls and diffs
+
+**Framing [O]:** The prior turn committed verified GUI recovery work. Current Git and the dated
+state selected another Phase 9 review correction, with the master objective unchanged. The chosen
+source defect was failed pause-release cleanup: plain shells could retain restrictive colors after
+their device recovered because heartbeat stopped retrying once unmuted. Projection persistence,
+external recovery bookkeeping and native acceptance remain distinct unfinished work.
+
+**Strategy [O/R]:** Retrieved the reports and traced their claims through Broadcaster, Scheduler,
+the renderer and existing tests. A read-only explorer examined canceled global records and the
+contrast between active and suspended state. The stronger reset flag was unnecessary: active
+reconciliation already considers inactive global records. Keeping the suspension guard preserves
+fresh output after emergency recovery. This selected the two-line production repair [O]; the
+scope judgment favors a verified caller correction while retaining broader limitations [R].
+
+**Action trace [O]**
+
+| # | Move | Object | Note |
+|---|------|--------|------|
+| 1 | Read | Git, SPEC/PLAN/PROGRESS/GOAL | Clean baseline a576dcc; goal remains active |
+| 2 | Source-check | Retry, state projection and canceled records | Confirmed release bug; disproved need for stronger reset flag |
+| 3 | Backup/test | Explicit owned paths and three initial cases | Missing callback argument corrected; behavioral RED followed |
+| 4 | Implement/test | Broadcaster and heartbeat | Failed-only current-policy reconciliation while marker active |
+| 5 | Characterize | Active and suspended fresh renders | Exact reset bytes versus no output; current background retained |
+| 6 | Verify/commit | Full Swift, release, documentation | 596/596; 4b96e46; original deadlines intact |
+
+**Decision points [O]:** Retain full physical-target forwarding in the test seams and explicitly
+supply the nil publication callback. Retry only stored failed bindings, with no native discovery
+or new timer. Do not clear failures on registration or unaffected results. Restrict heartbeat
+retry to an active marker rather than repeating ineffective suspended cleanup. Use the existing
+reconciliation policy instead of carrying a stale visual or introducing an outcome registry.
+
+**Failure arcs [O/R]:** Is0gWg caught a missing beforeOpen argument in the exact-target test seam.
+The signature was corrected before drawing behavioral conclusions. WOIijj then reproduced five
+assertions across two physical release cases and the heartbeat caller. Targeted reconciliation and
+the revised active-marker gate corrected those failures. eTZ42j passed 62 connected checks and
+6LNVmm passed all 596 Swift tests. No intermittent timing failure recurred in this run; historical
+failures remain unattributed rather than being closed by a passing run.
+
+**Verification and limits [O]:** Four new owned-PTY cases cover failure before/after preparation,
+failed-only retry, stop after success, latest background, no historical title/bell replay, and
+suspended preservation of a fresh complete render. Active unresolved legacy cleanup can reset
+fresh palette colors; the characterization proves that behavior, not its elimination. The source
+report clarified two boundary claims and confirmed one defect. The explorer ran no tests. Release
+jJlAb3 passed in 17.76 seconds; credential, punctuation and diff checks pass. Shell/portable suites
+were not repeated for this Swift-only slice. No live app, install, real preferences, schedules,
+VM/container, native Ghostty operation or user-session shutdown occurred.
+
+**Heuristics/confidence:** P8 and P9 recur. Evidence separates source routing, actual device bytes
+and visual acceptance. Actions/results are observed; reasons are reconstructed. No new model
+profile or process mechanism is inferred. One finished GUI progress block moved unchanged into
+the existing appendix; unresolved headless/timing notes remain current and reconstruction passed.

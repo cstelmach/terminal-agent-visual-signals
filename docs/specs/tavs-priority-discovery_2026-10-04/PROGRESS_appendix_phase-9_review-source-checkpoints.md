@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-14
-Version: 1.1
+Version: 1.2
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -52,3 +52,19 @@ sole-High draft ordering correction and unestablished vpyTDw initial-paint cause
 ROADMAP1.33, credential checks and capture recorded. Finished source blocks moved unchanged;
 reconstruction passed. Next: recovery bookkeeping, projection/release retry and compatibility.
 SPEC/PLAN fixed; no live changes. Native2/7/8 Blocked,9 active; Linux/native acceptance incomplete.
+
+`9ee0ef0` settles only the canceled cohort from saved, bound restored/vanished outcomes. Failed,
+unaffected/absent/conflicting results retain obligations; late reports preserve replacement leases.
+Confirmation emits no output. Independent headless bookkeeping remains open; marker/metadata
+changes alone never prove restoration. [Source check](final-review-corrections-2026-10-13.md#gui-recovery-cohort-correction-2026-10-14) preserves the full agent report.
+RED KDzUuy: 3 cases, 8 assertions; HCrV4K: 3/3. Seven final cases plus two old timing cases pass
+in 8ntSqD: 9/9. L6WuHa: **592/592 Swift**, 26.732s; release 9Cp0Yc: **79.82s**.
+eoVi2e retains 190 tests, 5 failures (1 unexpected): unchanged Manual preparation produced no
+paint; intake-during-open exceeded its 20 ms fixture bound, then returned deviceNotWritable.
+The Manual fixture now records writer outcomes and awaits cleanup. Neither cause is established.
+**Scope:** Two production files, one test file and API/bug/roadmap; one verified GUI correction.
+Connected cohort tests stay together despite >200 additions; renderer/schema/100ms are unchanged.
+API1.56/BUG1.62/ROADMAP1.34, source report and capture saved. Finished progress blocks moved
+unchanged to the existing appendix with exact reconstruction verified. SPEC/PLAN fixed.
+Next: independent headless cleanup, projection/release retry and compatibility. No live actions.
+Native2/7/8 Blocked, 9 In Progress, Linux ordinary incomplete; full goal active and incomplete.
