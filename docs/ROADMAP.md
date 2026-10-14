@@ -1,10 +1,15 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.31
+Version: 1.32
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
+
+Schedule startup/reload now validates decoded rules before evaluation, preventing an observed
+malformed-time trap. Rejection is visible, files stay intact and a valid replacement is accepted.
+Three regressions and all 573 isolated Swift tests pass. Other current review findings, Linux
+ordinary compatibility and native Ghostty acceptance remain open.
 
 Core hooks now share a Bash/zsh helper selector and use the portable ordinary backend when the
 native capability pair is unavailable. Adapter intake retains that choice across exec without

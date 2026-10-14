@@ -1,4 +1,5 @@
 import XCTest
+import protocol Combine.Publisher
 @testable import TAVSApp
 
 // MARK: - Fixture types
@@ -339,6 +340,62 @@ final class SchedulerLifecycleTests: XCTestCase {
             ]
         )
         try ScheduleStore.save(config, to: scheduleURL)
+    }
+
+    func testStartupRejectsDecodableInvalidScheduleWithoutPaintingOrChangingIt() throws {
+        try writeStandardConfig()
+        var invalid = try ScheduleStore.load(from: scheduleURL)
+        invalid.allowedWindows[0].start = "bad"
+        try ScheduleStore.save(invalid, to: scheduleURL)
+        let original = try Data(contentsOf: scheduleURL)
+        scheduler.start()
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertTrue(scheduler.statusText.contains("Schedule rejected"), scheduler.statusText)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), original)
+        scheduler.stop()
+    }
+
+    func testWatcherRejectsInvalidScheduleAndAcceptsLaterValidReplacement() throws {
+        try writeStandardConfig(); scheduler.start()
+        var invalid = try ScheduleStore.load(from: scheduleURL)
+        invalid.allowedWindows[0].start = "09"
+        try ScheduleStore.save(invalid, to: scheduleURL)
+        let original = try Data(contentsOf: scheduleURL)
+        let rejected = expectation(description: "Invalid reload reported")
+        let rejection = scheduler.$statusText.first { $0.contains("Schedule rejected") }
+            .sink { _ in rejected.fulfill() }
+        defer { rejection.cancel(); scheduler.stop() }
+        fileWatcher.simulateChange(); wait(for: [rejected], timeout: 2)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertEqual(broadcaster.broadcastPausedCallCount, 0)
+        XCTAssertEqual(try Data(contentsOf: scheduleURL), original)
+        try writeStandardConfig()
+        let accepted = expectation(description: "Valid replacement evaluated")
+        let replacement = scheduler.$statusText.first { $0.hasPrefix("Active") }
+            .sink { _ in accepted.fulfill() }
+        defer { replacement.cancel() }
+        fileWatcher.simulateChange(); wait(for: [accepted], timeout: 2)
+        XCTAssertFalse(scheduler.isMuted)
+        XCTAssertTrue(scheduler.statusText.hasPrefix("Active"), scheduler.statusText)
+        XCTAssertEqual(timerScheduler.scheduledTimers.filter { $0.repeating }.count, 1)
+    }
+
+    func testInvalidScheduleStillProjectsAnExistingManualLock() throws {
+        try writeStandardConfig()
+        var invalid = try ScheduleStore.load(from: scheduleURL)
+        invalid.allowedWindows[0].start = "bad"
+        try ScheduleStore.save(invalid, to: scheduleURL)
+        let now = Int64(clock.now().timeIntervalSince1970)
+        try LockStateWriter.write(LockStateData(locked: true, reason: .manual,
+            lockUntilEpoch: now + 120, unlockUntilEpoch: 0, writtenEpoch: now,
+            lockBg: "#112233", lockFg: "#EEEEEE"), to: tempDir.appendingPathComponent("lock.state"))
+        scheduler.start(); defer { scheduler.stop() }
+        XCTAssertTrue(scheduler.isMuted); XCTAssertTrue(scheduler.isHardLocked)
+        XCTAssertEqual(scheduler.reason, .hardLock)
+        XCTAssertEqual(broadcaster.broadcastLockedCallCount, 1)
+        XCTAssertTrue(scheduler.statusText.contains("Schedule rejected"), scheduler.statusText)
+        XCTAssertEqual(try ScheduleStore.load(from: scheduleURL), invalid)
     }
 
     func testSuspensionClearsPriorPaintAndSuppressesTicksThenResumeRepaintsCurrentPause() throws {

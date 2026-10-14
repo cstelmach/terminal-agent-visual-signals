@@ -329,13 +329,14 @@ final class Scheduler: ObservableObject {
 
     func loadAndEvaluate() {
         timerScheduler.cancelAll()
-
+        var scheduleRejected = false
         do {
-            config = try ScheduleStore.load(from: scheduleURL)
+            let loaded = try ScheduleStore.load(from: scheduleURL)
+            try ScheduleStore.validate(loaded)
+            config = loaded
         } catch {
-            // Schedule unparseable / missing — fall through to the no-config
-            // unmuted branch below. Logging here surfaces the cause for
-            // SPEC §10 debugging without coupling this loop to error handling.
+            // Reject invalid rules before the evaluator's validated-time parsing.
+            scheduleRejected = error is ScheduleValidationError
             TAVSLog.scheduler.error("schedule.json load failed: \(error.localizedDescription, privacy: .public)")
             config = nil
         }
@@ -346,6 +347,7 @@ final class Scheduler: ObservableObject {
             // No schedule: nothing is schedule-muted, but a manual lock
             // written by the CLI must still project (hard lock implies mute).
             finishEvaluation(result: .init(muted: false, reason: .none), transition: nil, now: now)
+            if scheduleRejected { statusText = "Schedule rejected: invalid configuration. " + statusText }
             return
         }
 

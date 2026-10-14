@@ -1,7 +1,21 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.59
+Version: 1.60
+
+## Decodable invalid schedules crash startup or reload
+
+The scheduler decoded schedule.json without calling the existing semantic validator. An enabled
+window with start `bad` therefore reached a force-unwrapped time parser. A private startup
+regression reproduced the trap at Scheduler.swift:147. Preferences and public validation already
+checked time syntax; the file load/watcher path omitted that check.
+
+The scheduler now validates a candidate before adopting it. Invalid rules follow the existing
+no-config projection, including continuing manual locks, and status reports schedule rejection.
+Saved files are untouched. Startup and watcher regressions verify no invalid pause, unchanged
+data, subsequent valid reload and continuing manual locks. All 573 isolated Swift tests pass.
+Missing quiet-period bounds
+and failed projection/release retries are separate review findings and remain open.
 
 ## Paint failures lack the original writer result
 
