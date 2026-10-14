@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.25
+Version: 1.26
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -24,7 +24,8 @@ identity/privacy, ordering and storage checks. These modules remain unwired and 
 capability. Caller ancestry and register/current/check-context now have bounded no-output and
 alias checks. The finite Mac helper dispatcher and stale/unavailable error categories now have
 owned-PTY, private-root and bounded-input checks. Data-only unbound intent now shares freshness/
-repair rules without painting or target caching. Capabilities, backend selection/delivery and
+repair rules without painting or target caching. The distinct Mac ordinary capability and all
+13-module copied-plugin delivery are tested. Shared selection, installed-shell resources and
 Linux versioning/runtime still need work before H1 is complete.
 
 ## Phase 7 source verified; native acceptance pending

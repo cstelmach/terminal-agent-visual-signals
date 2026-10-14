@@ -1,7 +1,21 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.49
+Version: 1.50
+
+## Portable ordinary capability and copied delivery (routing pending)
+
+The exact query `--validate-config --portable-ordinary-capabilities` returns
+`tavs-portable-ordinary-schema=1` only on macOS with current process inspection available and
+without native Sessions test scope. It consumes no stdin and creates no state. Extra operands,
+Linux, missing inspection and native managed/recovery capability requests remain unavailable.
+This distinct marker describes ordinary operations; it does not claim native focus/recovery.
+
+Source sync copies all 13 existing portable helper modules together and makes the entry executable.
+The copied helper probes without importing files from the source checkout. Fake installation
+tests compare each copied file and preserve preferences, schedules and lock state. Shared backend
+selection and installed-shell resource delivery remain pending; source copying alone is not hook
+readiness, and no real installation was synchronized during verification.
 
 ## Portable unbound intent publication (integration pending)
 

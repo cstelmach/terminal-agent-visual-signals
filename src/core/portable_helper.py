@@ -69,6 +69,11 @@ def run(args, environment=None):
     verb = args[1] if len(args) > 1 else ""
     organizer = verb.startswith("--organizer-")
     try:
+        if (sys.platform == "darwin" and not _SCOPE_KEYS.intersection(environment) and len(args) == 3
+                and args[1:] == ["--validate-config", "--portable-ordinary-capabilities"]):
+            if inspect(os.getpid()) is None:
+                raise ValueError("Process identity unavailable")
+            return 0, b"tavs-portable-ordinary-schema=1\n", b""
         if (sys.platform != "darwin" or _SCOPE_KEYS.intersection(environment)
                 or verb not in _COUNTS or len(args) != _COUNTS[verb]):
             raise ValueError("Unsupported helper request")

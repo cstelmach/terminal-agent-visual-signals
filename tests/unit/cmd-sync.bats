@@ -84,6 +84,26 @@ _tavs_organizer_intake claude "$$" || result=$?
     done
 }
 
+@test "sync delivers every ordinary helper module and copied capability runs independently" {
+    sync_fixture
+    local target file
+    for target in "$CACHE" "$MARKET"; do
+        for file in portable_helper.py portable_context.py portable_metadata.py portable_observation.py \
+            portable_intent.py portable_records.py portable_record_io.py portable_render.py \
+            portable_renderer.py portable_ownership.py portable_policy.py portable_device_writer.py \
+            portable_process_identity.py; do
+            cmp "$REPO_ROOT/src/core/$file" "$target/src/core/$file"
+        done
+        [ -x "$target/src/core/portable_helper.py" ]
+        run "$target/src/core/portable_helper.py" --validate-config --portable-ordinary-capabilities
+        [ "$status" -eq 0 ]
+        [ "$output" = 'tavs-portable-ordinary-schema=1' ]
+    done
+    [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
+    [ "$(cat "$HOME/.tavs/schedule.json")" = 'saved schedule 43' ]
+    [ "$(cat "$TAVS_RUNTIME_DIR/lock.state")" = 'saved lock 43' ]
+}
+
 @test "copied shell installer keeps a standalone current shellrc and idempotent fences" {
     sync_fixture
     run "$CACHE/tavs" install shell-integration

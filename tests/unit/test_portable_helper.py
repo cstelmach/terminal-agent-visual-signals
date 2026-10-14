@@ -26,6 +26,23 @@ def render_input(color="#123456"):
 
 
 class PortableHelperTests(unittest.TestCase):
+    def test_distinct_ordinary_capability_claims_no_native_control_or_recovery(self):
+        args = ["helper", "--validate-config", "--portable-ordinary-capabilities"]
+        with patch("portable_helper.capture") as capture, patch("portable_helper.read_input") as read:
+            self.assertEqual(helper.run(args, self.environment), (0, b"tavs-portable-ordinary-schema=1\n", b""))
+        capture.assert_not_called()
+        read.assert_not_called()
+        self.assertEqual(helper.run(args+["unexpected"], self.environment)[0], 1)
+        self.assertEqual(helper.run([], self.environment)[0], 1)
+        env = dict(self.environment, TAVS_SESSIONS_TEST_ROOT="")
+        self.assertEqual(helper.run(args, env)[0], 1)
+        with patch("portable_helper.sys.platform", "linux"):
+            self.assertEqual(helper.run(args, self.environment)[0], 1)
+        with patch("portable_helper.inspect", return_value=None):
+            self.assertEqual(helper.run(args, self.environment)[0], 1)
+        self.assertFalse(Path(self.runtime).exists())
+        self.assertFalse(Path(self.marker).exists())
+
     def setUp(self):
         self.root = Path(tempfile.mkdtemp(prefix="helper-", dir=os.environ["TAVS_TEST_ROOT"]))
         self.environment = dict(os.environ, HOME=str(self.root / "home"), TAVS_RUNTIME_DIR=str(self.root / "runtime"))

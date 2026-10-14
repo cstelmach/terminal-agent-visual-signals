@@ -103,8 +103,14 @@ _sync_to_target() {
     # Core modules and their required challenge data.
     cp "$TAVS_ROOT/src/core/"*.sh "$target_dir/src/core/" || return 1
     cp "$TAVS_ROOT/src/core/"*.txt "$target_dir/src/core/" || return 1
-    cp "$TAVS_ROOT/src/core/portable_metadata.py" "$target_dir/src/core/portable_metadata.py" || return 1
-    echo "  Synced src/core/*.sh (+ data and metadata helper)"
+    for file in portable_helper.py portable_context.py portable_metadata.py portable_observation.py \
+        portable_intent.py portable_records.py portable_record_io.py portable_render.py \
+        portable_renderer.py portable_ownership.py portable_policy.py portable_device_writer.py \
+        portable_process_identity.py; do
+        cp "$TAVS_ROOT/src/core/$file" "$target_dir/src/core/$file" || return 1
+    done
+    chmod +x "$target_dir/src/core/portable_helper.py" || return 1
+    echo "  Synced src/core/*.sh (+ data and ordinary helper modules)"
 
     # Config files
     cp "$TAVS_ROOT/src/config/"*.conf "$target_dir/src/config/" || return 1
