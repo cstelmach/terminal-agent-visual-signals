@@ -1,7 +1,7 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.28
+Version: 1.29
 
 The current work follows the [agreed SPEC](specs/tavs-priority-discovery_2026-10-04/SPEC.md)
 and [implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
@@ -15,6 +15,12 @@ delivery is now connected through the same selector. Install/sync ship adjacent 
 independently of the checkout. Owned Bash/zsh PTYs verify registration without paint and retain
 suspension; loader-function cache and bare-path regressions pass. Linux runtime checks and physical
 Ghostty acceptance remain open.
+
+Continuing Manual/Automatic updates now resolve configured colors afresh once per update.
+Changed recipes use existing exact lease retirement; unchanged recipes keep healthy IDs.
+Unavailable lookup clears old focus while preserving captured sets and cues. Owned-PTY tests
+cover dark/light changes, global masking, failure recovery and blocked renewal cancellation.
+Repeated slow-lookup supersession and visible native readability remain pending.
 
 ## Verified source
 

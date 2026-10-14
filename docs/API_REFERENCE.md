@@ -1,7 +1,27 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.52
+Version: 1.53
+
+## Continuing focus color refresh
+
+Every nonempty Manual/Automatic focus update resolves configured colors once on the existing
+preparation queue, before target fanout or device deadlines. `Run.lastFocusColors` records only
+the last accepted recipe for comparison. It is never returned as a cached lookup answer.
+Unchanged pairs retain healthy lease IDs. Changed pairs retire that run's leases and use the
+existing exact ownership cancellation/replacement path; immutable same-ID recipe checks remain.
+
+A current lookup failure retires old focus leases and includes them in existing cleanup. Mode,
+captured set and attention cues remain intact. Cleanup failures retain ownership/repaint work;
+later valid updates can replace the old recipe. Obsolete lookup results cannot change the newer
+run/version. Foreground, palette and titles are untouched by these background operations.
+Global masking retains the new recipe and restores only its current rule's background.
+
+Lookups remain bounded separately from the original 100 ms device transaction. Repeated slow
+lookups can be superseded by the two-second catalogue cycle; that timing limit still requires
+targeted verification. Configuration is a guide, not a getter for arbitrary running colors.
+Owned-PTY dark/light, masked cue, unavailable lookup and cancellation tests verify source behavior;
+visible reload/readability and native timing acceptance remain open.
 
 ## Standalone shell helper delivery
 

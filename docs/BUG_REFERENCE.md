@@ -1,7 +1,22 @@
 # Bug Reference
 
 Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.56
+Version: 1.57
+
+## Continuing focus reuses its initial configured colors indefinitely
+
+Manual and continuing Automatic runs cached their first configured background/foreground pair.
+Subsequent catalogue ticks renewed focus with that old pair, bypassing current lookup failures
+and potentially evaluating contrast against an obsolete foreground after a configuration change.
+Four controller regressions failed before correction. Removing only the cache would violate
+immutable same-ID focus recipe checks; the controller now refreshes once per update and retires
+the old lease only when the accepted pair changes. Healthy unchanged recipes keep their IDs.
+
+Lookup failure clears old owned focus through existing cleanup, preserving the logical mode,
+working set and cues. Changed colors under a global mask remain ready for later unmasking.
+Blocked renewal after Focus Off cannot publish or paint. The old catalogue-failure fixture now
+blocks only its initial preparation, allowing the newly required later lookup. Native reload and
+readability acceptance remain open, as does repeated slow-lookup supersession timing.
 
 ## Restore test rejects a legitimate completion timer transition
 

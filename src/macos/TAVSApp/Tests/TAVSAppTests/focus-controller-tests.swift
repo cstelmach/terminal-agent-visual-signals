@@ -537,8 +537,26 @@ final class FocusControllerTests: XCTestCase {
     }
 
     func testManualCapturedSetIsIndependentOfPreviewAndClearsLatestIntent() throws {
-        let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
+        let a = try surface(10), b = try surface(20), runner = MockProcessRunner(), guardLock = NSLock()
+        let expectedTarget = try XCTUnwrap(state.captureTarget(for: b))
+        var failures: [String] = []
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            let start = DispatchTime.now().uptimeNanoseconds
+            do {
+                return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                    beforeOpen: beforeOpen, target: expectedTarget.physicalTarget, emergency: false, prepare: prepare)
+            } catch {
+                let elapsed = DispatchTime.now().uptimeNanoseconds - start
+                guardLock.lock(); failures.append("\(error); elapsed ns: \(elapsed)"); guardLock.unlock()
+                throw error
+            }
+        }
+        configureState(runner: runner)
+        let focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus)
+        guardLock.lock(); let initialFailures = failures; guardLock.unlock()
+        XCTAssertTrue(initialFailures.isEmpty, initialFailures.joined(separator: "\n"))
+        XCTAssertFalse(focus.focusStatus.contains("unavailable"), focus.focusStatus)
         XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
         _ = try read(1)
         focus.preview([b]); awaitPaint(focus, count: 1); _ = try read(1)
@@ -556,16 +574,151 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(poll(&ready, 1, 20), 0)
     }
 
+    func testManualRefreshesChangedColorsOncePerUpdateAndRetainsUnchangedLeaseIDs() throws {
+        let a = try surface(10), b = try surface(20), c = try surface(30), rows = [a,b,c]
+        let guardLock = NSLock()
+        let dark = TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        let light = TerminalRenderer.Colors(background: "#FAFAFA", foreground: "#161616")!
+        var pair = dark, calls = 0
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            guardLock.lock(); defer { guardLock.unlock() }
+            calls += 1; return pair
+        })
+        let targets = try [b,c].map { try XCTUnwrap(state.captureTarget(for: $0)) }
+        focus.focusSelected([a], catalogue: rows); awaitManual(focus)
+        _ = try read(1); _ = try read(2)
+        let old = try targets.map { try XCTUnwrap(state.currentEffectUnlocked($0, kind: .focus, deadline: .max)) }
+        guardLock.lock(); pair = light; guardLock.unlock()
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus)
+        var changed: [TerminalEffectRecord] = []
+        for (index, target) in targets.enumerated() {
+            let current = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+            changed.append(current)
+            XCTAssertEqual(current.focusColors, light)
+            XCTAssertNotEqual(current.effectID, old[index].effectID)
+            let bytes = try read(index + 1)
+            let paint = Data("\u{1B}]11;#F1F1F1\u{1B}\\".utf8)
+            XCTAssertEqual(bytes.suffix(paint.count), paint)
+            XCTAssertNil(bytes.range(of: Data("\u{1B}]10;".utf8)))
+            XCTAssertNil(bytes.range(of: Data("\u{1B}]104".utf8)))
+        }
+        XCTAssertGreaterThanOrEqual(PauseVisual.contrastRatio("#F1F1F1", light.foreground), 4.5)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus)
+        for (index, target) in targets.enumerated() {
+            XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.effectID,
+                changed[index].effectID)
+            XCTAssertEqual(try read(index + 1), Data("\u{1B}]11;#F1F1F1\u{1B}\\".utf8))
+        }
+        guardLock.lock(); let count = calls; guardLock.unlock()
+        XCTAssertEqual(count, 3)
+        focus.focusOff(); _ = try read(1); _ = try read(2)
+    }
+
+    func testAutomaticRefreshesColorsUnderGlobalMaskWithoutLosingTheCue() throws {
+        let a = try surface(10), b = try surface(20), rows = [a,b], high: Set<GhosttySurfaceID> = [a.id]
+        let guardLock = NSLock(), light = TerminalRenderer.Colors(background: "#FAFAFA", foreground: "#161616")!
+        var pair = TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!, calls = 0
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            guardLock.lock(); defer { guardLock.unlock() }
+            calls += 1; return pair
+        })
+        focus.enableAutomatic(rows: rows, high: high, coverage: [:]); clock.advance(by: 1)
+        let sample = attention(a,"cue"), target = try XCTUnwrap(state.captureTarget(for: b))
+        focus.acceptCatalogue(rows, high: high, coverage: [a.id: sample]); awaitManual(focus); _ = try read(1)
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        let cues = focus.cueSnapshot(for: a.id)
+        try "MUTED=\"true\"\nREASON=\"quiet_period\"\nUNTIL_EPOCH=\"0\"\nWRITTEN_EPOCH=\"1001\"\nAPP_PID=\"\(getpid())\"\nPAUSE_BG=\"#223344\"\nSCHEMA_VERSION=\"1\"\n"
+            .write(to: root.appendingPathComponent("mute.state"), atomically: true, encoding: .utf8)
+        guardLock.lock(); pair = light; guardLock.unlock()
+        clock.advance(by: 2); focus.acceptCatalogue(rows, high: high, coverage: [a.id: sample]); awaitManual(focus)
+        let current = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertEqual(current.focusColors, light); XCTAssertNotEqual(current.effectID, original.effectID)
+        XCTAssertEqual(focus.mode, .automatic); XCTAssertEqual(focus.cueSnapshot(for: a.id), cues)
+        XCTAssertEqual(try read(1), Data("\u{1B}]11;#223344\u{1B}\\".utf8))
+        try "MUTED=\"false\"\nSCHEMA_VERSION=\"1\"\n".write(to: root.appendingPathComponent("mute.state"),
+            atomically: true, encoding: .utf8)
+        clock.advance(by: 2); focus.acceptCatalogue(rows, high: high, coverage: [a.id: sample]); awaitManual(focus)
+        XCTAssertEqual(try read(1), Data("\u{1B}]11;#F1F1F1\u{1B}\\".utf8))
+        XCTAssertEqual(try state.currentEffectUnlocked(target, kind: .focus, deadline: .max)?.effectID, current.effectID)
+        guardLock.lock(); let count = calls; guardLock.unlock(); XCTAssertEqual(count, 3)
+        focus.focusOff(); _ = try read(1)
+    }
+
+    func testUnavailableRenewalColorsClearOldFocusAndRecoverWithoutChangingTheWorkingSet() throws {
+        let a = try surface(10), b = try surface(20), rows = [a,b], guardLock = NSLock()
+        let light = TerminalRenderer.Colors(background: "#FAFAFA", foreground: "#161616")!
+        var unavailable = false, pair = TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        var calls = 0
+        let focus = controller(MockTimerScheduler(), colors: { _ in
+            guardLock.lock(); defer { guardLock.unlock() }
+            calls += 1
+            if unavailable { throw TerminalConfigurationError.unresolvedAppearance }
+            return pair
+        })
+        focus.focusSelected([a], catalogue: rows); awaitManual(focus); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let old = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        guardLock.lock(); unavailable = true; guardLock.unlock()
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus)
+        XCTAssertTrue(focus.focusStatus.contains("unavailable"))
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+        let inactive = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        guardLock.lock(); let count = calls; guardLock.unlock()
+        XCTAssertEqual(count, 2)
+        XCTAssertEqual(inactive.effectID, old.effectID)
+        XCTAssertFalse(inactive.active)
+        XCTAssertEqual(inactive.heartbeatAt, old.heartbeatAt)
+        XCTAssertEqual(focus.mode, .manual); XCTAssertEqual(focus.workingSet, [a.id])
+        guardLock.lock(); unavailable = false; pair = light; guardLock.unlock()
+        clock.advance(by: 2); focus.acceptCatalogue(rows); awaitManual(focus)
+        let replacement = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertNotEqual(replacement.effectID, old.effectID); XCTAssertEqual(replacement.focusColors, light)
+        let paint = Data("\u{1B}]11;#F1F1F1\u{1B}\\".utf8), bytes = try read(1)
+        XCTAssertEqual(bytes.suffix(paint.count), paint)
+        focus.focusOff(); _ = try read(1)
+    }
+
+    func testFocusOffDuringBlockedRenewalColorLookupPreventsLatePaint() throws {
+        let a = try surface(10), b = try surface(20), queue = DispatchQueue(label: "blocked.renewal.colors")
+        let guardLock = NSLock(), entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        var calls = 0
+        let focus = controller(MockTimerScheduler(), queue: queue, colors: { _ in
+            guardLock.lock(); calls += 1; let second = calls == 2; guardLock.unlock()
+            if second { entered.signal(); release.wait() }
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        defer { release.signal() }
+        focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
+        let target = try XCTUnwrap(state.captureTarget(for: b))
+        let original = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        clock.advance(by: 2); focus.acceptCatalogue([a,b])
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus.focusOff(); XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8)); release.signal()
+        let drained = expectation(description: "Cancelled renewal preparation drained")
+        queue.async { DispatchQueue.main.async { drained.fulfill() } }
+        wait(for: [drained], timeout: 2)
+        let effect = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max))
+        XCTAssertEqual(effect.effectID, original.effectID); XCTAssertFalse(effect.active)
+        XCTAssertEqual(effect.heartbeatAt, original.heartbeatAt)
+        XCTAssertEqual(focus.mode, .off); XCTAssertTrue(focus.workingSet.isEmpty)
+        var ready = pollfd(fd: ptys[1].master, events: Int16(POLLIN), revents: 0)
+        XCTAssertEqual(poll(&ready, 1, 20), 0)
+    }
+
     func testNewOutsideSurfaceAndConfirmedLastClosureEndManualFocus() throws {
         let a = try surface(10), b = try surface(20), focus = controller(MockTimerScheduler())
         focus.focusSelected([a], catalogue: [a,b]); awaitManual(focus); _ = try read(1)
         let c = try surface(30)
-        focus.acceptCatalogue([a,b,c]); _ = try read(2)
+        focus.acceptCatalogue([a,b,c]); awaitManual(focus); _ = try read(1); _ = try read(2)
         XCTAssertEqual(focus.workingSet, [a.id])
+        let cleared = expectation(description: "Closed working set's focus cleanup finished")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
         focus.acceptCatalogue([b,c])
         XCTAssertEqual(focus.mode, .off)
         _ = try read(1)
         XCTAssertEqual(try read(2), Data("\u{1B}]111\u{1B}\\".utf8))
+        wait(for: [cleared], timeout: 2)
     }
 
     func testFailedTargetRetirementKeepsHealthyIdentityAndBoundsRetries() throws {
@@ -720,8 +873,9 @@ final class FocusControllerTests: XCTestCase {
         let a = try surface(10), b = try surface(20), c = try surface(30)
         let queue = DispatchQueue(label: "blocked.manual")
         let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        var first = true
         let focus = controller(MockTimerScheduler(), queue: queue, colors: { _ in
-            entered.signal(); release.wait()
+            if first { first = false; entered.signal(); release.wait() }
             return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
         })
         defer { release.signal() }

@@ -334,11 +334,25 @@ final class FocusController: ObservableObject {
                 guard Set(rows.map { $0.id.application }).count == 1, let instance = rows.first?.id.application else {
                     throw VisualRecoveryError.targetUnavailable
                 }
-                if run.colors == nil { run.colors = try self.colors(instance) }
-                let colors = run.colors!
+                let colors: TerminalRenderer.Colors
+                do { colors = try self.colors(instance) }
+                catch {
+                    self.lock.lock()
+                    if self.manual === run && run.version == version {
+                        for lease in self.focusLeases.values where lease.owner === run { lease.retiring = true }
+                    }
+                    self.lock.unlock()
+                    // Failed preparation must let existing cleanup retire the old recipe.
+                    attempted.removeAll()
+                    throw error
+                }
                 self.lock.lock()
                 let accepted = self.manual === run && run.version == version
                 if accepted {
+                    if run.lastFocusColors != colors {
+                        for lease in self.focusLeases.values where lease.owner === run { lease.retiring = true }
+                        run.lastFocusColors = colors
+                    }
                     run.renewedTargets.removeAll()
                     self.manualWanted = attempted
                 }
@@ -571,7 +585,7 @@ final class FocusController: ObservableObject {
         var previewStartedAt: Double?
         let revision: VisualRestrictionsRevision
         var targets: [TerminalTargetBinding] = []
-        var colors: TerminalRenderer.Colors?
+        var lastFocusColors: TerminalRenderer.Colors?
         var version = 0
         var invalidSourcesVersion: Int?
         var renewedTargets = Set<TerminalTargetBinding>()
