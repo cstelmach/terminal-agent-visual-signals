@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 12:46 CEST
-**Version:** 4.36
+**Last Updated:** 2026-10-14 13:45 CEST
+**Version:** 4.37
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | d26a4b4; earlier below/appendix | 573 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | c747c42; earlier below/appendix | 585 Swift; prior 173 portable/135 shell below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -41,6 +41,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 ## Appendices
 
+- [Review source checkpoints](PROGRESS_appendix_phase-9_review-source-checkpoints.md)
 - [PROGRESS_appendix_phase-9_focus-poll-coalescing.md](PROGRESS_appendix_phase-9_focus-poll-coalescing.md): completed polling source fix.
 
 - [PROGRESS_appendix_phase-9_ordinary-helper-routing.md](PROGRESS_appendix_phase-9_ordinary-helper-routing.md): completed core and standalone routing.
@@ -820,11 +821,8 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 
 ### Phase 9 continuing focus color refresh: 2026-10-14 10:52 CEST
 
-`52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
-Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
-keeps immutable recipe checks. Unchanged pairs preserve healthy IDs. Failed lookup includes old
-focus in cleanup while retaining Manual/Automatic mode, captured set and attention cues. Run/
-version and source checks reject obsolete results. No schema, watcher or new cache framework.
+> Finished source 1: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 DjtXat caught a test Data.hasSuffix mistake; corrected before behavioral red r1e4Su (4 cases,
 28 failures). Focused 3BGNKJ: 4/4; jqWujh: 48/48 after initial-only blocking fixture correction.
 GQNGvE retains the old fixture's repeated-block failure. gPgVPv retains EPERM teardown; normal
@@ -884,16 +882,19 @@ attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and in
 [Claude partial review](current-claude-review-2026-10-14.md): eight calls; final delivery/CLI call
 exited 1 with empty diagnostics. No retry/substitute. AGY's developer fingerprint prerequisite
 still blocks provider dispatch; neither source review establishes UAT.
-`d26a4b4` validates decoded schedules before adoption, reports rejection and uses existing no-config/
-manual-lock projection without editing saved rules. An attached worktree preserved the review target;
-fast-forward integrated the tested feature. [Source check](schedule-load-validation-source-check-2026-10-14.md)
-found no unvalidated production evaluator path. uWPXQJ's ambiguous Combine import was corrected.
-RED jA1Zi2 trapped at Scheduler.swift:147, signal 5; gYsik4 passed startup/watcher. WpH7Hy:
-**573/573 Swift**, 10.743 seconds, including manual lock. Release IjQeTU failed ENOSPC; no deletion.
-Serial release 4IawHc passed in 14.23 seconds with default optimization. BUG 1.60/ROADMAP 1.32,
-diff/credential checks and capture recorded. Worktree retained; reports reconstruct exactly.
+> Finished source 2: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
 **Scope:** Scheduler/its tests and bug/roadmap, shared-code correction from the Phase 9 review.
 Finished Sessions source/build text moved unchanged; unresolved failure history stays current.
 Next: fresh native/recovery checks, projection/release retries and compatibility/isolation fixes.
 Linux ordinary code remains incomplete. Native 2/7/8 remain Blocked, 9 In Progress. No real install,
 settings/schedules/native action or shutdown. SPEC/PLAN unchanged; full goal active and incomplete.
+
+### Phase 9 fresh native effect validation: 2026-10-14 13:45 CEST
+`c747c42` validates full native ID/TTY after colors, with current foreground and bounded snapshot.
+Final w82n5q: **585/585 Swift**,20.127s; release3bZq5y:28.26s. Twelve new cases;100ms unchanged.
+[Checks, failures and scope](effect-native-revalidation-source-check-2026-10-14.md) retain REDs,
+sole-High draft ordering correction and unestablished vpyTDw initial-paint cause. API1.55/BUG1.61/
+ROADMAP1.33, credential checks and capture recorded. Finished source blocks moved unchanged;
+reconstruction passed. Next: recovery bookkeeping, projection/release retry and compatibility.
+SPEC/PLAN fixed; no live changes. Native2/7/8 Blocked,9 active; Linux/native acceptance incomplete.

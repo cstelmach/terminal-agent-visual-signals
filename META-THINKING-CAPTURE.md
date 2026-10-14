@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 46 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 54 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 47 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 55 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4578,3 +4578,69 @@ the existing appendix append was retained without duplicating it. Final progress
 P8/P9 recur. Remaining compatibility, isolation, native mapping and recovery claims still need
 source checks and discriminating tests. Physical/Linux acceptance and historical paint/teardown
 attribution remain open. The full goal is active; passing tests did not redefine completion.
+
+## 2026-10-14 · gpt-6 (self-reported; variant unverified) · native-effect-revalidation
+
+meta:
+  model: gpt-6 (self-reported; exact serving variant unknown)
+  model_source: self-reported [R], system family; no model census
+  interface: Codex desktop
+  thinking: unknown; thorough work requested
+  session: 01a10879
+  trace: observed tool/diff results
+
+**Framing [O].** The active Phase9 goal resumed from a clean primary checkout. The remaining
+native-target finding was checked against the SPEC and actual controller calls. Physical process
+and device checks existed, but they did not prove the native surface still owned that TTY.
+A scoped explorer inspected constructor integration, snapshot serialization and test fixtures.
+All testing used independent native data and owned PTYs. No Ghostty or workstation state was used.
+
+**Strategy [O/R].** The existing production snapshot closure was injected into every controller
+construction. A fresh catalogue follows color preparation and precedes target capture. Matching
+uses full ID and exact TTY, rejects ambiguity, and captures fresh foreground identity. Display
+changes do not reject a moved pane. [R] This keeps catalogue authority separate from cached UI
+rows without introducing another adapter. Failed queries preserve recoverable records and sets.
+Because queue residence was unbounded, snapshot caller and subprocess work now share two seconds.
+Native preparation remains outside the unchanged100ms device transaction.
+
+**Action trace [O].**
+
+| Move | Object | Evidence |
+|---|---|---|
+| Orient and trace | Dated state, SPEC and callers | Missing native authority confirmed |
+| Reproduce | Three independent native-world changes | v2qZfv:7 assertion failures |
+| Bound prerequisite | Blocked native queue | 8WfNva:3 failures before correction |
+| Inspect draft | Scoped source check | Sole-High source-exit ordering gap |
+| Reproduce and correct | Exit before any emphasized binding | zJbwDf failed; source check moved first |
+| Verify | Full owned Swift suite/release | 585 tests; release28.26s |
+| Preserve | c747c42, reports and current state | Open physical/compatibility limits retained |
+
+**Failure arcs [O].** The first broader run exposed two obsolete expectations. Snapshot execution
+now receives less than two seconds after queue residence; the fixture should test a positive
+remaining budget capped at two rather than exact equality. Earlier source rejection creates no
+lease, so a cleanup publication cannot be required. Existing no-effect/no-byte assertions remain.
+The sole-High case then proved that checking emphasized capture first delayed cue resolution.
+Moving source classification earlier fixed that case and an existing-dimming renewal case.
+The resulting armed Automatic status needed a cue-clear waiter, rather than the old manual-status
+waiter. These were specific contract changes, not deleted failing tests.
+
+A full run later reproduced the historical first-paint symptom in masked focus. The original
+error was again hidden by generic recovery text. The fixture now uses the existing outcome/stage
+recorder with exact target, flags and errno, and awaits cleanup completion. A subsequent full run
+passed. That pass does not identify the original cause; the failed log stays available.
+
+**Decision points [O].** New native IDs enter through ordinary catalogue refresh, not implicit
+adoption by the effect worker. A query failure is not confirmed closure. Physical/source/revision
+checks remain inside the writer even after native validation. No arbitrary color getter, title
+matching, direct printf fallback, new cache, registry or background service was added. The feature
+and mandatory callers/tests were committed together because bounded validation is a prerequisite
+for correct effect authorization. No source changes followed full green beyond documentation.
+
+**Verification and residue [O].** Twelve regressions cover stale/ambiguous associations, moved
+foreground, partial healthy targets, source absence/exit, cancellation, preserved ownership and
+queue expiry. w82n5q passed585 tests in20.127 seconds;3bZq5y release passed28.26 seconds. Relevant
+docs and diff/credential checks passed. Finished source blocks moved unchanged with reconstruction
+verified; an overlong draft failed before primary replacement and the compact entry fits900lines.
+P8/P9 recur. Physical native acceptance, Linux compatibility, partial status, recovery bookkeeping
+and historical failure attribution remain incomplete. [R] The transferable move is to revalidate
+identity after expensive preparation, then classify source loss before a dependent binding guard.
