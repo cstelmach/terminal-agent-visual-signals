@@ -5,8 +5,8 @@
 **Status:** In Progress
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
-**Last Updated:** 2026-10-14 08:47 CEST
-**Version:** 4.31
+**Last Updated:** 2026-10-14 09:56 CEST
+**Version:** 4.32
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 4afb1ed; earlier below/appendix | 172 portable; 561 Swift; 106 shell; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 76e79a5; earlier below/appendix | 173 portable; 561 Swift; 135 shell; prior Bats below | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -856,3 +856,39 @@ appendix. Reconstruction reproduced the old progress exactly; current main log i
 Runtime note: two final `get_goal` reads reported `blocked`, although this iteration started
 `active`. The tool exposes no cause or API resumption operation. No completion is claimed;
 remaining source work is actionable and unchanged. Resume through the app's goal control.
+
+### Phase 9 standalone startup and resource delivery: 2026-10-14 09:56 CEST
+
+The operator resumed the goal and clarified continuation through remaining work; current service
+is active. `76e79a5` wires standalone Bash/zsh startup to the shared selector. Install/sync reuse
+one explicit dependency copy function, publish shellrc last and deliver adjacent resources without
+checkout/plugin-root dependencies. Failure retains selection and emits no raw output. Native-only
+recovery and persistent readers remain unchanged; portable native-controlled visuals refuse.
+Initial GB8qU9 red preceded implementation. Function sourcing localized the cache: su1pmO red
+preceded global private export removal. Source R1 bare-path failure reproduced in vkGHoL, then
+normalization passed in both shells. Linked copy ordering red 8nuANC preceded guarded delivery
+before generic copying. Independent recheck approves only this source slice: 37 initial focused
+cases, six correction cases and eight source forms. Actual owned Bash/zsh PTYs register without
+paint or source checkout and preserve suspension. Reports: [delivery checks](standalone-shell-delivery-source-check-2026-10-14.md).
+Combined G2glOv failed one completion restore byte oracle. Controlled RInZM7 reproduced legitimate
+complete-to-idle evolution before release, exact state after stale 3 and retained live timer,
+counter, Stop observation and delivery. `7ca84a8` checks forward semantic state/priority/time only
+for that live-timer case, retaining all other assertions and non-timer byte equality. Focused
+3NC70W: 3/3; final dBGZmz: **135/135 shell**. OSByNL: **173/173 portable**, 13.552 seconds.
+pZyeFE: **561/561 Swift**, 14.882 seconds. Syntax, diff and credential checks pass.
+**Scope:** H1 adjacent delivery/startup, four source/four unit-test files and API/bug/roadmap;
+one separately committed fixture correction. No new schemas, control plane, native operation,
+real install/sync/settings/schedules, app/VM/container launch or existing session shutdown.
+SPEC and PLAN untouched. Updated goal does not require routine phase approval or a goal stop.
+Next confirmed source defect: [focus color freshness](focus-color-freshness-recon-2026-10-14.md).
+Continuing Manual/Automatic runs reuse Run.colors indefinitely; fresh lookup needs existing
+recipe lease retirement/replacement, not removal of immutable recipe checks. Four isolated cases
+are proposed. Fix this next. Linux versioned scope/kernel checks await the Docker/Linux-host
+choice; stopped daemon was rechecked and not started. Earlier exact failure attribution and
+physical Ghostty acceptance remain open. Phase 9 remains In Progress; 2/7/8 native cases Blocked.
+History maintenance: `339c34e` moved 27 finished ownership lines unchanged into the existing
+Phase 9 appendix (now 900 lines). Reconstruction verified; main progress remains below 900.
+Process-size check across the two routing slices: 1,145 added process lines versus 158 raw
+added source lines (7.2:1, excluding unchanged moved history). Reports yielded two confirmed
+source remedies (failed intake handoff and bare-path loading), the controlled timer-oracle
+correction and a confirmed color-freshness finding. Keep required reports; shorten future checks.

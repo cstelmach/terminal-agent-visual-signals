@@ -22,14 +22,14 @@ Model Profiles) only. The Session Log is append-only evidence.
 | ID | Pattern | Rule | Count | Models | Sessions |
 |----|---------|------|-------|--------|----------|
 | P1 | verify-constants-by-computing | Never hardcode a hash/digest/magic value in a test without computing it in the shell first | 1 | fable-5 | 2026-07-13 |
-| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 2 | fable-5; gpt-6 (self-reported; variant unverified) | 2026-07-13; Phase 5 suspension |
+| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 3 | fable-5; gpt-6 (self-reported; variant unverified) | 2026-07-13; Phase 5 suspension; shell helper delivery |
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 5 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 41 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 49 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 42 | gpt-6 (self-reported; variant unverified) | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 50 | gpt-6 (self-reported; variant unverified) | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -4257,3 +4257,75 @@ boundary and use SPEC-owned state after recovery. [R] Process-boundary tests mat
 adding another isolated cache assertion. Existing skills cover this behavior; no new capability
 package was added. Actions/results above are observed, while proposed reasons and heuristics
 remain reconstructions rather than a claim to expose internal reasoning.
+
+## 2026-10-14 · gpt-6 · standalone-shell-delivery
+
+meta:
+  model: gpt-6 (self-reported; exact served variant unverified)
+  model_source: self-reported from the task environment [R]
+  interface: Codex desktop
+  thinking: unknown; user requested extended reasoning
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed tool actions; motive explanations reconstructed
+
+**Framing.** [O] The user resumed and explicitly reinforced continuation through remaining goal
+work. The service was active, with Phase 9 source work open and separate native acceptance blocks.
+The previous commit connected core hooks, but installed shellrc still selected only a native
+managed helper and had no copied portable dependency closure. This slice completed that path.
+The Linux environment question remained unresolved; Docker's absent socket was rechecked without
+starting it. No production installation, existing-session shutdown or native app action occurred.
+
+**Strategy.** [R] Reuse the shared selector and one explicit copy function rather than duplicate
+selection or create an installation framework. [O] Install and sync now deliver the selector and
+all 13 Python modules beside shellrc. The entry point copies last. Required failure is explicit;
+ordinary copying can leave earlier dependencies applied. Startup loads the selector lazily after
+kill-switch/TTY checks. Native recovery and persistent readers were preserved. A linked helper
+leaf is refused before generic core copying can overwrite unrelated preferences.
+
+**Action trace [O].**
+
+| # | Move | Object | Result |
+|---|------|--------|--------|
+| 1 | Orient | Goal, current progress, callers and tests | Standalone source slice |
+| 2 | Red/green | Adjacent delivery, offline roots and failure retention | Five initial failures, then passing |
+| 3 | Probe shell scope | Function-source cache | Red before global private attribute correction |
+| 4 | Owned PTYs | Bash/zsh startup with absent native helper | Registration, no bytes, marker preserved |
+| 5 | Independent source check | Bare source path | Reproduced, corrected, separately rechecked |
+| 6 | Falsify copy guard | Linked selection module | Preference overwrite reproduced before ordering fix |
+| 7 | Diagnose failure | Live completion timer oracle | Controlled evolution before stale return proved |
+| 8 | Verify/commit | Combined private suites | 135 shell, 173 portable, 561 Swift passed |
+
+**Decision points.** [O] Loading a shared module inside a function exposed a lifetime distinction:
+plain typeset localized its cache. Bash export removal and zsh global attribute removal preserved
+the selected choice without exposing it to later children. Both shells accepted the corrected
+bare/relative/absolute source forms. The independent checker identified the valid bare-filename
+case; parent red tests confirmed it before normalizing only paths lacking a slash. Installer/sync
+share the dependency list and preserve failure statuses. Existing removal keeps helper resources
+for reinstall, avoiding extra deletion behavior during this implementation.
+
+**Failure arcs.** F1 [O]: function-source selection initially disappeared on return, causing more
+probes and potentially another backend. Empirical shell probes and a failing two-shell test
+preceded correction. F2 [O]: qualified paths worked while bare paths did not. Explicit no-slash
+normalization fixed the source and installed loaders; the checker verified eight source forms.
+F3 [O]: a leaf guard ran after generic source copying. A linked target inside the owned fixture
+was overwritten despite a failing command. Guarded helper delivery now runs first, and the
+same regression passes. F4 [O]: the combined restore fixture compared exact bytes while its live
+timer could advance completion to idle. A passing retry was insufficient. An independent copied
+fixture delayed release 2.5 seconds and captured idle state before restoration. After stale code
+3, state, new timer, counter, observation and delivery were preserved. The semantic completion
+assertions still require forward state, coherent priority/time and the exact live timer.
+
+**Verification and limits.** [O] All focused and final checks used private roots and the supplied
+current source-built native helper. Bash/zsh syntax and credential/diff checks passed. Reproduced
+mechanism is established; removed historical snapshots still prevent definitive attribution of
+every earlier failure. PTY bytes/records prove local transactions, not visible Ghostty behavior.
+The separate freshness investigation confirmed long-lived focus color reuse and proposed tests
+using existing lease retirement. It is saved for the next source task, not marked fixed. Linux
+scope/runtime and native product acceptance remain open; the goal is not complete or paused.
+
+**Heuristics and confidence.** [O] P2, P8 and P9 recur here. [R] Attribute a concurrency failure by
+measuring state before the suspected operation, rather than accepting a passing retry or weakening
+an assertion broadly. The review reports produced a source-path fix and a controlled oracle
+diagnosis; they were source-verified before changes. Existing skills cover these methods, so no
+new workflow or capability package was introduced. Actions and results are observed; explanatory
+motives and transferable lessons remain reconstructed.
