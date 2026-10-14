@@ -789,3 +789,34 @@ stale-delivery classification while actual storage/deadline errors remain unavai
 errno/IPC does not fully preserve this yet. Linux versioned scope/runtime proof, historical failure
 attribution, configured-color freshness and physical native acceptance remain open. Phases 2/7/8
 stay Blocked on required native cases.
+
+### Phase 9 finite portable dispatcher: 2026-10-14 07:42 CEST
+
+`ef64528` preserves one stale-record category through worker IPC; generic target/path/owner
+ESTALE stays unavailable. Invalid metadata leaf shape is distinct from storage/deadline failure,
+and synthetic context/publication retain their different native error boundaries. `d86bdfb`
+connects finite Mac helper requests, parent-side authentication, private root/scope checks and fixed
+result/error protocols. Recovery, native test scope, capabilities and legacy intent stay unsupported.
+Input phases retain original bounds/EOF checks. Full render/reset return unaffected on initial
+revision replacement; ordinary background uses current policy without frozen style revision.
+GMmeRA reproduced delayed EOF and the symlink-loop privacy escape; 3v015a reproduced background
+revision/unavailable-state mismatch. All were corrected; both narrow source checks found no
+introduced defect. The two agents collided on one /tmp report filename after a terminal-status/
+missing-report observation triggered replacement. Original wording was recovered from exact
+write content with reconstruction labeled; both reports are preserved separately in
+[dispatcher source checks](portable-dispatch-source-check-2026-10-14.md).
+Initial nlesyh/6K3J8t lacked category/helper; ZLMijl: 142; YlAuLr: nine initial helper cases.
+XD7WMe: 154; ocCAhr: 156 before edge regressions. Final mHTGs2: 160/160 portable in 6.381 seconds.
+Pk6TCW: 561/561 Swift in 10.439 seconds; ZPG9Wv: 23/23 isolated hooks. Native/shell source remained
+unchanged by later Python fixes. Syntax, staged ownership, .env/secrets and whitespace passed.
+Owned Mac PTYs prove exact synthetic bytes, unrelated ordinary-caller refusal, stale code 3,
+no-paint recovery, bounded stdin, private errors and background/marker behavior. They do not prove
+physical Ghostty visibility/navigation. A broad /tmp filename search was corrected to exact paths.
+**Scope:** Approved H1 extension, finite helper, typed IPC/error categories and connected reader/
+renderer/ownership helpers, focused tests and API/bug/roadmap docs. No routing, advertised capability,
+new runtime schema or control plane. No app/VM/container launch, production install/settings/
+schedules or existing session termination. SPEC body/PLAN untouched; Phase 9 and goal stay active.
+Next: legacy unbound organizer-intent semantics, complete capability contract and backend resolver/
+delivery/sync. Preserve native preference and never change backend after selected-operation failure.
+Explicit Linux versioned scope and actual kernel/device proof remain pending, along with historical
+failure attribution, configured-color freshness and physical acceptance. Phases 2/7/8 remain Blocked.
