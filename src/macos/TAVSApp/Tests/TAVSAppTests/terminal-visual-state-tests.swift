@@ -1433,6 +1433,28 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), original + growth)
     }
 
+    func testCompletedLegacyResetRetiresOnlyTheExactCanceledGlobal() throws {
+        let store = makeStore()
+        let target = try XCTUnwrap(store.captureTarget(tty: tty, owner: generation(11)))
+        var old = effect(target); old.kind = .globalRestriction; old.active = false; old.background = "#123ABC"
+        try store.saveEffectUnlocked(old, deadline: .max)
+        var replacement = old; replacement.effectID = "replacement-global"
+        try store.saveEffectUnlocked(replacement, deadline: .max)
+        XCTAssertThrowsError(try store.completeLegacyResetUnlocked(old, deadline: .max))
+        XCTAssertEqual(try store.currentEffectUnlocked(target, deadline: .max), replacement)
+        XCTAssertThrowsError(try store.completeLegacyResetUnlocked(replacement,
+            deadline: DispatchTime.now().uptimeNanoseconds - 1))
+        XCTAssertEqual(try store.currentEffectUnlocked(target, deadline: .max), replacement)
+        try store.completeLegacyResetUnlocked(replacement, deadline: .max)
+        XCTAssertNil(try store.currentEffectUnlocked(target, deadline: .max))
+        XCTAssertTrue(store.cachedRecords().bindings.contains(target))
+        try store.completeLegacyResetUnlocked(replacement, deadline: .max)
+        var selective = effect(target); selective.background = "#123ABC"
+        try store.saveEffectUnlocked(selective, deadline: .max)
+        XCTAssertThrowsError(try store.completeLegacyResetUnlocked(replacement, deadline: .max))
+        XCTAssertEqual(try store.currentEffectUnlocked(target, deadline: .max), selective)
+    }
+
     private func deadline() -> UInt64 { DispatchTime.now().uptimeNanoseconds + 100_000_000 }
 
     private func effect(_ binding: TerminalTargetBinding, id: String = "effect-43") -> TerminalEffectRecord {

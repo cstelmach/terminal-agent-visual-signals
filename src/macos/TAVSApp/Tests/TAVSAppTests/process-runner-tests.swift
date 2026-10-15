@@ -231,6 +231,68 @@ final class ProcessRunnerTests: XCTestCase {
         }
     }
 
+    func testManagedCompletionFollowsBytesUnderSameLockAndDeadline() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let lockURL = root.appendingPathComponent("writer.lock"), lockFD = try openLock(root.appendingPathComponent("writer.lock"))
+        defer { close(lockFD) }
+        var original: UInt64 = 0, completed = false
+        XCTAssertTrue(try SystemProcessRunner().writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, afterWrite: { fd, deadline in
+                XCTAssertEqual(deadline, original)
+                XCTAssertGreaterThan(deadline, DispatchTime.now().uptimeNanoseconds)
+                XCTAssertTrue(isatty(fd) != 0)
+                XCTAssertEqual(flock(lockFD, LOCK_EX | LOCK_NB), -1)
+                XCTAssertEqual(errno, EWOULDBLOCK)
+                XCTAssertEqual(try self.readPTY(tty.master, count: 1), Data([0x61]))
+                completed = true
+            }) { _, deadline in
+                original = deadline
+                return Data([0x61])
+            })
+        XCTAssertTrue(completed)
+        XCTAssertEqual(flock(lockFD, LOCK_EX | LOCK_NB), 0)
+        XCTAssertEqual(flock(lockFD, LOCK_UN), 0)
+    }
+
+    func testManagedCompletionFailureReportsErrorAfterBytesAndUnlocks() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let lockURL = root.appendingPathComponent("writer.lock")
+        var completed = false
+        XCTAssertThrowsError(try SystemProcessRunner().writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, afterWrite: { _, _ in
+                completed = true
+                throw ProcessRunnerError.deviceIOFailed("completion", EIO)
+            }) { _, _ in Data([0x61]) }) { error in
+                guard case ProcessRunnerError.deviceIOFailed("completion", EIO) = error else {
+                    return XCTFail("Expected completion failure: \(error)")
+                }
+            }
+        XCTAssertTrue(completed)
+        XCTAssertEqual(try readPTY(tty.master, count: 1), Data([0x61]))
+        let lockFD = try openLock(lockURL)
+        defer { close(lockFD) }
+        XCTAssertEqual(flock(lockFD, LOCK_EX | LOCK_NB), 0)
+        XCTAssertEqual(flock(lockFD, LOCK_UN), 0)
+    }
+
+    func testSkippedOrFailedPreparationCannotCompleteManagedWrite() throws {
+        let tty = try openPTY()
+        defer { close(tty.master); close(tty.slave) }
+        let lockURL = root.appendingPathComponent("writer.lock")
+        var completed = false
+        let afterWrite: (Int32, UInt64) throws -> Void = { _, _ in completed = true }
+        XCTAssertFalse(try SystemProcessRunner().writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, afterWrite: afterWrite) { _, _ in nil })
+        XCTAssertThrowsError(try SystemProcessRunner().writeManagedToDevice(path: tty.path, lockURL: lockURL,
+            beforeOpen: nil, afterWrite: afterWrite) { _, _ in
+                throw ProcessRunnerError.deviceIOFailed("prepare", EIO)
+            })
+        XCTAssertFalse(completed)
+        assertNoPTYBytes(tty.master)
+    }
+
     func testPausedOpenDoesNotHoldLockAndPolicyReadsNewSuspension() throws {
         let tty = try openPTY()
         defer { close(tty.master); close(tty.slave) }
@@ -477,7 +539,7 @@ final class ProcessRunnerTests: XCTestCase {
         })
         let store = VisualRestrictionsStateStore(url: root.appendingPathComponent("suspension.state"))
         try store.write(suspended: true)
-        runner.managedHandler = { path, url, prepare in
+        runner.managedHandler = { path, url, afterWrite, prepare in
             XCTAssertEqual(path, tty.path)
             XCTAssertEqual(url, lockURL)
             return try prepare(tty.slave, DispatchTime.now().uptimeNanoseconds + 100_000_000) != nil
@@ -845,9 +907,9 @@ final class ProcessRunnerTests: XCTestCase {
         let tty = try openPTY()
         defer { close(tty.master); close(tty.slave) }
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         var calls = 0, original: UInt64 = 0
         let lockURL = root.appendingPathComponent("writer.lock")

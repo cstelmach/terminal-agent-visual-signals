@@ -24,14 +24,23 @@ protocol ProcessRunner: AnyObject {
     // beforeOpen may publish metadata under the same original deadline, then release its lock.
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               target: TerminalTargetBinding?, emergency: Bool,
+                              afterWrite: ((Int32, UInt64) throws -> Void)?,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool
 }
 
 extension ProcessRunner {
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              afterWrite: ((Int32, UInt64) throws -> Void)? = nil,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: beforeOpen, target: nil,
-                                 emergency: false, prepare: prepare)
+                                 emergency: false, afterWrite: afterWrite, prepare: prepare)
+    }
+
+    func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
+                              target: TerminalTargetBinding?, emergency: Bool,
+                              prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
+        try writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: beforeOpen,
+            target: target, emergency: emergency, afterWrite: nil, prepare: prepare)
     }
 
     func writeManagedToDevice(path: String, lockURL: URL,
@@ -162,6 +171,7 @@ final class SystemProcessRunner: ProcessRunner {
 
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               target: TerminalTargetBinding?, emergency: Bool = false,
+                              afterWrite: ((Int32, UInt64) throws -> Void)? = nil,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         try Self.completeDeviceWrite(path: path) { deadline, stage in
             try self.checkDeviceDeadline(path: path, deadline: deadline)
@@ -232,6 +242,11 @@ final class SystemProcessRunner: ProcessRunner {
             stage(.write)
             try self.writeToDescriptor(device, path: path, data: data, deadline: deadline)
             stage(.cleanup)
+            if let afterWrite = afterWrite {
+                try self.checkDeviceDeadline(path: path, deadline: deadline)
+                try afterWrite(device, deadline)
+                try self.checkDeviceDeadline(path: path, deadline: deadline)
+            }
             return true
         }
     }

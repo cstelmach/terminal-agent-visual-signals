@@ -200,7 +200,7 @@ class PortableOwnershipTests(unittest.TestCase):
         self.identities.pop(80)
         self.assertEqual(len(self.admit()), 1)
         self.save(self.target, "effect.json", kind="globalRestriction", active=False)
-        self.assertEqual(self.admit(), [])
+        self.assertEqual(len(self.admit()), 1)
         record = json.loads(path.read_text())
         record["unknown"] = "data"
         path.write_text(json.dumps(record))

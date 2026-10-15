@@ -152,14 +152,28 @@ class Renderer:
     def _complete_effects(self, obsolete, deadline):
         # Failed output retains restoration work. Cooperating writers still share this lock.
         for path, old in obsolete:
-            try:
-                current = records.read(self.store.directory, path, "effect", self.store.clock(), deadline)
-            except ValueError as error:
-                raise OSError(errno.EINVAL, "Effect completion unavailable") from error
-            if current != old:
-                raise OSError(errno.ESTALE, "Effect changed during output")
-            records.write(self.store.directory, path, dict(old, active=False),
-                          "effect", self.store.clock(), deadline)
+            with records.parent_directory(self.store.directory, path, deadline) as parent:
+                if parent is None:
+                    raise OSError(errno.ESTALE, "Effect completion unavailable")
+                try:
+                    current = records.read_record(path.name, "effect", self.store.clock(), deadline, dir_fd=parent)
+                except ValueError as error:
+                    raise OSError(errno.EINVAL, "Effect completion unavailable") from error
+                if current != old:
+                    raise OSError(errno.ESTALE, "Effect changed during output")
+                if old["kind"] == "globalRestriction":
+                    cached = records.read_record("target.json", "target", self.store.clock(), deadline, dir_fd=parent)
+                    if cached is None:
+                        records.write(self.store.directory, path.with_name("target.json"),
+                                      {"schema": 1, "target": old["target"]}, "target", self.store.clock(), deadline)
+                    elif cached["target"] != old["target"]:
+                        raise OSError(errno.ESTALE, "Completed effect binding changed")
+                    check_deadline(deadline)
+                    os.unlink(path.name, dir_fd=parent)
+                else:
+                    records.write(self.store.directory, path, dict(old, active=False),
+                                  "effect", self.store.clock(), deadline)
+                check_deadline(deadline)
         check_deadline(deadline)
 
     def _execute(self, display, record, synthetic, intake_at, forced=False, ordinary_only=False):

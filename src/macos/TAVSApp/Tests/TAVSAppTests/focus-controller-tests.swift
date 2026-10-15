@@ -110,7 +110,7 @@ final class FocusControllerTests: XCTestCase {
         -> (MockProcessRunner, () -> [String]) {
         let runner = MockProcessRunner(), traceLock = NSLock()
         var trace: [String] = [], calls = 0
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             let start = DispatchTime.now().uptimeNanoseconds
             traceLock.lock(); calls += 1; let call = calls; traceLock.unlock()
             func record(_ stage: String, deadline: UInt64? = nil) {
@@ -135,7 +135,7 @@ final class FocusControllerTests: XCTestCase {
             record("caller entered")
             do {
                 let wrote = try system.writeManagedToDevice(path: path, lockURL: lock,
-                    beforeOpen: wrappedBeforeOpen, target: target.physicalTarget, emergency: false) { fd, deadline in
+                    beforeOpen: wrappedBeforeOpen, target: target.physicalTarget, emergency: false, afterWrite: afterWrite) { fd, deadline in
                     record("prepare entered", deadline: deadline)
                     do {
                         let data = try prepare(fd, deadline)
@@ -766,10 +766,10 @@ final class FocusControllerTests: XCTestCase {
         let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
         defer { release.signal() }
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             if path == b.tty && beforeOpen != nil { entered.signal(); release.wait() }
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
@@ -1069,14 +1069,14 @@ final class FocusControllerTests: XCTestCase {
         let a = try surface(10), h = try surface(20), f = try surface(30)
         let guardLock = NSLock(), runner = MockProcessRunner()
         var failing = false, failedClears = 0
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             guardLock.lock()
             let reject = failing && path == f.tty
             if reject && beforeOpen != nil { failedClears += 1 }
             guardLock.unlock()
             if reject { throw ProcessRunnerError.deviceNotWritable(path) }
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         recovery = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: VisualRestrictionPolicy(restrictions: restrictions, muteURL: root.appendingPathComponent("mute.state"),
@@ -1119,14 +1119,14 @@ final class FocusControllerTests: XCTestCase {
         let a = try surface(10), h = try surface(20), f = try surface(30)
         let runner = MockProcessRunner(), guardLock = NSLock()
         var failing = false, newFocusAttempts = 0
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             guardLock.lock()
             let reject = failing && path == f.tty
             if reject && beforeOpen == nil { newFocusAttempts += 1 }
             guardLock.unlock()
             if reject { throw ProcessRunnerError.deviceNotWritable(path) }
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         configureState(runner: runner)
         let focus = controller(MockTimerScheduler()), rows = [a,h,f]
@@ -1641,10 +1641,10 @@ final class FocusControllerTests: XCTestCase {
             return Darwin.open(path, flags)
         })
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
             do {
                 return try native.writeManagedToDevice(path: path, lockURL: outputLock,
-                    beforeOpen: beforeOpen, target: target.physicalTarget, prepare: prepare)
+                    beforeOpen: beforeOpen, target: target.physicalTarget, afterWrite: afterWrite, prepare: prepare)
             } catch ProcessRunnerError.deviceIOFailed(_, EBUSY) {
                 lock.lock(); busy += 1; lock.unlock()
                 throw ProcessRunnerError.deviceIOFailed(path, EBUSY)
@@ -1679,11 +1679,11 @@ final class FocusControllerTests: XCTestCase {
         let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
         let runner = MockProcessRunner(), native = SystemProcessRunner(), lock = NSLock()
         var block = false
-        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
             lock.lock(); let held = block && path == a.tty && beforeOpen != nil; lock.unlock()
             if held { entered.signal(); _ = release.wait(timeout: .now() + 3) }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
-                beforeOpen: beforeOpen, target: bindings[path], prepare: prepare)
+                beforeOpen: beforeOpen, target: bindings[path], afterWrite: afterWrite, prepare: prepare)
         }
         configureState(runner: runner)
         let focus = controller(MockTimerScheduler())
@@ -1711,12 +1711,12 @@ final class FocusControllerTests: XCTestCase {
         let release = DispatchSemaphore(value: 0), lock = NSLock()
         let runner = MockProcessRunner(), native = SystemProcessRunner()
         var calls = 0, queries = 0
-        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
             lock.lock(); calls += 1; let ordinal = calls; lock.unlock()
             if ordinal == 2 { entered.leave(); release.wait() }
             if ordinal == 3 { attempted.signal() }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
-                beforeOpen: beforeOpen, target: target.physicalTarget, prepare: prepare)
+                beforeOpen: beforeOpen, target: target.physicalTarget, afterWrite: afterWrite, prepare: prepare)
         }
         configureState(runner: runner)
         let queue = DispatchQueue(label: "preview.cancel-cleanup-wait")
@@ -1765,13 +1765,13 @@ final class FocusControllerTests: XCTestCase {
         let lock = NSLock()
         let runner = MockProcessRunner(), native = SystemProcessRunner()
         var calls = 0, queries = 0
-        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
             lock.lock(); calls += 1; let ordinal = calls; lock.unlock()
             if ordinal == 2 {
                 entered.leave(); release.wait()
             }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
-                beforeOpen: beforeOpen, target: target.physicalTarget, prepare: prepare)
+                beforeOpen: beforeOpen, target: target.physicalTarget, afterWrite: afterWrite, prepare: prepare)
         }
         configureState(runner: runner)
         let queue = DispatchQueue(label: "preview.transitive-start")

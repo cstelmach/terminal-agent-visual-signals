@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.54
+**Version:** 4.55
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 6 reader pass; 141/4 failures; 48 Bats/182 portable historical | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 9 Swift pass; full671/15 failures; portable51/8 failures | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -895,6 +895,6 @@ Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 re
 
 > [Finished tool-error restoration](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-### Phase 9 record-read preparation: 2026-10-15
+> [Finished record-read preparation](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-Six reader cases pass; [results](caller-deadline-source-check-2026-10-14.md#record-buffer-checkpoint).
+Legacy completion: [source/results](release-retry-source-check-2026-10-14.md#legacy-completion-correction-2026-10-15).

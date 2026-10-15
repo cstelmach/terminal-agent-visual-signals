@@ -84,7 +84,7 @@ final class VisualRecoveryTests: XCTestCase {
         let value = try focusRequest()
         _ = try recovery().write(.focus(value), to: target); _ = try read(target)
         let failed = MockProcessRunner()
-        failed.managedBeforeOpenHandler = { _, _, _, _ in throw ProcessRunnerError.processTimedOut }
+        failed.managedBeforeOpenHandler = { _, _, _, _, _ in throw ProcessRunnerError.processTimedOut }
         XCTAssertTrue(recovery(runner: failed).recover().hasFailures)
         XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .focus, deadline: .max)).active)
         try restrictions.write(suspended: false)
@@ -98,7 +98,7 @@ final class VisualRecoveryTests: XCTestCase {
         let target = try terminal(10), value = try focusRequest()
         _ = try recovery().write(.focus(value), to: target); _ = try read(target)
         let failed = MockProcessRunner()
-        failed.managedBeforeOpenHandler = { _, _, before, _ in
+        failed.managedBeforeOpenHandler = { _, _, before, _, _ in
             try before?(DispatchTime.now().uptimeNanoseconds + 100_000_000)
             throw ProcessRunnerError.processTimedOut
         }
@@ -115,7 +115,7 @@ final class VisualRecoveryTests: XCTestCase {
         let target = try terminal(10), value = try focusRequest()
         _ = try recovery().write(.focus(value), to: target); _ = try read(target)
         let failed = MockProcessRunner()
-        failed.managedBeforeOpenHandler = { _, _, _, _ in throw ProcessRunnerError.processTimedOut }
+        failed.managedBeforeOpenHandler = { _, _, _, _, _ in throw ProcessRunnerError.processTimedOut }
         var canceled = false
         XCTAssertThrowsError(try recovery(runner: failed).write(.clearFocus(effectID: value.effectID,
             revision: value.revision, didCancel: { _ in canceled = true }), to: target))
@@ -172,7 +172,7 @@ final class VisualRecoveryTests: XCTestCase {
         let target = try terminal(10), value = try focusRequest()
         _ = try recovery().write(.focus(value), to: target); _ = try read(target)
         let failed = MockProcessRunner()
-        failed.managedBeforeOpenHandler = { _, _, before, _ in
+        failed.managedBeforeOpenHandler = { _, _, before, _, _ in
             try before?(DispatchTime.now().uptimeNanoseconds - 1)
             XCTFail("An expired metadata stage must not continue")
             throw ProcessRunnerError.processTimedOut
@@ -527,12 +527,12 @@ final class VisualRecoveryTests: XCTestCase {
     func testRestrictionActivatedDuringPrepareReplacesWholeOrdinaryRender() throws {
         let target = try terminal(10)
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
                 unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#667788", lockFg: "#EEEEFF"),
                 to: self.root.appendingPathComponent("lock.state"))
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         XCTAssertEqual(try recovery(runner: runner).render(render(), intent: intent(target), synthetic: false,
             intakeAt: 1_000, to: target), .restricted)
@@ -553,12 +553,12 @@ final class VisualRecoveryTests: XCTestCase {
             defer { release.signal() }
             let style = try render(), value = intent(target)
             let runner = MockProcessRunner()
-            runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+            runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
                 // Pause after publication, outside the device budget, to test revision rejection.
                 try SystemProcessRunner.completeDeviceWrite(path: path) { try beforeOpen?($0) }
                 entered.signal(); release.wait()
                 return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                    beforeOpen: nil, target: target.physicalTarget, emergency: false, prepare: prepare)
+                    beforeOpen: nil, target: target.physicalTarget, emergency: false, afterWrite: afterWrite, prepare: prepare)
             }
             let queued = recovery(runner: runner)
             DispatchQueue.global().async {
@@ -980,17 +980,24 @@ final class VisualRecoveryTests: XCTestCase {
 
     func testResidualGlobalCleanupPreservesCurrentSuspendedPreviewBackground() throws {
         let target = try terminal(10), service = recovery()
+        let aliases = [target, nativeAlias(target)]
         try restrictions.write(suspended: true)
         _ = try service.write(.preview(request()), to: target); _ = try read(target)
         let color = try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).background
         try state.withLock(target.tty) {
-            try state.saveEffectUnlocked(TerminalEffectRecord(target: target, controller: self.generation(90),
-                effectID: "residual-global", kind: .globalRestriction, background: "#667788", heartbeatAt: 1_000), deadline: .max)
+            for alias in aliases {
+                try state.saveEffectUnlocked(TerminalEffectRecord(target: alias, controller: self.generation(90),
+                    effectID: "residual-global", kind: .globalRestriction, background: "#667788", heartbeatAt: 1_000), deadline: .max)
+            }
         }
         XCTAssertTrue(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
         XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]11;\(color)\u{1B}\\".utf8))
         XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
-        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max)).active)
+        for alias in aliases {
+            XCTAssertNil(try state.currentEffectUnlocked(alias, kind: .globalRestriction, deadline: .max))
+        }
+        XCTAssertTrue(try service.write(.reconcile(resetLegacy: false, clearSelective: false), to: target))
+        XCTAssertEqual(try read(target), Data("\u{1B}]11;\(color)\u{1B}\\".utf8))
     }
 
     func testPreviewWithoutOrdinaryIntentExpiresToOnlyGhosttyBackgroundReset() throws {
@@ -1144,8 +1151,8 @@ final class VisualRecoveryTests: XCTestCase {
             unlockUntilEpoch: 0, writtenEpoch: 1_000, lockBg: "#123456", lockFg: "#EEEEEE"),
             to: root.appendingPathComponent("lock.state"))
         let system = SystemProcessRunner(), runner = MockProcessRunner(), observed = RecoveryEffectResult()
-        runner.managedHandler = { path, lock, prepare in
-            try system.writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
+            try system.writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 observed.value = try self.state.currentEffectUnlocked(target, deadline: deadline)
                 XCTAssertNotNil(observed.value, "Effect exists before the prepare callback returns paint bytes")
@@ -1165,9 +1172,9 @@ final class VisualRecoveryTests: XCTestCase {
         identities[12] = nil
         missing.insert(vanished.tty)
         let system = SystemProcessRunner(), runner = MockProcessRunner()
-        runner.managedHandler = { path, lock, prepare in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
             if path == failed.tty { throw ProcessRunnerError.deviceNotWritable(path) }
-            return try system.writeManagedToDevice(path: path, lockURL: lock, prepare: prepare)
+            return try system.writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite, prepare: prepare)
         }
         let report = recovery(runner: runner).recover()
         XCTAssertTrue(report.hasFailures)
@@ -1429,12 +1436,12 @@ final class VisualRecoveryTests: XCTestCase {
         let finished = DispatchSemaphore(value: 0), result = RecoveryWriteResult()
         defer { release.signal() }
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
             // Pause after publication, outside the device budget, to test revision rejection.
             try SystemProcessRunner.completeDeviceWrite(path: path) { try beforeOpen?($0) }
             entered.signal(); release.wait()
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
-                beforeOpen: nil, target: target.physicalTarget, emergency: false, prepare: prepare)
+                beforeOpen: nil, target: target.physicalTarget, emergency: false, afterWrite: afterWrite, prepare: prepare)
         }
         let queued = recovery(runner: runner)
         DispatchQueue.global().async {
@@ -1527,10 +1534,10 @@ final class VisualRecoveryTests: XCTestCase {
         let alias = nativeAlias(healthy), entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
         identities[12] = nil
         let runner = MockProcessRunner(), native = SystemProcessRunner(), lock = NSLock()
-        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, prepare in
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
             if path == slow.tty { entered.signal(); _ = release.wait(timeout: .now() + 2) }
             return try native.writeManagedToDevice(path: path, lockURL: outputLock,
-                beforeOpen: beforeOpen, prepare: prepare)
+                beforeOpen: beforeOpen, afterWrite: afterWrite, prepare: prepare)
         }
         let service = recovery(runner: runner), others = expectation(description: "Independent physical completions")
         others.expectedFulfillmentCount = 2
@@ -1655,8 +1662,8 @@ final class VisualRecoveryTests: XCTestCase {
         identities[11] = nil
         let runner = MockProcessRunner()
         var writes = 0
-        runner.managedHandler = { path, lock, prepare in
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 if bytes != nil { writes += 1 }
                 return bytes
@@ -1718,8 +1725,8 @@ final class VisualRecoveryTests: XCTestCase {
             tabSelected: true, mappingIssue: nil)
         let runner = MockProcessRunner()
         var writes = 0
-        runner.managedHandler = { path, lock, prepare in
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 if bytes != nil { writes += 1 }
                 return bytes

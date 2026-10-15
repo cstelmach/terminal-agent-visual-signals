@@ -83,12 +83,45 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
         self.assertEqual(records.read(self.store.directory, latest, "intent", time.time(),
                                      time.monotonic_ns()+100_000_000)["background"], "#123456")
 
-    def test_residual_global_reset_precedes_current_style_and_cancels_after_success(self):
+    def test_residual_global_reset_precedes_current_style_and_retires_after_success(self):
         path = self.effect()
         self.assertTrue(self.render(style(title="fresh")))
         self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\\x1b]0;fresh\x1b\\")
-        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
-                                      time.monotonic_ns()+100_000_000)["active"])
+        self.assertIsNone(records.read(self.store.directory, path, "effect", time.time(),
+                                       time.monotonic_ns()+100_000_000))
+
+    def test_fresh_palette_retires_canceled_global_before_later_reconcile(self):
+        path = self.effect(active=False)
+        fields = [""] * 23
+        fields[0], fields[1], fields[2] = "#123456", "set", "#ABCDEF"
+        fields[18], fields[19], fields[22] = "1", "fresh", "1"
+        display = Render(("\0".join(fields) + "\0").encode())
+        self.assertTrue(self.render(display))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a" + display.encode(synthetic=False))
+        self.assertIsNone(records.read(self.store.directory, path, "effect", time.time(),
+                                       time.monotonic_ns()+100_000_000))
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, reset_legacy=False))
+        self.assertEqual(self.received(), b"\x1b]11;#123456\x1b\\")
+
+    def test_failed_legacy_retirement_keeps_debt_after_physical_bytes(self):
+        path = self.effect(active=False)
+        original_unlink = os.unlink
+        def reject_retirement(name, *args, **kwargs):
+            if name == path.name:
+                raise OSError(errno.EACCES, "Injected retirement failure")
+            return original_unlink(name, *args, **kwargs)
+        with patch("portable_renderer.os.unlink", side_effect=reject_retirement):
+            with self.assertRaises(OSError) as failure:
+                self.render()
+        self.assertEqual(failure.exception.errno, errno.EACCES)
+        self.assertEqual(failure.exception.bytes_written, len(b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\"))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\")
+        self.assertIsNotNone(records.read(self.store.directory, path, "effect", time.time(),
+                                          time.monotonic_ns()+100_000_000))
+        self.assertTrue(Renderer(self.store).reconcile(self.tty, reset_legacy=False))
+        self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]11;#123456\x1b\\")
+        self.assertIsNone(records.read(self.store.directory, path, "effect", time.time(),
+                                       time.monotonic_ns()+100_000_000))
 
     def test_failed_output_keeps_residual_global_for_retry(self):
         path = self.effect()
@@ -248,8 +281,8 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
         renderer = Renderer(self.store)
         self.assertTrue(renderer.reconcile(self.tty))
         self.assertEqual(self.received(), b"\x1b]104\a\x1b]110\a\x1b]111\a")
-        self.assertFalse(records.read(self.store.directory, path, "effect", time.time(),
-                                      time.monotonic_ns()+100_000_000)["active"])
+        self.assertIsNone(records.read(self.store.directory, path, "effect", time.time(),
+                                       time.monotonic_ns()+100_000_000))
         self.assertFalse(renderer.reconcile(self.tty))
         self.assertFalse(select.select([self.master], [], [], 0.05)[0])
 
@@ -435,3 +468,42 @@ class PortableRendererTests(ownership_fixture.OwnedPTYFixture, unittest.TestCase
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortableLegacyCompletionTests(unittest.TestCase):
+    """Format/lifecycle checks with injected identity, separate from real 100 ms PTY checks."""
+    def setUp(self):
+        self.fixture = ownership_fixture.PortableOwnershipTests()
+        self.fixture.setUp()
+        self.store = self.fixture.store
+        self.renderer = Renderer(self.store)
+        self.deadline = 2**63 - 1
+
+    def test_canceled_global_owes_reset_until_completion_and_keeps_binding(self):
+        path = self.fixture.save(self.fixture.target, "effect.json", kind="globalRestriction", active=False)
+        revision = self.store.policy.capture(self.deadline)
+        try:
+            obsolete = self.store.ordinary_ownership(self.fixture.target, revision, 43, self.deadline)
+        finally:
+            revision.close()
+        self.assertEqual([item[0] for item in obsolete], [path])
+        self.renderer._complete_effects(obsolete, self.deadline)
+        self.assertFalse(path.exists())
+        self.assertIsNotNone(records.read(self.store.directory,
+            target_path(self.store.directory, self.fixture.target, "target.json"),
+            "target", 1000, self.deadline))
+
+    def test_completion_keeps_replacement_global_and_selective_record(self):
+        path = self.fixture.save(self.fixture.target, "effect.json", kind="globalRestriction", active=False)
+        old = records.read(self.store.directory, path, "effect", 1000, self.deadline)
+        replacement = dict(old, effectID="replacement-global")
+        records.write(self.store.directory, path, replacement, "effect", 1000, self.deadline)
+        with self.assertRaises(OSError) as failure:
+            self.renderer._complete_effects([(path, old)], self.deadline)
+        self.assertEqual(failure.exception.errno, errno.ESTALE)
+        self.assertEqual(records.read(self.store.directory, path, "effect", 1000, self.deadline), replacement)
+        selective = dict(replacement, kind="selectiveBackground", active=True)
+        records.write(self.store.directory, path, selective, "effect", 1000, self.deadline)
+        self.renderer._complete_effects([(path, selective)], self.deadline)
+        self.assertEqual(records.read(self.store.directory, path, "effect", 1000, self.deadline),
+                         dict(selective, active=False))

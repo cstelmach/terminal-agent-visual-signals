@@ -144,7 +144,7 @@ final class ManagedOutputEntryTests: XCTestCase {
 
     func testDeviceFailureReportsStageAndBoundedCodeWithoutItsPrivatePath() throws {
         let runner = MockProcessRunner()
-        runner.managedBeforeOpenHandler = { _, _, _, _ in
+        runner.managedBeforeOpenHandler = { _, _, _, _, _ in
             throw ProcessRunnerError.deviceIOFailed("BODY_SENTINEL", EIO)
         }
         processRunner = runner
@@ -169,7 +169,7 @@ final class ManagedOutputEntryTests: XCTestCase {
                 return Darwin.open(path, flags)
             })
             let runner = MockProcessRunner()
-            runner.managedBeforeOpenHandler = { path, lock, _, _ in
+            runner.managedBeforeOpenHandler = { path, lock, _, _, _ in
                 try actual.writeManagedToDevice(path: path, lockURL: lock,
                     beforeOpen: { _ in if phase == "publication" { block() } }) { _, _ in
                     if phase == "prepare" { block() }

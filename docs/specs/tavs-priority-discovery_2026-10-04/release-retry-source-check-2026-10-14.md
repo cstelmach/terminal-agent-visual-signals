@@ -1,7 +1,7 @@
 # Release retry verification and limits
 
-Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.0
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.1
 Source baseline: `a576dcc`.
 
 ## Parent verification
@@ -302,3 +302,90 @@ fresh-active-palette limitation. Suspended recovery feedback still does not clea
 Broadcaster warning without an observed restored/vanished result. Projection write
 failures, external success feedback, native discovery behavior and real device timeout
 behavior remain outside this change. Canceled focus handling is untouched.
+
+
+## Legacy completion correction: 2026-10-15
+
+Baseline `c3f369c`. Current source confirmed the active fresh-palette issue above: canceled
+legacy globals remained after successful output, so a later automatic false/false reconciliation
+could reset a newer palette. Background intent alone cannot establish physical reset completion.
+
+Native managed output now accepts optional afterWrite under the same opened descriptor, lock
+and original deadline. It runs only after the complete prepared packet. Nil preparation, failed
+output and an expired deadline cannot start it. Callback errors remain failures. VisualRecovery
+captures only the globals covered by its reset prefix, revalidates the opened target, and removes
+exact canceled records after bytes complete. Record equality protects replacements and selective
+state sharing effect.json; cached bindings and ordinary intent remain. Fresh renders include owed
+inactive globals, placing 104/110 before fresh palette, background, title/image and permitted bell.
+
+Portable output reuses its existing after_write seam. Its ownership reader includes inactive
+legacy debt for ordinary output and active reconciliation; suspended no-op semantics remain.
+Completion removes exact globals through held parent descriptors, while selective records keep
+their inactive completion state. No new schema, receipt, timer or output-history record was added.
+
+A successful fresh render therefore leaves no legacy reset debt for a later automatic retry.
+Explicit true reconciliation/resumption still authorizes a reset. If terminal bytes complete but
+metadata retirement fails or expires, unretired debt remains conservative and a retry can reset
+that unconfirmed style. This does not promise atomic terminal/filesystem transactions or infer
+external success for in-memory GUI cleanup warnings.
+
+The source exploration and post-change check were verified against current code. The checker
+caught four missing explicit nil publication arguments in forwarding mocks and one old global
+inactive assertion; these were corrected. Its alias-coverage suggestion extended the existing
+suspended-preview case across plain/native globals, preserving preview and checking no later
+legacy prefix. Native record tests retain replacement, deadline, cache and selective-slot guards.
+
+Full portable verification found an effect-only target lost its binding when its final global
+record was removed: the second suspended reconciliation returned ESTALE. Completion now validates
+or saves the same target.json before removing that global. A format test starts without a cached
+target and requires it afterward; the suspended owned-PTY case also passes. An existing inactive
+global ownership expectation now retains one owed reset. Selective cancellation stays unchanged.
+
+A separate suspended-render fixture started native discovery concurrently with cached fanout;
+discovery entry was not proof the cached no-op had completed. It now waits for the actual managed
+call to return before fresh rendering. The production writer's deadline and admission stay fixed.
+
+Scope: five production files and nine test files plus existing API/bug/roadmap/progress/capture.
+This Phase 9 review correction reaches shared earlier-phase writer/record modules to fix their
+lifecycle; SPEC/PLAN bodies and phase statuses are unchanged. No installed app, working terminal,
+preference, schedule, Docker state or external account was changed.
+
+
+### Verification
+
+All commands used tests/run-isolated.sh, explicit source-built helpers and owned scratch paths.
+Logs remain in the private tavs-isolated.RUN/command.log directories:
+
+- kFvfLl: initial native RED, two cases/four expected ordering and retirement assertions.
+- yLiyqZ: compile failure, four forwarding calls missed beforeOpen:nil; corrected.
+- zy2ZjD: six cases/four assertions, lowercase fixture plus a trust timeout. Canonical fixture fixed.
+- qxoGj3: full 671 Swift/15 assertions (6 unexpected), 32.653 s. Eight obsolete inactive-record
+  assertions were corrected; other timing failures remain.
+- ITJYB3: connected 168 Swift/four errors in two methods, 16.606 s. Delayed suspended fixture now
+  has a completion barrier; dynamic-focus timeout remains open.
+- yInlaq: final nine Swift pass, 0.931 s. Covers aliases, current preview, first reset/palette order,
+  retirement guards and completion lock/deadline.
+- ca1bh6: two portable format/lifecycle cases pass, 0.013 s.
+- gN1e9c: two new portable owned-PTY palette/retirement-failure cases pass, 0.232 s.
+- b6okbf: full 186 portable/seven failures and 12 errors, 39.404 s. Exposed effect-only regression
+  and obsolete inactive-global expectation, now fixed. Other timing/status/diagnostic failures stay.
+- RMkzfw: four portable format/ownership/owned-PTY effect-only cases pass, 0.211 s.
+- DDbiiU: final related 51 portable/one failure and seven timeout errors, 10.115 s. Focused passes
+  do not erase these failures.
+- kIaREp: updated release build passes, 98.93 s.
+
+The earlier portable P6Ynnt pre-production run retained 33 cases with five failures/16 errors;
+it also caught an overbroad test edit to selective expectations, since restored. 0qiHM5 retained
+three cases with a failure/error. Neither is presented as a clean behavioral RED proof. The native
+RED above and targeted final packets are the discriminating evidence for the actual repair.
+
+The source check's corrected findings were verified, including exact target retention and the
+cached-call barrier. It did not run tests and is not final provider approval. One optional coverage
+gap remains: a stalled native completion consuming its original deadline with matching global
+debt. Existing tests separately pin supplied-deadline refusal and callback-error propagation.
+
+Host load was measured near 90 on 12 logical CPUs. This is uncontrolled context, not proof of
+historical timeout causes. No budget was widened or other job stopped. Physical Ghostty, independent
+headless GUI feedback, Linux ordinary integration, final provider review and broader failure
+attribution remain open. Reports/backups are in the owned external tavs-legacy-completion-re13mnsg
+directory. Phase 9 and the full goal remain incomplete.

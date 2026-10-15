@@ -293,6 +293,8 @@ class Store:
         for path, effect in effects:
             check_deadline(deadline)
             if not effect["active"]:
+                if effect["kind"] == "globalRestriction" and (not reconcile or not suspended):
+                    obsolete.append((path, effect))
                 continue
             live = effect["kind"] != "globalRestriction" and not (suspended and effect["kind"] != "preview")
             age = self.clock() - effect["heartbeatAt"]

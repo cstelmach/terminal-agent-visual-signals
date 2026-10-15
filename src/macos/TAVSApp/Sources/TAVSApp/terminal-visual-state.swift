@@ -303,6 +303,22 @@ final class TerminalVisualStateStore {
         return true
     }
 
+    // The caller holds this TTY's output lock and has completed the legacy reset bytes.
+    func completeLegacyResetUnlocked(_ expected: TerminalEffectRecord, deadline: UInt64) throws {
+        try checkDeadline(deadline)
+        guard expected.kind == .globalRestriction, !expected.active else {
+            throw TerminalVisualStateError.invalidRecord
+        }
+        guard let current = try currentEffectUnlocked(expected.target, kind: .globalRestriction,
+            deadline: deadline) else { return }
+        guard current == expected else { throw TerminalVisualStateError.staleEffect }
+        try checkDeadline(deadline)
+        guard unlink(effectURL(expected.target, kind: .globalRestriction).path) == 0 else {
+            throw TerminalVisualStateError.storageUnavailable
+        }
+        try checkDeadline(deadline)
+    }
+
     // Reads only this verified TTY-owner lifetime under the caller's held lock.
     // A plain binding and one native binding may share state; live native ambiguity cannot.
     func equivalentBindingsUnlocked(for target: TerminalTargetBinding,

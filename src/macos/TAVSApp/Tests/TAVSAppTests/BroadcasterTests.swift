@@ -214,7 +214,7 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
         XCTAssertEqual(try read(target), emergencyReset)
         XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#456789")
-        XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max)).active)
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max))
         broadcaster.broadcastPausedClear(); broadcaster.broadcast()
         XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3)); try noBytes(target)
     }
@@ -229,13 +229,22 @@ final class BroadcasterTests: XCTestCase {
         let release = DispatchSemaphore(value: 0), lock = NSLock()
         defer { release.signal() }
         var calls = 0
-        let broadcaster = broadcaster(native: {
+        let cachedClear = DispatchSemaphore(value: 0), runner = MockProcessRunner()
+        runner.managedHandler = { path, outputLock, afterWrite, prepare in
+            let wrote = try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: outputLock,
+                beforeOpen: nil, target: target.physicalTarget, afterWrite: afterWrite, prepare: prepare)
+            cachedClear.signal()
+            return wrote
+        }
+        let broadcaster = broadcaster(runner: runner, native: {
             lock.lock(); calls += 1; let first = calls == 1; lock.unlock()
             if first { entered.fulfill(); release.wait() }
             return [row]
         })
         broadcaster.broadcastPausedClear()
-        wait(for: [entered], timeout: 1); try noBytes(target)
+        wait(for: [entered], timeout: 1)
+        XCTAssertEqual(cachedClear.wait(timeout: .now() + 1), .success)
+        try noBytes(target)
         clock.advance(by: 1)
         var fields = ["#ABCDEF", "set", "#123456"] + Array(repeating: "", count: 15)
         fields += ["1", "FRESH_TITLE", "iterm2-clear", "", "1"]
@@ -258,9 +267,9 @@ final class BroadcasterTests: XCTestCase {
         let row = surface(plain)
         let runner = MockProcessRunner()
         var prepared: [Data?] = []
-        runner.managedHandler = { path, lock, prepare in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
             XCTAssertFalse(Thread.isMainThread)
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 prepared.append(bytes)
                 return bytes
@@ -306,7 +315,7 @@ final class BroadcasterTests: XCTestCase {
             let expected = status.disablesRestrictions ? emergencyReset
                 : Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]111\u{1B}\\".utf8)
             XCTAssertEqual(try read(target), expected)
-            XCTAssertFalse(try XCTUnwrap(state.currentEffectUnlocked(target, deadline: .max)).active)
+            XCTAssertNil(try state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max))
             XCTAssertEqual(try Data(contentsOf: restrictions.url), marker)
             release.signal()
             XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
@@ -374,10 +383,10 @@ final class BroadcasterTests: XCTestCase {
         try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: 1)], ofItemAtPath: registry.path)
         let runner = MockProcessRunner()
         var fail = true
-        runner.managedHandler = { path, lock, prepare in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
             XCTAssertFalse(Thread.isMainThread)
             if path == failed.tty && fail { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, prepare: prepare)
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite, prepare: prepare)
         }
         let broadcaster = broadcaster(runner: runner)
         broadcaster.broadcastPausedClear()
@@ -399,10 +408,10 @@ final class BroadcasterTests: XCTestCase {
         try cache(healthy); try cache(failed); try writeMute(true)
         let runner = MockProcessRunner(), lock = NSLock()
         var reject = true
-        runner.managedHandler = { path, lockURL, prepare in
+        runner.managedHandler = { path, lockURL, afterWrite, prepare in
             lock.lock(); let fail = reject && path == failed.tty; lock.unlock()
             if fail { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, prepare: prepare)
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: nil, afterWrite: afterWrite, prepare: prepare)
         }
         let broadcaster = broadcaster(runner: runner, native: { [] })
         let reported = expectation(description: "Partial failure published on main")
@@ -459,8 +468,8 @@ final class BroadcasterTests: XCTestCase {
     func testRegistrationAndUnaffectedRetryCannotEraseFailedPaint() throws {
         let target = try terminal(10); try cache(target); try writeMute(true)
         let runner = MockProcessRunner()
-        runner.managedHandler = { path, lock, prepare in
-            try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock) { fd, deadline in
+        runner.managedHandler = { path, lock, afterWrite, prepare in
+            try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock, beforeOpen: nil, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 if bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
                 return nil
@@ -492,12 +501,12 @@ final class BroadcasterTests: XCTestCase {
         try writeMute(true)
         let runner = MockProcessRunner(), guardLock = NSLock()
         var reject = false, paths: [String] = []
-        runner.managedHandler = { path, lockURL, prepare in
+        runner.managedHandler = { path, lockURL, afterWrite, prepare in
             guardLock.lock(); paths.append(path); let fail = reject && path == failed.tty; guardLock.unlock()
             if fail && !afterPreparation { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
             let target = path == failed.tty ? failed : healthy
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL,
-                beforeOpen: nil, target: target.physicalTarget, emergency: false) { fd, deadline in
+                beforeOpen: nil, target: target.physicalTarget, emergency: false, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 if fail && bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
                 return bytes
@@ -530,7 +539,7 @@ final class BroadcasterTests: XCTestCase {
         XCTAssertTrue(extra.isEmpty)
     }
 
-    func testActiveFailedReleaseRetryUsesFreshBackgroundWithoutTitleOrBellReplay() throws {
+    func testActiveFailedReleaseRetryPreservesCompletedFreshPaletteWithoutTitleOrBellReplay() throws {
         try failedReleaseWithFreshRender(suspended: false)
     }
 
@@ -543,10 +552,10 @@ final class BroadcasterTests: XCTestCase {
         try cache(target, color: "#456789"); try writeMute(true)
         let runner = MockProcessRunner(), guardLock = NSLock()
         var reject = false
-        runner.managedHandler = { path, lockURL, prepare in
+        runner.managedHandler = { path, lockURL, afterWrite, prepare in
             guardLock.lock(); let fail = reject; guardLock.unlock()
             return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL,
-                beforeOpen: nil, target: target.physicalTarget, emergency: false) { fd, deadline in
+                beforeOpen: nil, target: target.physicalTarget, emergency: false, afterWrite: afterWrite) { fd, deadline in
                 let bytes = try prepare(fd, deadline)
                 if fail && bytes != nil { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
                 return bytes
@@ -571,16 +580,18 @@ final class BroadcasterTests: XCTestCase {
         let fresh = OrdinaryBackgroundIntent(tty: target.tty, device: target.device, producer: target.ttyOwner,
             deliveryID: "fresh-render", updatedAt: 1_001, background: "#ABCDEF")
         XCTAssertEqual(try service.render(style, intent: fresh, synthetic: false, intakeAt: 1_001, to: target), .rendered)
-        var expected = style.beforeBackground
+        var expected = suspended ? Data() : Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8)
+        expected.append(style.beforeBackground)
         expected.append(Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
         expected.append(style.afterBackground(synthetic: false))
         XCTAssertEqual(try read(target), expected)
+        XCTAssertNil(try state.currentEffectUnlocked(target, kind: .globalRestriction, deadline: .max))
         broadcaster.retryFailedRestrictions(); XCTAssertTrue(broadcaster.waitUntilIdle(timeout: 3))
         if suspended {
             try noBytes(target)
             XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 1)
         } else {
-            XCTAssertEqual(try read(target), Data("\u{1B}]104\u{07}\u{1B}]110\u{07}\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
+            XCTAssertEqual(try read(target), Data("\u{1B}]11;#ABCDEF\u{1B}\\".utf8))
             XCTAssertEqual(broadcaster.lastResult?.items.filter { $0.status == .failed }.count, 0)
         }
         XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
@@ -592,11 +603,11 @@ final class BroadcasterTests: XCTestCase {
         defer { release.signal() }
         let lock = NSLock(), runner = MockProcessRunner()
         var hold = false, attempts = 0
-        runner.managedHandler = { path, lockURL, prepare in
+        runner.managedHandler = { path, lockURL, afterWrite, prepare in
             lock.lock(); attempts += 1; let waiting = hold; lock.unlock()
             if !waiting { throw ProcessRunnerError.deviceIOFailed(path, EIO) }
             entered.fulfill(); release.wait()
-            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, prepare: prepare)
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lockURL, beforeOpen: nil, afterWrite: afterWrite, prepare: prepare)
         }
         let broadcaster = broadcaster(runner: runner, native: { [] })
         broadcaster.broadcastPaused(visual: ignoredVisual)

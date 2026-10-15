@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-15
-Version: 1.16
+Version: 1.17
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -876,3 +876,7 @@ assertion gains its fixed error label/caller elapsed; expected stale code 3 and 
 The post-change 141-test run retains four deadline errors elsewhere; full debug/release failures and original
 status attribution remain open. Host load was about 80 with 12 CPUs. Scope: 1 production/2 tests
 plus existing docs. No native acceptance, provider final approval or latency resolution claimed.
+
+### Phase 9 record-read preparation: 2026-10-15
+
+Six reader cases pass; [results](caller-deadline-source-check-2026-10-14.md#record-buffer-checkpoint).

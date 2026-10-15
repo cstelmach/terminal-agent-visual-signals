@@ -208,9 +208,21 @@ final class VisualRecovery {
         }
         let emergency: Bool
         if case .emergencyReset = operation { emergency = true } else { emergency = false }
+        var completedGlobals: [TerminalEffectRecord] = []
+        func completingLegacyReset(_ effects: [TerminalEffectRecord]) {
+            completedGlobals = effects.filter { $0.kind == .globalRestriction }.map {
+                var canceled = $0; canceled.active = false; return canceled
+            }
+        }
         return try processRunner.writeManagedToDevice(path: target.tty,
             lockURL: state.lockURL(forTTY: target.tty), beforeOpen: beforeOpen,
-            target: target.physicalTarget, emergency: emergency) { fd, deadline in
+            target: target.physicalTarget, emergency: emergency, afterWrite: { fd, deadline in
+                guard !completedGlobals.isEmpty else { return }
+                try self.requireValid(target, descriptor: fd)
+                for effect in completedGlobals {
+                    try self.state.completeLegacyResetUnlocked(effect, deadline: deadline)
+                }
+            }) { fd, deadline in
             try self.requireValid(target, descriptor: fd)
             if render != nil || resetTitle != nil {
                 guard let revision = renderRevision,
@@ -240,6 +252,7 @@ final class VisualRecovery {
                 guard self.restrictions.read().disablesRestrictions else { throw VisualRecoveryError.policyChanged }
                 try self.cancelEffects(effects, deadline: deadline)
                 try self.invalidatePending(target, deadline: deadline)
+                completingLegacyReset(effects)
                 return Self.reset
             }
 
@@ -339,7 +352,7 @@ final class VisualRecovery {
 
             let restrictionsStatus = self.restrictions.read()
             let restrictionsDisabled = restrictionsStatus.disablesRestrictions
-            var resetLegacy = effects.contains { $0.kind == .globalRestriction && $0.active }
+            var resetLegacy = effects.contains { $0.kind == .globalRestriction }
             if case .reconcile(let reset, let clear) = operation {
                 clearSelective = clear
                 try self.invalidatePending(target, deadline: deadline)
@@ -355,6 +368,9 @@ final class VisualRecovery {
                     try self.cancelEffects(obsolete, deadline: deadline)
                     if previews.isEmpty {
                         guard !obsolete.isEmpty else { return nil }
+                        if obsolete.contains(where: { $0.kind == .globalRestriction }) {
+                            completingLegacyReset(effects)
+                        }
                         return obsolete.contains { $0.kind == .globalRestriction }
                             ? Self.reset : Self.backgroundBytes("reset")
                     }
@@ -408,6 +424,7 @@ final class VisualRecovery {
             if restoreFocusBackground {
                 return background.map(Self.backgroundBytes)
             }
+            if resetLegacy { completingLegacyReset(effects) }
             var bytes = resetLegacy ? Data("\u{1B}]104\u{07}\u{1B}]110\u{07}".utf8) : Data()
             if resetTitle != nil && !resetLegacy { bytes.append(Data("\u{1B}]104\u{07}".utf8)) }
             if let render = render { bytes.append(render.beforeBackground) }

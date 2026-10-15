@@ -1,7 +1,13 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.50
+Version: 1.51
+
+Successful legacy resets now retire their exact global effect records under the output lock.
+Fresh hooks clear owed palette/foreground restrictions before applying current style; automatic
+background retries then preserve the completed palette. Failed output/completion stays retryable.
+Nine focused Swift cases and the release build pass; targeted Python cases pass. Broader suites
+still fail; native acceptance remains open. Native/portable paths reuse the existing record format.
 
 Native record reads now use a size-informed buffer with unchanged total-size, EOF and trust
 checks. Six reader tests pass; the 141-test run retains four deadline failures. Earlier debug/release

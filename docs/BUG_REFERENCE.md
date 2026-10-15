@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.78
+Version: 1.79
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -163,9 +163,9 @@ legacy foreground/palette changes on a plain shell even after its device became 
 The heartbeat now retries bound failures while the suspension marker remains active, including
 unmuted state. Targeted reconciliation restores current policy/background and handles canceled
 global metadata after a failed prepared write. Healthy targets are untouched. Four owned-PTY
-cases and the heartbeat caller test cover failure stages, failed-only retry, fresh background,
-no historical title/bell and suspended preservation. The 100 ms writer deadline is unchanged.
-Suspended/unbound recovery feedback remains separate; projection retries are corrected above.
+cases cover failure stages and no title/bell replay. Canceled globals formerly survived success,
+so later retries reset a fresh palette. Native/portable completion now removes exact reset debt
+after full bytes under the same lock/deadline. New renders reset before palette; failures retain debt.
 
 ## Successful GUI recovery leaves canceled focus leases stuck
 

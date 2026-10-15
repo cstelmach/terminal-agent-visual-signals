@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.72
+Version: 1.73
 
 ## Private managed-output failure diagnostics
 
@@ -423,11 +423,11 @@ ordinary paint. Explicit clear cancels selective ownership only after successful
 Suspension with no active effects produces no paint. Residual global presentation clears palette,
 foreground and background defaults once; other residue clears only the default background. A
 matching-revision preview that expires or is explicitly cleared restores latest ordinary intent.
-Active reconciliation honors explicit legacy reset and canceled global records. No title, image
-or audible alert is replayed. All steps share the original 100 ms deadline.
+Active reconciliation honors explicit reset and canceled globals; completed globals are retired.
+No title/image/alert is replayed. Matching state removal uses the original 100 ms deadline.
 
 The current TTY's pending OSC slot is invalidated through held parent descriptors without reading
-its body. Linked/nonregular paths fail; other slots remain intact. Failed writes retain active
+its body. Linked/nonregular paths fail; other slots remain intact. Failed writes retain unfinished
 cleanup records for retry. Unavailable suspension state remains an explicit failure. Owned macOS
 PTYs verify these branches; helper/hook routing is connected and Linux scope remains pending.
 
@@ -459,9 +459,9 @@ intent and refuses active native control. Obsolete effects restore latest backgr
 global effects additionally reset legacy foreground/palette before the current finite style.
 Synthetic output suppresses its alert and leaves observation identity unchanged.
 
-Obsolete active effects are cancelled after successful output, using exact record snapshots.
-This differs from native pre-output cancellation to keep retry work discoverable after failed
-portable writes. Completion failure reports delivered bytes accurately and retains unfinished
+After successful output, exact global records are removed; selective records become inactive.
+Native pre-output cancellation also retains global debt until its reset actually completes.
+Completion failure reports delivered bytes accurately and retains unfinished
 records. All steps share the original 100 ms budget. Owned Mac PTYs verify this transaction;
 helper verbs, hook routing and Linux record integration remain pending.
 
@@ -701,12 +701,12 @@ Raw/unresolved overloads conservatively share a path slot with known lifetimes i
 lane. Syntactic path aliases are normalized; arbitrary symlink identity is not established.
 This bounds repeated native I/O for the same lifetime, not every callback worker or all lifetimes
 across a process. The internal overload adds `target` and `emergency`; unresolved callers retain
-the existing signature. No helper payload, persisted schema or command changes are required.
+the existing signature. Completed reset removes exact global debt; failures keep it retryable.
 
-`writeManagedToDevice(path:lockURL:beforeOpen:prepare:)` gives both callbacks the original
-absolute 100 ms deadline. Background requests publish validated intent and the exact continuing
-owner's bound copy in `beforeOpen`, then release the stable record lock before opening the device.
-Style-only requests do not publish background intent. Device open precedes the output lock.
+`writeManagedToDevice` gives beforeOpen, prepare and optional afterWrite the same deadline.
+AfterWrite runs only after complete bytes, under the same lock, within the original 100 ms.
+BeforeOpen publishes validated intent and bound owner state, then releases the stable record lock.
+Device open precedes the output lock. Style-only requests publish no background intent.
 Full renders and forced resets pin the suspension marker before device open under the same
 budget. Preparation rejects a replaced revision with `unaffected`, preserving intent without queued
 palette, title or bell bytes. A new render after recovery captures the current revision.

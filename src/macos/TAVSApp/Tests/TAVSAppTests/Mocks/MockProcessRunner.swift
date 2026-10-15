@@ -7,8 +7,8 @@ final class MockProcessRunner: ProcessRunner {
     var boundedResults: [Result<Data, Error>] = []
     var boundedHandler: ((URL, [String], TimeInterval) throws -> Data)?
     var boundedOutputHandler: ((URL, [String], TimeInterval, [String: String]?) throws -> BoundedProcessOutput)?
-    var managedHandler: ((String, URL, @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
-    var managedBeforeOpenHandler: ((String, URL, ((UInt64) throws -> Void)?,
+    var managedHandler: ((String, URL, ((Int32, UInt64) throws -> Void)?, @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
+    var managedBeforeOpenHandler: ((String, URL, ((UInt64) throws -> Void)?, ((Int32, UInt64) throws -> Void)?,
                                    @escaping (Int32, UInt64) throws -> Data?) throws -> Bool)?
     private let lock = NSLock()
     private var _writtenDevices: [(String, Data)] = []
@@ -61,6 +61,7 @@ final class MockProcessRunner: ProcessRunner {
 
     func writeManagedToDevice(path: String, lockURL: URL, beforeOpen: ((UInt64) throws -> Void)?,
                               target: TerminalTargetBinding?, emergency: Bool = false,
+                              afterWrite: ((Int32, UInt64) throws -> Void)? = nil,
                               prepare: @escaping (Int32, UInt64) throws -> Data?) throws -> Bool {
         lock.lock()
         _managedCallLog.append((path, lockURL))
@@ -79,11 +80,11 @@ final class MockProcessRunner: ProcessRunner {
                 throw error
             }
         }
-        if let handler = managedBeforeOpenHandler { return try handler(path, lockURL, beforeOpen, prepare) }
+        if let handler = managedBeforeOpenHandler { return try handler(path, lockURL, beforeOpen, afterWrite, prepare) }
         guard beforeOpen == nil, let handler = managedHandler else {
             throw ProcessRunnerError.deviceNotWritable(path)
         }
-        return try handler(path, lockURL, prepare)
+        return try handler(path, lockURL, afterWrite, prepare)
     }
 
     // Test helper: clear the captured writes so a single test can run
