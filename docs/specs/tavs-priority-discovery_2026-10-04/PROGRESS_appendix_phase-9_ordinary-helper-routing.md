@@ -101,3 +101,17 @@ Next: Swift recovery; [source/results](portable-linux-identity-research-2026-10-
 
 Native race fixtures: [source/results](caller-deadline-source-check-2026-10-14.md). Three targets pass.
 Full suite: 671 tests, seven assertions elsewhere. Scope: tests/docs. Next: writer/focus failures.
+
+### Phase 9 shared session/color transactions: 2026-10-15
+
+S4: stable per-table FD locks now cover read/filter/rename; unique staging preserves other rows.
+ILtZl2 reproduced four concurrent-write failures. G0PFko: 12 Bash/zsh groups pass; zReAgt: 52 Bats.
+Checked failure paths preserve data, caller traps/FDs and lock reuse. Timestamp follows admission.
+The source check found a conditional ancestor/FIFO opening; local physical-ancestor admission fixes it.
+Explicit octal masks and BSD full-mode stat fix zsh/sticky portability; failed logs are retained.
+[Source findings and correction](session-table-source-check-2026-10-15.md); API/bug/architecture updated.
+Backups/logs: `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-session-table-transactions-v4uzunle/`.
+Moved 19 finished diagnostic lines unchanged to the existing appendix; round-trip verified.
+**Scope:** one shared module, concurrency tests and connected docs/capture; no live changes.
+Swift unchanged; last full671/60 assertions remains open. Linux awaits operator-started Docker.
+Next: N3 help text, remaining S2 readers and required native acceptance. Goal/Phase 9 incomplete.

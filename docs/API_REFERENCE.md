@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.76
+Version: 1.77
 
 ## Private managed-output failure diagnostics
 
@@ -257,17 +257,17 @@ copies applied; this is ordinary source copying, not an atomic multi-file instal
 Linked or directory helper leaves are refused instead of writing through them. Removal retains
 helper resources for a later reinstall while removing the existing shellrc and rc fences.
 
-Interactive startup loads the shared selector lazily after the kill switch and TTY registration.
+Interactive startup resolves the TTY and loads the selector before any registration I/O.
 Source `tavs-shellrc.sh` uses the neighboring core; installed `shellrc` uses adjacent resources.
 Both support bare, relative and absolute source paths. Backend selection remains private and
-global to that shell even when the selector is loaded inside a function. Registration/current
-failures retain the selected backend and report unavailability without raw output.
+global. Only the helper publishes a verified `target.json`; failed registration skips current
+policy, retains its backend and reports unavailability. Shell code creates no legacy TTY hints.
 
 Native preference requires both schemas; portable startup permits ordinary registration/no-rule
 checks on macOS. Native controlled rules remain unavailable in the portable backend. Suspension
 still omits current-policy requests; the persistent reader and native-only recovery are unchanged.
-Owned Bash/zsh PTYs prove registration, no bytes and retained suspension. They do not prove visible
-Ghostty effects or Linux runtime support.
+Owned Bash/zsh PTYs prove native/portable startup caching, no bytes/hints and retained suspension.
+Visible Ghostty effects and Linux runtime support remain unverified.
 
 ## Shared ordinary helper selection and core routing
 

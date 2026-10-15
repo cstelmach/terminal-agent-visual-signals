@@ -2,7 +2,7 @@
 # ==============================================================================
 # TAVS - Terminal Agent Visual Signals — Mute Gate (Stage-1 Helpers)
 # ==============================================================================
-# Reads current mute/lock policy and tracks candidate TTYs without historical replay.
+# Reads current mute/lock policy without publishing unverified legacy TTY hints.
 # ==============================================================================
 
 _tavs_policy_dir="${BASH_SOURCE[0]%/*}"
@@ -14,7 +14,7 @@ unset _tavs_policy_dir
 # RUNTIME DIRECTORY
 # ==============================================================================
 # UID-namespaced to avoid multi-user collisions (SPEC D22).
-# Default: /tmp/tavs-$(id -u), mode 0700.
+# Default: /tmp/tavs-$(id -u). Managed output creates and validates its storage.
 # ==============================================================================
 
 _tavs_resolve_runtime_dir() {
@@ -22,11 +22,6 @@ _tavs_resolve_runtime_dir() {
         TAVS_RUNTIME_DIR="/tmp/tavs-$(id -u)"
         export TAVS_RUNTIME_DIR
     fi
-    if [[ ! -d "$TAVS_RUNTIME_DIR" ]]; then
-        mkdir -m 0700 -p "$TAVS_RUNTIME_DIR"
-    fi
-    [[ -d "$TAVS_RUNTIME_DIR/pending" ]] || mkdir -p "$TAVS_RUNTIME_DIR/pending"
-    [[ -d "$TAVS_RUNTIME_DIR/active-ttys" ]] || mkdir -p "$TAVS_RUNTIME_DIR/active-ttys"
 }
 
 # ==============================================================================
@@ -136,15 +131,9 @@ _tavs_check_mute_state() {
 # ==============================================================================
 # ACTIVE-TTY REGISTRY
 # ==============================================================================
-# Every trigger.sh / idle-worker invocation touches a file here so the
-# broadcaster can inspect candidates. Native owner/device binding authorizes output.
+# Existing entries remain diagnostic hints. Managed registration/rendering caches
+# the validated bindings used by current broadcasts and recovery.
 # ==============================================================================
-
-register_active_tty() {
-    [[ -z "${TTY_SAFE:-}" ]] && return 0
-    _tavs_resolve_runtime_dir
-    touch "$TAVS_RUNTIME_DIR/active-ttys/$TTY_SAFE"
-}
 
 # Age and transient write failures do not establish that a TTY owner exited.
 clean_active_tty_registry() { return 0; }
@@ -174,7 +163,6 @@ _tavs_debug_mute() {
 _tavs_mute_gate_init() {
     _tavs_resolve_runtime_dir
     _tavs_validate_mute_liveness
-    register_active_tty
 
     if [[ "${_TAVS_SUPPRESS_OUTPUT:-0}" == "1" ]]; then
         _tavs_debug_mute "MUTED: tty=${TTY_SAFE:-}"

@@ -291,13 +291,20 @@ _tavs_render_flush
         shells = ("/bin/bash", "/bin/zsh") if sys.platform == "darwin" else tuple(
             shell for shell in ("/bin/bash", "/bin/zsh") if Path(shell).is_file())
         self.assertIn("/bin/bash", shells)
+        cases = [(False, "portable"), (True, "portable")]
+        if sys.platform == "darwin":
+            cases += [(False, "native"), (True, "native")]
         for shell in shells:
-            for suspended in (False, True):
-                with self.subTest(shell=shell, suspended=suspended):
+            for suspended, backend in cases:
+                with self.subTest(shell=shell, suspended=suspended, backend=backend):
                     root = Path(tempfile.mkdtemp(prefix="shell-startup-", dir=os.environ["TAVS_TEST_ROOT"]))
                     (root / "home/.tavs").mkdir(parents=True)
                     env = dict(os.environ, HOME=str(root / "home"), ZDOTDIR=str(root / "home"),
-                               TAVS_RUNTIME_DIR=str(root / "runtime"), TAVS_TEST_HELPER_BIN=str(root / "missing-native"))
+                               CFFIXED_USER_HOME=str(root / "home"),
+                               TAVS_RUNTIME_DIR=str(root / "runtime"),
+                               SHELLRC_EXPECTED_BACKEND=backend,
+                               TAVS_TEST_HELPER_BIN=(os.environ["TAVS_TEST_HELPER_BIN"]
+                                                    if backend == "native" else str(root / "missing-native")))
                     marker = root / "home/.tavs/visual-restrictions.state"
                     if suspended:
                         marker.write_bytes(b'SCHEMA_VERSION="1"\nSUSPENDED="true"\n')
@@ -308,14 +315,16 @@ _tavs_render_flush
                     flags = ["--norc", "-ic"] if shell == "/bin/bash" else ["-fic"]
                     data = self.owned_shell([shell, *flags, '''
 source "$HOME/.tavs/shellrc"
-[[ "$_TAVS_HELPER_BACKEND" == portable ]] || exit 43
+[[ "$_TAVS_HELPER_BACKEND" == "$SHELLRC_EXPECTED_BACKEND" ]] || exit 43
+printf '%s' "$TTY_DEVICE" > "$HOME/registered-tty"
 '''], env)
                     self.assertEqual(data, b"")
                     directory = root / "runtime/organizer/targets"
                     targets = list(directory.glob("**/target.json"))
                     self.assertEqual(len(targets), 1)
                     target = json.loads(targets[0].read_bytes())["target"]
-                    self.assertTrue((root / "runtime/active-ttys" / target["tty"].replace("/", "_")).is_file())
+                    self.assertEqual(target["tty"], (root / "home/registered-tty").read_text())
+                    self.assertFalse((root / "runtime/active-ttys").exists())
                     self.assertFalse((root / "runtime/organizer" / ("intent-"+key(target["tty"])+".json")).exists())
                     if suspended:
                         self.assertEqual(marker.read_bytes(), b'SCHEMA_VERSION="1"\nSUSPENDED="true"\n')

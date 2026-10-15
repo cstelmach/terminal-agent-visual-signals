@@ -824,3 +824,37 @@ Automatic help now names newly observed High permission requests and response co
 states that response completion does not confirm task success, and conditions acknowledgement
 on successful Go To. Isolated source build RqLGWi passes in 10.89 seconds. This text-only change
 adds no behavioral test; native presentation remains unverified. The reducer is unchanged.
+
+## S2 raw registration correction: 2026-10-15
+
+The [source investigation](legacy-policy-trust-source-check-2026-10-15.md) found a concrete
+pre-helper truncation through shellrc registry symlinks, plus core touch/mkdir through untrusted
+paths. 12sboq reproduced four failures in private sentinel/absent-runtime cases. Shellrc now
+delegates registration entirely to the already-required managed helper and stops after its
+failure. Core mute initialization resolves its path without mkdir or raw hint publication.
+Existing hints remain readable; no user files or runtime directories are deleted.
+
+Verified in source: Scheduler's own Broadcaster/VisualRecovery targets cached typed bindings and
+fresh native surfaces independently of Sessions/focus. Raw active-ttys rows only add diagnostic
+failures. Removing their creation does not remove broadcast targets. Native managed registration
+and ordinary render cache target.json; portable registration and background publication do too.
+Portable title/palette-only rendering still has no new cache, so no broader claim is made.
+
+KMvaND: **49/49 Bats pass**. 9Wu7hO: **25 Python tests pass, 8 Linux-only tests skipped**.
+The real installed-startup matrix now covers both native/portable backends, Bash/zsh and
+suspended/unsuspended states, with exact owned TTY/cache matching, no bytes/intent/new legacy
+hints and unchanged marker. Fake-helper assertions check exact verb/TTY lines, not hint files.
+An intermediate copied-shell assertion failed while the test helper cleared preceding logs;
+that test-only clearing was removed before final runs. Syntax and checked ShellCheck pass.
+
+Connected wlIXDk: **73/74 pass**; portable provider synthetic rendering fails write/os-60.
+Focused candidate 4qYjwm repeats that timeout. Clean baseline 8a12cc9 in an isolated managed
+worktree also fails the portable scenario (rrdeCp), but with metadata-unavailable/stale output.
+These differing failures do not prove the exact timeout's cause or close it. No deadline changed.
+Logs and before-files: `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-validated-registration-gg8rclht/`.
+The clean baseline worktree was recoverably archived after its child completed.
+
+The source checker found no registration/discovery defect and its exact-line assertion suggestion
+was applied. S2 remains open for marker core/standalone read/write trust, legacy lock/mute reads,
+debug append and portable paths. Native/Linux acceptance and earlier full Swift failures remain
+open. No real install/sync, settings change, native catalogue action, paint or user-session stop.

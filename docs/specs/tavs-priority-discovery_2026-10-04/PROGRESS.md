@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.62
+**Version:** 4.63
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -884,16 +884,17 @@ Kernel checks await operator-started Docker after current jobs; eight Linux case
 Prior native fixture: [details](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
 PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: session/color race.
 
-### Phase 9 shared session/color transactions: 2026-10-15
+> Finished session/color source checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-shared-sessioncolor-transactions-2026-10-15).
 
-S4: stable per-table FD locks now cover read/filter/rename; unique staging preserves other rows.
-ILtZl2 reproduced four concurrent-write failures. G0PFko: 12 Bash/zsh groups pass; zReAgt: 52 Bats.
-Checked failure paths preserve data, caller traps/FDs and lock reuse. Timestamp follows admission.
-The source check found a conditional ancestor/FIFO opening; local physical-ancestor admission fixes it.
-Explicit octal masks and BSD full-mode stat fix zsh/sticky portability; failed logs are retained.
-[Source findings and correction](session-table-source-check-2026-10-15.md); API/bug/architecture updated.
-Backups/logs: `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-session-table-transactions-v4uzunle/`.
-Moved 19 finished diagnostic lines unchanged to the existing appendix; round-trip verified.
-**Scope:** one shared module, concurrency tests and connected docs/capture; no live changes.
-Swift unchanged; last full671/60 assertions remains open. Linux awaits operator-started Docker.
-Next: N3 help text, remaining S2 readers and required native acceptance. Goal/Phase 9 incomplete.
+### Phase 9 validated shell registration: 2026-10-15
+
+N3: `8a12cc9` corrects Automatic help; isolated Swift build RqLGWi passes (10.89s).
+S2: removed unsafe shell registry truncation/touch/mkdir; managed registration remains authoritative.
+12sboq: four safety RED cases. KMvaND: 49 Bats pass; 9Wu7hO: 25 Python pass, 8 Linux skip.
+Eight real startup combinations retain exact target/TTY, no bytes/hints and unchanged suspension.
+Connected wlIXDk: 73/74 pass; portable write timeout repeats in focused 4qYjwm. Baseline rrdeCp
+also fails portable metadata/stale; exact timeout attribution remains open. Device100ms unchanged.
+[Source and follow-on guard scope](legacy-policy-trust-source-check-2026-10-15.md); API/bug/architecture updated.
+**Scope:** two shell modules, three tests and connected docs/capture; no live state changes.
+Next: marker core/standalone trust, legacy policy/debug paths, native/Linux acceptance and failures.
+Goal/Phase 9 incomplete. Full Swift671/60 assertions remains open; no unchanged full rerun.

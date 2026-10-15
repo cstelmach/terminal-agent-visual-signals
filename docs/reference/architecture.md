@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.15
+Version: 1.16
 
 ## Current-invocation render transaction
 
@@ -40,7 +40,9 @@ adoption cannot transfer an old color to a changed owner with the same native ID
 ## Shell output routing
 
 All TAVS background writes use the headless managed helper. Startup registers its continuing
-shell owner and requests current policy. Idle resets and debug reconciliation use typed actions;
+shell owner and requests current policy only after registration succeeds. Neither shell startup
+nor mute initialization creates or touches raw TTY hints; the helper caches verified target bindings.
+Idle resets and debug reconciliation use typed actions;
 muted nonbackground signals are discarded without retaining pending OSC bodies. Synthetic
 updates validate the current observation before palette/title output, including when background
 coloring is disabled. Producer identity is checked separately from the continuing shell owner.
@@ -59,6 +61,8 @@ clears only prior effect targets, preserving unaffected shell backgrounds. Faile
 remain retryable. `lastResult` retains typed outcomes and catalogue availability.
 
 The production scheduler supplies the same restriction store, clock and recovery service.
+Its cached/native target discovery runs independently of Sessions/focus. Legacy `active-ttys`
+entries only contribute unverified/vanished diagnostics and remain readable for older installations.
 Startup requests cached cleanup even when restrictions are disabled; that cleanup precedes
 native registration. Muted-to-unmuted transitions use safe typed cleanup after saving policy,
 including a transition caused by persistent suspension.

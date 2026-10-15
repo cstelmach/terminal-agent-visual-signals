@@ -35,7 +35,7 @@ if [[ "$1" == --validate-config ]]; then
     exit 0
 fi
 [[ "$2" == "$HOME/.tavs/visual-restrictions.state" && "$3" == "$TAVS_RUNTIME_DIR" ]] || exit 1
-case "$1" in --managed-register|--managed-current) printf '%s\n' "$1" >> "$SHELLRC_TEST_LOG" ;; *) exit 1 ;; esac
+case "$1" in --managed-register|--managed-current) printf '%s tty=%s\n' "$1" "$4" >> "$SHELLRC_TEST_LOG" ;; *) exit 1 ;; esac
 HELPER
     chmod +x "$TAVS_TEST_HELPER_BIN"
 }
@@ -119,7 +119,7 @@ run_shellrc_bash() {
     [ "$status" -eq 0 ]
     [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-current* ]]
     [[ "$output" != *'locked until'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
 }
 
 @test "bash: effective lock requests managed policy and registers TTY" {
@@ -128,7 +128,7 @@ run_shellrc_bash() {
     [ "$status" -eq 0 ]
     [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-current* ]]
     [[ "$output" != *'locked until'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys902" "$SHELLRC_TEST_LOG"
 }
 
 @test "expired lock emits no raw paint and still registers" {
@@ -136,7 +136,7 @@ run_shellrc_bash() {
     run_shellrc_zsh
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
 }
 
 @test "active unlock grant suspends the lock paint" {
@@ -200,7 +200,7 @@ run_shellrc_bash() {
     run_shellrc_zsh
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
 }
 
 write_visual_suspension() {
@@ -216,12 +216,12 @@ write_visual_suspension() {
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* && "$output" != *']10;'* && "$output" != *']104'* ]]
     [[ "$output" != *'locked until'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
     run_shellrc_bash
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* && "$output" != *']10;'* && "$output" != *']104'* ]]
     [[ "$output" != *'locked until'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys902" "$SHELLRC_TEST_LOG"
 }
 
 @test "suspension: copied standalone shellrc has no repository dependency" {
@@ -238,8 +238,8 @@ write_visual_suspension() {
     run_shellrc_bash
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* && "$output" != *'locked until'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
+    grep -qxF -- "--managed-register tty=/dev/ttys902" "$SHELLRC_TEST_LOG"
 }
 
 @test "install: delivers complete adjacent helper resources and remains portable without checkout" {
@@ -304,8 +304,46 @@ HELPER
         run "$shell" -fic 'TTY=/dev/ttys901; source "$1"; [[ "$_TAVS_HELPER_BACKEND" == native ]]' _ "$SHELLRC"
         [ "$status" -eq 0 ]
         [ "$(grep -c '^--validate-config$' "$SHELLRC_TEST_LOG")" -eq 2 ]
-        [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-register*--managed-current* ]]
+        [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-register* ]]
+        ! grep -q '^--managed-current$' "$SHELLRC_TEST_LOG"
         [[ "$output" == *'terminal registration unavailable'* && "$output" != *$'\033]'* ]]
+    done
+}
+
+@test "startup: a legacy registry symlink cannot truncate unrelated data before helper validation" {
+    local shell
+    printf 'retained preferences 43\n' > "$TEST_DIR/unrelated"
+    ln -s "$TEST_DIR/unrelated" "$TEST_RUNTIME/active-ttys/_dev_ttys901"
+    for shell in bash zsh; do
+        run "$shell" -fic 'TTY=/dev/ttys901; source "$1"' _ "$SHELLRC"
+        [ "$status" -eq 0 ]
+        [ "$(cat "$TEST_DIR/unrelated")" = 'retained preferences 43' ]
+        [ -L "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    done
+}
+
+@test "startup: the shell creates no registry directories before validated helper registration" {
+    local shell
+    export TAVS_RUNTIME_DIR="$TEST_DIR/new-runtime"
+    for shell in bash zsh; do
+        run "$shell" -fic 'TTY=/dev/ttys901; source "$1"' _ "$SHELLRC"
+        [ "$status" -eq 0 ]
+        [[ "$(cat "$SHELLRC_TEST_LOG")" == *--managed-register* ]]
+        [ ! -e "$TAVS_RUNTIME_DIR" ]
+    done
+}
+
+@test "startup: missing adjacent helper resources leave runtime untouched" {
+    mkdir -p "$TEST_DIR/missing-resources"
+    cp "$SHELLRC" "$TEST_DIR/missing-resources/shellrc"
+    export TAVS_RUNTIME_DIR="$TEST_DIR/no-helper-runtime"
+    local shell
+    for shell in bash zsh; do
+        run "$shell" -fic 'TTY=/dev/ttys901; source "$1"' _ "$TEST_DIR/missing-resources/shellrc"
+        [ "$status" -eq 0 ]
+        [[ "$output" == *'managed output helper unavailable or unsupported'* ]]
+        [ ! -e "$TAVS_RUNTIME_DIR" ]
+        [ ! -e "$SHELLRC_TEST_LOG" ]
     done
 }
 
@@ -327,11 +365,11 @@ HELPER
     run_shellrc_zsh
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
     run_shellrc_bash
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys902" "$SHELLRC_TEST_LOG"
 }
 
 @test "suspension: explicit false delegates the current saved lock in both shells" {
@@ -358,10 +396,10 @@ HELPER
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* && "$output" != *'MARKER_BODY_SENTINEL'* ]]
     [[ "$output" == *'unavailable'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys901" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys901" "$SHELLRC_TEST_LOG"
     run_shellrc_bash
     [ "$status" -eq 0 ]
     [[ "$output" != *']11;'* && "$output" != *'MARKER_BODY_SENTINEL'* ]]
     [[ "$output" == *'unavailable'* ]]
-    [ -f "$TEST_RUNTIME/active-ttys/_dev_ttys902" ]
+    grep -qxF -- "--managed-register tty=/dev/ttys902" "$SHELLRC_TEST_LOG"
 }

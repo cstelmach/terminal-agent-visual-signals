@@ -8,7 +8,7 @@ setup() {
     [[ -n "${TAVS_TEST_ROOT:-}" ]] || return 1
     TEST_HOME=$(mktemp -d "$TAVS_TEST_ROOT/mute-home.XXXXXX")
     TEST_RUNTIME=$(mktemp -d "$TAVS_TEST_ROOT/mute-runtime.XXXXXX")
-    mkdir -p "$TEST_HOME/.tavs"
+    mkdir -p "$TEST_HOME/.tavs" "$TEST_RUNTIME/active-ttys"
 
     export HOME="$TEST_HOME"
     export TAVS_RUNTIME_DIR="$TEST_RUNTIME"
@@ -28,7 +28,7 @@ setup() {
     mkdir() { printf '%s\n' "$*" >> "$TEST_HOME/mkdir-calls"; }
     _tavs_resolve_runtime_dir
     [ "$TAVS_RUNTIME_DIR" = "/tmp/tavs-$(id -u)" ]
-    [ -s "$TEST_HOME/mkdir-calls" ]
+    [ ! -e "$TEST_HOME/mkdir-calls" ]
 }
 
 @test "runtime dir respects TAVS_RUNTIME_DIR if already set" {
@@ -37,16 +37,35 @@ setup() {
     [ "$TAVS_RUNTIME_DIR" = "$TEST_RUNTIME" ]
 }
 
-# --- Active TTY Registry ---
-
-@test "register_active_tty creates touch file" {
-    register_active_tty
-    [ -f "$TAVS_RUNTIME_DIR/active-ttys/$TTY_SAFE" ]
+@test "mute init leaves an existing legacy registry destination untouched" {
+    mkdir -p "$TEST_RUNTIME/active-ttys"
+    printf 'retained preferences 43\n' > "$TEST_HOME/unrelated"
+    touch -t 202001010000 "$TEST_HOME/unrelated"
+    local before
+    before=$(stat -f '%m:%c' "$TEST_HOME/unrelated")
+    ln -s "$TEST_HOME/unrelated" "$TEST_RUNTIME/active-ttys/$TTY_SAFE"
+    _tavs_mute_gate_init
+    [ "$(cat "$TEST_HOME/unrelated")" = 'retained preferences 43' ]
+    [ "$(stat -f '%m:%c' "$TEST_HOME/unrelated")" = "$before" ]
+    [ -L "$TEST_RUNTIME/active-ttys/$TTY_SAFE" ]
 }
 
-@test "register_active_tty is no-op when TTY_SAFE is empty" {
+@test "mute init resolves policy without creating an unvalidated runtime" {
+    export TAVS_RUNTIME_DIR="$TEST_RUNTIME/not-created"
+    _tavs_mute_gate_init
+    [ ! -e "$TAVS_RUNTIME_DIR" ]
+}
+
+# --- Active TTY Registry ---
+
+@test "mute init does not substitute legacy hints for validated registration" {
+    _tavs_mute_gate_init
+    [ ! -e "$TAVS_RUNTIME_DIR/active-ttys/$TTY_SAFE" ]
+}
+
+@test "mute init creates no legacy hints when TTY_SAFE is empty" {
     TTY_SAFE=""
-    register_active_tty
+    _tavs_mute_gate_init
     local count
     count=$(find "$TAVS_RUNTIME_DIR/active-ttys" -type f 2>/dev/null | wc -l | tr -d ' ')
     [ "$count" = "0" ]

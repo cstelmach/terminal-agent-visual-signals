@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.86
+Version: 1.87
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -891,9 +891,10 @@ Isolation, PTY lifetime, recovery fixtures, app replacement, installer status an
 The [valid `/tmp` alias correction](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#isolated-launch-rejects-the-valid-tmp-alias)
 is resolved.
 
-## Concurrent shell state updates lose other terminals
+## Legacy shell state and registration
 
-Whole-table snapshots lost unrelated TTY updates; inherited `$$` temporary names also collided.
-[Stable table locks](reference/architecture.md#session-statesh-state-management) now cover read,
-filter and rename, using unique staging files, ancestor admission and checked failures. Twelve
-Bash/zsh groups cover races, timeout, crash release and cleanup. Old lockless workers remain outside.
+Shared snapshots lost TTY rows; inherited `$$` temporary names collided. Private unique staging and
+[stable table locks](reference/architecture.md#session-statesh-state-management) serialize updates.
+Raw registry publication followed links before validation, truncating content or changing timestamps.
+[Managed startup](API_REFERENCE.md#standalone-shell-helper-delivery) now owns registration; mute init
+resolves its runtime path. Owned-PTY checks cover registration; unsafe policy reads remain open.
