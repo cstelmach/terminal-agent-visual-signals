@@ -347,3 +347,54 @@ No working terminal, installed app or real preferences/schedules were changed.
 
 KUXeoB: the single forced-reset case passes separately in0.044s. This does not explain ks8aHi
 or change the retained full-suite outcome. Next work remains native deadline/status attribution.
+
+## Record buffer checkpoint
+
+Source baseline 1a6a5ab. The original forced-reset first result still expects stale code 3; it now
+retains the fixed error label and monotonic caller elapsed on failure. No mock or accepted
+status set was substituted. The original code 1 result has no retained reason and remains open.
+
+Before the buffer change: OhryCJ focused 61 pass, 6.359s; yXyU2s full debug 664/16 assertions
+(7 unexpected),39.065s; lT5Sg9 full optimized 664/19 assertions (15 unexpected),46.299s.
+The forced-reset target passes both new full runs. Other publication/open/prepare failures
+remain, so optimization mode does not explain them. No unchanged full rerun erased these logs.
+
+One owned Swift-wrapper profile attempt ran100 recovery cases/3 failures but found no live
+XCTest child to sample; it sampled nothing. A direct, cleared-environment owned XCTest run
+successfully produced a 3 s/1 ms stack sample. That profiled run retained 100/47 assertions
+(34 unexpected),25.085s. Profiling can perturb timing; it is not production latency evidence.
+The sample's collapsed top-of-stack list includes 133 lstat, 32 open and 31 allocator samples,
+among much larger idle-workqueue and test-poll counts. These are sampled occurrences, not
+per-operation durations, an allocation measurement or an explanation of a historical failure.
+
+A proposed literal-prefix trust continuation was rejected after source review: removing the
+second walk can miss an intervening symlink or permission change. Both original walks remain.
+
+The two-line production change sizes the read buffer from the checked fstat size plus one.
+For a 122-byte fixture it requests 123 instead of 8,193 bytes. Each request is min(buffer size,
+8193 minus accumulated bytes), so it never requests zero merely because a small chunk filled.
+Only actual EOF accepts a bounded complete record; byte 8,193 still rejects. Directory/leaf
+trust, device/inode/type checks, producer/context rules and per-syscall deadline checks remain.
+
+Logs under the prior private `tavs-isolated.RUN/command.log` directory:
+
+- H0w44F: three new tests, 1 expected RED assertion (8,193 versus 123); growth cases already pass.
+- rV9964: post-change 141 tests/4 deadline assertions,17.697s. All 61 entry/writer cases and the
+  three new read cases pass; remaining errors are in existing state/deadline fixture work.
+- YCaeuz: six reader cases pass, 0.290s, including original interrupted/partial deadline guards.
+- hbhrgc: updated production release build passes, 84.37s.
+
+The new cases check actual EOF and unchanged cached bytes, same-inode growth past the cap
+using whitespace after valid JSON, and a within-cap invalid suffix beyond the first chunk.
+Their format-only fixture calls use .max; the original 100 ms deadline regression cases are
+unchanged. Scoped source review verifies the positive request bound and preserved contracts;
+it did not run tests or replace final independent provider reviews.
+
+A host snapshot after the post-change run reports load 80.13/81.16/73.89 with 12 logical CPUs.
+This is uncontrolled timing context, not causal attribution. No other job/session was stopped,
+no budget widened and no broad timing rerun added after that snapshot. Native timing and
+physical Ghostty acceptance remain pending; operator availability was requested.
+
+Full reports, sample, logs and owned backups are retained under
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-reset-status-ccm__mfv/`.
+No speedup, whole-suite pass, resolution of the old mismatch or goal completion is claimed.

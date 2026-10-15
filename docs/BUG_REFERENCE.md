@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.77
+Version: 1.78
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -101,16 +101,15 @@ work; POSIX checks do not establish ACL completeness or a reproduced foreign-acc
 
 ## Record reads retry after the caller's deadline
 
-The organizer reader checked its deadline around the complete read, but omitted the check inside
-the loop. Interrupted or partial reads could issue further system calls after expiry. Two injected
-syscall cases reproduced the extra attempt; neither establishes the earlier full-suite failures'
-cause. The loop now checks the original deadline before every attempt.
-
-A narrow read-syscall injection retains Darwin.read by default. Three regressions cover expiry
-after EINTR, expiry after a partial read, and successful interrupted/partial reads within budget.
-They preserve cached bytes and the 100 ms deadline. All 619 Swift tests and the release build pass.
-Nineteen isolated background-intent checks also pass with the rebuilt helper.
-Synchronous syscalls remain non-preemptible; this fix prevents subsequent attempts after expiry.
+The reader formerly retried interrupted/partial calls after deadline expiry. Every syscall now
+checks the original deadline; three original cases retain that contract and cached bytes.
+Earlier 619 Swift/release and 19 isolated background checks passed; syscalls remain non-preemptible.
+The fixed 8 KiB buffer allocated/requested 8,193 bytes for a 122-byte cached record. It now
+uses checked file size plus one, while retaining actual EOF and the cumulative 8,192-byte cap.
+Three added cases verify footprint and same-inode growth: oversized whitespace after valid JSON,
+and an invalid suffix within the cap, must both reject. Six focused reader checks pass.
+Metadata, context, identity and both trust walks remain. This does not establish a latency fix
+or explain the earlier native unavailable/stale mismatch and broader deadline failures.
 
 ## Existing provider contexts cannot publish observations for synthetic updates
 

@@ -1,7 +1,12 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.49
+Version: 1.50
+
+Native record reads now use a size-informed buffer with unchanged total-size, EOF and trust
+checks. Six reader tests pass; the 141-test run retains four deadline failures. Earlier debug/release
+full suites also fail. Measured host load was about 80 on 12 logical CPUs; attribution and
+controlled native acceptance remain open. No writer budget was widened.
 
 Current tool-error restoration retries one helper error, with fresh context checks and no retry
 for stale delivery. Synthetic triggers report rendering failures; ordinary hooks retain success.

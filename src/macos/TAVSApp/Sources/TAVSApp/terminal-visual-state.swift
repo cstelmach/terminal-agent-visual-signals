@@ -1035,11 +1035,11 @@ final class TerminalVisualStateStore {
             throw TerminalVisualStateError.invalidRecord
         }
         guard RuntimeDirectoryTrust.owned(current) else { throw TerminalVisualStateError.storageUnavailable }
-        var buffer = [UInt8](repeating: 0, count: Self.sizeLimit + 1)
+        var buffer = [UInt8](repeating: 0, count: Int(current.st_size) + 1)
         var data = Data()
         while data.count <= Self.sizeLimit {
             try checkDeadline(deadline)
-            let count = readDescriptor(fd, &buffer, buffer.count - data.count)
+            let count = readDescriptor(fd, &buffer, min(buffer.count, Self.sizeLimit + 1 - data.count))
             if count == 0 { break }
             if count < 0 {
                 if errno == EINTR { continue }

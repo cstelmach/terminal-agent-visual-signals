@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.71
+Version: 1.72
 
 ## Private managed-output failure diagnostics
 
@@ -143,11 +143,11 @@ not ACLs or all path replacement races.
 
 ## Record read retries
 
-TerminalVisualStateStore checks the supplied monotonic deadline before every record read syscall,
-including retries after EINTR and partial reads. It throws deadlineExceeded before another attempt
-when the original budget is exhausted. The original budget and record schema stay the same.
-A defaulted internal readDescriptor closure enables syscall-level regression
-tests; production callers continue using Darwin.read. Existing fd/type/inode/size checks remain.
+TerminalVisualStateStore checks the original monotonic deadline before every syscall and retry.
+EINTR and partial reads cannot issue another syscall after expiry. Budget and schema stay fixed.
+The buffer uses checked file size plus one; reads still enforce the cumulative 8,192-byte limit.
+Actual EOF is required, including growth after open. readDescriptor defaults to Darwin.read.
+Existing directory/leaf trust, regular-file, device/inode, decode and deadline checks remain.
 
 ## Ordinary provider observation compatibility
 

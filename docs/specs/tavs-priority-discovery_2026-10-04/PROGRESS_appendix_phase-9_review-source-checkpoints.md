@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-15
-Version: 1.15
+Version: 1.16
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -858,3 +858,21 @@ Owned-PTY acceptance waits on same-delivery configured processing color and capt
 bytes before the owner exits. Managed29 and intent19 pass. Full664 retains one unavailable/stale
 status mismatch; historical failures and native UAT remain open. Source-only review findings
 were verified and fixed. Scope:1 production/2 integration files plus existing docs.
+
+### Phase 9 bounded tool-error restoration: 2026-10-15
+
+One retry handles current helper failure; stale work stops. Managed29/intent19 pass.
+[Source/results](caller-deadline-source-check-2026-10-14.md#tool-error-restore-correction).
+Next: native preparation/status mismatch; native acceptance and final reviews remain open.
+
+## Record-read preparation: 2026-10-15
+
+The cached-record fixture's first read request drops from 8,193 to 123 bytes using checked file size.
+The loop still reads actual EOF and enforces the total 8,192-byte cap, including growth after open.
+Three new tests cover footprint and two same-inode growth hazards; six focused reader cases pass.
+Existing deadline checks and both trust walks remain. A prefix-reuse proposal was withdrawn
+because it removed a recheck that can catch intervening metadata changes. One forced-reset
+assertion gains its fixed error label/caller elapsed; expected stale code 3 and real writer stay.
+The post-change 141-test run retains four deadline errors elsewhere; full debug/release failures and original
+status attribution remain open. Host load was about 80 with 12 CPUs. Scope: 1 production/2 tests
+plus existing docs. No native acceptance, provider final approval or latency resolution claimed.

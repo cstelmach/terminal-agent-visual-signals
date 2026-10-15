@@ -1381,6 +1381,58 @@ final class TerminalVisualStateTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: url), original)
     }
 
+    func testRecordReadRequestsFitTheCurrentRecordAndPreserveItsBytes() throws {
+        let writer = makeStore()
+        let target = try XCTUnwrap(writer.captureTarget(tty: tty, owner: generation(11)))
+        try writer.cacheTargetUnlocked(target, deadline: .max)
+        let url = try targetRecordURL("target.json"), original = try Data(contentsOf: url)
+        var requests: [Int] = []
+        let reader = makeStore(readDescriptor: { fd, buffer, count in
+            requests.append(count)
+            return Darwin.read(fd, buffer, count)
+        })
+        try reader.cacheTargetUnlocked(target, deadline: .max)
+        XCTAssertEqual(requests.count, 2, "Read the record and verify actual EOF")
+        XCTAssertEqual(requests.max(), original.count + 1)
+        XCTAssertEqual(try Data(contentsOf: url), original)
+    }
+
+    func testRecordGrowingPastLimitCannotBeAcceptedAsAValidJSONPrefix() throws {
+        try assertGrowingRecordIsRejected(pastLimit: true)
+    }
+
+    func testRecordGrowingWithinLimitCannotHideAnInvalidSuffix() throws {
+        try assertGrowingRecordIsRejected(pastLimit: false)
+    }
+
+    private func assertGrowingRecordIsRejected(pastLimit: Bool) throws {
+        let writer = makeStore()
+        let target = try XCTUnwrap(writer.captureTarget(tty: tty, owner: generation(11)))
+        try writer.cacheTargetUnlocked(target, deadline: .max)
+        let url = try targetRecordURL("target.json"), original = try Data(contentsOf: url)
+        let padding = pastLimit ? 8_193 - original.count : original.count + 1
+        var growth = Data(repeating: 0x20, count: padding)
+        if !pastLimit { growth.append(0x58) }
+        var calls = 0
+        let reader = makeStore(readDescriptor: { fd, buffer, count in
+            let bytes = Darwin.read(fd, buffer, count)
+            calls += 1
+            if calls == 1 {
+                let append = open(url.path, O_WRONLY | O_APPEND | O_NOFOLLOW)
+                guard append >= 0 else { XCTFail("Growth fixture unavailable"); return -1 }
+                defer { close(append) }
+                let written = growth.withUnsafeBytes { Darwin.write(append, $0.baseAddress, $0.count) }
+                XCTAssertEqual(written, growth.count)
+            }
+            return bytes
+        })
+        XCTAssertThrowsError(try reader.cacheTargetUnlocked(target, deadline: .max)) { error in
+            XCTAssertEqual(String(describing: error), TerminalVisualStateError.invalidRecord.description)
+        }
+        XCTAssertGreaterThan(calls, 1)
+        XCTAssertEqual(try Data(contentsOf: url), original + growth)
+    }
+
     private func deadline() -> UInt64 { DispatchTime.now().uptimeNanoseconds + 100_000_000 }
 
     private func effect(_ binding: TerminalTargetBinding, id: String = "effect-43") -> TerminalEffectRecord {

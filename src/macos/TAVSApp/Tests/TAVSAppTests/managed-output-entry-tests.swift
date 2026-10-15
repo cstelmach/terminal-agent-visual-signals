@@ -337,7 +337,10 @@ final class ManagedOutputEntryTests: XCTestCase {
 
     func testForcedResetIsTypedSyntheticAndRejectsUnsafeTitle() throws {
         let context = context(), token = try token(context)
-        XCTAssertEqual(run(args("--managed-forced-reset", tty, token, "fixture title"))?.code, 3)
+        let started = DispatchTime.now().uptimeNanoseconds
+        let stale = try XCTUnwrap(run(args("--managed-forced-reset", tty, token, "fixture title")))
+        XCTAssertEqual(stale.code, 3,
+            "\(stale.error) caller_elapsed_ns=\(DispatchTime.now().uptimeNanoseconds - started)")
         noBytes()
         try observe(context)
         XCTAssertEqual(run(args("--managed-forced-reset", tty, token, "fixture title"))?.code, 0)
