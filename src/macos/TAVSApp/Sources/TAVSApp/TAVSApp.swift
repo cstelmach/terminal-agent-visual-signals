@@ -44,8 +44,7 @@ enum TAVSAppMain {
         if ManagedOutputEntry.handle(args) { return }
         if VisualRestrictionsStateStore.handle(args) { return }
         if OrganizerIntake.handle(args) { return }
-        if ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"]
-            .contains(where: { ProcessInfo.processInfo.environment[$0] != nil }) {
+        if IsolatedSessionsLaunch.isRequired() {
             do {
                 _ = try IsolatedSessionsLaunch.environment()
                 IsolatedSessionsApp.main()
@@ -132,6 +131,13 @@ struct IsolatedSessionsLaunch {
     let root: URL
     let fixture: URL?
     let allowed: Set<GhosttySurfaceID>?
+
+    static func isRequired(bundleIdentifier: String? = Bundle.main.bundleIdentifier,
+                           values: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
+        bundleIdentifier == "com.cstelmach.tavs.sessions-test" ||
+            ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"]
+                .contains(where: { values[$0] != nil })
+    }
 
     static func environment(_ values: [String: String] = ProcessInfo.processInfo.environment) throws -> Self {
         guard let path = values["TAVS_SESSIONS_TEST_ROOT"], path.hasPrefix("/") else {

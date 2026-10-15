@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.5
+Version: 1.6
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -68,6 +68,18 @@ Personal-root and escaping-fixture rejection tests still pass.
 
 Further evidence and remaining acceptance:
 [progress log](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
+
+## Test bundle starts production mode without launch settings
+
+The isolated branch was selected only by environment keys. Opening a staged test bundle
+directly could therefore start the production scheduler and login registration. The exact
+`com.cstelmach.tavs.sessions-test` bundle ID now also requires isolated launch validation.
+Missing settings exit before SwiftUI starts; existing headless commands remain available.
+
+Prevention: the launch-policy matrix covers the exact bundle, ordinary/lookalike IDs and
+each environment key. All 672 Swift tests pass. The signed staged bundle exits 1 with the
+fixed isolation error when started without settings and writes no private preferences.
+This verifies rejection only. Native Ghostty acceptance still needs operator observations.
 
 ## App replacement copy removes the prior installation
 

@@ -335,6 +335,17 @@ final class SessionsModelTests: XCTestCase {
         XCTAssertFalse(files.contains { $0.hasPrefix("adoption-") })
     }
 
+    func testTestBundleRequiresIsolationEvenWithoutLaunchEnvironment() {
+        XCTAssertTrue(IsolatedSessionsLaunch.isRequired(bundleIdentifier: "com.cstelmach.tavs.sessions-test", values: [:]))
+        for bundle in [nil, "com.cstelmach.tavs", "com.cstelmach.tavs.sessions-test-other"] {
+            XCTAssertFalse(IsolatedSessionsLaunch.isRequired(bundleIdentifier: bundle, values: [:]))
+        }
+        for key in ["TAVS_SESSIONS_TEST_ROOT", "TAVS_SESSIONS_TEST_FIXTURE", "TAVS_SESSIONS_TEST_TARGETS"] {
+            XCTAssertTrue(IsolatedSessionsLaunch.isRequired(bundleIdentifier: nil, values: [key: ""]))
+        }
+        XCTAssertThrowsError(try IsolatedSessionsLaunch.environment([:]))
+    }
+
     func testIsolatedLaunchRejectsIncompletePersonalAndEscapingRoots() throws {
         XCTAssertThrowsError(try IsolatedSessionsLaunch.environment([:]))
         XCTAssertThrowsError(try IsolatedSessionsLaunch.environment(["TAVS_SESSIONS_TEST_ROOT": "/Users/cs/.tavs"]))
