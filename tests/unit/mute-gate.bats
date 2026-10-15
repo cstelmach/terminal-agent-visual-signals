@@ -166,8 +166,9 @@ APP_PID="99999"
 SCHEMA_VERSION="1"
 EOF
     _TAVS_SUPPRESS_OUTPUT=0
-    run _tavs_check_mute_state
-    [ "$status" -eq 1 ]
+    traced_check() { set -x; _tavs_check_mute_state; }
+    run traced_check
+    [ "$status" -eq 1 ] || { printf 'Unexpected mute status: %s\n%s\n' "$status" "$output"; return 1; }
 }
 
 @test "check_mute_state returns 1 when SCHEMA_VERSION is unknown" {

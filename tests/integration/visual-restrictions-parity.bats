@@ -40,7 +40,8 @@ RULES
 
 @test "Swift and shell consume each other's persisted marker" {
     source "$LIB"
-    _tavs_visual_restrictions_write true
+    run bash -x -c 'source "$1"; _tavs_visual_restrictions_write true' _ "$LIB"
+    [ "$status" -eq 0 ]
     run "$TAVS_TEST_HELPER_BIN" --visual-restrictions-read "$MARKER"
     [ "$status" -eq 0 ]
     [ "$output" = suspended ]
@@ -145,7 +146,7 @@ _tavs_visual_restrictions_write false
 _tavs_check_mute_state
 test "$_TAVS_SUPPRESS_OUTPUT" = 1
 SH
-    run bash "$BATS_TEST_TMPDIR/check.sh" "$REPO_ROOT"
+    run bash -x "$BATS_TEST_TMPDIR/check.sh" "$REPO_ROOT"
     [ "$status" -eq 0 ]
 }
 

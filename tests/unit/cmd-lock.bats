@@ -35,8 +35,9 @@ state_value() {
     _tavs_challenge_verify() {
         _tavs_lock_write true manual "$((NOW + 14400))" 0 '#223344' ''
     }
-    run _lock_unlock --for 15m
-    [ "$status" -eq 0 ]
+    traced_unlock() { set -x; _lock_unlock "$@"; }
+    run traced_unlock --for 15m
+    [ "$status" -eq 0 ] || { printf 'Unexpected unlock status: %s\n%s\n' "$status" "$output"; return 1; }
     [ "$(state_value LOCK_UNTIL_EPOCH)" -eq "$((NOW + 14400))" ]
     [ "$(state_value LOCK_BG)" = '#223344' ]
     [ "$(state_value UNLOCK_UNTIL_EPOCH)" -gt "$NOW" ]
@@ -272,8 +273,9 @@ write_visual_suspension() {
     cp "$TEST_RUNTIME/lock.state" "$TEST_DIR/lock.before"
     _tavs_challenge_verify() { : > "$TEST_DIR/challenge-called"; return 1; }
     write_visual_suspension true
-    run _lock_unlock --for 15m
-    [ "$status" -eq 0 ]
+    traced_unlock() { set -x; _lock_unlock "$@"; }
+    run traced_unlock --for 15m
+    [ "$status" -eq 0 ] || { printf 'Unexpected suspended-unlock status: %s\n%s\n' "$status" "$output"; return 1; }
     [[ "$output" == *'suspended'* && "$output" == *'saved lock'* ]]
     [ ! -e "$TEST_DIR/challenge-called" ]
     cmp "$TEST_DIR/lock.before" "$TEST_RUNTIME/lock.state"
