@@ -108,3 +108,8 @@ Current acceptance and unverified cases remain in [PROGRESS.md](PROGRESS.md).
 
 **Phase 9 Swift/launch, 2026-10-15: 672/672 pass; guard b44727f.** [Results](caller-deadline-source-check-2026-10-14.md#fresh-isolated-swift-verification-2026-10-15).
 **Scope:** one source/test and bug docs; native031/038 bootstrap timed out at 8s; next: bulk catalogue reads.
+
+### Native catalogue source checkpoint: 2026-10-15
+
+**Phase 9 native catalogue, 2026-10-15: 674/674 pass; 39bed38.** [Results](caller-deadline-source-check-2026-10-14.md#native-selector-batching-2026-10-15); [prior checkpoint](PROGRESS_appendix_phase-2_launch-debugging.md#swift-and-scoped-launch-checkpoint-2026-10-15).
+**Scope:** one source/test and bug docs; native031/038 app open, suspended. Next: portable lock transaction; native/Linux acceptance.

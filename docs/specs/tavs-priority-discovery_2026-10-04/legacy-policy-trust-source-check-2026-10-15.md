@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.3
+Version: 1.4
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -444,3 +444,46 @@ Policy directory validation is separate from opening; no descriptor-bound ancest
 hard syscall deadline is claimed. Store write ancestry/ownership, debug paths, legacy portable
 mutation serialization and native/Linux acceptance remain open. No live configuration, terminal,
 schedule, installed backend or machine permissions were changed.
+
+## Portable lock mutation transactions: 2026-10-15
+
+`aa790b7` routes portable CLI now/grant and replacement fixtures through one trusted
+read/merge/replace transaction. The old real CLI reproduction lets B commit an eight-hour
+definition, then releases A's stale four-hour replacement. Both return zero; the final end is
+1792098322 instead of accepted1792112722, a loss of 14400 seconds. This establishes the race
+without relying on atomic-file-replacement assumptions.
+
+The new `portable_lock_state.py` reuses policy path/leaf checks, held parent identity and
+the existing bounded mutex. Now keeps the greater end and clears a grant; grant merges into
+fresh end/reason/colors after the challenge. The state and payload are bounded at8 KiB.
+Its CLI supplies one100 ms monotonic transaction deadline after Python startup/imports;
+filesystem calls are not claimed interruptible. The device deadline remains unchanged.
+Darwin stays on its native helper. Missing Python and rejected state do not retry raw writes.
+
+The source check found two cleanup defects in the initial implementation: close could report
+failure after successful publication, and a pre-commit close error skipped temporary cleanup.
+Both were reproduced with real-close-then-EIO injections before correction. Successful replace
+now commits the result across cleanup errors; nested cleanup still removes the owned temporary
+before commitment. No parent/leaf race immunity or noncooperating-writer protection is claimed.
+Complete inspected-snapshot report:
+`/Volumes/external/agent-data/reports/2026-10-15/tavs-portable-lock-transaction-source-check-191200.md`.
+
+Durable regressions cover two-process serialization for both operations, the actual CLI while
+its mutex is held, trust/contention/numeric/cleanup cases and execution from copied installations.
+The copied test first failed because the new dependency was absent; the shared copy list now
+delivers it. Eleven new helper cases are included in final225:217 pass and8 Linux-only skips,
+27.367 s. All115 connected shell cases pass under explicit system Bash3.2.57 and under
+Homebrew Bash5.3.15 with LC_ALL=C. All17 copy cases pass. Final isolated Swift674/674 passes,
+18.428 s (18.481 s elapsed); no Swift source changed.
+
+An initial87-case shell run failed three pre-existing native cases. BATS_TEST_SHELL did not
+pin the interpreter: installed Bats1.14 does not read it and uses env bash. Explicit PATH and
+/bin/bash supplied the corrected system control. The earlier failure statuses were not traced,
+so they are not attributed to the previously observed locale crash or to this fix.
+
+All RED/green/connected/full logs and the real CLI race reproduction are retained under
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/portable-lock-transaction-20261015-190457-6d304f/`.
+The source fix includes one helper/test pair, CLI routing, the helper copy list and two Bats
+regressions. API/bug/architecture docs were updated. No live install, settings, schedules,
+terminal effects or session shutdown occurred. Remaining Store write-trust/debug paths,
+Homebrew default-locale behavior and native/Linux acceptance remain open; the goal is incomplete.
