@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
-Last Updated: 2026-10-14
-Version: 1.14
+Last Updated: 2026-10-15
+Version: 1.15
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -839,3 +839,22 @@ parse errors. Portable182 pass; Swift664/2 and Bats2/4 failures remain with pass
 controls. [Source/results](caller-deadline-source-check-2026-10-14.md#portable-parent-verification).
 Scope:1 production/1 test file plus existing docs; Phase9 support repair. Native acceptance and
 final reviews remain open. No live app/settings/session change or worker budget widening.
+
+### Phase 9 caller result deadline: 2026-10-14
+
+Connected62/final664 pass; [details](caller-deadline-source-check-2026-10-14.md).
+
+### Phase 9 portable caller deadline: 2026-10-14
+
+182 portable pass; [results](caller-deadline-source-check-2026-10-14.md#portable-parent-verification).
+
+## Tool-error restore: 2026-10-15
+
+The worker retries exact helper code1 once after50ms, with fresh precheck and fresh synthetic
+render. Stale3 stops immediately; other errors stop and each helper remains bounded to100ms.
+Synthetic core now returns rendering status; ordinary hooks retain exit0. Seven regressions
+cover transient check/render failure, stale checks/renders, two-attempt limits and return codes.
+Owned-PTY acceptance waits on same-delivery configured processing color and captured physical
+bytes before the owner exits. Managed29 and intent19 pass. Full664 retains one unavailable/stale
+status mismatch; historical failures and native UAT remain open. Source-only review findings
+were verified and fixed. Scope:1 production/2 integration files plus existing docs.

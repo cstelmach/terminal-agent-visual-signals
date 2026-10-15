@@ -1,7 +1,7 @@
 # Bug Reference
 
-Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.76
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.77
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -628,15 +628,16 @@ connected timer, mute and managed-render checks still pass.
 
 ## A delayed tool-error restore cancels a newer completion timer
 
-The first correction checked delivery before invoking the synthetic trigger, but a newer hook
-could arrive after that check and before the processing/subagent handlers. Stale output was
-rejected while the handlers still killed a newer timer, replaced session state or incremented
-the newer subagent count. Synthetic restoration now skips these meaningful-state actions and
-new-prompt identity work; normal hooks keep their existing behavior. The original precheck and
-final managed validation remain. Real-helper barriers reproduce the exact ordering after a
-successful precheck. Tests verify unchanged state/count/observation, stale result 3, and later
-graduated bytes from the same completion timer. A current restore still paints its configured
-subagent background without another spawn. All fixtures use private roots and owned PTYs.
+A newer hook could arrive after restore precheck; stale handlers then killed its timer, changed
+session state or incremented its subagent count despite rejected output. Synthetic restores now
+skip those mutations and new-prompt identity work, while final managed validation rejects stale
+batches. Real-helper barriers verify unchanged state/count/observation and later timer bytes.
+A separate single helper failure could abandon current restoration. The worker now retries
+code 1 once after 50 ms, checks context again and stops at stale 3. Synthetic core returns its
+render status so render failures can retry; ordinary hooks retain exit 0 on render failure.
+Seven regressions cover retry, stale/error limits and statuses. Owned-PTY checks wait for the
+expected processing bytes with the producer alive. Persistent failures remain possible; the
+historical missing restore is not attributed to a captured helper failure.
 
 ## A queued ordinary render replays titles and bells after recovery
 

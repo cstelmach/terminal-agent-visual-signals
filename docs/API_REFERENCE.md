@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
-Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.70
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.71
 
 ## Private managed-output failure diagnostics
 
@@ -667,6 +667,9 @@ Delayed tool-error processing/subagent restoration retains its original delivery
 same managed render. It skips timer cancellation, session-state publication, counter increments
 and new-prompt identity work. A newer hook after precheck therefore preserves its state and timer;
 final native validation still rejects the stale visual batch. Meaningful hooks retain those actions.
+Tool-error restore retries code 1 once after 50 ms, rechecking its original context each attempt.
+Synthetic core returns final render status; ordinary render failures retain hook exit 0.
+Each helper call keeps its 100 ms budget. Persistent failures await a new hook or recovery.
 Current palette, background, title and image styling is composed inside the writer transaction;
 the payload is ephemeral and is not retained as output history.
 

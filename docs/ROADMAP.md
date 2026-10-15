@@ -1,12 +1,17 @@
 # Organizer and reversible focus roadmap
 
-Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.48
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.49
+
+Current tool-error restoration retries one helper error, with fresh context checks and no retry
+for stale delivery. Synthetic triggers report rendering failures; ordinary hooks retain success.
+Managed29 and intent19 pass. Full Swift664 retains one stale/unavailable mismatch; source and
+required native acceptance remain incomplete. The earlier missing restore is not attributed.
 
 Managed helpers now expose private fixed failure-stage/category diagnostics. Worker acceptance
 requires returned rendering and actual PTY color, with Bats records retained for failures.
 660 Swift/177 portable tests and release pass. Historical delivery failures remain unassigned;
-Caller result bounds are now checked; native preparation and delayed tool-error need follow-up.
+Caller bounds are checked; native preparation and historical missing restoration need follow-up.
 Native writer timeouts now carry nonblocking synchronized boundary labels. Connected59 tests
 and release pass; full661 retains four old preview-cleanup assertions. Preparation is located
 in one earlier masked-focus failure; its nested cost/cause remains open.

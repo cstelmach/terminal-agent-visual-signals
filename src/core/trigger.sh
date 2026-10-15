@@ -410,13 +410,25 @@ case "$STATE" in
         # Use background process to avoid blocking the hook
         (
             sleep 1.5
-            _tavs_managed_check_context || exit 0
-            # Return to processing or subagent state
-            if has_active_subagents 2>/dev/null; then
-                TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" subagent
-            else
-                TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" processing
-            fi
+            for restore_attempt in 1 2; do
+                restore_result=0
+                _tavs_managed_check_context || restore_result=$?
+                if [[ "$restore_result" == 0 ]]; then
+                    # Recheck current delivery on every attempt; never revive superseded work.
+                    if has_active_subagents 2>/dev/null; then
+                        TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" subagent || restore_result=$?
+                    else
+                        TAVS_ORGANIZER_SYNTHETIC=1 "$SCRIPT_DIR/trigger.sh" processing || restore_result=$?
+                    fi
+                fi
+                case "$restore_result" in
+                    0|3) exit 0 ;;
+                    1) ;;
+                    *) exit "$restore_result" ;;
+                esac
+                if [[ "$restore_attempt" == 1 ]]; then sleep .05; fi
+            done
+            exit "$restore_result"
         ) </dev/null >/dev/null 2>&1 &
         disown 2>/dev/null || true
         ;;
@@ -427,5 +439,7 @@ case "$STATE" in
         ;;
 esac
 
-_tavs_render_flush || true
+render_result=0
+_tavs_render_flush || render_result=$?
+if [[ "${TAVS_ORGANIZER_SYNTHETIC:-0}" == 1 ]]; then exit "$render_result"; fi
 exit 0

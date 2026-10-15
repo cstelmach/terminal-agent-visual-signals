@@ -27,6 +27,13 @@ case "$1" in
         [[ "$2" == "$HOME/.tavs/visual-restrictions.state" && "$3" == "$TAVS_RUNTIME_DIR" ]] || exit 1
         [[ "$4" == "$TTY_DEVICE" && "$4" == "$TAVS_TEST_ROOT/"* && "$5" == context-token ]] || exit 1
         [[ "$MANAGED_TEST_MODE" != render-unavailable ]] || exit 1
+        if [[ "${6:-}" == 1 ]]; then
+            printf 'restore-render\n' >> "$MANAGED_TEST_LOG"
+            [[ "$MANAGED_TEST_MODE" != restore-render-failed ]] || exit 1
+            [[ "$MANAGED_TEST_MODE" != restore-render-stale ]] || exit 3
+            if [[ "$MANAGED_TEST_MODE" == restore-render-once &&
+                  "$(grep -c '^restore-render$' "$MANAGED_TEST_LOG")" == 1 ]]; then exit 1; fi
+        fi
         python3 -c 'import json,os,sys
 parts=sys.stdin.buffer.read().split(b"\0")
 assert len(parts)==24 and parts[-1]==b""
@@ -62,6 +69,10 @@ print("rendered")'
         exit 0 ;;
     --managed-check-context)
         [[ "$5" == context-token ]] || exit 1
+        [[ "$MANAGED_TEST_MODE" != restore-check-failed ]] || exit 1
+        [[ "$MANAGED_TEST_MODE" != restore-check-stale ]] || exit 3
+        if [[ "$MANAGED_TEST_MODE" == restore-check-once &&
+              "$(grep -c '^--managed-check-context$' "$MANAGED_TEST_LOG")" == 1 ]]; then exit 1; fi
         [[ "$MANAGED_TEST_MODE" != stale ]] || exit 3
         [[ "$MANAGED_TEST_MODE" != failed ]] || exit 1
         exit 0 ;;
@@ -81,6 +92,78 @@ esac
 exit 1
 HELPER
     chmod +x "$TAVS_TEST_HELPER_BIN"
+}
+
+_tool_error_restore_retry() {
+    export MANAGED_TEST_MODE="$1" TAVS_ORGANIZER_CONTEXT=context-token TAVS_AGENT=claude
+    export TAVS_TMP_DIR="$TEST_DIR/state" _TAVS_TMP_DIR="$TEST_DIR/state"
+    local checks=2 renders=1 expected='#44AA66'
+    case "$1" in
+        restore-render-once) renders=2 ;;
+        restore-render-failed) renders=2 expected='#CC4455' ;;
+        restore-render-stale) checks=1 expected='#CC4455' ;;
+        restore-check-stale) checks=1 renders=0 expected='#CC4455' ;;
+        restore-check-failed) renders=0 expected='#CC4455' ;;
+    esac
+    printf 'THEME_MODE="static"\nFORCE_MODE="dark"\nCLAUDE_DARK_PROCESSING="#44AA66"\nCLAUDE_DARK_TOOL_ERROR="#CC4455"\nENABLE_TITLE_PREFIX=false\n' > "$HOME/.tavs/user.conf"
+    run /bin/bash -p -c '
+        set -eE
+        trap '\''printf "restore-fixture line=%s status=%s\n" "$LINENO" "$?" >&2'\'' ERR
+        source "$1/src/core/session-state.sh"
+        /bin/bash -p "$1/src/core/trigger.sh" tool_error
+        cp "$STATE_DB" "$2/state-before"
+        for ((attempt=0; attempt<100; attempt++)); do
+            count=$(grep -c '^--managed-check-context$' "$MANAGED_TEST_LOG" || :)
+            paints=$(grep -c '^restore-render$' "$MANAGED_TEST_LOG" || :)
+            if [[ "$count" -ge "$3" && "$paints" -ge "$5" && "$(cat "$TTY_DEVICE")" == $'"'"'\033]11;'"'"'"$4"$'"'"'\033\\'"'"' ]]; then break; fi
+            sleep .05
+        done
+        sleep .2
+        test "$(cat "$TTY_DEVICE")" = $'"'"'\033]11;'"'"'"$4"$'"'"'\033\\'"'"' || {
+            cat "$MANAGED_TEST_LOG" >&2; exit 1;
+        }
+        cmp "$STATE_DB" "$2/state-before"
+        test "$(grep -c '^--organizer-observe$' "$MANAGED_TEST_LOG")" = 1
+        test "$(grep -c '^--managed-check-context$' "$MANAGED_TEST_LOG")" = "$3"
+    ' _ "$REPO_ROOT" "$TEST_DIR" "$checks" "$expected" "$renders"
+    [ "$status" -eq 0 ] || { printf '%s\n' "$output" >&2; return 1; }
+    [ "$(grep -c '^restore-render$' "$MANAGED_TEST_LOG" || :)" -eq "$renders" ]
+}
+
+@test "tool-error restore retries one unavailable current context without changing state" {
+    _tool_error_restore_retry restore-check-once
+}
+
+@test "tool-error restore retries one unavailable synthetic render without changing state" {
+    _tool_error_restore_retry restore-render-once
+}
+
+@test "tool-error restore never retries stale context" {
+    _tool_error_restore_retry restore-check-stale
+}
+
+@test "tool-error restore stops after two unavailable context checks" {
+    _tool_error_restore_retry restore-check-failed
+}
+
+@test "tool-error restore never retries stale synthetic render" {
+    _tool_error_restore_retry restore-render-stale
+}
+
+@test "tool-error restore stops after two unavailable synthetic renders" {
+    _tool_error_restore_retry restore-render-failed
+}
+
+@test "synthetic core reports managed errors while ordinary hooks remain successful" {
+    export TAVS_ORGANIZER_CONTEXT=context-token
+    for entry in failed:1 stale:3; do
+        run env MANAGED_TEST_MODE="${entry%:*}" TAVS_ORGANIZER_SYNTHETIC=1 \
+            /bin/bash -p "$REPO_ROOT/src/core/trigger.sh" processing
+        [ "$status" -eq "${entry#*:}" ]
+        run env MANAGED_TEST_MODE="${entry%:*}" \
+            /bin/bash -p "$REPO_ROOT/src/core/trigger.sh" processing
+        [ "$status" -eq 0 ]
+    done
 }
 
 @test "new native restriction cannot be overwritten by ordinary hook styling" {
@@ -213,7 +296,7 @@ PY
     export MANAGED_TEST_MODE=stale TAVS_ORGANIZER_CONTEXT=context-token TAVS_ORGANIZER_SYNTHETIC=1
     printf 'ENABLE_BACKGROUND_CHANGE=false\nENABLE_PALETTE_THEMING=true\nTAVS_TITLE_MODE="full"\n' > "$HOME/.tavs/user.conf"
     run /bin/bash -p "$REPO_ROOT/src/core/trigger.sh" processing
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 3 ]
     [ ! -s "$TTY_DEVICE" ]
     [[ "$(cat "$MANAGED_TEST_LOG")" == *--managed-render* ]]
     [[ "$(cat "$MANAGED_TEST_LOG")" != *--managed-background* ]]

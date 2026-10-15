@@ -292,3 +292,58 @@ Logs under the prior private `tavs-isolated.RUN/command.log` root:
 The portable root/report does not explain native preparation or delayed restore timing.
 No deadline was widened, native source changed or required acceptance waived. Next: preparation
 cost and delayed restore attribution, with Linux/native/headless/palette and final reviews open.
+
+## Tool-error restore correction
+
+Last Updated: 2026-10-15 (Europe/Vienna). Source baseline774d91d; scoped exploration only.
+Two read-only reports established the original-delivery, paint-only continuation contract and
+compared retained failure/control records. Root checked the source before implementation.
+
+The worker used one context check and one synthetic render. Any precheck failure ended work;
+synthetic core then hid render failures behind exit0. Either path could abandon a current
+restore. The worker now retries exact code1 once after50ms, checking original context again.
+Code3 stops immediately; other codes stop. Each helper call retains its original100ms budget.
+The final synthetic flush returns its managed status; ordinary render failures retain exit0.
+No observation, timer, counter, ownership schema or meaningful hook was added.
+
+Retained x9DupH failure: matching tool-error observation/intent delivery, error background
+#4A2A1F, timestamp delta0.42812395095825195. Passing E1OGyv control: processing background
+#473D2F, delta1.8463268280029297. These records locate the failed assertion but cannot identify
+which silent stage failed. The fixed timestamp-only oracle could also accept a slow initial
+error paint without a restore. Current acceptance waits for a distinct configured processing
+color on the same delivery and actual captured OSC bytes while the producer remains alive.
+
+The temporary proxy Ql2lMo passed before source changes: current precheck0 and render0, with
+outer measured22ms/29ms. Its wall-clock readings include launch/proxy cost, not native stage
+elapsed. It did not reproduce or attribute the historical failure.
+
+Private logs under the prior `tavs-isolated.RUN/command.log` directory:
+
+- XRfCME: two injected one-shot check/render failure tests fail on the original source.
+- eqrsYK: those two pass with the correction; hmLuin: initial five focused cases pass.
+- KfPGF3: broad managed run retains two fixture failures. A stale synthetic test expected
+  masked-success0; it now expects3. Retry fixture also waited on checks before required renders.
+- Source review found that intent-only completion could close the PTY before output. The
+  reader now acknowledges captured exact OSC bytes, and the owner waits for that flag.
+  New mocks isolate state and wait for required check/render counts. Ineffective new bell
+  overrides were removed; the existing actively enabled suppression test remains.
+- ZVdNQI: all29 managed checks pass. ZbAaO6: all19 intent checks pass, including owned PTYs,
+  stale delivery races, subagent state/count preservation, worker colors and recovery/resume.
+- U538SB: earlier five real-helper restore/control cases pass before the byte-handshake repair.
+- ks8aHi: full664 has one assertion, unavailable1 instead of stale3 in the existing forced-reset
+  case at managed-output-entry-tests.swift:340. This is retained, not attributed to shell changes.
+- 83B51F: ShellCheck reports existing SC1091/SC2329 notes outside changed lines. Bash syntax passes.
+
+The scoped review's two concrete findings were checked in source and resolved. It did not run
+runtime tests or replace required final provider reviews. Persistent helper errors can still
+leave error styling until a new hook or recovery; retry is deliberately bounded. Historical
+missing restore, native preparation, Linux/headless/palette and native UAT remain open.
+
+Full agent reports and owned backups remain in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-tool-restore-probe-tgrtibud/`.
+The reports produced two confirmed failure paths, one weak restore oracle, and two concrete
+review findings. This synopsis retains those outcomes without copying the443-line report set.
+No working terminal, installed app or real preferences/schedules were changed.
+
+KUXeoB: the single forced-reset case passes separately in0.044s. This does not explain ks8aHi
+or change the retained full-suite outcome. Next work remains native deadline/status attribution.

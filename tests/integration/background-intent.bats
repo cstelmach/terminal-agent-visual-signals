@@ -250,6 +250,7 @@ PY
 
 @test "owned PTY synthetic colors preserve the observation and reject a superseded delivery" {
     _write_worker_capture
+    printf 'THEME_MODE="static"\nFORCE_MODE="dark"\nCLAUDE_DARK_PROCESSING="#33AA77"\nCLAUDE_DARK_TOOL_ERROR="#CC4455"\n' > "$HOME/.tavs/user.conf"
     cat > "$CASE_DIR/pty-check.sh" <<'SH'
 set -eE
 fixture_stage=initial
@@ -313,19 +314,29 @@ fixture_stage=tool-error
 printf '%s' '{"hook_event_name":"PostToolUseFailure","tool_input":{"x":"ERROR_BODY_SENTINEL"}}' |
     bash "$1/src/agents/claude/trigger.sh" tool_error
 cp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/error-observation.json"
-sleep 2.3
-cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/error-observation.json"
 fixture_stage=tool-error-check
 python3 - "$TAVS_RUNTIME_DIR/organizer" "$2" <<'CHECK'
-import json,pathlib,sys
+import json,pathlib,sys,time
 root=pathlib.Path(sys.argv[1]); case=pathlib.Path(sys.argv[2])
 observation=json.loads((case/'error-observation.json').read_text())
-intent=json.loads(next(root.glob('intent-*.json')).read_text())
+intent_path=next(root.glob('intent-*.json')); deadline=time.monotonic()+5
+while True:
+    intent=json.loads(intent_path.read_text())
+    if intent['deliveryID']==observation['deliveryID'] and intent['background']=='#33AA77':
+        break
+    assert time.monotonic()<deadline, 'Tool-error restore did not publish processing intent'
+    time.sleep(.05)
 assert observation['state']=='tool_error' and observation['event']=='PostToolUseFailure'
 assert intent['deliveryID']==observation['deliveryID']
 assert intent['updatedAt']>observation['observedAt']+1
 assert 'ERROR_BODY_SENTINEL' not in json.dumps(observation)
 CHECK
+for ((attempt=0; attempt<100; attempt++)); do
+    [[ -f "$2/restore-bytes" ]] && break
+    sleep .05
+done
+test -f "$2/restore-bytes"
+cmp "$TAVS_RUNTIME_DIR"/organizer/observation-*.json "$2/error-observation.json"
 SH
     run python3 - "$CASE_DIR/pty-check.sh" "$REPO_ROOT" "$CASE_DIR" <<'PY'
 import errno,json,os,pty,select,signal,sys,time
@@ -339,6 +350,8 @@ try:
             try:
                 data=os.read(fd,4096)
                 if data: output.extend(data)
+                if b'\x1b]11;#33AA77\x1b\\' in output:
+                    with open(sys.argv[3]+'/restore-bytes','w') as marker: marker.write('seen')
             except OSError as error:
                 if error.errno!=errno.EIO: raise
         got,code=os.waitpid(pid,os.WNOHANG)
@@ -346,6 +359,7 @@ try:
     assert status is not None, 'owned child exceeded deadline'
     assert os.waitstatus_to_exitcode(status)==0, output.decode(errors='replace')
     assert b'\x1b]11;#AABBCC' in output, 'worker intent was published without its expected bytes'
+    assert b'\x1b]11;#33AA77' in output, 'restore intent was published without its expected bytes'
 finally:
     if status is None:
         os.kill(pid,signal.SIGKILL); os.waitpid(pid,0)
