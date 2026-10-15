@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.2
+Version: 1.3
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -107,3 +107,18 @@ Failure injection stubs only the Python process result; successful merges run th
 Python against private settings. No provider process, real installation or user configuration changed.
 Sync now delivers the corrected installers and their required templates/adapter into existing
 plugin roots. Exact-file checks and copied Gemini/unified failure cases cover both destinations.
+
+## Linux-format test retains an unsupported native temporary root
+
+The Linux dispatch unit selected Linux while retaining its macOS runner root in `/var/folders`.
+Production correctly rejected that path before dispatch. The case now uses a fresh owned `/tmp`
+root and local environment for both positive dispatch and wrong-platform rejection. Production
+root validation and deadlines are unchanged. The original native-token check also passed at
+missing-device validation; a stage-specific assertion exposed that incomplete control. Explicit
+device identity now lets it reach context rejection, with no process lookup or renderer call.
+
+Prevention: exercise the actual root guard and assert the intended rejection boundary. The final
+portable suite passes 197 host cases, with eight Linux kernel cases skipped. A separate 17-case
+helper run passes under a `/tmp` runner. Earlier timing failures remain unattributed; a fresh
+Swift run has four assertions failing across three recovery tests. These format checks do not
+establish real Linux process/PTY behavior or native Ghostty acceptance.

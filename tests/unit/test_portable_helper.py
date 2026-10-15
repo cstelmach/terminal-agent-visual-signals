@@ -59,10 +59,15 @@ class PortableHelperTests(unittest.TestCase):
         self.assertFalse(Path(self.runtime).exists())
 
     def test_linux_dispatch_keeps_schema_two_and_avoids_darwin_temp_api(self):
+        # Linux root admission uses /tmp, independent of the host runner's Darwin temp root.
+        root = Path(tempfile.mkdtemp(prefix="helper-linux-", dir="/tmp"))
+        environment = dict(self.environment, TAVS_TEST_ROOT=str(root), HOME=str(root / "home"),
+                           TAVS_RUNTIME_DIR=str(root / "runtime"))
+        marker, runtime = str(root / "home/.tavs/visual-restrictions.state"), str(root / "runtime")
         producer = linux_generation()
         context = dict(self.context, schema=2, producer=producer, device=123)
         token = encode_context(context, time.time())
-        args = ["helper", "--managed-render", self.marker, self.runtime, "/dev/pts/43", token, "0"]
+        args = ["helper", "--managed-render", marker, runtime, "/dev/pts/43", token, "0"]
         with patch("portable_helper.sys.platform", "linux"), \
                 patch("portable_helper.os.confstr", side_effect=AssertionError("Darwin-only API")), \
                 patch("portable_helper.device_number", return_value=123), \
@@ -71,16 +76,21 @@ class PortableHelperTests(unittest.TestCase):
                 patch("portable_helper.read_input", return_value=render_input()), \
                 patch("portable_helper.Renderer") as renderer:
             renderer.return_value.render.return_value = True
-            self.assertEqual(helper.run(args, self.environment), (0, b"rendered\n", b""))
+            self.assertEqual(helper.run(args, environment), (0, b"rendered\n", b""))
             record = renderer.return_value.render.call_args.args[1]
             self.assertEqual(record["schema"], 2)
             self.assertEqual(record["producer"], producer)
         native_token = encode_context(dict(self.context, producer=fixture.generation(43), device=123), time.time())
         with patch("portable_helper.sys.platform", "linux"), \
+                patch("portable_helper.device_number", return_value=123), \
+                patch("portable_helper.inspect") as inspect, \
                 patch("portable_helper.Renderer") as renderer:
-            self.assertEqual(helper.run(args[:5] + [native_token, "0"], self.environment)[0], 1)
+            self.assertEqual(helper.run(args[:5] + [native_token, "0"], environment),
+                             (1, b"", b"Managed output unavailable. stage=context failure=value.\n"))
+            inspect.assert_not_called()
             renderer.assert_not_called()
-        self.assertFalse(Path(self.runtime).exists())
+        self.assertFalse(Path(runtime).exists())
+        self.assertFalse(Path(marker).exists())
 
     def setUp(self):
         # Native-format unit fixtures; real platform/process behavior has separate PTY classes.

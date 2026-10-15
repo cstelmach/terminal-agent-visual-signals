@@ -69,3 +69,9 @@ source remedies (failed intake handoff and bare-path loading), the controlled ti
 correction and a confirmed color-freshness finding. Keep required reports; shorten future checks.
 
 Current source and acceptance status remain in [PROGRESS.md](PROGRESS.md).
+
+### Phase 9 agent-installer status correction: 2026-10-15
+S3 fixed; partial failures remain nonzero and nested-hook reruns are idempotent. 36 Bats cases pass.
+[Source/results](current-codex-review-2026-10-14.md#s3-agent-installer-correction-2026-10-15).
+Scope: three shell files, two suites and docs, including sync delivery. N2 log moved unchanged.
+Next: retained broad-suite failures and Linux after operator-started Docker; native acceptance open.

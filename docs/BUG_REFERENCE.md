@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.82
+Version: 1.83
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -886,8 +886,8 @@ Real provider hooks, Ghostty rendering and later recovery/focus ownership remain
 
 ## Test fixtures escape their intended private roots
 
-Resolved isolation source work and its remaining Python checks:
-[details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#test-fixtures-escape-their-intended-private-roots).
+Isolation repairs, Linux-format fixture correction and remaining Python checks:
+[details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md).
 
 ## Installer and development app failures
 

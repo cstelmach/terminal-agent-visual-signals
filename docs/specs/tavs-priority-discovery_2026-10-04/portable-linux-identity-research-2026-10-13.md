@@ -493,3 +493,43 @@ synthetic/stale refusal and unchanged deadlines. A warmed fixture producer does 
 production-helper startup. Missing kernel namespace/clock properties remain unavailable; do not
 remove the completed-birth-tick guard to manufacture a pass. Linux support and the full goal
 remain unverified until this runtime evidence exists.
+
+## Host fixture correction and suite refresh: 2026-10-15
+
+Baseline `f4c1ca9`; only `test_portable_helper.py` changes. The Linux-format dispatch case formerly
+selected Linux while inheriting a Darwin `/var/folders` wrapper root. `_roots` correctly rejected
+it. The fixture now creates a fresh private `/tmp` root and local marker/runtime/HOME arguments,
+reused by positive dispatch and native-token rejection. Real production root checks remain.
+
+A source checker supported that root correction, but its negative-boundary claim needed stronger
+evidence: without concrete device injection the native token was refused at identity, before
+schema/platform validation. An explicit context-stage expectation reproduced this false-positive
+control. The corrected negative case supplies device123, requires context/value rejection, and
+asserts no process inspection or Renderer call. Positive dispatch still forbids Darwin confstr.
+These are format/dispatch doubles, not Linux kernel/device acceptance. No production code changed.
+
+Retained isolated results, using the explicit source-built helper:
+
+- Hn6NJT: device writer17 pass,1.456s. Historical keFjsW failures do not recur, without attribution.
+- vMiEpZ: portable205,one Linux-format root failure,8 Linux skips,9.282s. Earlier timing errors absent.
+- ChqWyS: focused root correction passes,0.005s,under the default Darwin runner root.
+- R5myKg: portable205 reports OK,8 skips,12.106s (197 host passes).
+- 9FtWaG: helper17 pass,0.033s,under a `/tmp` runner.
+- eMyZya: strengthened negative control RED,0.006s; actual identity versus expected context stage.
+- IzNO8F: final portable205 reports OK,8 skips,8.542s. The new stage-specific control is included.
+- X4ovLj: full Swift671,four assertions (two unexpected),32.893s; no all-green native claim.
+
+Current Swift failures are in VisualRecoveryTests:
+`testMarkerChangeDuringPolicyCheckRejectsPreviewAfterCachingTarget` times out during prepare;
+`testNewIntakeDuringOpenRejectsPrepublishedRenderWithoutReplacingLatestIntent` reports intake
+Organizer deadline expiry then expected-stale/deviceNotWritable mismatch; and
+`testReconciliationQueuedBeforeSuspensionReadsTheMarkerAfterDeviceOpen` times out during prepare.
+These are the next current-state cases to inspect. Earlier Swift and portable failures remain
+retained and unattributed. Host load19.72/14.54/20.50 on the initial read is context, not cause proof.
+The read-only Docker local-socket check was unavailable; no startup or repeat poll occurred.
+
+Original source, tests, complete logs and the read-only source report are retained in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-portable-root-fixture-x3cv3wi6/`.
+The source report verified the private-root fix and did not execute tests. No live app install,
+settings/schedule changes, terminal paint or existing-session process action occurred. Eight real
+Linux cases, native Ghostty acceptance and final goal completion remain open. SPEC/PLAN unchanged.
