@@ -118,6 +118,7 @@ final class GhosttyCatalogTests: XCTestCase {
             let request = try JSONSerialization.jsonObject(with: Data(try XCTUnwrap(args.last).utf8))
                 as? [String: Any]
             XCTAssertEqual(request?["allowedIDs"] as? [String], ["a"])
+            XCTAssertEqual(request?["includeMetadata"] as? Bool, false)
             return data
         }
         let catalog = GhosttyCatalog(processRunner: runner, application: { self.app }, allowedSurfaces: [allowed])
@@ -257,36 +258,86 @@ final class GhosttyCatalogTests: XCTestCase {
         XCTAssertLessThanOrEqual(context.objectForKeyedSubscript("columnReads").toInt32(), 12)
     }
 
-    func testScriptRejectsChangedColumnIdentityAndPreservesMissingCoverage() throws {
-        let changed = try nativeContext()
-        changed.evaluateScript("""
-        var original=application.terminals.arrayByApplyingSelector, idReads=0;
-        application.terminals.arrayByApplyingSelector=function(key){
-            var values=original(key); return key==='id' && ++idReads===2 ? ['replacement'] : values;
-        };
-        """)
-        XCTAssertTrue(String(decoding: try scriptReply(changed), as: UTF8.self).contains("nativeUnavailable"))
-        let missing = try nativeContext()
-        missing.evaluateScript("""
-        var original=application.terminals.arrayByApplyingSelector;
-        application.terminals.arrayByApplyingSelector=function(key){return key==='tty'?[]:original(key);};
-        """)
-        let rows = try GhosttyCatalog.decode(scriptReply(missing), application: app)
-        XCTAssertEqual(rows.first?.mappingIssue, .missingTTY)
-        XCTAssertEqual(rows.first?.title, "same")
-        let denied = try nativeContext()
-        denied.evaluateScript("""
-        var original=application.terminals.arrayByApplyingSelector;
-        application.terminals.arrayByApplyingSelector=function(key){
-            var values=original(key); application.lastError=key==='tty'?{code:-1743}:null; return values;
-        };
-        """)
-        XCTAssertTrue(String(decoding: try scriptReply(denied), as: UTF8.self).contains("permissionDenied"))
+    func testMappingSnapshotSkipsDisplayReadsAndKeepsFreshNativeBinding() throws {
+        let context = try nativeContext()
+        context.evaluateScript("window.id='moved-window'; tab.id='moved-tab'; terminal.pid=101;")
+        let surface = try XCTUnwrap(GhosttyCatalog.decode(
+            scriptReply(context, includeMetadata: false), application: app).first)
+        XCTAssertEqual(surface.id.terminalID, "quoted\";id")
+        XCTAssertEqual(surface.windowID, "moved-window")
+        XCTAssertEqual(surface.tabID, "moved-tab")
+        XCTAssertEqual(surface.tty, "/dev/ttys001")
+        XCTAssertEqual(surface.foregroundPID, 101)
+        XCTAssertNil(surface.mappingIssue)
+        XCTAssertNil(surface.title)
+        XCTAssertNil(surface.directory)
+        XCTAssertNil(surface.tabSelected)
+        let keys = try XCTUnwrap(context.objectForKeyedSubscript("columnKeys").toArray() as? [String])
+        XCTAssertFalse(keys.contains("name"))
+        XCTAssertFalse(keys.contains("workingDirectory"))
+        XCTAssertFalse(keys.contains("selected"))
+        XCTAssertEqual(keys.filter { $0 == "id" }.count, 5)
+        XCTAssertTrue(keys.contains("tty"))
+        XCTAssertTrue(keys.contains("pid"))
+
+        let full = try nativeContext()
+        let displayed = try XCTUnwrap(GhosttyCatalog.decode(scriptReply(full), application: app).first)
+        XCTAssertEqual(displayed.title, "same")
+        XCTAssertEqual(displayed.directory, "/same")
+        XCTAssertEqual(displayed.tabSelected, false)
     }
 
-    private func scriptReply(_ context: JSContext) throws -> Data {
+    func testMappingSnapshotRejectsDuplicateIDsAndRetainsAmbiguousTTYCoverage() throws {
+        let duplicate = try nativeContext()
+        duplicate.evaluateScript("application.terminals=array([terminal,terminal]);")
+        XCTAssertTrue(String(decoding: try scriptReply(duplicate, includeMetadata: false),
+                             as: UTF8.self).contains("nativeUnavailable"))
+        let ambiguous = try nativeContext()
+        ambiguous.evaluateScript("""
+        var second=object({id:'other',tty:terminal.tty,pid:101});
+        application.terminals=array([terminal,second]); tab.terminals=application.terminals;
+        """)
+        let rows = try GhosttyCatalog.decode(scriptReply(ambiguous, includeMetadata: false), application: app)
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertTrue(rows.allSatisfy { $0.mappingIssue == .ambiguousTTY })
+    }
+
+    func testScriptRejectsChangedColumnIdentityAndPreservesMissingCoverage() throws {
+        for includeMetadata in [true, false] {
+            let changed = try nativeContext()
+            changed.evaluateScript("""
+            var original=application.terminals.arrayByApplyingSelector, idReads=0;
+            application.terminals.arrayByApplyingSelector=function(key){
+                var values=original(key); return key==='id' && ++idReads===2 ? ['replacement'] : values;
+            };
+            """)
+            XCTAssertTrue(String(decoding: try scriptReply(changed, includeMetadata: includeMetadata),
+                                 as: UTF8.self).contains("nativeUnavailable"))
+            let missing = try nativeContext()
+            missing.evaluateScript("""
+            var original=application.terminals.arrayByApplyingSelector;
+            application.terminals.arrayByApplyingSelector=function(key){return key==='tty'?[]:original(key);};
+            """)
+            let rows = try GhosttyCatalog.decode(scriptReply(missing, includeMetadata: includeMetadata), application: app)
+            XCTAssertEqual(rows.first?.mappingIssue, .missingTTY)
+            XCTAssertEqual(rows.first?.title, includeMetadata ? "same" : nil)
+            let denied = try nativeContext()
+            denied.evaluateScript("""
+            var original=application.terminals.arrayByApplyingSelector;
+            application.terminals.arrayByApplyingSelector=function(key){
+                var values=original(key); application.lastError=key==='tty'?{code:-1743}:null; return values;
+            };
+            """)
+            XCTAssertTrue(String(decoding: try scriptReply(denied, includeMetadata: includeMetadata),
+                                 as: UTF8.self).contains("permissionDenied"))
+        }
+    }
+
+    private func scriptReply(_ context: JSContext, includeMetadata: Bool = true) throws -> Data {
+        let request: [String: Any] = ["action": "enumerate", "pid": 10, "includeMetadata": includeMetadata]
+        let data = try JSONSerialization.data(withJSONObject: request)
         let text = try XCTUnwrap(context.objectForKeyedSubscript("run")
-            .call(withArguments: [["{\"action\":\"enumerate\",\"pid\":10}"]])?.toString())
+            .call(withArguments: [[String(decoding: data, as: UTF8.self)]])?.toString())
         XCTAssertNil(context.exception)
         return Data(text.utf8)
     }
@@ -320,11 +371,11 @@ final class GhosttyCatalogTests: XCTestCase {
     private func nativeContext() throws -> JSContext {
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript("""
-        var calls = 0, selected = false, focused = 'other', requestedPID, columnReads=0;
+        var calls = 0, selected = false, focused = 'other', requestedPID, columnReads=0, columnKeys=[];
         var ObjC = {import: function(){}, unwrap: function(value){return value;},deepUnwrap:function(value){return value;}};
         function object(value) { value.valueForKey=function(key){return this[key];}; return value; }
         function array(values) { return {count:values.length,objectAtIndex:function(i){return values[i];},
-            arrayByApplyingSelector:function(key){columnReads++;return values.map(function(value){return value[key];});},
+            arrayByApplyingSelector:function(key){columnReads++;columnKeys.push(key);return values.map(function(value){return value[key];});},
             objectWithID:function(id){return values.find(function(value){return value.id===id;});}}; }
         var terminal = object({id:'quoted";id',name:'same',workingDirectory:'/same',tty:'/dev/ttys001',pid:100});
         Object.defineProperty(terminal,'focus',{get:function(){calls++;selected=true;focused=terminal.id;}});

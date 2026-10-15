@@ -77,7 +77,7 @@ final class GhosttyCatalog {
         queue.async {
             completion.result = Result {
                 guard DispatchTime.now() < deadline else { throw ProcessRunnerError.processTimedOut }
-                return try self.enumerate(deadline: deadline.uptimeNanoseconds)
+                return try self.enumerate(deadline: deadline.uptimeNanoseconds, includeMetadata: false)
             }
             completion.finished.signal()
         }
@@ -92,9 +92,9 @@ final class GhosttyCatalog {
         var result: Result<[GhosttySurface], Error>?
     }
 
-    private func enumerate(deadline: UInt64? = nil) throws -> [GhosttySurface] {
+    private func enumerate(deadline: UInt64? = nil, includeMetadata: Bool = true) throws -> [GhosttySurface] {
         let instance = try application()
-        return try request(["action": "enumerate", "pid": instance.pid], instance: instance,
+        return try request(["action": "enumerate", "pid": instance.pid, "includeMetadata": includeMetadata], instance: instance,
                            deadline: deadline).surfaces
     }
 
@@ -242,16 +242,16 @@ final class GhosttyCatalog {
                 return Array(count).fill(null);
             }
         }
-        function snapshot(app, allowedIDs) {
+        function snapshot(app, allowedIDs, includeMetadata) {
             var result = [], all = read(app, 'terminals'), ids = column(app, all, 'id'), mapped = [];
             if (ids.some(function(id, i) { return typeof id !== 'string' || !id || ids.indexOf(id) !== i; })) throw {};
-            var names = optionalColumn(app, all, 'name', ids.length);
-            var directories = optionalColumn(app, all, 'workingDirectory', ids.length);
+            var names = includeMetadata ? optionalColumn(app, all, 'name', ids.length) : Array(ids.length).fill(null);
+            var directories = includeMetadata ? optionalColumn(app, all, 'workingDirectory', ids.length) : Array(ids.length).fill(null);
             var ttys = optionalColumn(app, all, 'tty', ids.length), pids = optionalColumn(app, all, 'pid', ids.length);
             var windows = read(app, 'windows'), windowIDs = column(app, windows, 'id');
             for (var i = 0; i < windowIDs.length; i++) {
                 var tabs = read(windows.objectWithID(windowIDs[i]), 'tabs'), tabIDs = column(app, tabs, 'id');
-                var selected = optionalColumn(app, tabs, 'selected', tabIDs.length);
+                var selected = includeMetadata ? optionalColumn(app, tabs, 'selected', tabIDs.length) : Array(tabIDs.length).fill(null);
                 for (var j = 0; j < tabIDs.length; j++) {
                     var terminalIDs = column(app, read(tabs.objectWithID(tabIDs[j]), 'terminals'), 'id');
                     for (var k = 0; k < terminalIDs.length; k++) {
@@ -280,7 +280,7 @@ final class GhosttyCatalog {
             var app = $.SBApplication.applicationWithProcessIdentifier(request.pid);
             if (missing(app) || !app.isRunning) return failure('applicationUnavailable');
             app.timeout = 120;
-            var rows = snapshot(app, request.allowedIDs);
+            var rows = snapshot(app, request.allowedIDs, request.includeMetadata !== false);
             if (request.action === 'focus') {
                 var matches = rows.filter(function(row){return row.tty === request.tty;});
                 if (matches.length !== 1 || matches[0].terminalID !== request.terminalID)

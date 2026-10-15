@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.86
+Version: 1.87
 
 ## Private managed-output failure diagnostics
 
@@ -235,6 +235,10 @@ for physical binding capture. Window/tab/title changes preserve a surviving surf
 
 Native preparation precedes the existing 100 ms device transaction. Snapshot caller queue wait
 and subprocess work share a two-second deadline; expired queued snapshots issue no request.
+`GhosttyCatalog.snapshot()` requests mapping-only rows: title, directory and selected-tab fields
+are nil. Fresh IDs, TTYs, foreground PIDs, complete window/tab membership and final ID order
+checks remain required. Organizer refreshes keep display metadata. This reduces native reads;
+it does not guarantee a fresh scan fits the time remaining behind an in-flight request.
 Preview lifetime and focus heartbeat begin after preparation. Current run/version, physical
 generation/device, revision and automatic-source guards still apply inside output serialization.
 Native query failure stops new renewal while preserving logical sets/cues and recoverable leases.

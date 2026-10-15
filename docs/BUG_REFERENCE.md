@@ -1,7 +1,15 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.96
+Version: 1.97
+
+## Effect snapshots spend their mapping budget on display metadata
+
+Fresh effect/recovery snapshots requested the same title, directory and selected-tab columns
+as organizer refreshes. These fields are unused by binding consumers. Mapping-only requests
+now skip those columns while preserving complete fresh native identity and hierarchy checks.
+Their two-second caller budget still includes serial queue residence. Tests distinguish skipped
+display reads from retained binding checks; physical timeout resolution requires native evidence.
 
 ## Native preview rejects a valid shell's root-owned login parent
 
