@@ -95,6 +95,17 @@ SH
     [ ! -e "$CAPTURE" ]
 }
 
+@test "unsafe persistent storage is refused before helper query or marker replacement" {
+    local marker="$HOME/.tavs/visual-restrictions.state"
+    printf 'SCHEMA_VERSION="1"\nSUSPENDED="false"\n' > "$marker"
+    cp "$marker" "$BATS_TEST_TMPDIR/before"
+    chmod 777 "$HOME/.tavs"
+    run bash "$REPO_ROOT/tavs" recover
+    [ "$status" -ne 0 ]
+    [ ! -e "$CAPTURE" ]
+    cmp "$marker" "$BATS_TEST_TMPDIR/before"
+}
+
 @test "help and invalid arguments do not change state or invoke a helper" {
     run bash "$REPO_ROOT/tavs" help recover
     [ "$status" -eq 0 ]

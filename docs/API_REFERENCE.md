@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.77
+Version: 1.78
 
 ## Private managed-output failure diagnostics
 
@@ -107,18 +107,18 @@ are preserved. No-file/unchanged shortcuts inspect current data; readonly unchan
 The terminal device deadline remains 100 ms. Native and Darwin CLI mutations now serialize
 read/merge/replace. Portable/non-Darwin storage and non-cooperating writers remain outside it.
 
-## Native persistent marker trust
+## Persistent marker trust
 
-VisualRestrictionsStateStore read, captureRevision, matches and write validate the marker parent
-through RuntimeDirectoryTrust and require effective-UID-owned, non-group/other-writable leaves.
-Unsafe metadata returns unavailable or storageUnavailable; write never repairs that metadata.
-Trusted malformed regular content remains explicitly repairable. Safe absent paths remain active,
-new parent components use 0700, and marker replacement retains 0600 and its existing atomic format.
+Native marker APIs and core/standalone shell reads require trusted directory ancestry and
+effective-UID-owned, non-group/other-writable parent/file leaves. Native uses RuntimeDirectoryTrust;
+shell guards follow its exact system-alias policy before I/O. Unsafe metadata is unavailable and
+preserved. Trusted malformed content stays repairable; trusted absence stays active. New directories
+use 0700, markers use 0600, and the atomic canonical format is unchanged.
 
-Revision capture still holds the original descriptor to prevent inode reuse. Matching checks
-directory and leaf trust before accepting an identity, using the original supplied deadline and
-deadlineExceeded on expiry. No schema, resumption, device-write budget or recovery ordering changes.
-These rules cover native marker APIs; portable and shell trust work remains separate.
+Native revisions retain their descriptor against inode reuse and use the original deadline;
+expiry remains deadlineExceeded. Shell reads keep a 128-byte C-locale bound and their status contract.
+Shell writes scope cleanup/umask and recheck before rename; metadata checks do not preempt syscalls.
+Schema, resumption and device100ms stay unchanged. Portable marker/policy trust remains separate.
 
 ## Native runtime directory trust
 

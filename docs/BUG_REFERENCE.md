@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.87
+Version: 1.88
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -68,19 +68,19 @@ release and 25 isolated helper checks. Concurrent GUI/CLI merge races and legacy
 
 ## Persistent recovery marker trusts writable or linked storage
 
-The native marker reader/writer/revision paths checked file shape but omitted parent and leaf
-ownership/write-permission checks. Three regressions reproduced unsafe reads, accepted revision
-matches and replacement of a suspended marker. They failed 15 assertions before the correction.
+Native and shell marker paths checked shape but omitted ownership, write bits and ancestor trust.
+Three native regressions reproduced unsafe reads/revisions/replacement (15 failed assertions).
+Shell regressions also reproduced unsafe metadata acceptance and pre-helper marker replacement.
 
-All native marker entry points now reuse RuntimeDirectoryTrust and the effective-UID leaf check.
-Unsafe storage is unavailable and is preserved. Trusted malformed regular data can still be
-explicitly repaired; missing trusted paths, atomic replacement, 0600 output and pinned inode
-semantics remain. Matching uses the supplied deadline; no device budget changes.
+Native APIs use RuntimeDirectoryTrust; core/standalone shell checks now follow its ownership and
+exact system-alias rules before I/O. Unsafe storage is preserved; trusted malformed data remains
+repairable. Trusted absence stays active; new directories/markers use 0700/0600 and atomic replacement.
+Native revisions retain their descriptor and supplied deadline. No device budget changes.
 
-A policy fixture now keeps its marker safe while testing an unsafe runtime. A focus fixture
-awaits cleanup and verifies inactive metadata before removal. Its earlier EPERM remains retained
-without a claimed cause. All 634 Swift tests, release and 25 isolated marker/background checks pass.
-Scheduler's independent lock projection and portable/shell trust remain open.
+A policy fixture isolates unsafe runtime from safe marker; focus cleanup verifies inactive metadata.
+Earlier EPERM remains unattributed. The earlier 634 Swift/release and 25 marker checks passed.
+New shell cleanup/private-creation tests cover failure paths; legacy/portable policy trust remains
+open. Existing full-suite failures are tracked in the implementation progress.
 
 ## Native managed paths accept untrusted runtime storage
 

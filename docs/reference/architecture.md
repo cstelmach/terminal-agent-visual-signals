@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.16
+Version: 1.17
 
 ## Current-invocation render transaction
 
@@ -188,8 +188,15 @@ Explicit resumption writes `SUSPENDED="false"`; it does not delete saved schedul
 The shell and Swift stores classify absent state as active, valid true as suspended, and an
 existing malformed/unreadable/special marker as unavailable. Unavailable state disables
 restrictions visibly. Readers accept only the canonical schema, bound input and never source
-the marker. The standalone installed shellrc embeds the identical reader/predicate because it
-has no dependency bundle. Shared fixtures pin Bash, zsh and Swift agreement.
+the marker. The standalone installed shellrc keeps marker checks self-contained and embeds the
+identical trust helpers/reader/predicate. Shared fixtures pin Bash, zsh and Swift agreement.
+
+Shell checks validate ownership/write bits along the directory chain before reading, creating or
+replacing markers. Only the verified macOS system aliases are resolved; I/O uses the checked
+physical spelling. Trusted missing suffixes remain active without mkdir, while unsafe/unresolved
+prefixes remain unavailable. Writes create private components, stage 0600 bytes, then recheck
+the destination before atomic rename. Scoped traps clean only that invocation's temporary file.
+Native descriptor-level no-follow/inode checks remain stronger than shell metadata admission.
 
 Suspension precedes hook stage-0, stage-1, idle-worker and effective-lock checks. Ordinary
 observations/background intent continue, and shell startup still registers its TTY. New locks

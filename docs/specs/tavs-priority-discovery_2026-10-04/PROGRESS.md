@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.63
+**Version:** 4.64
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -886,15 +886,15 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > Finished session/color source checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-shared-sessioncolor-transactions-2026-10-15).
 
-### Phase 9 validated shell registration: 2026-10-15
+> Finished validated-registration checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-validated-shell-registration-2026-10-15).
 
-N3: `8a12cc9` corrects Automatic help; isolated Swift build RqLGWi passes (10.89s).
-S2: removed unsafe shell registry truncation/touch/mkdir; managed registration remains authoritative.
-12sboq: four safety RED cases. KMvaND: 49 Bats pass; 9Wu7hO: 25 Python pass, 8 Linux skip.
-Eight real startup combinations retain exact target/TTY, no bytes/hints and unchanged suspension.
-Connected wlIXDk: 73/74 pass; portable write timeout repeats in focused 4qYjwm. Baseline rrdeCp
-also fails portable metadata/stale; exact timeout attribution remains open. Device100ms unchanged.
-[Source and follow-on guard scope](legacy-policy-trust-source-check-2026-10-15.md); API/bug/architecture updated.
-**Scope:** two shell modules, three tests and connected docs/capture; no live state changes.
-Next: marker core/standalone trust, legacy policy/debug paths, native/Linux acceptance and failures.
-Goal/Phase 9 incomplete. Full Swift671/60 assertions remains open; no unchanged full rerun.
+### Phase 9 shell suspension-marker trust: 2026-10-15
+
+S2 marker guards now cover core reads/writes and the standalone reader before filesystem I/O.
+f4mWYr: five safety RED groups. IyVFAO: 72 Bats pass; pDIqxp: eight owned-startup combinations pass.
+Private Bash3.2/5.3 probes pass; earlier initial/resume assertion failures remain unattributed.
+[Source, failure paths and retained evidence](marker-storage-source-check-2026-10-15.md).
+**Scope:** S2 extends phase-5 storage modules and two tests; API/bug/architecture/capture updated.
+Trusted absence/content format, caller traps/umask and device100ms remain; no live state changes.
+Next: legacy lock/mute/debug/portable trust, portable timeout and required native/Linux acceptance.
+Goal/Phase 9 incomplete; prior Swift671/60 assertions remains open. No unchanged full Swift rerun.

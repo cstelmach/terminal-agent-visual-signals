@@ -22,14 +22,14 @@ Model Profiles) only. The Session Log is append-only evidence.
 | ID | Pattern | Rule | Count | Models | Sessions |
 |----|---------|------|-------|--------|----------|
 | P1 | verify-constants-by-computing | Never hardcode a hash/digest/magic value in a test without computing it in the shell first | 1 | fable-5 | 2026-07-13 |
-| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 5 | fable-5; gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-07-13; Phase 5 suspension; shell helper delivery; delivery diagnostics; shared session-table transactions |
+| P2 | probe-shell-semantics-before-harness | Before writing tests that depend on shell edge behavior (interactive flags, special vars), run a 1-line empirical probe of each shell | 6 | fable-5; gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-07-13; Phase 5 suspension; shell helper delivery; delivery diagnostics; shared session-table transactions; shell suspension-marker trust |
 | P3 | run-suites-under-live-feature-state | After building a feature that mutates global machine state, re-run the full suite WHILE that state is active; leaks surface as themed failures | 1 | fable-5 | 2026-07-13 |
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 73 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 81 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 74 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 82 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -6422,3 +6422,71 @@ No live install/sync, settings change, native target request, paint or user-sess
 **Confidence.** [O] Source, private fixtures and logs support these outcomes. [R] The preference
 for removing redundant writes is a design argument; the differing baseline failure does not
 establish causal innocence or test completion.
+
+## 2026-10-15 · gpt-6.1-sol · shell-suspension-marker-trust
+
+meta:
+  model: gpt-6.1-sol
+  model_source: observed (latest local turn_context)
+  interface: codex-desktop
+  thinking: unknown
+  session: 01a10879
+  trace: observed tools and diffs; motivation reconstructed
+
+**Framing.** [O] Continued S2 within the active organizer/focus goal. The shell reader could
+accept unsafe marker metadata or infer safe absence through an untrusted prefix. Recovery's
+shell writer could replace unsafe storage before native validation. This slice applied the
+existing native contract to the core and standalone copies, leaving legacy policy/debug and
+portable trust work separate. The prior registration fix and native acceptance limits remained.
+
+**Strategy.** [O] Read the actual RuntimeDirectoryTrust implementation, marker callers and
+shared fixtures before writing. Added regression cases first, then local metadata/path checks
+without sourcing unrelated session-state initialization or adding a delivered dependency. The
+standalone policy code stays self-contained. [R] Matching the native ownership and exact alias
+rules avoids introducing a second policy contract while retaining the installed copy's existing
+packaging. The helper's physical result drives actual I/O, rather than merely checking one
+spelling and later opening another.
+
+**Action trace [O]**
+
+| Move | Evidence | Result |
+|---|---|---|
+| Reproduce unsafe storage | f4mWYr | Five safety groups fail before implementation |
+| Probe slash normalization | kPjQk2, iK9bgv, Lw91NP | Escaped form fails; variable form passes both shells |
+| Add local guards and scoped writes | Core and standalone module | Ownership/alias checks precede I/O |
+| Verify connected behavior | IyVFAO | 72 Bats pass |
+| Verify actual startup | pDIqxp | Eight owned-PTY combinations pass |
+| Investigate persistence assertions | iWgpsp, JI11l9, CxbjKQ, 4b2BbX | Retain failures and both writer traces |
+| Compare Bash versions privately | Independent twelve-case probe | Both versions pass; no causal difference found |
+
+**Decision points.** [O] Kept safe readable 0644 files valid; refusal concerns ownership and
+write bits. Trusted missing suffixes remain active without creation, while unsafe prefixes,
+arbitrary links and invalid dot components refuse before mkdir. Only verified system aliases
+are resolved. Trusted malformed data remains repairable. The writer creates private components,
+stages canonical bytes, revalidates before rename and scopes cleanup/umask/traps to its call.
+Reviewer coverage suggestions produced independent per-shell creation paths and injected
+post-mktemp validation/rename failures, preserving old bytes and requiring no temporary leak.
+
+**Failure arcs.** [O] The first slash replacement introduced literal backslashes in both
+shells; a printed artificial-path probe isolated that error, and a variable-valued replacement
+corrected it. Subsequent connected checks exposed initial-save and resume assertion failures
+without recording their failing writer branches. A focused trace passed, and a later combined
+run passed. Kept those failures unexplained. The independent checker compared actual Bash3.2
+and5.3 with and without tracing, including failure cleanup; all twelve cases passed. No evidence
+supports a version, load or caching explanation. The test now retains initial/resume traces,
+Bash identity and resolved tool paths for the next actual failure; it still requires zero status.
+
+**Heuristics.** [O] P2: probe actual shell substitutions and metadata semantics. P8: check the
+reviewer's native-contract and test-gap claims against source. P9: preserve finished progress
+unchanged through reconstruction and keep the full goal incomplete. Existing skills cover
+these habits; no new skill or model-profile claim is proposed.
+
+**Verification.** [O] All72 connected Bats cases pass, including shared content fixtures,
+copied installations, safe absence and pre-helper refusal. Eight real startup combinations
+pass across both shells/backends and suspension states; one inherited Linux class is skipped.
+Syntax, ShellCheck and embedded-reader parity pass. Native descriptor-level checks remain
+stronger. Prior Swift failures, portable timeout, physical/native acceptance and real Linux
+verification remain open. No live settings/install, catalogue query, paint or session stop ran.
+
+**Confidence.** [O] Source and private checks establish the recorded results. [R] The packaging
+tradeoff is a design rationale; successful traces do not identify earlier failure causes.

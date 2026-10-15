@@ -858,3 +858,34 @@ The source checker found no registration/discovery defect and its exact-line ass
 was applied. S2 remains open for marker core/standalone read/write trust, legacy lock/mute reads,
 debug append and portable paths. Native/Linux acceptance and earlier full Swift failures remain
 open. No real install/sync, settings change, native catalogue action, paint or user-session stop.
+
+## S2 shell suspension-marker trust: 2026-10-15
+
+f4mWYr reproduced five safety failures: writable marker/parents, unsafe absence, arbitrary links,
+foreign metadata and pre-helper recovery replacement. Core and embedded standalone reads now
+check current-owned parent/file leaves, root/current-owned ancestors, write bits and only exact
+root-owned macOS system aliases. I/O uses the checked physical path. Trusted absence remains
+active without creating directories. Whole-path dot refusal precedes any mkdir.
+
+Core writes create/check private components, retain the canonical 0600 atomic format, and recheck
+before rename. Scoped cleanup/traps/umask preserve the caller and old data on failure. Injected
+post-mktemp validation and rename failures cover cleanup; Bash/zsh create independent prefixes.
+Exact content/NUL fixtures remain, with an explicit C locale for the 128-byte shell read.
+[Independent source/probe check](marker-storage-source-check-2026-10-15.md) found no material defect.
+Native descriptor-level no-follow/inode guarantees are stronger than these shell checks.
+
+IyVFAO: **72/72 connected Bats pass**, including installed copies, shared native fixtures and
+persistence-before-helper behavior. pDIqxp: all eight real startup combinations pass; one inherited
+Linux class is skipped. ShellCheck and Bash/zsh syntax pass. No Swift source/deadline changed.
+An initial escaped-slash probe inserted backslashes; Lw91NP proved the corrected variable form.
+
+Two intervening persistence assertions failed (iWgpsp initial, JI11l9 resume); focused CxbjKQ and
+the final combined run pass. The retained failed logs do not identify the failed writer branch.
+Twelve independent Bash3.2/5.3 probes pass exact save/resume, cleanup, trap and umask checks with
+and without xtrace. No Bash-version or load cause is established. Initial/resume fixture traces
+now retain version/tool paths for the next actual failure; successful retries do not close it.
+Logs/probes/before-files: `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-suspension-storage-vlyhppcs/`.
+
+S2 remains open for legacy lock/mute bounded trust, debug append and portable policy paths.
+Earlier portable timeout, full Swift failures and native/Linux acceptance remain open. No live
+settings, install/sync, catalogue operation, paint, or user-session termination was performed.

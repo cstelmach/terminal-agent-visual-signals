@@ -115,3 +115,16 @@ Moved 19 finished diagnostic lines unchanged to the existing appendix; round-tri
 **Scope:** one shared module, concurrency tests and connected docs/capture; no live changes.
 Swift unchanged; last full671/60 assertions remains open. Linux awaits operator-started Docker.
 Next: N3 help text, remaining S2 readers and required native acceptance. Goal/Phase 9 incomplete.
+
+### Phase 9 validated shell registration: 2026-10-15
+
+N3: `8a12cc9` corrects Automatic help; isolated Swift build RqLGWi passes (10.89s).
+S2: removed unsafe shell registry truncation/touch/mkdir; managed registration remains authoritative.
+12sboq: four safety RED cases. KMvaND: 49 Bats pass; 9Wu7hO: 25 Python pass, 8 Linux skip.
+Eight real startup combinations retain exact target/TTY, no bytes/hints and unchanged suspension.
+Connected wlIXDk: 73/74 pass; portable write timeout repeats in focused 4qYjwm. Baseline rrdeCp
+also fails portable metadata/stale; exact timeout attribution remains open. Device100ms unchanged.
+[Source and follow-on guard scope](legacy-policy-trust-source-check-2026-10-15.md); API/bug/architecture updated.
+**Scope:** two shell modules, three tests and connected docs/capture; no live state changes.
+Next: marker core/standalone trust, legacy policy/debug paths, native/Linux acceptance and failures.
+Goal/Phase 9 incomplete. Full Swift671/60 assertions remains open; no unchanged full rerun.
