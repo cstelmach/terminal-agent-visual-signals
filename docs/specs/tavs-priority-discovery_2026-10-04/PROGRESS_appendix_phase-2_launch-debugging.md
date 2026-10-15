@@ -149,3 +149,12 @@ or direct operator observations on dedicated native targets. Do not retry unchan
 paint working terminals or substitute title matching. Phase 2 stays Blocked; the master goal is
 incomplete. The sequential plan's dependent phases have not started. Preserve this tested source
 checkpoint and resume acceptance from here rather than rebuilding the feature.
+
+### Verified Darwin identity checkpoint
+
+**Phase 9 Darwin identity, 2026-10-15: 66a402f, efe7b98.** Root-parent REDs now pass.
+Swift 8/8 and Python 14/14 pass; exact dedicated login-owner generations verify.
+Full/control runs retain unresolved deadline failures. Native preview now times out in mapping.
+[Results and retained diagnostics](caller-deadline-source-check-2026-10-14.md#public-darwin-identity-and-the-next-native-timeout-2026-10-15).
+**Next:** reduce display-only work in fresh mapping snapshots without weakening validation or
+budgets, then verify native delivery. Final reviews/native/Linux acceptance remain open.

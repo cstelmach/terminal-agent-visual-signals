@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.6
+Version: 1.7
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -663,3 +663,47 @@ native/Linux acceptance remain open. The app stays suspended with Focus Off.
 Complete test logs, both controls, timing/owner probes and source/executable backups are in
 `/Volumes/external/agent-data/retained/terminal-agent-visual-signals/darwin-process-identity-20261015-211800/`.
 Build/cache and active scratch remain at their external native paths. No cleanup was performed.
+
+## Mapping-only snapshots and independent native recovery: 2026-10-15
+
+`34a838a` skips title, directory and selected-tab reads only for synchronous effect/recovery
+snapshots. Organizer refreshes keep these fields. Fresh ID/TTY/PID columns, complete window/tab
+membership, final ID order checks, serialization and both deadlines remain required. Three
+methods fail 8 assertions before the change. Focused catalogue 19/19 passes afterward in 2.381 s
+(2.389 s elapsed). Full 683 has 88 failures across 41 methods, 48 unexpected, 82.791 s
+(83.347 s elapsed). Its catalogue 19/19 passes in 2.406 s. Other deadline and state/byte failures
+remain unresolved; no unchanged full run was repeated.
+
+The updated isolated bundle was signature-verified and launched after exact cohort validation.
+The first 031 attempt was canceled when a periodic full catalogue refresh timed out. At that
+checkpoint the private runtime retained only writer mutexes, no target/effect records. This
+does not prove a physical highlight or establish that the smaller query resolves contention.
+The [hierarchy source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-ghostty-global-hierarchy-source-check-215100.md)
+finds no application-global tabs or terminal-parent properties in the installed dictionary.
+KVC/selector syntax alone does not establish cheaper remote work. No speculative parent
+accessor or unmeasured local join optimization was added.
+
+A generation-checked test suspended only the isolated TAVS process, ran its private recovery
+command, then resumed that same process. Exit 0 in 1.829 s reports stateSaved=true,
+catalogueAvailable=true and restored results for both original native IDs/TTYs. The test
+app's lifetime remained unchanged. This demonstrates independent native discovery and completed
+device writes with the GUI process stopped. It does not cover active manual/automatic effects,
+overlapping schedules, unreachable devices or physical visibility restoration during this run.
+
+After recovery, an AX-row click did not change selection. The test used a fresh TAVS screenshot
+and clicked 038's visible title cell instead. Selection changed and the app reported
+`1 of 1 terminals previewed.` after expiry. The retained 038 preview record is inactive. A direct
+operator check on 031 is pending because Computer Use cannot view Ghostty. Visible color,
+two-second restoration and keyboard-focus acceptance are not claimed from the delivery report.
+The app remains open, suspended and Focus Off, with High 031 and Normal 038.
+
+Full logs, private recovery stdout/stderr, driver and earlier source/executable variants are at
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/native-mapping-20261015-214155/`.
+Next measure queue residence versus native request time and the 100 ms preparation path before
+further optimization. Final independent reviews and required native/Linux cases remain open.
+
+The [preparation source map](/Volumes/external/agent-data/reports/2026-10-15/tavs-device-prepare-cost-explorer-220300.md)
+identifies repeated record I/O and directory trust work inside the device budget. Existing mock
+forwarding and callback seams support a test-only timing probe. The report's conditional static
+counts and proposed write reductions are not measured performance results. Profile before fixes;
+preserve fresh policy, target, descriptor and storage checks around every blocking boundary.
