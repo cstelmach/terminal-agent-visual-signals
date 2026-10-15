@@ -152,7 +152,7 @@ _tavs_debug_mute() {
     local msg="$1"
     local log="${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/mute-trace.log"
     [[ -d "${log%/*}" ]] || return 0
-    printf '%s [%d] %s\n' "$(date +%H:%M:%S 2>/dev/null || echo '?')" "$$" "$msg" >> "$log"
+    _tavs_debug_append "$log" "$(date +%H:%M:%S 2>/dev/null || echo '?') [$$] $msg"
 }
 
 # ==============================================================================

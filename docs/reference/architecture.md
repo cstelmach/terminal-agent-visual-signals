@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.20
+Version: 1.21
 
 ## Lock definition transactions
 
@@ -258,6 +258,11 @@ It rejects control characters in session/thread IDs. The context carries a local
 ID, intake time, supported event/response ID and kernel producer generation/device. Bodies
 never reach core debug logs. Native version binaries can match the resolved provider command;
 generic interpreters do not establish agent identity.
+
+Core invocation, title and mute diagnostics share `_tavs_debug_append` in the loaded shell state
+library. Checked private parent creation replaces raw debug mkdir calls. Existing sinks require
+trusted regular metadata and one link; new logs use0600. Rejection skips optional diagnostics
+without affecting signal flow. Formats and payload redaction stay at the existing callers.
 
 `terminal-visual-state.swift` stores schema-1 observation and ordinary-intent JSON beneath
 `TAVS_RUNTIME_DIR/organizer`, defaulting to `/tmp/tavs-UID/organizer`. Whole-path Base64URL

@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.83
+Version: 1.84
 
 ## Private managed-output failure diagnostics
 
@@ -600,6 +600,14 @@ Failures expose `bytes_written` as a known partial count or `None` when output i
 Callbacks run in the child, so parent-memory mutation does not publish outcomes. Interpreter
 startup and prior-child reap bookkeeping precede the device budget; OS scheduling is not hard
 real-time. These modules advertise no capability and are not yet connected to production hooks.
+
+## Optional debug appends
+
+`_tavs_debug_append(path, line)` shares the shell path and ownership checks. It creates private
+missing parents, accepts only a trusted regular leaf with one hard link, and appends one line
+under umask077. Unavailable sinks skip logging without disrupting signals or changing permissions.
+Mute logging still requires an existing runtime; trigger logs retain their filtered metadata.
+These are static checks, not descriptor-bound protection against same-user pathname changes.
 
 ## Public recovery commands
 

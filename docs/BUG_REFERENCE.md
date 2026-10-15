@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.93
+Version: 1.94
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -868,6 +868,13 @@ directories and process arguments. Intake now discards bodies and debug sinks re
 metadata only. Decoded session/thread identifiers reject terminal and line control characters
 before they reach title composition or identity state. A complete pending-byte capture exposed
 the regression; a regular-file capture contained only the final bell and missed prior writes.
+
+Debug appends also followed linked sinks, stalled on a FIFO and inherited public file modes.
+One shared append helper now checks trusted parents, regular owner/mode metadata and link count,
+creates private output and preserves optional logging failures. A debug-only hard-link check
+prevents appending into an outside file sharing the inode. Existing formats and filtering remain.
+Isolated regressions cover these failures and a real core title trace; same-user path races remain
+outside this static correction. [Source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#optional-debug-sink-trust-2026-10-15).
 
 Late background rendering could overwrite a newer intent by using its newer render timestamp.
 Publication now compares frozen intake time under the same per-TTY lock. Idle and delayed

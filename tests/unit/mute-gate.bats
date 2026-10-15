@@ -56,6 +56,88 @@ setup() {
     [ ! -e "$TAVS_RUNTIME_DIR" ]
 }
 
+@test "debug mute logging rejects linked sinks and writable storage without external changes" {
+    local log="$TEST_RUNTIME/mute-trace.log"
+    printf 'retained preferences 43\n' > "$TEST_HOME/unrelated"
+    ln -s "$TEST_HOME/unrelated" "$log"
+    DEBUG_MUTE=1 _tavs_debug_mute fixed-event
+    [ "$(cat "$TEST_HOME/unrelated")" = 'retained preferences 43' ]
+    [ -L "$log" ]
+
+    # Separate fixtures preserve the rejected link and its target.
+    TAVS_RUNTIME_DIR="$TEST_RUNTIME/writable"
+    mkdir "$TAVS_RUNTIME_DIR"
+    chmod 770 "$TAVS_RUNTIME_DIR"
+    DEBUG_MUTE=1 _tavs_debug_mute fixed-event
+    [ ! -e "$TAVS_RUNTIME_DIR/mute-trace.log" ]
+    chmod 700 "$TAVS_RUNTIME_DIR"
+    printf 'retained log 43\n' > "$TAVS_RUNTIME_DIR/mute-trace.log"
+    chmod 660 "$TAVS_RUNTIME_DIR/mute-trace.log"
+    DEBUG_MUTE=1 _tavs_debug_mute fixed-event
+    [ "$(cat "$TAVS_RUNTIME_DIR/mute-trace.log")" = 'retained log 43' ]
+}
+
+@test "debug mute logging leaves a hard-linked outside file unchanged" {
+    printf 'retained preferences 43\n' > "$TEST_HOME/unrelated"
+    ln "$TEST_HOME/unrelated" "$TEST_RUNTIME/mute-trace.log"
+    DEBUG_MUTE=1 _tavs_debug_mute fixed-event
+    [ "$(cat "$TEST_HOME/unrelated")" = 'retained preferences 43' ]
+    [ "$(stat -f '%l' "$TEST_RUNTIME/mute-trace.log")" = 2 ]
+}
+
+@test "debug mute logging creates a private log and preserves normal append behavior" {
+    (umask 022; DEBUG_MUTE=1 _tavs_debug_mute first-event; DEBUG_MUTE=1 _tavs_debug_mute next-event)
+    [ "$(stat -f '%Lp' "$TEST_RUNTIME/mute-trace.log")" = 600 ]
+    [ "$(wc -l < "$TEST_RUNTIME/mute-trace.log" | tr -d ' ')" = 2 ]
+    grep -F first-event "$TEST_RUNTIME/mute-trace.log"
+    grep -F next-event "$TEST_RUNTIME/mute-trace.log"
+}
+
+@test "debug mute logging rejects a FIFO promptly instead of waiting for a reader" {
+    mkfifo "$TEST_RUNTIME/mute-trace.log"
+    run python3 - "$REPO_ROOT" <<'PY'
+import os, subprocess, sys
+result = subprocess.run(['/bin/bash', '-p', '-c',
+    'source "$1/src/core/mute-gate.sh"; DEBUG_MUTE=1 _tavs_debug_mute fixed-event',
+    'debug-test', sys.argv[1]], capture_output=True, timeout=1, env=os.environ)
+assert result.returncode == 0, result.returncode
+PY
+    [ "$status" -eq 0 ]
+    [ -p "$TEST_RUNTIME/mute-trace.log" ]
+}
+
+@test "shared debug append preserves umask and group read access and rejects foreign metadata across shells" {
+    local shell
+    for shell in /bin/bash /opt/homebrew/bin/bash /bin/zsh; do
+        [[ -x "$shell" ]] || continue
+        run env LC_ALL=C "$shell" -fc '
+            set -e
+            source "$1/src/core/visual-restrictions-state.sh"
+            umask 022
+            before=$(umask)
+            file="$2/${3//\//_}/nested/debug.log"
+            _tavs_debug_append "$file" first-event
+            test "$(umask)" = "$before"
+            test "$(stat -f %Lp "$file")" = 600
+            chmod 750 "${file%/*}"; chmod 640 "$file"
+            _tavs_debug_append "$file" next-event
+            foreign=$(_tavs_visual_restrictions_path "$file")
+            stat() {
+                local argument
+                for argument in "$@"; do
+                    if [[ "$argument" == "$foreign" ]]; then
+                        printf "%s:640\n" "$((EUID+1))"; return 0
+                    fi
+                done
+                command stat "$@"
+            }
+            _tavs_debug_append "$file" rejected-event
+            test "$(wc -l < "$file" | tr -d " ")" = 2
+        ' _ "$REPO_ROOT" "$TEST_RUNTIME" "$shell"
+        [ "$status" -eq 0 ] || { printf '%s\n' "$shell: $output" >&2; return 1; }
+    done
+}
+
 # --- Active TTY Registry ---
 
 @test "mute init does not substitute legacy hints for validated registration" {

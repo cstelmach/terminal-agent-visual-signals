@@ -66,6 +66,25 @@ _tavs_visual_restrictions_path() {
     printf '%s/%s' "$current" "${file##*/}"
 }
 
+# Optional diagnostics must not mutate another file through a linked sink.
+_tavs_debug_append() (
+    local log="$1" links
+    log=$(_tavs_visual_restrictions_path "$log" 1) || return 0
+    if [[ -e "$log" || -L "$log" ]]; then
+        [[ -f "$log" && ! -L "$log" ]] || return 0
+        _tavs_visual_restrictions_trusted "$log" || return 0
+        case "$OSTYPE" in
+            darwin*) links=$(stat -f '%l' "$log" 2>/dev/null) || return 0 ;;
+            linux*) links=$(stat -c '%h' "$log" 2>/dev/null) || return 0 ;;
+            *) return 0 ;;
+        esac
+        [[ "$links" == 1 ]] || return 0
+    fi
+    umask 077
+    printf '%s\n' "$2" 2>/dev/null >> "$log" || return 0
+    return 0
+)
+
 _tavs_visual_restrictions_read() {
     local file="${1:-$HOME/.tavs/visual-restrictions.state}" data="" full=0 LC_ALL=C
     _TAVS_VISUAL_RESTRICTIONS_STATUS=unavailable

@@ -72,11 +72,10 @@ debug_log_invocation() {
     local state="$1" agent="${TAVS_AGENT:-unknown}" ts
     case "$agent" in claude|codex|gemini|opencode) ;; *) agent=unknown ;; esac
     ts=$(date +%Y%m%d-%H%M%S)
-    mkdir -p "$DEBUG_LOG_DIR"
     local context_available=0
     [[ "${TAVS_ORGANIZER_INTAKE:-0}" == 1 ]] && context_available=1
-    printf 'pid=%s agent=%s state=%s context_available=%s\n' "$$" "$agent" "$state" \
-        "$context_available" >> "$DEBUG_LOG_DIR/${ts}-$$-${state}.log"
+    _tavs_debug_append "$DEBUG_LOG_DIR/${ts}-$$-${state}.log" \
+        "pid=$$ agent=$agent state=$state context_available=$context_available"
 }
 
 # === TITLE TRACE LOGGING ===
@@ -88,8 +87,7 @@ debug_log_title_trace() {
         processing|permission|complete|idle|idle_[0-9]*|compacting|reset|subagent|tool_error) ;;
         *) state=unknown ;;
     esac
-    mkdir -p "$DEBUG_LOG_DIR"
-    printf 'event=title-update state=%s\n' "$state" >> "$DEBUG_LOG_DIR/title-trace.log"
+    _tavs_debug_append "$DEBUG_LOG_DIR/title-trace.log" "event=title-update state=$state"
 }
 
 # Log this invocation

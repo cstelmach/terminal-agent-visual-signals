@@ -192,6 +192,18 @@ for root in (records,debug):
 PY
 }
 
+@test "real core debug logging preserves the target of a linked title trace" {
+    printf 'DEBUG_ALL=1\nTAVS_TITLE_MODE=full\n' > "$HOME/.tavs/user.conf"
+    export DEBUG_ALL=1 TAVS_TITLE_MODE=full
+    mkdir -p "$TAVS_TMP_DIR/debug"
+    printf 'retained preferences 43\n' > "$CASE_DIR/unrelated"
+    ln -s "$CASE_DIR/unrelated" "$TAVS_TMP_DIR/debug/title-trace.log"
+    run _owned_pty /bin/bash "$REPO_ROOT/src/core/trigger.sh" processing
+    [ "$status" -eq 0 ]
+    [ "$(cat "$CASE_DIR/unrelated")" = 'retained preferences 43' ]
+    [ -L "$TAVS_TMP_DIR/debug/title-trace.log" ]
+}
+
 @test "standalone muted background writes retain intent without inventing an observation" {
     cat > "$HOME/.tavs/mute.state" <<STATE
 MUTED="true"
