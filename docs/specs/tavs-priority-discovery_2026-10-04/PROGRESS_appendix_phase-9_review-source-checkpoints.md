@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-15
-Version: 1.18
+Version: 1.19
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -887,3 +887,10 @@ Six reader cases pass; [results](caller-deadline-source-check-2026-10-14.md#reco
 
 
 Current Linux source: [integration/results](portable-linux-identity-research-2026-10-13.md).
+
+### Phase 9 safe app replacement: 2026-10-15
+N2 fixed: copied bundle validation precedes process handling; guarded moves retain/restore prior app.
+26 isolated Bats cases and real signed private-bundle checks pass; [details](current-codex-review-2026-10-14.md#n2-app-replacement-correction-2026-10-15).
+Scope divergence: existing app installer plus a new isolated suite and relevant docs, for review N2.
+Initial metadata moved unchanged to planning appendix; round trip verified. SPEC/PLAN unchanged.
+Next: S3 child-installer errors or Linux after operator-started Docker; native acceptance remains open.

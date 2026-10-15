@@ -754,3 +754,39 @@ Reports, original logs and prior files are retained in
 No production install/launch, settings/schedule edit, terminal paint or process shutdown occurred.
 N2 is corrected in source; S3 remains a separate child-installer fix. Earlier Swift/portable full
 suite failures and native/Linux acceptance stay unresolved. Goal/Phase 9 remain incomplete.
+
+## S3 agent installer correction, 2026-10-15
+
+Gemini and unified previews now inspect actual Python status rather than diagnostic strings;
+failed previews cannot reach confirmation/apply. Failed apply returns nonzero before per-agent
+success. Unified installation continues other agents but preserves aggregate failure and omits
+Done on failure. The public `tavs install gemini` caller propagates its child's status unchanged.
+Independent successful settings writes remain applied; no multi-agent rollback is promised.
+
+A real-Python successful-rerun control also exposed unified nested-hook duplication: missing
+flat command fields compared as None versus empty string. Complete-entry equality prevents
+exact duplicate additions while preserving distinct matcher/metadata entries and user settings.
+A dedicated control compares the complete template map plus a same-command/different-matcher
+user entry and requires byte-identical rerun. No provider hook definition or schema changed.
+
+5bM7ch: behavioral RED, 6/8 cases fail (five status/preview failures plus actual rerun mutation).
+SNtaKN: initial 34/34 pass. RnICtW: final 35/35 pass, including the added distinct-entry control
+(9 new, 11 app replacement, 15 sync). Successful merges use actual inline Python; failure modes
+inject only child exit43 on private target paths. Original settings bytes and absent apply calls
+are asserted. Bash 3.2 syntax passes for both modified scripts. Swift source was untouched;
+prior broad-suite, Linux kernel and native acceptance results remain open, not superseded.
+
+Original logs and prior files are retained under
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-agent-installer-vup05e2p/`.
+No real install/sync, user settings/schedule change, terminal paint or provider/session stop occurred.
+S3 is corrected in source. Historical provider VETO remains unchanged. Goal/Phase 9 incomplete.
+
+The reused Explore source check found no actionable defect. Its recommended distinct-entry
+regression was added and source-verified. This read-only assessment is not a new provider review
+or live acceptance verdict. The report is retained beside the original test logs above.
+
+Connected delivery correction: sync previously copied only the Codex installer. It now copies
+both corrected scripts, Gemini trigger/hooks and the Codex template through the existing checked
+list, with required script execute permissions. tYeAUf reproduced two failures: stale copied
+bytes and Gemini CLI exit127. Final YiNtUz passes36/36 (9 child, 11 app, 16 sync), including copied
+Gemini/unified preview rejection in both plugin roots. Original logs are retained above.

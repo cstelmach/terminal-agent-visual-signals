@@ -11,7 +11,9 @@ setup() {
     CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0"
     MARKET="$HOME/.claude/plugins/marketplaces/terminal-agent-visual-signals"
     FILES=(tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh
-        src/agents/claude/hooks.json hooks/hooks.json src/shell/tavs-shellrc.sh src/install/install-codex.sh)
+        src/agents/gemini/trigger.sh src/agents/gemini/hooks.json src/agents/codex/hooks.json
+        src/agents/claude/hooks.json hooks/hooks.json src/shell/tavs-shellrc.sh
+        src/install/install-codex.sh src/install/install-gemini.sh src/install/install.sh)
     local target file
     for target in "$CACHE" "$MARKET"; do
         mkdir -p "$target/src/core" "$target/src/cli" "$target/src/themes"
@@ -41,7 +43,8 @@ sync_fixture() {
             src/core/helper-selection.sh src/core/portable_metadata.py src/cli/cmd-recover.sh; do
             cmp "$REPO_ROOT/$file" "$target/$file"
         done
-        for file in tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh src/core/trigger.sh; do
+        for file in tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh \
+            src/agents/gemini/trigger.sh src/core/trigger.sh src/install/install-gemini.sh src/install/install.sh; do
             [ -x "$target/$file" ]
         done
         run "$target/tavs" recover --help
@@ -131,6 +134,23 @@ _tavs_organizer_intake claude "$$" || result=$?
     [ "$status" -eq 0 ]
     grep -F "notify = [\"bash\", \"$CACHE/src/agents/codex/trigger.sh\", \"complete\"]" "$HOME/.codex/config.toml"
     grep -q '^model = "fixture"$' "$HOME/.codex/config.toml"
+}
+
+@test "copied Gemini and unified installers reject failed previews without false success" {
+    sync_fixture
+    mkdir -p "$HOME/.gemini"
+    printf '{invalid\n' > "$HOME/.gemini/settings.json"
+    local target
+    for target in "$CACHE" "$MARKET"; do
+        run /bin/bash -c 'printf "y\n" | /bin/bash "$1/tavs" install gemini' _ "$target"
+        [ "$status" -ne 0 ]
+        [[ "$output" == *'configuration preview failed.'* && "$output" != *'visual signals installed!'* ]]
+        run /bin/bash -c 'printf "y\ny\ny\n" | /bin/bash "$1/src/install/install.sh"' _ "$target"
+        [ "$status" -ne 0 ]
+        [[ "$output" == *'Some installations failed.'* && "$output" != *'Done.'* ]]
+    done
+    [ "$(cat "$HOME/.gemini/settings.json")" = '{invalid' ]
+    [ ! -e "$HOME/.gemini/settings.json.bak" ]
 }
 
 @test "copied adapters forward allowlisted intake with the visual kill switch" {

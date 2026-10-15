@@ -161,10 +161,9 @@ echo -e "${CYAN}Analyzing changes...${NC}"
 echo ""
 
 # 1. PREVIEW
-output=$(python3 -c "$PYTHON_SCRIPT" "$SETTINGS_FILE" "$HOOKS_SOURCE" '${GEMINI_EXTENSION_ROOT}' "$REPO_ROOT" "preview" 2>&1)
-
-if [[ "$output" == *"Python Error:"* ]] || [[ "$output" == *"Error:"* ]]; then
-    echo -e "${RED}$output${NC}"
+if ! output=$(python3 -c "$PYTHON_SCRIPT" "$SETTINGS_FILE" "$HOOKS_SOURCE" '${GEMINI_EXTENSION_ROOT}' "$REPO_ROOT" "preview" 2>&1); then
+    printf '%s\n' "$output" >&2
+    echo -e "${RED}Gemini configuration preview failed.${NC}" >&2
     exit 1
 fi
 
@@ -181,7 +180,10 @@ read -p "Apply these changes? [y/N] " response
 
 if [[ "$response" =~ ^[yY] ]]; then
     # 3. APPLY
-    python3 -c "$PYTHON_SCRIPT" "$SETTINGS_FILE" "$HOOKS_SOURCE" '${GEMINI_EXTENSION_ROOT}' "$REPO_ROOT" "apply"
+    if ! python3 -c "$PYTHON_SCRIPT" "$SETTINGS_FILE" "$HOOKS_SOURCE" '${GEMINI_EXTENSION_ROOT}' "$REPO_ROOT" "apply"; then
+        echo -e "${RED}Gemini configuration update failed.${NC}" >&2
+        exit 1
+    fi
     echo ""
     echo -e "${GREEN}✓ Gemini CLI visual signals installed!${NC}"
     echo ""

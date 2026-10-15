@@ -71,20 +71,12 @@ try:
         
         # Iterate reversed so we can insert at 0 and maintain order
         for new_hook in reversed(new_hooks_list):
-            new_cmd = new_hook.get('command', '')
-            is_duplicate = False
-            
-            # Simple duplicate check based on command string
-            for existing in existing_hooks_section[event]:
-                if existing.get('command') == new_cmd:
-                    is_duplicate = True
-                    break
-            
-            if not is_duplicate:
+            # Compare complete entries so nested commands and distinct matchers survive.
+            if new_hook not in existing_hooks_section[event]:
                 existing_hooks_section[event].insert(0, new_hook)
+                inner_hooks = new_hook.get('hooks', [])
+                new_cmd = inner_hooks[0].get('command', '') if inner_hooks else new_hook.get('command', '')
                 changes_log.append(f"  [+] {event}: Added hook '{new_cmd.split('/')[-1]}'")
-            else:
-                pass # Duplicate
 
     # 4. Handle Modes
     if mode == 'preview':
@@ -141,6 +133,7 @@ process_agent() {
     local hook_source="$3"
     local var_name="$4"
     local settings_file="$config_dir/settings.json"
+    local output response
 
     echo -e "${YELLOW}--- Checking $agent_name Configuration ---${NC}"
     
@@ -158,13 +151,10 @@ process_agent() {
     echo -e "${CYAN}Analyzing changes...${NC}"
     
     # 1. PREVIEW
-    output=$(run_json_merge "$settings_file" "$hook_source" "$var_name" "preview")
-    
-    # Check if python script failed (check for Python Error string in stderr, 
-    # but we are capturing stdout. Let's rely on the output text.)
-    if [[ "$output" == *"Python Error:"* ]]; then
-        echo -e "${RED}$output${NC}"
-        return
+    if ! output=$(run_json_merge "$settings_file" "$hook_source" "$var_name" "preview" 2>&1); then
+        printf '%s\n' "$output" >&2
+        echo -e "${RED}$agent_name configuration preview failed.${NC}" >&2
+        return 1
     fi
 
     if [[ "$output" == *"No new hooks to add"* ]]; then
@@ -183,7 +173,10 @@ process_agent() {
     
     if [[ "$response" =~ ^[yY] ]]; then
         # 3. APPLY
-        run_json_merge "$settings_file" "$hook_source" "$var_name" "apply"
+        if ! run_json_merge "$settings_file" "$hook_source" "$var_name" "apply"; then
+            echo -e "${RED}$agent_name configuration update failed.${NC}" >&2
+            return 1
+        fi
         echo -e "${GREEN}✓ $agent_name updated.${NC}"
     else
         echo "Skipped $agent_name."
@@ -193,19 +186,24 @@ process_agent() {
 
 # === MAIN ===
 
+install_status=0
 process_agent "Claude" \
     "$CLAUDE_CONFIG_DIR" \
     "$REPO_ROOT/src/agents/claude/hooks.json" \
-    "\${CLAUDE_PLUGIN_ROOT}"
+    "\${CLAUDE_PLUGIN_ROOT}" || install_status=1
 
 process_agent "Gemini" \
     "$GEMINI_CONFIG_DIR" \
     "$REPO_ROOT/src/agents/gemini/hooks.json" \
-    "\${GEMINI_EXTENSION_ROOT}"
+    "\${GEMINI_EXTENSION_ROOT}" || install_status=1
 
 process_agent "Codex" \
     "$CODEX_CONFIG_DIR" \
     "$REPO_ROOT/src/agents/codex/hooks.json" \
-    "\${CODEX_EXTENSION_ROOT}"
+    "\${CODEX_EXTENSION_ROOT}" || install_status=1
 
+if [[ "$install_status" -ne 0 ]]; then
+    echo -e "${RED}Some installations failed. See the errors above.${NC}" >&2
+    exit 1
+fi
 echo -e "${BLUE}Done.${NC}"

@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.1
+Version: 1.2
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -86,3 +86,24 @@ no production install/launch, login registration or native acceptance was perfor
 The prior app remains retained after success. Two renames are not crash-atomic, and restoring
 its bundle does not relaunch a stopped process.
 See [update recovery](reference/macos-menubar-app.md#update).
+
+## Agent installers report success after failed configuration updates
+
+Gemini preview checked diagnostic text instead of the subprocess status. Both JSON installers
+ignored failed apply operations; the unified command also lost per-agent failures and printed
+Done. Each preview/apply now checks status explicitly and reports failure before success output.
+Unified installation continues independent agents but returns nonzero if any failed. Successful
+updates to other agents remain applied; the command does not roll them back.
+
+A real-Python reinstall control also exposed repeated nested-hook insertion. The unified merge
+compared a missing top-level command with an empty string, failing to recognize existing entries.
+Complete-entry equality now prevents exact duplicate additions and preserves distinct matchers
+and user entries. Existing settings, backup behavior and confirmation remain in place.
+
+Prevention: nine private-root Bats cases cover arbitrary preview errors, public CLI apply failure,
+aggregate partial failure, malformed settings, cancellation, backups and idempotent real merges.
+They pass with eleven app-replacement and sixteen sync regressions (36 total). Shell syntax passes.
+Failure injection stubs only the Python process result; successful merges run the actual inline
+Python against private settings. No provider process, real installation or user configuration changed.
+Sync now delivers the corrected installers and their required templates/adapter into existing
+plugin roots. Exact-file checks and copied Gemini/unified failure cases cover both destinations.

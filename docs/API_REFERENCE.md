@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.74
+Version: 1.75
 
 ## Private managed-output failure diagnostics
 
@@ -624,8 +624,8 @@ uses its full validated ID set or the supplied narrower allowlist, never browsin
 
 ## Internal helper compatibility
 
-`tavs sync` refreshes the root dispatcher, core/CLI dependencies, Claude/Codex adapters,
-both Claude hook definitions, plugin shellrc and Codex installer in existing plugin roots.
+`tavs sync` refreshes the root dispatcher, core/CLI dependencies, Claude/Gemini/Codex adapters,
+hook templates, both Claude hook definitions, plugin shellrc and standalone/unified installers.
 Required copy/directory/permission failures return nonzero. Direct entry points regain execute
 permission; preferences, schedules and lock definitions are not sync inputs. A failure may leave
 earlier copies applied. Sync does not build/install the native helper or restart existing workers.

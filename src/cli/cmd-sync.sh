@@ -100,7 +100,9 @@ _sync_to_target() {
     cp "$TAVS_ROOT/tavs" "$target_dir/tavs" || return 1
     local file
     for file in src/agents/claude/trigger.sh src/agents/codex/trigger.sh \
-        src/agents/claude/hooks.json hooks/hooks.json src/shell/tavs-shellrc.sh src/install/install-codex.sh; do
+        src/agents/gemini/trigger.sh src/agents/gemini/hooks.json src/agents/codex/hooks.json \
+        src/agents/claude/hooks.json hooks/hooks.json src/shell/tavs-shellrc.sh \
+        src/install/install-codex.sh src/install/install-gemini.sh src/install/install.sh; do
         mkdir -p "$target_dir/${file%/*}" || return 1
         cp "$TAVS_ROOT/$file" "$target_dir/$file" || return 1
     done
@@ -119,8 +121,9 @@ _sync_to_target() {
     cp "$TAVS_ROOT/src/cli/"*.sh "$target_dir/src/cli/" || return 1
     chmod +x "$target_dir/tavs" "$target_dir/src/core/trigger.sh" \
         "$target_dir/src/agents/claude/trigger.sh" "$target_dir/src/agents/codex/trigger.sh" \
-        "$target_dir/src/install/install-codex.sh" || return 1
-    echo "  Synced CLI, adapters, hooks, Codex installer and shell integration"
+        "$target_dir/src/agents/gemini/trigger.sh" "$target_dir/src/install/install-codex.sh" \
+        "$target_dir/src/install/install-gemini.sh" "$target_dir/src/install/install.sh" || return 1
+    echo "  Synced CLI, adapters, hooks, installers and shell integration"
 
     # Theme files
     if [[ -d "$target_dir/src/themes" ]]; then
