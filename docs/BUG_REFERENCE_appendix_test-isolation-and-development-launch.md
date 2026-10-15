@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.6
+Version: 1.7
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -80,6 +80,25 @@ Prevention: the launch-policy matrix covers the exact bundle, ordinary/lookalike
 each environment key. All 672 Swift tests pass. The signed staged bundle exits 1 with the
 fixed isolation error when started without settings and writes no private preferences.
 This verifies rejection only. Native Ghostty acceptance still needs operator observations.
+
+## Native catalogue exceeds its deadline with many windows
+
+The organizer repeatedly evaluated collection counts and fetched metadata through individual
+terminal proxies. On the current 37-surface/33-window workspace, its bootstrap exceeded 8 s.
+The adapter now uses Scripting Bridge bulk property selectors and exact window/tab ID lookups.
+It preserves native order and rejects changed global ID order or incomplete hierarchy coverage.
+Missing metadata stays explicit; permission denial still rejects the request. The 2 s native
+and 100 ms device deadlines are unchanged. A native selector prototype completes in 1.184 s.
+
+Two RED cases exposed 185 individual metadata reads and identity/missing-coverage failures.
+All 17 catalogue tests and the connected broadcaster case pass; final Swift: 674/674, zero
+warnings, 17.447 s. An earlier full run retains two assertions in the old broadcaster case.
+Host load reached 232.43/109.75/60.86, but its failure cause is not established by that snapshot.
+
+Computer Use verified two dedicated native rows, resizing, multiselection, retained High priority,
+and recovery suspension through relaunch. Later catalogue timeouts retain rows and disable focus.
+Ghostty's visible effects/navigation and other Spaces remain unverified. The test app remains
+open with Focus Off and its private recovery suspension enabled.
 
 ## App replacement copy removes the prior installation
 

@@ -239,6 +239,58 @@ final class GhosttyCatalogTests: XCTestCase {
         XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 1)
     }
 
+    func testScriptBatchesMetadataAndPreservesNativeOrderForManySurfaces() throws {
+        let context = try nativeContext()
+        context.evaluateScript("""
+        var individualReads=0, many=[];
+        for(var i=0;i<37;i++) {
+            var item=object({id:'surface-'+i,name:'same',workingDirectory:'/same',tty:'/dev/ttys'+i,pid:100+i});
+            item.valueForKey=function(key){individualReads++;return this[key];};
+            many.push(item);
+        }
+        application.terminals=array(many); tab.terminals=array(many);
+        """)
+        let rows = try GhosttyCatalog.decode(scriptReply(context), application: app)
+        XCTAssertEqual(rows.map(\.id.terminalID), (0..<37).map { "surface-\($0)" })
+        XCTAssertEqual(rows.last?.foregroundPID, 136)
+        XCTAssertEqual(context.objectForKeyedSubscript("individualReads")?.toInt32(), 0)
+        XCTAssertLessThanOrEqual(context.objectForKeyedSubscript("columnReads").toInt32(), 12)
+    }
+
+    func testScriptRejectsChangedColumnIdentityAndPreservesMissingCoverage() throws {
+        let changed = try nativeContext()
+        changed.evaluateScript("""
+        var original=application.terminals.arrayByApplyingSelector, idReads=0;
+        application.terminals.arrayByApplyingSelector=function(key){
+            var values=original(key); return key==='id' && ++idReads===2 ? ['replacement'] : values;
+        };
+        """)
+        XCTAssertTrue(String(decoding: try scriptReply(changed), as: UTF8.self).contains("nativeUnavailable"))
+        let missing = try nativeContext()
+        missing.evaluateScript("""
+        var original=application.terminals.arrayByApplyingSelector;
+        application.terminals.arrayByApplyingSelector=function(key){return key==='tty'?[]:original(key);};
+        """)
+        let rows = try GhosttyCatalog.decode(scriptReply(missing), application: app)
+        XCTAssertEqual(rows.first?.mappingIssue, .missingTTY)
+        XCTAssertEqual(rows.first?.title, "same")
+        let denied = try nativeContext()
+        denied.evaluateScript("""
+        var original=application.terminals.arrayByApplyingSelector;
+        application.terminals.arrayByApplyingSelector=function(key){
+            var values=original(key); application.lastError=key==='tty'?{code:-1743}:null; return values;
+        };
+        """)
+        XCTAssertTrue(String(decoding: try scriptReply(denied), as: UTF8.self).contains("permissionDenied"))
+    }
+
+    private func scriptReply(_ context: JSContext) throws -> Data {
+        let text = try XCTUnwrap(context.objectForKeyedSubscript("run")
+            .call(withArguments: [["{\"action\":\"enumerate\",\"pid\":10}"]])?.toString())
+        XCTAssertNil(context.exception)
+        return Data(text.utf8)
+    }
+
     func testAdapterPermissionDenialNeverFocuses() throws {
         let context = try nativeContext()
         context.evaluateScript("""
@@ -252,8 +304,7 @@ final class GhosttyCatalogTests: XCTestCase {
         for nilValue in ["null", "{isNil:function(){return true;}}"] {
             let context = try nativeContext()
             context.evaluateScript("""
-            var lookups=0;
-            application.terminals.objectWithID=function(id){lookups++;return lookups===1?terminal:\(nilValue);};
+            application.terminals.objectWithID=function(id){return \(nilValue);};
             """)
             XCTAssertTrue(try focusReply(context).contains("targetUnavailable"))
             XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 0)
@@ -269,10 +320,11 @@ final class GhosttyCatalogTests: XCTestCase {
     private func nativeContext() throws -> JSContext {
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript("""
-        var calls = 0, selected = false, focused = 'other', requestedPID;
-        var ObjC = {import: function(){}, unwrap: function(value){return value;}};
+        var calls = 0, selected = false, focused = 'other', requestedPID, columnReads=0;
+        var ObjC = {import: function(){}, unwrap: function(value){return value;},deepUnwrap:function(value){return value;}};
         function object(value) { value.valueForKey=function(key){return this[key];}; return value; }
         function array(values) { return {count:values.length,objectAtIndex:function(i){return values[i];},
+            arrayByApplyingSelector:function(key){columnReads++;return values.map(function(value){return value[key];});},
             objectWithID:function(id){return values.find(function(value){return value.id===id;});}}; }
         var terminal = object({id:'quoted";id',name:'same',workingDirectory:'/same',tty:'/dev/ttys001',pid:100});
         Object.defineProperty(terminal,'focus',{get:function(){calls++;selected=true;focused=terminal.id;}});

@@ -210,42 +210,62 @@ final class GhosttyCatalog {
         function missing(value) {
             return value == null || (typeof value.isNil === 'function' && value.isNil());
         }
-        function read(object, key) {
-            var value = object.valueForKey(key);
+        function checkError(object) {
             var error = object.lastError;
             var code = missing(error) ? 0 : Number(error.code);
             if (isFinite(code) && code !== 0) throw {errorNumber: code};
+        }
+        function read(object, key) {
+            var value = object.valueForKey(key);
+            checkError(object);
             return value;
         }
         function scalar(object, key) {
             var value = read(object, key);
             return missing(value) ? null : ObjC.unwrap(value);
         }
-        function optional(object, key) {
-            try { return scalar(object, key); } catch (error) {
+        function column(app, objects, key) {
+            // Use SBElementArray's bulk selector lookup instead of per-terminal metadata reads.
+            var values = objects.arrayByApplyingSelector(key);
+            checkError(app);
+            values = ObjC.deepUnwrap(values);
+            if (!Array.isArray(values)) throw {};
+            return values;
+        }
+        function optionalColumn(app, objects, key, count) {
+            try {
+                var values = column(app, objects, key);
+                if (values.length !== count) throw {};
+                return values;
+            } catch (error) {
                 if (error.errorNumber === -1743) throw error;
-                return null;
+                return Array(count).fill(null);
             }
         }
         function snapshot(app, allowedIDs) {
-            var result = [], windows = read(app, 'windows');
-            if (!windows || !isFinite(Number(windows.count))) throw {};
-            for (var i = 0; i < Number(windows.count); i++) {
-                var window = windows.objectAtIndex(i), tabs = read(window, 'tabs');
-                if (!tabs || !isFinite(Number(tabs.count))) throw {};
-                for (var j = 0; j < Number(tabs.count); j++) {
-                    var tab = tabs.objectAtIndex(j), terminals = read(tab, 'terminals');
-                    if (!terminals || !isFinite(Number(terminals.count))) throw {};
-                    for (var k = 0; k < Number(terminals.count); k++) {
-                        var id = scalar(terminals.objectAtIndex(k), 'id');
+            var result = [], all = read(app, 'terminals'), ids = column(app, all, 'id'), mapped = [];
+            if (ids.some(function(id, i) { return typeof id !== 'string' || !id || ids.indexOf(id) !== i; })) throw {};
+            var names = optionalColumn(app, all, 'name', ids.length);
+            var directories = optionalColumn(app, all, 'workingDirectory', ids.length);
+            var ttys = optionalColumn(app, all, 'tty', ids.length), pids = optionalColumn(app, all, 'pid', ids.length);
+            var windows = read(app, 'windows'), windowIDs = column(app, windows, 'id');
+            for (var i = 0; i < windowIDs.length; i++) {
+                var tabs = read(windows.objectWithID(windowIDs[i]), 'tabs'), tabIDs = column(app, tabs, 'id');
+                var selected = optionalColumn(app, tabs, 'selected', tabIDs.length);
+                for (var j = 0; j < tabIDs.length; j++) {
+                    var terminalIDs = column(app, read(tabs.objectWithID(tabIDs[j]), 'terminals'), 'id');
+                    for (var k = 0; k < terminalIDs.length; k++) {
+                        var id = terminalIDs[k], index = ids.indexOf(id);
+                        if (index === -1 || mapped.indexOf(id) !== -1) throw {};
+                        mapped.push(id);
                         if (allowedIDs && allowedIDs.indexOf(id) === -1) continue;
-                        var terminal = read(app, 'terminals').objectWithID(id);
-                        result.push({terminalID: id, windowID: scalar(window, 'id'), tabID: scalar(tab, 'id'),
-                            title: optional(terminal, 'name'), directory: optional(terminal, 'workingDirectory'),
-                            tty: optional(terminal, 'tty'), pid: optional(terminal, 'pid'), selected: optional(tab, 'selected')});
+                        result.push({terminalID: id, windowID: windowIDs[i], tabID: tabIDs[j],
+                            title: names[index], directory: directories[index], tty: ttys[index],
+                            pid: pids[index], selected: selected[j]});
                     }
                 }
             }
+            if (mapped.length !== ids.length || JSON.stringify(ids) !== JSON.stringify(column(app, all, 'id'))) throw {};
             return result;
         }
         function isFocused(app, request) {
