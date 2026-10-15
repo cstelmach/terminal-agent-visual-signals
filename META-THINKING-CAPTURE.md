@@ -27,9 +27,9 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P4 | set-e-last-command-guard | In sourced CLI functions, never end a function with `[[ ]] && ...`; use if-blocks + explicit `return 0` (dispatcher runs `set -e`, test harness may not) | 1 | fable-5 | 2026-07-13 |
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
-| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries |
+| P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 7 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries; native selector batching |
 | P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 77 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 86 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; isolated native launch guard |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 87 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; isolated native launch guard; native selector batching |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -6752,3 +6752,66 @@ both dedicated matches in 0.538 seconds. The successful probe supports a smaller
 request pattern; it does not yet establish a corrected production catalogue. Finder now shows
 the launcher in a separate tab. The next bounded source slice is native catalogue batching.
 A separate read-only report identifies portable lock transaction serialization as future work.
+
+## 2026-10-15 · gpt-6.1-sol · native-catalogue-selector-batching
+
+meta:
+  model: gpt-6.1-sol
+  model_source: observed (bounded latest Codex turn_context)
+  interface: codex-desktop
+  thinking: xhigh
+  session: 01a10879
+  trace: observed
+
+**Framing [O]:** The operator explicitly requested that the prepared launcher be run by the
+agent. The two dedicated TTYs remained the complete effect scope. The launch attempt exposed
+a real native catalogue timeout before any test UI opened. The next bounded slice therefore
+addressed catalogue enumeration, while the previously committed launch isolation guard and
+all product deadlines remained in place. Source/state were reread before that second slice.
+
+**Strategy [O]:** An instrumented property-only variant separated permission rejection from
+slow enumeration: native reads returned. Installed Scripting Bridge headers supplied the bulk
+selector API. A generic properties probe failed with -1728, KVC-column enumeration still exceeded
+two seconds, and the selector prototype returned 37 surfaces across 33 windows in 1.184 seconds.
+The correction reused the existing adapter and JavaScriptCore test harness. No new service,
+framework dependency, protocol or source telemetry was needed. P7 and P9 recur here.
+
+**Action trace [O]**
+
+| Step | Move | Object | Result |
+|---|---|---|---|
+| 1 | Run | Explicitly requested scoped launcher | Native bootstrap times out at 8 s |
+| 2 | Probe | Installed selector API and catalogue variants | Full selector prototype within 2 s |
+| 3 | Red/green | Two actual-script behavior cases | Three RED assertions; 17 catalogue pass |
+| 4 | Verify | Connected broadcaster and full XCTest | 18/18; final674/674 |
+| 5 | Computer Use | Dedicated Sessions window | Two rows, resize and multiselection |
+| 6 | Restart | Private suspension and High priority | Both persist; Focus stays Off |
+
+**Decision points [O]:** The source now retrieves metadata by bulk selectors while retaining
+exact native window/tab identity. Global ID order and hierarchy coverage are checked before
+publication. Column length failures become explicit missing coverage; permission denial remains
+an error. Existing target/TTY checks still precede navigation. The two-second native and 100 ms
+device budgets were preserved rather than adjusted to fit the observed slow path.
+
+The launch bootstrap needs only native IDs and TTYs, so it now reads those columns and validates
+stable ordering. Its timeout fails with a fixed message before launch. The app was then inspected
+through Computer Use on its own bundle. Ghostty itself remained unavailable to that tool; no
+physical background or Space-navigation acceptance was inferred from the organizer window.
+
+**Failure arc [O/R]:** Root: runtime/test timing remains unresolved. The first full674 run failed
+two assertions in the existing startup broadcaster case. That case injects a native snapshot
+closure and does not execute the changed script. A later host snapshot showed load232.43 on
+12 CPUs. The case passed focused, then the updated full suite passed674/674 after the owned app
+was stopped. Those observations do not establish host load or app polling as the cause [R].
+The failed complete log was retained and no broad unchanged loop or deadline relaxation followed.
+
+**Verification [O]:** The visible app distinguished duplicate titles/directories by the exact
+TTYs, resized, supported two-row selection and retained High priority for031 across relaunch.
+Restore Visibility persisted a private suspension that survived relaunch with Focus Off.
+Intermittent catalogue timeouts retained unavailable rows and disabled focus actions. The app
+was reopened at the end with no selection/preview and suspension enabled. Exact Go To, visible
+terminal colors, hidden windows/Spaces, manual/automatic effects, independent device recovery
+and eight Linux kernel cases remain unverified. Logs/variants were retained externally and the
+source/test/bug correction was committed. No installed app, live settings or working terminal
+was changed. No new pattern promotion is warranted; the capability-first move is already in
+P7. Behavioral claims above are observed [O]; possible failure causes remain reconstructed [R].

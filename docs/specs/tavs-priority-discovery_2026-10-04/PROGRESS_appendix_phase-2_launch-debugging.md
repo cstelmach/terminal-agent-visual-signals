@@ -103,3 +103,8 @@ Full outcome/disposition: [Phase 2 review](reviews/PHASE2-CODEX-REVIEW.md).
   Recovery and previews remain future work; no OSC is added in this slice.
 
 Current acceptance and unverified cases remain in [PROGRESS.md](PROGRESS.md).
+
+### Swift and scoped launch checkpoint: 2026-10-15
+
+**Phase 9 Swift/launch, 2026-10-15: 672/672 pass; guard b44727f.** [Results](caller-deadline-source-check-2026-10-14.md#fresh-isolated-swift-verification-2026-10-15).
+**Scope:** one source/test and bug docs; native031/038 bootstrap timed out at 8s; next: bulk catalogue reads.

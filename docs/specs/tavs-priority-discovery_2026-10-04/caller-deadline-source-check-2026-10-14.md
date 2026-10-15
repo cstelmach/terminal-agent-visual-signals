@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.3
+Version: 1.4
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -540,3 +540,43 @@ logs and scripts were copied to the same native-acceptance retained directory ab
 Portable mutation source recon is also available for the next independent correction:
 `/Volumes/external/agent-data/reports/2026-10-15/tavs-portable-mutation-trust-explorer-182507.md`.
 It distinguishes a whole-transaction lost-update defect from conditional pathname races.
+
+## Native selector batching: 2026-10-15
+
+`39bed38` replaces per-terminal metadata/collection-count evaluation with Scripting Bridge
+`arrayByApplyingSelector` column reads. Global ID order is checked before publication, metadata
+length mismatches become missing coverage, and hierarchy/ID mismatches reject the catalogue.
+Window/tab proxies remain exact-ID and PID bound. Native/device budgets remain 2 s/100 ms.
+
+The generic properties probe returns -1728; the KVC-column prototype still exceeds 2 s. The
+selector prototype reads 37 surfaces across 33 windows in 1.184 s. Two behavioral RED cases
+fail three assertions, including 185 individual metadata reads. Final connected checks pass
+17 catalogue cases and the previously failing broadcaster case: 18/18, 2.710 s. The final full
+isolated XCTest run is 674/674, zero failures/warnings, 17.447 s (17.494 s elapsed).
+
+Earlier full 2IuBk2 retains two assertions in the existing startup plain-shell broadcaster test,
+27.697 s. Its native snapshot is a fixture closure, not the changed adapter. Current source
+therefore does not establish a catalogue semantic cause. A subsequent host snapshot reports
+232.43/109.75/60.86 load on 12 CPUs; this is context, not a failure-cause finding. The final full
+run used the updated permission case with the owned test app stopped, then reopened it.
+
+The explicitly requested launcher now obtains only ID/TTY bootstrap columns within 2 s.
+Computer Use confirms the dedicated banner and exactly `/dev/ttys031` and `/dev/ttys038`.
+Duplicate title/directory rows remain distinguishable by TTY. Resizing from 1100 x 500 to
+954 x 434 and two-row multiselection work. High priority on031 survives a test-app restart;
+038 remains Normal. Restore Visibility persists the private
+marker and suspension survives relaunch with Focus Off. During catalogue timeouts, retained
+rows are marked unavailable and focus controls are disabled. Recovery reports native discovery
+unavailable and zero known targets checked rather than claiming terminal restoration.
+
+The test app remains open, Focus Off, no selection/preview, with its private suspension enabled.
+Ghostty cannot be viewed directly through Computer Use. Visible terminal backgrounds, exact
+Go To, hidden/minimized windows, other Spaces, cues, working-set effects, hung-menu/device
+recovery and Linux kernel cases remain unverified. No real install/settings or working-session
+shutdown occurred. System Settings also displayed older TAVS Automatic/Manual Acceptance login
+items; their paths/active state were not investigated or changed.
+
+All catalogue RED/green/connected/full/final logs, variants and launch results are retained in
+the native-acceptance directory above. The staged app/build/cache trees remain at their native
+external working paths. No cache/build/report purge was performed. Next source work is the
+portable lock transaction described in the already saved mutation recon report.
