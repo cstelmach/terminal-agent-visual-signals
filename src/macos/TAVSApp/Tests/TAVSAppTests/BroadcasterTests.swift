@@ -646,7 +646,11 @@ final class BroadcasterTests: XCTestCase {
 
     private func readTestPTY(_ master: Int32, count: Int) throws -> Data {
         var descriptor = pollfd(fd: master, events: Int16(POLLIN), revents: 0)
-        guard poll(&descriptor, 1, 1_000) == 1 else { throw POSIXError(.ETIMEDOUT) }
+        let polled = poll(&descriptor, 1, 1_000), pollError = errno
+        guard polled == 1 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(polled < 0 ? pollError : ETIMEDOUT),
+                userInfo: [NSLocalizedDescriptionKey: "PTY read poll=\(polled), revents=\(descriptor.revents), errno=\(polled < 0 ? pollError : 0)"])
+        }
         var bytes = [UInt8](repeating: 0, count: count)
         let received = Darwin.read(master, &bytes, bytes.count)
         guard received >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno)!) }
@@ -667,16 +671,41 @@ final class BroadcasterTests: XCTestCase {
     func testSystemProcessRunnerDeliversLargePTYWriteWhileReaderDrains() throws {
         let tty = try openTestPTY(); defer { close(tty.master); close(tty.slave) }
         let bytes = Data((0..<(64 * 1_024)).map { UInt8(truncatingIfNeeded: $0) })
+        let retainedSlave = dup(tty.slave)
+        guard retainedSlave >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno)!) }
+        guard fcntl(retainedSlave, F_SETFD, FD_CLOEXEC) == 0 else {
+            let savedError = errno; close(retainedSlave)
+            throw POSIXError(POSIXErrorCode(rawValue: savedError)!)
+        }
         let finished = expectation(description: "Writer completes partial writes")
+        let outcomeLock = NSLock()
+        var outcome: (result: Result<Void, Error>, elapsed: UInt64)?
         DispatchQueue.global().async {
-            do { try SystemProcessRunner().writeToDevice(path: tty.path, data: bytes) }
-            catch { XCTFail("PTY writer failed: \(error)") }
+            // Retain this PTY if the outer writer starts after the fixture's wait expires.
+            defer { close(retainedSlave) }
+            let start = DispatchTime.now().uptimeNanoseconds
+            let result = Result { try SystemProcessRunner().writeToDevice(path: tty.path, data: bytes) }
+            let elapsed = DispatchTime.now().uptimeNanoseconds - start
+            outcomeLock.lock(); outcome = (result, elapsed); outcomeLock.unlock()
             finished.fulfill()
         }
-        var received = Data()
-        while received.count < bytes.count { received.append(try readTestPTY(tty.master, count: 4_096)) }
+        let start = DispatchTime.now().uptimeNanoseconds
+        var received = Data(), reads = 0, readFailure: Error?
+        do {
+            while received.count < bytes.count {
+                reads += 1
+                received.append(try readTestPTY(tty.master, count: 4_096))
+            }
+        } catch { readFailure = error }
+        // Reader failure still observes the writer before the test closes its descriptors.
         wait(for: [finished], timeout: 1)
-        XCTAssertEqual(received, bytes)
+        outcomeLock.lock(); let completed = outcome; outcomeLock.unlock()
+        let progress = "received \(received.count)/\(bytes.count), reads \(reads), total ns \(DispatchTime.now().uptimeNanoseconds - start)"
+        let result = try XCTUnwrap(completed, progress)
+        let diagnostic = progress + "; writer ns \(result.elapsed)"
+        XCTAssertNil(readFailure, diagnostic + "; reader: \(String(describing: readFailure))")
+        XCTAssertNoThrow(try result.result.get(), diagnostic)
+        XCTAssertEqual(received, bytes, diagnostic)
     }
 
     func testSystemProcessRunnerDisconnectedPTYFailsPromptly() throws {

@@ -79,3 +79,6 @@ Next: retained broad-suite failures and Linux after operator-started Docker; nat
 ### Phase 9 portable fixture and suite refresh: 2026-10-15
 One test fixture changed; portable197 pass+8 skips; Swift671/4 assertions. Production unchanged.
 Next: Swift recovery; [source/results](portable-linux-identity-research-2026-10-13.md).
+
+Native race fixtures: [source/results](caller-deadline-source-check-2026-10-14.md). Three targets pass.
+Full suite: 671 tests, seven assertions elsewhere. Scope: tests/docs. Next: writer/focus failures.

@@ -86,10 +86,12 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(controller.previewed.count, count, controller.previewStatus)
     }
 
-    private func read(_ index: Int, file: StaticString = #filePath, line: UInt = #line) throws -> Data {
+    private func read(_ index: Int, diagnostics: () -> String = { "" },
+                      file: StaticString = #filePath, line: UInt = #line) throws -> Data {
         var descriptor = pollfd(fd: ptys[index].master, events: Int16(POLLIN), revents: 0)
-        guard poll(&descriptor, 1, 1_000) == 1 else {
-            XCTFail("PTY \(index) produced no expected bytes", file: file, line: line)
+        let polled = poll(&descriptor, 1, 1_000), pollError = errno
+        guard polled == 1 else {
+            XCTFail("PTY \(index) produced no expected bytes; poll=\(polled), revents=\(descriptor.revents), errno=\(polled < 0 ? pollError : 0)\n" + diagnostics(), file: file, line: line)
             throw POSIXError(.ETIMEDOUT)
         }
         var bytes = [UInt8](repeating: 0, count: 4_096)
@@ -632,11 +634,15 @@ final class FocusControllerTests: XCTestCase {
             identities[owner+1] = ProcessIdentity(generation: generation(owner+1), parentPID: UInt32(owner),
                 group: UInt32(owner), device: identities[owner]!.device, foregroundGroup: UInt32(owner))
         }
+        let target = try XCTUnwrap(state.captureTarget(for: d)), (runner, trace) = recordedWriter(target)
+        configureState(runner: runner)
         let focus = controller(MockTimerScheduler()), rows = [a,b,c,d], high: Set = [a.id,b.id,c.id]
+        let diagnostic = { focus.focusStatus + "; cleanup: \(String(describing: focus.focusCleanupError))\n" + trace().joined(separator: "\n") }
         focus.enableAutomatic(rows: rows, high: high, coverage: [:]); clock.advance(by: 1)
         let coverage = [a.id: attention(a,"one", producer: 11), b.id: attention(b,"two", producer: 21),
             c.id: attention(c,"three", producer: 31)]
-        focus.acceptCatalogue(rows, high: high, coverage: coverage); awaitManual(focus); _ = try read(3)
+        focus.acceptCatalogue(rows, high: high, coverage: coverage); awaitManual(focus)
+        _ = try read(3, diagnostics: diagnostic)
         let second = focus.cueSnapshot(for: b.id), third = focus.cueSnapshot(for: c.id)
         identities[11] = nil; missingProcesses.insert(11); identities[21] = nil
         clock.advance(by: 2)
@@ -644,12 +650,16 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertTrue(focus.cueSnapshot(for: a.id).isEmpty)
         XCTAssertEqual(focus.cueSnapshot(for: b.id), second)
         XCTAssertEqual(focus.cueSnapshot(for: c.id), third)
-        _ = try read(3)
-        focus.acknowledge(third, for: c.id); awaitManual(focus)
+        _ = try read(3, diagnostics: diagnostic)
+        focus.acknowledge(third, for: c.id)
         XCTAssertEqual(focus.cueSnapshot(for: b.id), second)
         var ready = pollfd(fd: ptys[3].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
-        focus.focusOff(); _ = try read(3)
+        let cleared = expectation(description: "Mixed-cue Focus Off restoration completed")
+        focus.$focusCleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
+        focus.focusOff(); wait(for: [cleared], timeout: 2)
+        XCTAssertNil(focus.focusCleanupError, diagnostic())
+        _ = try read(3, diagnostics: diagnostic)
     }
 
     func testInspectionDeadlineStillResolvesAlreadyProvenExitAndRetainsOtherCue() throws {

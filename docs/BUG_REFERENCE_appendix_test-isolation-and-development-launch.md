@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.4
+Version: 1.5
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -140,3 +140,22 @@ Three targeted cases pass focused and in the full suite. Full Swift (671 tests) 
 assertions across three other tests. No production change, widened deadline, blanket stability
 or historical-cause resolution is claimed. See the dated
 [source/results](specs/tavs-priority-discovery_2026-10-04/caller-deadline-source-check-2026-10-14.md).
+
+## Reader failure bypasses owned-writer observation
+
+The large-PTY test threw from its read loop before waiting for the asynchronous writer. Cleanup
+then ran without observing completion, and background failure reporting added an unwaited
+expectation. It now retains partial progress, waits on both paths, and reports a synchronized
+writer result/elapsed time before the exact 64 KiB comparison. The queued writer holds an owned
+slave duplicate until it returns, preserving that PTY allocation across a delayed start.
+Descriptor setup precedes expectation creation, and missing-result errors retain progress.
+
+The mixed-cue test's missing bytes were in final Focus Off restoration. It now reuses the
+existing recorder and waits for a fresh cleanup publication, then still requires real bytes.
+Raw poll diagnostics distinguish read timeout from interruption; a reader error alone does not
+establish writer failure. A controlled reader cancellation captured its actual writer timeout
+without an unwaited expectation. The temporary fault was removed and exact source restored.
+
+Both targeted cases pass in the final full run. The suite still has 60 assertions across
+30 other cases; no whole-suite or historical timing-cause resolution is claimed. Production
+source and the real 100 ms deadline remain unchanged. Complete results use the source link above.

@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.1
+Version: 1.2
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -447,3 +447,54 @@ Scope divergence: one existing test file and relevant docs, supporting Phase 9 v
 No live app install/sync, real preferences/schedules, native Automation, terminal paint or existing
 session shutdown occurred. Linux kernel and Ghostty physical acceptance remain open; goal and
 Phase 9 remain incomplete. SPEC/PLAN bodies are fixed. Earlier failures remain retained.
+
+## Owned-PTY outcome and cleanup observation, 2026-10-15
+
+Baseline `c819653`; only BroadcasterTests and focus-controller-tests change. The selected baseline
+0PMLbF reproduces the large-write timeout/read-timeout/unwaited-expectation cascade while the
+mixed-cue and preview-clear cases pass (three cases, three assertions, 6.333 s). This distinguishes
+current evidence from assuming every earlier missing-pixel report is a writer timeout.
+
+The 65,536-byte test now captures synchronized writer Result and its own elapsed time, retains
+reader progress on error and always reaches a bounded completion wait before assertions and
+normal descriptor cleanup. The exact bytes and actual 100 ms native writer remain mandatory.
+An owned CLOEXEC slave duplicate stays with the queued writer until return, so delayed outer
+startup retains that PTY allocation. Descriptor setup occurs before creating the expectation;
+missing-result diagnostics include received/read counts and elapsed time. Background code no
+longer emits XCTest failures before publishing its completion. Poll errors retain raw outcomes.
+
+The Focus missing read at old line652 was final Focus Off restoration. Earlier reads and cue
+assertions succeeded. A stale awaitManual after acknowledgement did not prove a new operation
+completed. The case now installs the existing recordedWriter for its only outside target D,
+retains cue/PTY checks, and subscribes to a fresh cleanup publication before Focus Off. It requires
+nil cleanup error and actual PTY bytes. Failed reads include current status, cleanup error, raw
+poll outcome and existing writer trace. No new production diagnostic API or tracing layer exists.
+
+Source reports found no production loop/semantic defect. They identified two fixture error-path
+gaps, both fixed: expectation creation before descriptor setup and missing-result diagnostics
+after unwrap. The shared raw-poll message improves observability without turning every read
+error into evidence about a writer. No writer deadline was extended and no payload was reduced.
+
+Retained isolated runs:
+
+- EWpjLa: both instrumented selected cases pass, 0.240 s; test rebuild 13.38 s.
+- mckQjj: full 671, seven assertions (three unexpected), 42.198 s. Targeted cases pass; four other
+  cases fail. A failed Focus read now explicitly records poll0/revents0, rather than unknown errno.
+- eNYnR5: controlled first-read cancellation; one test intentionally fails three assertions.
+  It captures 0/65,536 received, one read, writer 102,949,875 ns and pre-assertion total 139,827,459 ns.
+  Actual writer error is write-stage timeout. No unwaited expectation appears. Whole case 4.438 s
+  includes assertion reporting and is not the writer duration. The temporary injection is removed;
+  cmp confirms exact restoration to the saved pre-probe test source.
+- nGQwrj: final full 671, 60 assertions (43 unexpected) across 30 cases, 70.893 s. Both changed target
+  cases pass (large write 0.017 s, mixed cue 0.114 s). This remains a failed suite, not acceptance.
+
+At 12:44 the host reports load 73.17/97.87/104.43 with 12 logical CPUs. This is uncontrolled context,
+not per-failure causal proof. No unchanged broad rerun follows. Historical errors remain open.
+
+All logs, prior files, pre-probe source and two complete source assessments are retained in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-pty-write-outcomes-5chy1fto/`.
+Production, SPEC and PLAN are unchanged; no live install/settings/terminal/session action occurred.
+Next independent source work is review S4: session-state still does unlocked shared-file RMW;
+its atomic rename cannot prevent stale snapshots losing another TTY row. Source recon is saved
+at `/tmp/explorer-tavs-shared-session-color-races-20261015.md`. Linux kernel and Ghostty physical
+acceptance, runtime timing validation and the full goal remain incomplete.
