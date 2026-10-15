@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.7
+Version: 1.8
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -707,3 +707,40 @@ identifies repeated record I/O and directory trust work inside the device budget
 forwarding and callback seams support a test-only timing probe. The report's conditional static
 counts and proposed write reductions are not measured performance results. Profile before fixes;
 preserve fresh policy, target, descriptor and storage checks around every blocking boundary.
+
+## Owned-PTY preparation timing: 2026-10-15
+
+The opt-in `VisualRecoveryTests.testProfileManagedWriterPreparationOnOwnedPTY` forwards the
+existing mock seam once to the real managed writer. It records monotonic callback entry/exit,
+remaining original budget and caller duration, and verifies exact PTY bytes and one deadline.
+Enable it with `env TAVS_PROFILE_DEVICE_WRITES=1` inside `tests/run-isolated.sh`, retaining the
+existing explicit Swift build/cache flags and selecting that test with `--filter`. Without
+the flag it skips. Product code, deadlines, hooks and the staged app are unchanged.
+
+| Focused five-case sample | Caller ms | Publication ms | Preparation ms |
+|---|---:|---:|---:|
+| Fixed bytes | 4.433 | n/a | 0.119 |
+| First ordinary update | 32.339 | 13.439 | 13.171 |
+| Identical ordinary repeat | 20.015 | 6.997 | 10.597 |
+| Focus | 20.562 | n/a | 19.149 |
+| Ordinary update under focus | 28.359 | 7.815 | 18.978 |
+
+All five operations pass in one focused test, 0.127 s (0.136 s elapsed). An earlier three-case
+focused run has caller times 3.883/12.893/19.119 ms. The full run with that three-case probe
+has 684 tests, 17 failures across 7 methods, 9 unexpected, 44.960 s (45.234 s elapsed). Its probe
+passes at 5.982/26.632/45.187 ms; repeat preparation is 33.005 ms with 55.921 ms remaining.
+These are instrumented samples, not distributions or proof of the timeout cause. Caller
+timing includes pre-budget service validation; open marks have no deadline parameter. Entered
+callbacks drain outside the measured call, which does not certify worker retirement on timeout.
+Process and pathname-device lookups use fixture dictionaries. Descriptor checks and PTY output
+are real. This probe does not measure native catalogue or real process-ancestry inspection.
+
+The full failures remain in preview-clear/replacement and recovery paths. One slow-preparation
+case fails its post-clear PTY read rather than its initial selection. Publication-stage waits
+can include predecessor cleanup, so generic metadata counts cannot establish the cause.
+No guard or write was removed based on these successful samples. Next trace those exact
+clear dependencies and their publication callbacks before choosing a production correction.
+Docker's two known socket paths are still absent. The visible 031 check remains pending.
+
+Full logs, measured source variants and the original test file are retained in
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/writer-preparation-20261015-221632/`.

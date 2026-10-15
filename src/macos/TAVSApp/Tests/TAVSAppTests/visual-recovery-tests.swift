@@ -3,6 +3,87 @@ import Darwin
 @testable import TAVSApp
 
 final class VisualRecoveryTests: XCTestCase {
+    func testProfileManagedWriterPreparationOnOwnedPTY() throws {
+        guard ProcessInfo.processInfo.environment["TAVS_PROFILE_DEVICE_WRITES"] == "1" else {
+            throw XCTSkip("Opt-in owned-PTY writer timing probe")
+        }
+        let target = try terminal(10), lock = NSLock(), callbacks = DispatchGroup()
+        var events: [(String, UInt64, UInt64)] = []
+        func mark(_ event: String, deadline: UInt64) {
+            let now = DispatchTime.now().uptimeNanoseconds
+            lock.lock(); events.append((event, now, deadline)); lock.unlock()
+        }
+        func sample<T>(_ name: String, deadline: UInt64 = 0, action: () throws -> T) rethrows -> T {
+            callbacks.enter(); mark(name + ".begin", deadline: deadline)
+            defer { mark(name + ".end", deadline: deadline); callbacks.leave() }
+            return try action()
+        }
+        let native = SystemProcessRunner(openDevice: { path, flags in
+            let opened = sample("open") {
+                let descriptor = Darwin.open(path, flags)
+                return (descriptor, errno)
+            }
+            errno = opened.1
+            return opened.0
+        })
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
+            let publication: ((UInt64) throws -> Void)? = beforeOpen.map { action in
+                { deadline in try sample("publication", deadline: deadline) { try action(deadline) } }
+            }
+            let cleanup: ((Int32, UInt64) throws -> Void)? = afterWrite.map { action in
+                { fd, deadline in try sample("cleanup", deadline: deadline) { try action(fd, deadline) } }
+            }
+            return try native.writeManagedToDevice(path: path, lockURL: outputLock,
+                beforeOpen: publication, target: target.physicalTarget, emergency: false,
+                afterWrite: cleanup) { fd, deadline in
+                try sample("prepare", deadline: deadline) { try prepare(fd, deadline) }
+            }
+        }
+        let service = recovery(runner: runner), record = intent(target)
+        let ordinary = Data("\u{1B}]11;#123456\u{1B}\\".utf8)
+        let focus = try focusRequest(), dimmed = try focusedBytes(record.background, request: focus)
+        for name in ["fixed", "first-ordinary", "repeat-ordinary", "focus", "ordinary-under-focus"] {
+            lock.lock(); events.removeAll(); lock.unlock()
+            let started = DispatchTime.now().uptimeNanoseconds
+            let result = Result {
+                if name == "fixed" {
+                    return try runner.writeManagedToDevice(path: target.tty,
+                        lockURL: state.lockURL(forTTY: target.tty), beforeOpen: nil,
+                        target: target.physicalTarget) { _, _ in Data([0x43]) }
+                }
+                if name == "focus" { return try service.write(.focus(focus), to: target) }
+                return try service.write(.ordinary(record, synthetic: false, intakeAt: record.updatedAt), to: target)
+            }
+            let returned = DispatchTime.now().uptimeNanoseconds
+            // Drain callbacks outside the measured call before inspecting a failed attempt.
+            XCTAssertEqual(callbacks.wait(timeout: .now() + 1), .success)
+            lock.lock(); let captured = events; lock.unlock()
+            let deadlines = Set(captured.map { $0.2 }.filter { $0 != 0 })
+            let outcome: String
+            switch result {
+            case .success(let wrote): outcome = wrote ? "wrote" : "skipped"
+            case .failure(ProcessRunnerError.deviceWriteTimedOut(_, let stage)):
+                outcome = "timeout-" + (stage?.rawValue ?? "unavailable")
+            case .failure: outcome = "error"
+            }
+            print(String(format: "WriterProfile %@ caller_ms=%.3f outcome=%@ deadlines=%d",
+                         name, Double(returned - started) / 1e6, outcome, deadlines.count))
+            for (event, time, deadline) in captured {
+                let remaining = deadline == 0 ? "n/a" : String(format: "%.3f", (Double(deadline) - Double(time)) / 1e6)
+                print(String(format: "WriterProfile %@ %@ elapsed_ms=%.3f remaining_ms=%@",
+                             name, event, Double(time - started) / 1e6, remaining))
+            }
+            XCTAssertEqual(deadlines.count, 1)
+            guard try result.get() else { XCTFail("Expected a completed probe write"); return }
+            let bytes = try read(target)
+            let expected = name == "fixed" ? Data([0x43])
+                : (["focus", "ordinary-under-focus"].contains(name) ? dimmed : ordinary)
+            XCTAssertEqual(bytes, expected)
+            guard bytes == expected else { return }
+        }
+    }
+
     private func focusRequest(_ id: String = "manual", revision: VisualRestrictionsRevision? = nil,
                               current: @escaping () -> Bool = { true }) throws -> TerminalFocusRequest {
         TerminalFocusRequest(effectID: id, heartbeatAt: clock.now().timeIntervalSince1970,
