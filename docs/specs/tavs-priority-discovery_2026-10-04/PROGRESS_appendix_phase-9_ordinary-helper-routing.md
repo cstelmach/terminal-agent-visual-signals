@@ -139,3 +139,12 @@ Private Bash3.2/5.3 probes pass; earlier initial/resume assertion failures remai
 Trusted absence/content format, caller traps/umask and device100ms remain; no live state changes.
 Next: legacy lock/mute/debug/portable trust, portable timeout and required native/Linux acceptance.
 Goal/Phase 9 incomplete; prior Swift671/60 assertions remains open. No unchanged full Swift rerun.
+
+### Phase 9 bounded legacy policy reads: 2026-10-15
+
+Shared checked snapshots preserve absence/unavailable statuses through lock/mute CLI consumers.
+System Bash and explicit-C Homebrew Bash: 84/84 each; ordinary Homebrew runs remain unsuccessful.
+[Source, retained failures and scope](legacy-policy-trust-source-check-2026-10-15.md).
+**Scope:** five rule/CLI modules and four test files; API/bug/architecture/capture updated.
+Current exit139 has SIGSEGV/locale-stack evidence; older failures are not all attributed.
+Next: Bash compatibility, decimal/portable/debug trust and native/Linux acceptance. Goal incomplete.

@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.65
+**Version:** 4.66
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -890,11 +890,11 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > [Finished shell marker checkpoint](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-shell-suspension-marker-trust-2026-10-15).
 
-### Phase 9 bounded legacy policy reads: 2026-10-15
+> [Finished legacy read checkpoint](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-bounded-legacy-policy-reads-2026-10-15).
 
-Shared checked snapshots preserve absence/unavailable statuses through lock/mute CLI consumers.
-System Bash and explicit-C Homebrew Bash: 84/84 each; ordinary Homebrew runs remain unsuccessful.
-[Source, retained failures and scope](legacy-policy-trust-source-check-2026-10-15.md).
-**Scope:** five rule/CLI modules and four test files; API/bug/architecture/capture updated.
-Current exit139 has SIGSEGV/locale-stack evidence; older failures are not all attributed.
-Next: Bash compatibility, decimal/portable/debug trust and native/Linux acceptance. Goal incomplete.
+### Phase 9 decimal policy arithmetic: 2026-10-15
+
+Decimal fields, durations, portable merge and remaining-time display now validate before arithmetic.
+Eight RED groups; review clock-gate fix; final95 passes in system and explicit-C Homebrew Bash.
+[Source/results](legacy-policy-trust-source-check-2026-10-15.md#checked-decimal-policy-arithmetic-2026-10-15).
+**Scope:** four modules/one test, docs/capture. Next: portable trust. Goal/Phase9 remain incomplete.

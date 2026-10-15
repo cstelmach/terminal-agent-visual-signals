@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.79
+Version: 1.80
 
 ## Private managed-output failure diagnostics
 
@@ -126,6 +126,12 @@ Returns/statuses are 0/present, 1/absent and 2/unavailable; lock reads preserve 
 CLI status/unlock and schedule edits distinguish unavailable storage from absence. Suspension
 still bypasses challenges and preserves definitions. Shell pathname checks remain separate from
 opening; the byte cap provides neither descriptor binding nor a hard wall-clock deadline.
+
+`_tavs_policy_decimal(value)` returns canonical ASCII decimal in 0...Int64.max, or status1
+without output. It strips zero prefixes and range-checks before full-value arithmetic. Legacy
+lock/mute predicates and CLI durations, merges, grants and status use it. Duration products/sums
+are checked before calculation. An unavailable clock reports unavailable policy to schedule
+gates after the recovery check; suspended/unavailable markers still bypass challenges.
 
 ## Native runtime directory trust
 

@@ -58,15 +58,13 @@ _tavs_lock_read() {
 _tavs_lock_effective() {
     _LS_READ_STATUS=unchecked
     if _tavs_visual_restrictions_suspended; then return 1; fi
-    local now="${1:-$(date +%s)}"
+    local now="${1:-$(date +%s)}" lock_until grant_until
+    now=$(_tavs_policy_decimal "$now") || { _LS_READ_STATUS=unavailable; return 1; }
     _tavs_lock_read || return 1
     [[ "$_LS_LOCKED" == "true" && "${_LS_VER:-1}" == "1" ]] || return 1
-    [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]] || return 1
-    (( now < _LS_LOCK_UNTIL )) || return 1
-    if [[ -n "$_LS_UNLOCK_UNTIL" && "$_LS_UNLOCK_UNTIL" != *[!0-9]* ]] && (( now < _LS_UNLOCK_UNTIL )); then
-        return 1
-    fi
-    return 0
+    lock_until=$(_tavs_policy_decimal "$_LS_LOCK_UNTIL") || return 1
+    grant_until=$(_tavs_policy_decimal "$_LS_UNLOCK_UNTIL") || grant_until=0
+    (( now < lock_until && now >= grant_until ))
 }
 
 # Native mutations share the app's read/merge/replace transaction, never an unlocked retry.

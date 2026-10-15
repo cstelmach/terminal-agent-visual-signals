@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.1
+Version: 1.2
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -374,3 +374,36 @@ Shell pathname validation remains separate from redirection, including a possibl
 by a FIFO between those steps. The new byte cap is neither a descriptor binding nor a hard
 deadline. Hard-lock decimal normalization also remains open. No claim of complete S2 closure,
 Linux kernel acceptance or physical Ghostty acceptance follows from these tests.
+
+## Checked decimal policy arithmetic: 2026-10-15
+
+Eight added RED groups reproduce octal interpretation, integer wrap, wrong status output and
+portable lock shortening. `_tavs_policy_decimal` now accepts only ASCII digits, removes zero
+prefixes and bounds the normalized value to Int64.max. A 19-digit candidate converts only its
+18-digit prefix and last digit before comparison, so range validation cannot overflow. The
+Python oracle uses seed43, fixed edges and twenty generated values across Bash3/5 and zsh.
+
+Legacy lock/mute fields, CLI duration units, portable max-merge and post-challenge comparisons
+use canonical values. Required malformed ends remain ineffective; optional invalid grants
+remain zero. Soft PID/heartbeat rules retain their existing liveness/range behavior. Duration
+products, sums and absolute ends are checked before arithmetic. Remaining minutes use quotient
+plus a nonzero-remainder increment, preserving Int64.max without an overflowing add59.
+
+The first focused21 groups pass. Two further regressions cover all four interactive grant
+choices and preservation on an overflowing unlock request; the connected94 passes. The
+[source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-policy-decimal-explorer-170900.md)
+then identified a newly introduced failed-clock bypass: the effective predicate returned false
+with unchecked status before reading a saved lock. ZY9kN6 reproduces schedule resume despite a
+failed date command. The corrected predicate marks this unavailable after the suspension check;
+vKwkRI passes, including recovery bypass. The report's arithmetic derivations and failure path
+were checked against source before accepting the finding.
+
+Final connected95 passes with system Bash3.2 and with explicit-C Homebrew Bash5.3. Syntax
+checks pass for Bash3/5 and the shared module in zsh; git diff --check passes. Logs are retained
+under `/Volumes/external/agent-data/retained/terminal-agent-visual-signals/policy-decimal-20261015-170158-2ee85a/`.
+One read-only Docker observation reports the daemon unavailable; no startup was attempted.
+No Swift source changed, so this does not supersede the historical full Swift671/60 assertions.
+The existing pre-challenge clock baseline can shorten a requested grant after a long challenge;
+it is outside this arithmetic correction. Portable storage/serialization, pathname races,
+debug writes, Bash compatibility and required native/Linux acceptance remain open. No device
+deadline, live terminal, installed setting, production locale or real schedule was changed.

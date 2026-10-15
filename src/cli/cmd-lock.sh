@@ -21,13 +21,16 @@ _lock_parse_duration() {
     [[ "$spec" =~ ^([0-9]+[dhm])+$ ]] || return 1
     local total=0 rest="$spec"
     while [[ "$rest" =~ ^([0-9]+)([dhm])(.*)$ ]]; do
-        local n="${BASH_REMATCH[1]}" u="${BASH_REMATCH[2]}"
+        local n="${BASH_REMATCH[1]}" u="${BASH_REMATCH[2]}" multiplier
         rest="${BASH_REMATCH[3]}"
+        n=$(_tavs_policy_decimal "$n") || return 1
         case "$u" in
-            d) total=$(( total + n * 86400 )) ;;
-            h) total=$(( total + n * 3600 )) ;;
-            m) total=$(( total + n * 60 )) ;;
+            d) multiplier=86400 ;;
+            h) multiplier=3600 ;;
+            m) multiplier=60 ;;
         esac
+        (( n <= (9223372036854775807 - total) / multiplier )) || return 1
+        total=$(( total + n * multiplier ))
     done
     (( total > 0 )) || return 1
     echo "$total"
@@ -83,7 +86,11 @@ _lock_now() {
     fi
 
     local now new_until
-    now=$(date +%s)
+    now=$(_tavs_policy_decimal "$(date +%s)") || { cli_error "Current time unavailable"; return 1; }
+    if (( seconds > 9223372036854775807 - now )); then
+        cli_error "Duration exceeds supported end time"
+        return 1
+    fi
     new_until=$(( now + seconds ))
 
     _lock_resolve_colors
@@ -97,10 +104,11 @@ _lock_now() {
             cli_error "Lock state unavailable; saved lock preserved."
             return 1
         fi
+        local previous_until
         if [[ "$_LS_LOCKED" == true ]] \
-            && [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]] \
-            && (( _LS_LOCK_UNTIL > new_until )); then
-            new_until="$_LS_LOCK_UNTIL"
+            && previous_until=$(_tavs_policy_decimal "$_LS_LOCK_UNTIL") \
+            && (( previous_until > new_until )); then
+            new_until="$previous_until"
         fi
         if ! _tavs_lock_write true manual "$new_until" 0 "$_LOCK_BG" "$_LOCK_FG"; then
             cli_error "Could not write lock state"
@@ -130,8 +138,8 @@ _lock_now() {
 }
 
 _lock_status() {
-    local now
-    now=$(date +%s)
+    local now lock_until grant_until remaining
+    now=$(_tavs_policy_decimal "$(date +%s)") || { cli_error "Current time unavailable"; return 1; }
     _tavs_visual_restrictions_read
     case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
         active) echo 'Visual restrictions: active.' ;;
@@ -150,17 +158,18 @@ _lock_status() {
     echo "Lock state ($(_tavs_lock_state_file)):"
     echo "  LOCKED:       ${_LS_LOCKED:-?}"
     echo "  REASON:       ${_LS_REASON:-?}"
-    if [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]]; then
-        if (( _LS_LOCK_UNTIL > now )); then
-            echo "  LOCK_UNTIL:   $(_lock_format_until "$_LS_LOCK_UNTIL") ($(( (_LS_LOCK_UNTIL - now + 59) / 60 )) min remaining)"
+    if lock_until=$(_tavs_policy_decimal "$_LS_LOCK_UNTIL"); then
+        if (( lock_until > now )); then
+            remaining=$(( lock_until - now ))
+            echo "  LOCK_UNTIL:   $(_lock_format_until "$lock_until") ($(( remaining / 60 + (remaining % 60 != 0) )) min remaining)"
         else
             echo "  LOCK_UNTIL:   expired"
         fi
     else
-        echo "  LOCK_UNTIL:   invalid (${_LS_LOCK_UNTIL:-empty}) — treated as not locked"
+        echo "  LOCK_UNTIL:   invalid (${_LS_LOCK_UNTIL:-empty}); treated as not locked"
     fi
-    if [[ -n "$_LS_UNLOCK_UNTIL" && "$_LS_UNLOCK_UNTIL" != "0" && "$_LS_UNLOCK_UNTIL" != *[!0-9]* ]] && (( _LS_UNLOCK_UNTIL > now )); then
-        echo "  GRANT:        active until $(_lock_format_until "$_LS_UNLOCK_UNTIL")"
+    if grant_until=$(_tavs_policy_decimal "$_LS_UNLOCK_UNTIL") && (( grant_until > now )); then
+        echo "  GRANT:        active until $(_lock_format_until "$grant_until")"
     fi
 
     if _tavs_lock_effective "$now"; then
@@ -196,7 +205,7 @@ _lock_unlock() {
     done
 
     local now
-    now=$(date +%s)
+    now=$(_tavs_policy_decimal "$(date +%s)") || { cli_error "Current time unavailable"; return 1; }
     if ! _tavs_lock_effective "$now"; then
         case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
             suspended) cli_info 'Visual restrictions are suspended; the saved lock is preserved without an unlock.' ;;
@@ -217,17 +226,15 @@ _lock_unlock() {
         return 1
     fi
 
-    local grant_until
+    local grant_until seconds=""
     if [[ -n "$duration_spec" ]]; then
         if [[ "$duration_spec" == "rest-of-day" ]]; then
             grant_until=$(_lock_next_midnight)
         else
-            local seconds
             if ! seconds=$(_lock_parse_duration "$duration_spec"); then
                 cli_error "Invalid duration: '$duration_spec' (use e.g. 15m, 2h30m, rest-of-day)"
                 return 1
             fi
-            grant_until=$(( now + seconds ))
         fi
     else
         printf 'Unlock for:  1) 15m   2) 1h   3) 4h   4) rest of day\n' >&2
@@ -235,15 +242,22 @@ _lock_unlock() {
         local choice
         IFS= read -r choice || return 1
         case "$choice" in
-            1) grant_until=$(( now + 900 )) ;;
-            2) grant_until=$(( now + 3600 )) ;;
-            3) grant_until=$(( now + 14400 )) ;;
+            1) seconds=900 ;;
+            2) seconds=3600 ;;
+            3) seconds=14400 ;;
             4) grant_until=$(_lock_next_midnight) ;;
             *) cli_error "Invalid choice."; return 1 ;;
         esac
     fi
 
-    if [[ -z "$grant_until" || "$grant_until" == *[!0-9]* ]]; then
+    if [[ -n "$seconds" ]]; then
+        if (( seconds > 9223372036854775807 - now )); then
+            cli_error "Duration exceeds supported end time"
+            return 1
+        fi
+        grant_until=$(( now + seconds ))
+    fi
+    if ! grant_until=$(_tavs_policy_decimal "$grant_until") || (( grant_until <= now )); then
         cli_error "Could not compute the unlock end time."
         return 1
     fi
@@ -263,7 +277,8 @@ _lock_unlock() {
     fi
 
     cli_success "Unlocked until $(_lock_format_until "$grant_until")."
-    if (( _LS_LOCK_UNTIL > grant_until )); then
+    local lock_until
+    if lock_until=$(_tavs_policy_decimal "$_LS_LOCK_UNTIL") && (( lock_until > grant_until )); then
         cli_info "The lock re-engages automatically at $(_lock_format_until "$grant_until")."
     fi
     if ! pgrep -x TAVSApp &>/dev/null; then

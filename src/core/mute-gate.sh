@@ -61,11 +61,12 @@ _tavs_check_mute_state() {
             esac
         done <<< "$_TAVS_POLICY_DATA"
         if [[ "$_l_locked" == "true" && "${_l_ver:-1}" == "1" ]] \
-            && [[ -n "$_l_until" && "$_l_until" != *[!0-9]* ]]; then
+            && _l_until=$(_tavs_policy_decimal "$_l_until"); then
             local _l_now
-            _l_now=$(date +%s)
+            _l_now=$(_tavs_policy_decimal "$(date +%s)") || return 1
+            _l_grant=$(_tavs_policy_decimal "$_l_grant") || _l_grant=0
             if (( _l_now < _l_until )); then
-                if ! { [[ -n "$_l_grant" && "$_l_grant" != *[!0-9]* ]] && (( _l_now < _l_grant )); }; then
+                if (( _l_now >= _l_grant )); then
                     _TAVS_SUPPRESS_OUTPUT=1
                     return 0
                 fi
@@ -105,16 +106,14 @@ _tavs_check_mute_state() {
     case "$_reason" in schedule_window|quiet_period|master_paused|hard_lock|"") ;; *) return 1 ;; esac
     [[ -z "$_level" && "$_reason" == hard_lock ]] && return 1
     [[ "$_version" == 1 ]] || return 1
-    [[ -n "$_until" && -n "$_written" && -n "$_app_pid" ]] || return 1
-    [[ "$_until$_written$_app_pid" != *[!0-9]* ]] || return 1
-    [[ ${#_until} -le 19 && ${#_written} -le 19 && ${#_app_pid} -le 19 ]] || return 1
-    # Decimal conversion avoids Bash interpreting leading zeroes as octal.
-    _until=$((10#$_until)); _written=$((10#$_written)); _app_pid=$((10#$_app_pid))
+    _until=$(_tavs_policy_decimal "$_until") || return 1
+    _written=$(_tavs_policy_decimal "$_written") || return 1
+    _app_pid=$(_tavs_policy_decimal "$_app_pid") || return 1
     (( _until >= 0 && _written > 0 && _app_pid > 0 && _app_pid <= 2147483647 )) || return 1
     kill -0 "$_app_pid" 2>/dev/null || return 1
 
     local now
-    now=$(date +%s)
+    now=$(_tavs_policy_decimal "$(date +%s)") || return 1
 
     # UNTIL_EPOCH expiry
     if (( _until != 0 && _until < now )); then

@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.89
+Version: 1.90
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -908,3 +908,11 @@ SIGSEGV report reaches locale restoration through libintl/CoreFoundation. System
 explicit C-locale control pass; a minimal locale-only probe does not reproduce the crash.
 The [source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#checked-legacy-rule-snapshots-2026-10-15)
 retain this compatibility failure without attributing all historical failures to it.
+
+Zero-prefixed lock times were treated as octal; oversized durations could wrap into valid small
+values. Portable merge could consequently shorten a longer saved lock. One shared decimal
+normalizer validates the Int64 domain before arithmetic; duration products/sums and absolute
+ends are checked, and remaining-minute display avoids adding59 near Int64.max.
+A source check caught the new invalid-clock branch bypassing the schedule gate. Its regression
+reproduced a changed schedule; failed normalization now reports unavailable after recovery's
+bypass. Numeric boundary, grant, merge, display and interactive-duration checks cover these cases.

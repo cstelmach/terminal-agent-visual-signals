@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 6 | gpt-6 (self-reported; variant unverified) | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 75 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 83 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 76 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 84 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -6552,3 +6552,66 @@ validation/open race and no hard file-I/O deadline.
 SPEC's state authority. Record actual child status before treating a quiet assertion failure as
 application logic. Actions/results above are observed; the proposed crash mechanism is labeled
 reconstructed. No new model-profile tendency or skill promotion is inferred from this slice.
+
+## 2026-10-15 · gpt-6.1-sol · checked-decimal-policy-arithmetic
+
+meta:
+  model: gpt-6.1-sol
+  model_source: observed (bounded latest turn_context metadata)
+  interface: codex-desktop
+  thinking: xhigh
+  session: 01a10879
+  trace: observed (tools, test logs, source check and diff)
+
+**Framing [O].** Goal continuation resumed from clean00cb659 with the previous bounded-reader
+checkpoint intact. The next recorded source gap was hard-lock decimal arithmetic. Current
+callers still evaluated digit strings directly, while native/portable policy code bounded
+numeric values. The work stayed within four shell/CLI modules and their existing isolated test
+file. Docker remained operator-controlled. One read-only observation found its daemon unavailable;
+no startup, live terminal action, installation or real schedule change followed.
+
+**Strategy [O/R].** Tests first reproduced zero-prefix and overflow behavior before introducing
+one shared decimal normalizer. [R] Reusing a pure parser across predicates and CLI calculations
+keeps one numeric contract while preserving separate lock/mute field semantics. Range checks
+precede complete-value arithmetic. Nineteen-digit candidates convert only an eighteen-digit
+prefix and final digit; duration products/sums are admitted by division of remaining capacity.
+Remaining-minute display uses quotient plus a remainder check rather than adding59.
+
+| Step | Observed move | Evidence |
+|---|---|---|
+| 1 | Read current state and connected field/caller semantics | SPEC-owned progress and native parsers |
+| 2 | Add adversarial regressions before source edits | Eight new groups fail |
+| 3 | Implement one parser and checked arithmetic consumers | Four source modules |
+| 4 | Check independently and reproduce the reported branch | Failed-clock RED then GREEN |
+| 5 | Verify connected behavior in both interpreter conditions | Two final95/95 runs |
+| 6 | Retain logs and preserve finished progress text | External run and round-trip check |
+
+**Decision points [O].** Required malformed lock ends remain ineffective, while invalid optional
+grants remain zero. The parser admits canonical nonnegative Int64 values and rejects signs,
+expressions and non-ASCII numerals before arithmetic. Leading zeroes remain compatible decimal
+input. The Python oracle uses fixed boundaries and seed43-generated values across Bash3/5 and
+zsh. Interactive unlock choices get separate regression coverage because their duration assignment
+was changed; the underlying challenge policy was retained.
+
+**Failure arc [O/R].** The first implementation passed94 connected checks. Independent source
+inspection then found that invalid current time returned false with an unchecked status, allowing
+schedule edits despite an existing hard lock. The parent checked the exact branch, added a
+failed-date regression and observed schedule resume in private state. The correction reports
+unavailable after the recovery check, so ordinary schedule mutation fails without changing its
+definition or asking a challenge, while suspension still bypasses the gate. The focused test and
+both final connected suites pass. [R] This is an example of a numerical validation change altering
+control-flow meaning: a valid rejection needs an error status that every caller understands.
+
+**Verification and limits [O].** Final95 passes under system Bash3.2 and under explicit-C
+Homebrew Bash5.3. Syntax checks pass in both Bash versions and for the shared module in zsh.
+Eight original RED groups and the later clock RED are retained with full logs. The source checker
+re-read the corrected branch without claiming runtime acceptance. The preexisting challenge-time
+baseline, portable storage/serialization, pathname races, debug writes and Bash compatibility
+remain recorded. No full Swift run was repeated after shell-only edits; its prior failures remain
+open. Physical Ghostty and Linux PTY acceptance are still missing.
+
+**Heuristics and confidence.** P8 and P9 recur. A source finding was verified and converted into
+an executable regression before correction. The short progress checkpoint moved a completed block
+unchanged into its existing appendix, with a verified round trip; no source or history was dropped.
+Observed actions and results are separated from the labeled design interpretation. No additional
+profile tendency or skill promotion is inferred from this single arithmetic slice.

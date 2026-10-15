@@ -149,3 +149,18 @@ _tavs_policy_read_data() {
     _TAVS_POLICY_DATA="$data" _TAVS_POLICY_READ_STATUS=present
     return 0
 }
+
+# Normalize ASCII decimal values before arithmetic, without overflowing Int64.
+_tavs_policy_decimal() {
+    local value="${1:-}" prefix last
+    [[ -n "$value" && "$value" != *[!0123456789]* ]] || return 1
+    value="${value#"${value%%[!0]*}"}"
+    [[ -n "$value" ]] || value=0
+    [[ ${#value} -le 19 ]] || return 1
+    if [[ ${#value} -eq 19 ]]; then
+        prefix="${value%?}" last="${value#"${value%?}"}"
+        (( 10#$prefix < 922337203685477580 ||
+            (10#$prefix == 922337203685477580 && 10#$last <= 7) )) || return 1
+    fi
+    printf '%s' "$value"
+}
