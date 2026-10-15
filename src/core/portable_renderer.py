@@ -135,7 +135,7 @@ class Renderer:
     def _invalidate_pending(self, tty, deadline):
         runtime = self.store.directory.parent
         path = runtime / "pending" / (tty.replace("/", "_") + ".osc")
-        with records.parent_directory(runtime, path, deadline) as parent:
+        with records.parent_directory(runtime, path, deadline) as (parent, _):
             if parent is None:
                 return
             try:
@@ -152,7 +152,7 @@ class Renderer:
     def _complete_effects(self, obsolete, deadline):
         # Failed output retains restoration work. Cooperating writers still share this lock.
         for path, old in obsolete:
-            with records.parent_directory(self.store.directory, path, deadline) as parent:
+            with records.parent_directory(self.store.directory, path, deadline) as (parent, _):
                 if parent is None:
                     raise OSError(errno.ESTALE, "Effect completion unavailable")
                 try:

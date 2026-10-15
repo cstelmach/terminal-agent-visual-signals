@@ -102,6 +102,18 @@ class PortableObservationTests(unittest.TestCase):
         self.assertEqual(failure.exception.errno, errno.ETIMEDOUT)
         self.assertEqual(self.path.read_bytes(), before)
 
+    def test_unsafe_publication_parent_creates_neither_record_nor_mutex(self):
+        self.store.directory.mkdir(parents=True)
+        for directory in [self.runtime, self.store.directory]:
+            mode = stat.S_IMODE(directory.stat().st_mode)
+            directory.chmod(mode | 0o020)
+            try:
+                with self.subTest(directory=directory), self.assertRaises(OSError):
+                    self.publish()
+                self.assertEqual(list(self.store.directory.iterdir()), [])
+            finally:
+                directory.chmod(mode)
+
 
 if __name__ == "__main__":
     unittest.main()

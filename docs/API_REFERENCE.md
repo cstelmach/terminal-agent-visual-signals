@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.82
+Version: 1.83
 
 ## Private managed-output failure diagnostics
 
@@ -513,6 +513,10 @@ Linux scoped-record integration still needs actual kernel acceptance.
 `portable_record_io` reads and replaces bounded typed records through held parent descriptors.
 Writes create private directories and an exclusive 0600 sibling temporary, then atomically
 replace the destination. Linked ancestors/destinations and paths outside the runtime reject.
+Existing prefixes use the policy ancestry rules; held state directories and regular destinations
+must be EUID-owned without group/other writes. All held directories and the destination are
+rechecked after staging and before replacement. `parent_directory` internally yields the final
+descriptor and its reusable chain validator. Read-only group access remains supported.
 Reads do not create directories. Encoding, reads, writes and replacement share the original
 deadline. Cleanup attempts removal of only the owned temporary even when closing it fails.
 A failure after replacement may mean the record committed; it never authorizes raw output.
@@ -589,7 +593,8 @@ records, cache keys and owner/producer comparisons. Actual Linux kernel acceptan
 `portable_device_writer.write_managed` accepts trusted typed-caller callbacks, not an OSC stream.
 One 100 ms deadline covers fork, pre-open work, device open, lock, preparation and output. The
 child closes inherited standard channels and checks expiry before new phases. It opens the TTY
-before output-lock acquisition. The lock is a stable regular owned 0600 file. A timeout requests
+before output-lock acquisition. The lock is a stable regular owned 0600 file. Policy ancestry is
+checked before creating its parent or mutex and again before opening the mutex. A timeout requests
 termination without blocking the caller on retirement; tests drain owned children separately.
 Failures expose `bytes_written` as a known partial count or `None` when output is unknown.
 Callbacks run in the child, so parent-memory mutation does not publish outcomes. Interpreter

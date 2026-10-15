@@ -12,6 +12,7 @@ import stat
 import time
 
 from portable_process_identity import device_number
+from portable_policy import _policy_path
 from portable_records import StaleRecordError
 
 
@@ -37,9 +38,11 @@ def _check(deadline):
 @contextmanager
 def output_lock(lock_path, deadline):
     _check(deadline)
+    lock_path = _policy_path(lock_path, deadline)
     parent = Path(lock_path).parent
     parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     _check(deadline)
+    _policy_path(lock_path, deadline)
     if not stat.S_ISDIR(os.lstat(parent).st_mode):
         raise OSError(errno.EINVAL, "Invalid lock directory")
     lock = os.open(lock_path, os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, 0o600)

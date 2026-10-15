@@ -6,7 +6,7 @@ from pathlib import Path
 import stat
 import time
 
-from portable_policy import check_deadline
+from portable_policy import _owned, _policy_path, check_deadline
 from portable_process_identity import continuing_owner, device_number, inspect
 from portable_records import _target as validate_shape, generation_key, key, read_record, target_path
 
@@ -46,6 +46,8 @@ def _binding(target):
 
 def _open_directory(path, deadline, parent_fd=None):
     check_deadline(deadline)
+    if parent_fd is None:
+        _policy_path(path / ".directory", deadline)
     name = path.name if parent_fd is not None else path
     try:
         before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
@@ -54,10 +56,14 @@ def _open_directory(path, deadline, parent_fd=None):
         return None
     if not stat.S_ISDIR(before.st_mode):
         raise OSError(errno.EINVAL, "Unavailable visual directory")
+    if not _owned(before):
+        raise OSError(errno.EACCES, "Untrusted visual directory")
     fd = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent_fd)
     try:
         opened = os.fstat(fd)
         check_deadline(deadline)
+        if not stat.S_ISDIR(opened.st_mode) or not _owned(opened):
+            raise OSError(errno.EACCES, "Untrusted opened visual directory")
         if (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
             raise OSError(errno.ESTALE, "Changed visual directory")
         return fd
@@ -69,6 +75,8 @@ def _open_directory(path, deadline, parent_fd=None):
 def _same_directory(path, fd, deadline):
     check_deadline(deadline)
     current, opened = os.lstat(path), os.fstat(fd)
+    if not _owned(current) or not _owned(opened):
+        raise OSError(errno.EACCES, "Untrusted visual directory")
     if not stat.S_ISDIR(current.st_mode) or (current.st_dev, current.st_ino) != (opened.st_dev, opened.st_ino):
         raise OSError(errno.ESTALE, "Changed visual directory")
     check_deadline(deadline)

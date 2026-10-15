@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.92
+Version: 1.93
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -940,3 +940,14 @@ cleanup failures. Two injected close failures exposed incorrect failure-after-co
 and a leftover owned temporary; both are fixed. Real CLI mutex and copied-installation cases
 guard the integration. Verification and preserved failed runs are in the
 [source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#portable-lock-mutation-transactions-2026-10-15).
+
+## Portable publication accepts unsafe parent directories
+
+A missing observation bypassed existing-record checks, allowing its mutex and new record under
+a writable runtime. Typed replacement also accepted unsafe directories or destination ownership.
+Shared directory opens now check ancestry, EUID and write bits; mutex creation checks ancestry
+first. Replacement revalidates every held directory and the regular destination before committing.
+A source check exposed an intermediate-directory staging race; its regression proved that the
+initial fix reported failure after changing bytes. The complete pre-replacement check fixes it.
+Tests preserve accepted bytes on rejection, permit read-only group access and cover real
+observation publication. [Source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#portable-record-publication-trust-2026-10-15).

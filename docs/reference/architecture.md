@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.19
+Version: 1.20
 
 ## Lock definition transactions
 
@@ -167,6 +167,12 @@ The `*Unlocked` methods require the existing writer lock and original deadline. 
 reacquire it or start a new timeout. Latest intent for an exact adopted native target can survive
 producer exit into its continuing shell; observation and attention coverage still end on exit.
 Unadopted owner-only intent requires a verified live producer or explicit default reset.
+
+Portable records use the same storage trust policy before creating a mutex or state directories.
+Held state directories and regular destinations require EUID ownership and no group/other writes.
+Replacement stages privately, then revalidates the root prefix, every held directory identity and
+the destination before committing. Group read access remains valid. These checks preserve the
+original deadline; they do not establish an interruptible filesystem or prevent every pathname race.
 
 These records and the ordered writer are foundations. Discovery, renderer/CLI routing, recovery
 fanout and retry reporting remain in progress.
