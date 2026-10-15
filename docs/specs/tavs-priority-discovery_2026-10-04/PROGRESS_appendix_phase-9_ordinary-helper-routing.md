@@ -160,3 +160,8 @@ Eight RED groups; review clock-gate fix; final95 passes in system and explicit-C
 
 Portable rules/revisions now reject unsafe storage. [Details](legacy-policy-trust-source-check-2026-10-15.md).
 **Scope:** one module/test, docs/capture. 206 pass+8 Linux skip. Next: Swift failures. Goal incomplete.
+
+### Phase 9 portable lock transactions: 2026-10-15
+
+**Phase 9 portable lock transactions, 2026-10-15: aa790b7.** 217 portable pass+8 Linux skip;115 shell cases on both controls;17 copy;674 Swift. [Results](legacy-policy-trust-source-check-2026-10-15.md#portable-lock-mutation-transactions-2026-10-15); [native checkpoint](PROGRESS_appendix_phase-2_launch-debugging.md#native-catalogue-source-checkpoint-2026-10-15).
+**Scope:** seven source/test paths plus docs. Next: portable Store write trust, remaining native/Linux acceptance. Goal incomplete.

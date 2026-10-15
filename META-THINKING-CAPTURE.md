@@ -28,8 +28,8 @@ Model Profiles) only. The Session Log is append-only evidence.
 | P5 | same-size-diff-means-substitution | A golden-file diff with identical byte counts points at an embedded variable token (icon, id, timestamp), not logic drift; go straight to xxd/cmp | 1 | fable-5 | 2026-07-13 |
 | P6 | live-vs-tests | Sample the live process after tests | 2 | unverified; gpt-6 (self-reported; variant unverified) | 2026-10-03, 2026-10-12 |
 | P7 | capability-before-version | Check installed API capabilities before treating a version or current documentation as proof of local support | 7 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-04, 2026-10-05, 2026-10-12; Phase 4 records; Phase 5 suspension; writer deadline boundaries; native selector batching |
-| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 78 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; portable lock mutation transactions |
-| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 88 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; isolated native launch guard; native selector batching; portable lock mutation transactions |
+| P8 | adjudicate-review-remedies | Verify each review finding in source, then select the smallest remedy for the actual gap | 79 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-05, 2026-10-12 (native catalogue and Sessions slices); Phase 4 records; alias/render corrections; intent retention; manual heartbeat; explicit permission events; cue-source revalidation; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery/oracle; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; portable lock mutation transactions; portable record publication trust |
+| P9 | spec-owned-execution-state | Resolve the incoming SPEC's state directory before reusing a root plan or progress log | 89 | gpt-6 (self-reported; variant unverified); gpt-6.1-sol | 2026-10-07, 2026-10-08, 2026-10-12 (native and isolation slices); Phase 4 records; Phase 5 suspension; Phase 6 foundations and coordinator; Phase 7 foundation/controller; GUI recovery; copied installations; Phase 8 renderer; dynamic writer; captured sets; automatic occurrence foundation; automatic controller; final review corrections; final review/empty catalogue; priority-suite repair; unavailable cue correction; synthetic restore correction; recovery classification; device admission; independent preview clear; cancellation evidence; per-target leases; recovery reconciliation; delivery reporting; helper compatibility; measured helper cost; per-TTY cache scope; preview preparation timing; replacement cleanup ordering; standalone metadata; preview fixture lifetime; portable primitives; portable readers; portable ownership; intent publication; ordinary transaction; forced reset; portable reconcile; portable context/publication; portable no-output; portable dispatcher; unbound intent; capability/delivery; shared helper routing; shell delivery; focus color refresh; focus poll coalescing; paint diagnostic fixtures; current reviews/schedule validation; native effect revalidation; GUI recovery cohort confirmation; active release retry; projection storage retry; quiet bounds parity; ordinary provider synthetic updates; record read retry deadlines; native runtime directory trust; persistent marker trust; checked Scheduler state; native mute I/O; shared lock transactions; delivery diagnostics; writer deadline boundaries; caller result deadline; portable caller deadline; bounded tool-error restore; record-read preparation; legacy reset completion; Linux ordinary schema integration; safe app replacement; agent installer outcomes; portable fixture and suite refresh; native recovery race fixtures; owned PTY outcomes; shared session-table transactions; validated shell registration; shell suspension-marker trust; bounded legacy policy reads; checked decimal policy arithmetic; portable policy storage trust; isolated native launch guard; native selector batching; portable lock mutation transactions; portable record publication trust |
 | P10 | approval-action-boundary | Bind approval to the reviewed action; saving an approved goal is separate from activating it | 1 | gpt-6 (self-reported; variant unverified) | 2026-10-08 |
 | P11 | separate-producer-from-owner | Validate live producer and continuing target owner independently; equality is not ancestry | 4 | gpt-6 (self-reported; variant unverified) | 2026-10-12 managed routing; alias/render corrections; producer-exit cleanup; unavailable cue correction |
 
@@ -6881,3 +6881,67 @@ settings, terminal effects or session shutdown occurred. Remaining Store write t
 locale behavior and native/Linux acceptance stay open. P8/P9 already have workflow coverage;
 no new skill or model-profile claim is proposed. Commands and outcomes are observed [O]; causal
 interpretations of failed runtime behavior remain reconstructed [R].
+
+## 2026-10-15 · gpt-6.1-sol · portable-record-publication-trust
+
+meta:
+  model: gpt-6.1-sol
+  model_source: observed (bounded Codex turn_context)
+  interface: codex-desktop
+  thinking: extended (xhigh)
+  session: 01a10879-eec9-7202-be6a-df90356d7009
+  trace: observed
+
+**Framing [O].** The active goal and dated SPEC-owned state selected a bounded Phase9 storage
+correction after the portable lock transaction. Git was clean at the beginning of the slice;
+reorientation after compaction confirmed the five owned modified files and the running test
+handle. Live terminal scope stayed limited to the two previously dedicated targets. This
+source task required no terminal effects, installation, permission changes or new user decisions.
+P9 kept older root planning files and historical native acceptance separate from current state.
+
+**Strategy [O/R].** Source inspection followed actual observation publication rather than
+assuming checked readers protected writes. [O] A missing latest record reached mutex creation
+and publication under a writable runtime. Tests then attempted a different valid record value,
+so an exception could not conceal a completed replacement. [R] Reusing the existing policy
+ancestry and held-directory checks offered a smaller correction than a second storage layer.
+The existing100 ms deadlines, private staging and no-follow replacement remained the constraints.
+
+| Move | Object | Observed outcome |
+|---|---|---|
+| Orient | Goal, dated state, Git and connected callers | Phase9 storage slice only |
+| Reproduce | Typed replacement and real observation intake | Unsafe metadata changed bytes or created records |
+| Correct | Shared directory, mutex and destination checks | Focused record and observation suites passed |
+| Adjudicate | Assigned source report and intermediate-directory regression | Initial check placement committed before rejection |
+| Refine | Reusable held-chain validation before replacement | Focused10 and portable223 passed;8 Linux skips |
+| Verify | Shell/copies and native Swift suite |42 shell pass; initial Swift failure retained; full rerun674 pass |
+
+**Decision points [O].** The source report was read from its assigned file and its finding
+checked against source before editing. A regression confirmed the reported staging race. The
+fix reused the held list immediately before replacement. A caller search found two renderer
+consumers beyond the three record-I/O consumers, so all five adopted the internal tuple return.
+No compatibility wrapper, new store or extra locking protocol was added. Existing post-replace
+timeout/cleanup failures were distinguished from the newly exposed trust-check placement.
+
+**Failure arcs [O/R].** F1, wrong boundary assumption: existing record reads rejected unsafe
+leaves but missing observation publication still created both mutex and record. RED tests
+established this production route. The correction checks ancestry before creation and directory/
+leaf metadata before use. Read-only group access remains a regression case.
+
+F2, incomplete first correction: changing an intermediate directory during staging raised after
+the stored device changed from123 to456. Immediate-parent checks were insufficient. Revalidating
+every held directory before replace preserved the prior bytes and removed the failed temporary.
+P8 recurred through source adjudication, concrete reproduction and a targeted remedy.
+
+F3, unresolved timing surprise: the first concurrent full Swift run had three timeout assertions
+in two existing native methods. Source inspection found native operations; the focused two
+passed, then a full rerun passed without Swift changes. [R] Host load may contribute, but these
+runs do not establish a cause. Both full logs are retained; no deadline or assertion was weakened.
+A guessed capitalized test filename also failed lookup; a symbol search located the actual file.
+
+**Verification and limits [O].** Final portable231 includes223 passes and8 Linux-only skips.
+All42 connected shell/copy cases pass with explicit system Bash. Final Swift674/674 passes;
+Python AST and diff checks pass. Complete failed and successful logs were promoted to retained
+external storage after the workspace checks. Native visual acceptance, Linux kernel cases,
+Homebrew default-locale behavior and separate debug paths remain unresolved. No general
+pathname-race immunity or hard filesystem deadline is claimed. The goal stays incomplete.
+P8/P9 are already covered by existing workflows; no additional skill or control plane is proposed.

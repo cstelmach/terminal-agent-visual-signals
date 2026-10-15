@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.4
+Version: 1.5
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -487,3 +487,44 @@ The source fix includes one helper/test pair, CLI routing, the helper copy list 
 regressions. API/bug/architecture docs were updated. No live install, settings, schedules,
 terminal effects or session shutdown occurred. Remaining Store write-trust/debug paths,
 Homebrew default-locale behavior and native/Linux acceptance remain open; the goal is incomplete.
+
+## Portable record publication trust: 2026-10-15
+
+`8f1756c` corrects the real observation path, which created both a mutex and a new observation under an unsafe runtime
+or organizer directory. Typed replacement also changed accepted bytes under unsafe directory
+or destination metadata. Reader-only checks could not protect a missing first publication.
+The initial record RED had eight failures across ten methods; the observation RED had two
+subtest failures across eight methods. Replacement fixtures use a different device value so
+byte-preservation assertions detect changes even when an operation subsequently raises.
+
+Shared directory opens now check the existing policy ancestry and require EUID-owned state
+directories without group/other writes, before and after opening. The held-directory check
+retains inode identity and rechecks trust. Mutex acquisition validates ancestry before creating
+its parent or mutex and again before opening. Typed replacement checks regular destination
+ownership and write bits before staging and immediately before replacement.
+
+The [source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-record-write-trust-source-check-194337.md)
+found one remaining material gap in the first fix: intermediate held directories were only
+rechecked after replacement. A staged permission change reproduced an error after device123
+had already changed to456. The context now supplies its complete held-chain validator;
+replacement invokes it before committing. All five internal consumers use the revised tuple.
+The expanded focused suite passes10/10, including intermediate, parent and leaf changes.
+The other report observations were source checks, not runtime verification. Existing
+post-publication timeout/cleanup errors were verified as pre-existing and are not relabeled.
+
+Final portable suite:231 cases,223 pass and eight Linux-only skips,19.063 s. The connected legacy policy
+and copied-installation suites pass42/42 with explicit system Bash3.2.57. Final Swift674/674
+passes,27.454 s execution and27.562 s elapsed, with no Swift source changes. The first concurrent
+full Swift run had three timeout assertions in two existing methods; source inspection showed
+native operations, and both methods passed separately in0.215 s before the full rerun passed.
+The cause of those intermittent failures remains unproven. Both full runs are preserved.
+Python AST and diff checks pass; no shell source changed.
+
+All RED, focused, connected and full logs are retained under
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/portable-record-write-trust-20261015-194337-c7300a/`.
+The source scope is four shared Python modules and two tests. API/bug/architecture docs reflect
+the changed storage behavior. Read-only group access, trusted missing paths and verified system
+aliases remain supported. No permission repair, deadline extension, raw-output retry, live
+configuration change or terminal effect was introduced. Ancestor changes after the final check,
+hard syscall deadlines, separate debug paths, Homebrew default-locale behavior and required
+native/Linux acceptance remain open. This is a bounded Phase9 correction; the goal is incomplete.
