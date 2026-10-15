@@ -128,3 +128,14 @@ also fails portable metadata/stale; exact timeout attribution remains open. Devi
 **Scope:** two shell modules, three tests and connected docs/capture; no live state changes.
 Next: marker core/standalone trust, legacy policy/debug paths, native/Linux acceptance and failures.
 Goal/Phase 9 incomplete. Full Swift671/60 assertions remains open; no unchanged full rerun.
+
+### Phase 9 shell suspension-marker trust: 2026-10-15
+
+S2 marker guards now cover core reads/writes and the standalone reader before filesystem I/O.
+f4mWYr: five safety RED groups. IyVFAO: 72 Bats pass; pDIqxp: eight owned-startup combinations pass.
+Private Bash3.2/5.3 probes pass; earlier initial/resume assertion failures remain unattributed.
+[Source, failure paths and retained evidence](marker-storage-source-check-2026-10-15.md).
+**Scope:** S2 extends phase-5 storage modules and two tests; API/bug/architecture/capture updated.
+Trusted absence/content format, caller traps/umask and device100ms remain; no live state changes.
+Next: legacy lock/mute/debug/portable trust, portable timeout and required native/Linux acceptance.
+Goal/Phase 9 incomplete; prior Swift671/60 assertions remains open. No unchanged full Swift rerun.

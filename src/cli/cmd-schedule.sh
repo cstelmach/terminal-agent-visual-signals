@@ -24,6 +24,10 @@ SCHEDULE_FILE="$TAVS_USER_CONFIG_DIR/schedule.json"
 # `tavs schedule pause` (pausing MORE) is never gated.
 _schedule_challenge_gate() {
     if ! _tavs_lock_effective; then
+        if [[ "$_LS_READ_STATUS" == unavailable ]]; then
+            cli_error "Lock state unavailable. Schedule unchanged."
+            return 1
+        fi
         return 0
     fi
     cli_info "A hard lock is active: this change requires the unlock challenge."
@@ -344,9 +348,9 @@ _schedule_show() {
         echo -e "  ${_CLR_DIM}No quiet periods configured.${_CLR_RESET}"
     fi
 
-    # Show mute.state if present
+    # Distinguish trusted absence from an unavailable or invalid mute definition.
     local mute_state_file="$TAVS_USER_CONFIG_DIR/mute.state"
-    if [[ -f "$mute_state_file" ]]; then
+    if _tavs_policy_read_data "$mute_state_file"; then
         echo ""
         echo -e "  ${_CLR_BOLD}Current Mute State${_CLR_RESET}"
         local muted="" reason="" until_epoch=""
@@ -358,7 +362,7 @@ _schedule_show() {
                 REASON) reason="$val" ;;
                 UNTIL_EPOCH) until_epoch="$val" ;;
             esac
-        done < "$mute_state_file"
+        done <<< "$_TAVS_POLICY_DATA"
 
         if [[ "$muted" == "true" ]]; then
             local reason_text="$reason"
@@ -367,10 +371,16 @@ _schedule_show() {
             if [[ -n "$until_epoch" && "$until_epoch" != "0" ]]; then
                 until_text=" until $(date -r "$until_epoch" '+%H:%M' 2>/dev/null || echo "epoch $until_epoch")"
             fi
-            echo -e "    ${_CLR_RED}Muted${_CLR_RESET} — $reason_text$until_text"
-        else
+            echo -e "    ${_CLR_RED}Muted${_CLR_RESET}: $reason_text$until_text"
+        elif [[ "$muted" == false ]]; then
             echo -e "    ${_CLR_GREEN}Active${_CLR_RESET}"
+        else
+            cli_error "Mute state unavailable."
+            return 1
         fi
+    elif [[ "$_TAVS_POLICY_READ_STATUS" != absent ]]; then
+        cli_error "Mute state unavailable."
+        return 1
     fi
 }
 

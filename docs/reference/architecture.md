@@ -1,7 +1,7 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.17
+Version: 1.18
 
 ## Current-invocation render transaction
 
@@ -51,6 +51,9 @@ Capability queries use a known headless validation flag before any new verb. Mis
 helpers report failure and never fall back to raw background output. Actual write calls preserve
 dedicated test scopes. Shell mute liveness matches the Swift policy's live PID, finite decimal
 times and nonfuture heartbeat; a hard mirror cannot survive lock expiry or an unlock grant.
+Legacy CLI and Kitty suppression read checked, bounded lock/mute snapshots through the shared
+shell storage guard. Unavailable storage remains distinct from trusted absence; persistent
+suspension still bypasses challenges. These shell checks do not bind an opened descriptor.
 
 ## Current-policy broadcasting
 

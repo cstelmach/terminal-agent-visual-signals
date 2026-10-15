@@ -119,3 +119,33 @@ _tavs_visual_restrictions_write() (
     tmp=""
     return 0
 )
+
+# Legacy policy bodies are data, capped at the native readers' 8 KiB limit.
+# Returns 0 for present, 1 for trusted absence, 2 for unavailable storage/content.
+_tavs_policy_read_data() {
+    local file="$1" data="" size full=0 LC_ALL=C
+    _TAVS_POLICY_DATA="" _TAVS_POLICY_READ_STATUS=unavailable
+    file=$(_tavs_visual_restrictions_path "$file") || return 2
+    if [[ ! -e "$file" && ! -L "$file" ]]; then
+        _TAVS_POLICY_READ_STATUS=absent
+        return 1
+    fi
+    [[ -f "$file" && ! -L "$file" && -r "$file" ]] || return 2
+    _tavs_visual_restrictions_trusted "$file" || return 2
+    case "$OSTYPE" in
+        darwin*) size=$(stat -f '%z' "$file" 2>/dev/null) || return 2 ;;
+        linux*) size=$(stat -c '%s' "$file" 2>/dev/null) || return 2 ;;
+        *) return 2 ;;
+    esac
+    [[ -n "$size" && "$size" != *[!0-9]* && ${#size} -le 4 ]] || return 2
+    (( size <= 8192 )) || return 2
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        IFS= read -r -k 8193 -u 0 data < "$file" && full=1
+        [[ "$data" != *$'\0'* ]] || return 2
+    else
+        IFS= read -r -d '' -n 8193 data < "$file" && full=1
+    fi
+    [[ "$full" == 0 && ${#data} -eq "$size" ]] || return 2
+    _TAVS_POLICY_DATA="$data" _TAVS_POLICY_READ_STATUS=present
+    return 0
+}

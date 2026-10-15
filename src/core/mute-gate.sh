@@ -48,7 +48,7 @@ _tavs_check_mute_state() {
     # Hard lock first (spec D3): fail-closed, no PID/heartbeat gates, finite
     # expiry always wins, an active grant suspends it.
     local lock_file="${TAVS_RUNTIME_DIR:-/tmp/tavs-$UID}/lock.state"
-    if [[ -f "$lock_file" ]]; then
+    if _tavs_policy_read_data "$lock_file"; then
         local _lk="" _lv="" _l_locked="" _l_until="" _l_grant="" _l_ver=""
         while IFS='=' read -r _lk _lv; do
             _lv="${_lv%\"}"
@@ -59,7 +59,7 @@ _tavs_check_mute_state() {
                 UNLOCK_UNTIL_EPOCH) _l_grant="$_lv" ;;
                 SCHEMA_VERSION) _l_ver="$_lv" ;;
             esac
-        done < "$lock_file"
+        done <<< "$_TAVS_POLICY_DATA"
         if [[ "$_l_locked" == "true" && "${_l_ver:-1}" == "1" ]] \
             && [[ -n "$_l_until" && "$_l_until" != *[!0-9]* ]]; then
             local _l_now
@@ -71,11 +71,13 @@ _tavs_check_mute_state() {
                 fi
             fi
         fi
+    elif [[ "$_TAVS_POLICY_READ_STATUS" != absent ]]; then
+        return 1
     fi
 
     local mute_file="$HOME/.tavs/mute.state"
 
-    [[ ! -f "$mute_file" ]] && return 1
+    _tavs_policy_read_data "$mute_file" || return 1
 
     local _muted="" _requested="" _requested_present=0 _level="" _reason=""
     local _until="" _written="" _app_pid="" _version=1
@@ -92,7 +94,7 @@ _tavs_check_mute_state() {
             APP_PID) _app_pid="$val" ;;
             SCHEMA_VERSION) _version="$val" ;;
         esac
-    done < "$mute_file"
+    done <<< "$_TAVS_POLICY_DATA"
 
     # A hard-lock mirror must not outlive the finite lock or its unlock grant.
     [[ "$_level" == hard ]] && return 1

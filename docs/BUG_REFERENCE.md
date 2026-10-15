@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.88
+Version: 1.89
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -897,4 +897,14 @@ Shared snapshots lost TTY rows; inherited `$$` temporary names collided. Private
 [stable table locks](reference/architecture.md#session-statesh-state-management) serialize updates.
 Raw registry publication followed links before validation, truncating content or changing timestamps.
 [Managed startup](API_REFERENCE.md#standalone-shell-helper-delivery) now owns registration; mute init
-resolves its runtime path. Owned-PTY checks cover registration; unsafe policy reads remain open.
+resolves its runtime path. Owned-PTY checks cover registration.
+Raw legacy policy reads also accepted links/writable files and could block on a FIFO or parse
+unbounded content. The shared checked reader rejects these static cases and NUL bodies, and
+retains trusted absence separately. CLI errors preserve definitions instead of claiming no lock
+or allowing a schedule edit. Recovery bypass and missing-final-newline compatibility are tested.
+Path/open races, debug writes, portable policy trust and portable write serialization remain open.
+Isolated Homebrew Bash 5.3.15 runs also expose exit139 after valid marker reads. A matching-time
+SIGSEGV report reaches locale restoration through libintl/CoreFoundation. System Bash and an
+explicit C-locale control pass; a minimal locale-only probe does not reproduce the crash.
+The [source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#checked-legacy-rule-snapshots-2026-10-15)
+retain this compatibility failure without attributing all historical failures to it.

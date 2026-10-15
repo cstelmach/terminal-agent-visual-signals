@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.64
+**Version:** 4.65
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -888,13 +888,13 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > Finished validated-registration checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-validated-shell-registration-2026-10-15).
 
-### Phase 9 shell suspension-marker trust: 2026-10-15
+> [Finished shell marker checkpoint](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-shell-suspension-marker-trust-2026-10-15).
 
-S2 marker guards now cover core reads/writes and the standalone reader before filesystem I/O.
-f4mWYr: five safety RED groups. IyVFAO: 72 Bats pass; pDIqxp: eight owned-startup combinations pass.
-Private Bash3.2/5.3 probes pass; earlier initial/resume assertion failures remain unattributed.
-[Source, failure paths and retained evidence](marker-storage-source-check-2026-10-15.md).
-**Scope:** S2 extends phase-5 storage modules and two tests; API/bug/architecture/capture updated.
-Trusted absence/content format, caller traps/umask and device100ms remain; no live state changes.
-Next: legacy lock/mute/debug/portable trust, portable timeout and required native/Linux acceptance.
-Goal/Phase 9 incomplete; prior Swift671/60 assertions remains open. No unchanged full Swift rerun.
+### Phase 9 bounded legacy policy reads: 2026-10-15
+
+Shared checked snapshots preserve absence/unavailable statuses through lock/mute CLI consumers.
+System Bash and explicit-C Homebrew Bash: 84/84 each; ordinary Homebrew runs remain unsuccessful.
+[Source, retained failures and scope](legacy-policy-trust-source-check-2026-10-15.md).
+**Scope:** five rule/CLI modules and four test files; API/bug/architecture/capture updated.
+Current exit139 has SIGSEGV/locale-stack evidence; older failures are not all attributed.
+Next: Bash compatibility, decimal/portable/debug trust and native/Linux acceptance. Goal incomplete.

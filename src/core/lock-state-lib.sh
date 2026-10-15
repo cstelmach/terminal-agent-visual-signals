@@ -1,14 +1,12 @@
 #!/bin/bash
 # ==============================================================================
-# TAVS — Lock state library (shell side of LockState.swift)
+# TAVS - Lock state library (shell side of LockState.swift)
 # ==============================================================================
 # Read/predicate/write helpers for /tmp/tavs-$UID/lock.state, shared by
 # cmd-lock.sh, challenge.sh, and cmd-schedule.sh gating.
 #
-# NOT sourced by trigger.sh/mute-gate.sh (their stage-0/1 keep an inline
-# builtins-only copy for hot-path cost, like the existing mute stage-0) nor by
-# the installed shellrc (standalone file). The predicate definition is spec
-# §2.2 and must stay in sync across those copies:
+# The mute gate keeps its own legacy predicate; managed terminal writes check
+# current policy independently. The predicate definition is spec §2.2:
 #   effective := LOCKED && now < LOCK_UNTIL && !(now < UNLOCK_UNTIL)
 # Absent/malformed state or non-numeric LOCK_UNTIL means NOT locked (D3).
 # ==============================================================================
@@ -27,13 +25,17 @@ _tavs_lock_state_file() {
 }
 
 # Populates _LS_LOCKED, _LS_REASON, _LS_LOCK_UNTIL, _LS_UNLOCK_UNTIL,
-# _LS_WRITTEN, _LS_BG, _LS_FG, _LS_VER. Returns 1 when the file is absent.
+# _LS_WRITTEN, _LS_BG, _LS_FG, _LS_VER and _LS_READ_STATUS.
+# Returns 1 for trusted absence, 2 for unavailable state.
 _tavs_lock_read() {
     _LS_LOCKED="" _LS_REASON="" _LS_LOCK_UNTIL="" _LS_UNLOCK_UNTIL=""
     _LS_WRITTEN="" _LS_BG="" _LS_FG="" _LS_VER=""
-    local f
+    local f rc
     f=$(_tavs_lock_state_file)
-    [[ -r "$f" ]] || return 1
+    _LS_READ_STATUS=unavailable
+    if _tavs_policy_read_data "$f"; then rc=0; else rc=$?; fi
+    _LS_READ_STATUS="$_TAVS_POLICY_READ_STATUS"
+    [[ "$rc" == 0 ]] || return "$rc"
     local k v
     while IFS='=' read -r k v; do
         v="${v%\"}"; v="${v#\"}"
@@ -47,13 +49,14 @@ _tavs_lock_read() {
             LOCK_FG)            _LS_FG="$v" ;;
             SCHEMA_VERSION)     _LS_VER="$v" ;;
         esac
-    done < "$f"
+    done <<< "$_TAVS_POLICY_DATA"
     return 0
 }
 
 # Usage: _tavs_lock_effective [now_epoch]
 # Reads the state fresh and evaluates the spec §2.2 predicate.
 _tavs_lock_effective() {
+    _LS_READ_STATUS=unchecked
     if _tavs_visual_restrictions_suspended; then return 1; fi
     local now="${1:-$(date +%s)}"
     _tavs_lock_read || return 1

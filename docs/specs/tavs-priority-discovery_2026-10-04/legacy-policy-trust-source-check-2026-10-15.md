@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.0
+Version: 1.1
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -321,3 +321,56 @@ platform behavior are not inferred from source inspection.
 
 Host follow-up: the suggested exact-line `grep -qxF` correction is applied. New missing-resource
 startup coverage requires the unavailable diagnostic and no runtime mutation in both shells.
+
+## Checked legacy rule snapshots: 2026-10-15
+
+The implementation following `7602622` reuses the shell marker's directory/leaf guard for
+lock/mute reads. `_tavs_policy_read_data` clears old data, rejects nonregular/linked, unreadable,
+foreign-owned or group/other-writable storage, bounds input to 8192 bytes and rejects NUL or
+incomplete snapshots. It returns present/absent/unavailable separately. Lock parsing resets
+all fields before reading, preserves the named status and accepts an unterminated final field.
+Existing legacy field/schema interpretation remains; content is never evaluated.
+
+CLI status/unlock and the schedule challenge gate no longer equate unsafe lock storage with
+absence. Portable lock-now refuses to overwrite unavailable existing state. Schedule show
+reports unavailable storage or an invalid MUTED flag rather than Active. Suspension still
+bypasses challenges and preserves definitions: the effective predicate resets read status to
+unchecked before the marker check, so a prior failure cannot defeat recovery.
+
+The new isolated file has 13 groups, covering exact statuses, private field clearing, writable
+metadata, FIFO rejection, 8192/8193-byte and NUL boundaries, final fields, CLI preservation,
+schedule changes, recovery bypass and static help. The initial 11-group RED run failed nine
+groups, including the FIFO's three-second subprocess timeout. The first GREEN run passed 11/11;
+two further groups cover both Bash versions/zsh and portable mutation rejection.
+
+Final connected suites pass 84/84 with system Bash 3.2.57 and 84/84 with Homebrew Bash 5.3.15
+under explicit LC_ALL=C. Both include lock/mute units, marker storage and native/shell parity.
+Syntax checks pass in Bash 3/5 and the shared module in zsh; git diff --check passes.
+No Swift source changed, so the historical full Swift671/60 assertions is not superseded.
+
+Unconfigured Homebrew Bash runs remain unsuccessful: the three 84-case runs fail 2, 3 and 2
+cases at differing boundaries. Focused controls and twenty direct system-Bash marker cycles
+pass. Child tracing then captures suspended-unlock status139 immediately after a valid marker
+is classified suspended. The contemporaneous `bash-2026-10-15-164807.ips` confirms SIGSEGV in
+Homebrew Bash. Its stack includes libintl_setlocale, reset_locale_vars, sv_locale and
+pop_var_context, with CoreFoundation language preferences. That is concrete crash evidence;
+it does not attribute every earlier assertion failure. A separate TAVS-free locale-scope
+probe passes sixty iterations, so a minimal independent reproducer is still missing.
+No global locale, installed shell, permissions or production environment was changed.
+
+Retained logs, exact diagnostic scripts and the crash report:
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/legacy-policy-read-20261015-163638-b44a30/`.
+The external UUID/device/reserves were verified before writes. The existing private OS-temp
+test-fixture mapping is retained; the external root's group-write permission is deliberately
+rejected by TAVS. New reports/backups/results use agent-data. Source backups remain in the
+matching scratch run. Reports/results are retained for reviewed cleanup.
+
+The [independent source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-legacy-policy-reader-explorer-165000.md)
+finds no introduced status-flow defect. Its remaining-raw-reader findings were checked against
+current source: native --dump-state still uses raw String(contentsOf:), portable policy opens
+bound regular files but lack ancestry/leaf ownership/write-bit checks, and portable lock writes
+still lack shared serialization. Debug appends and uninstall storage also remain separate.
+Shell pathname validation remains separate from redirection, including a possible replacement
+by a FIFO between those steps. The new byte cap is neither a descriptor binding nor a hard
+deadline. Hard-lock decimal normalization also remains open. No claim of complete S2 closure,
+Linux kernel acceptance or physical Ghostty acceptance follows from these tests.

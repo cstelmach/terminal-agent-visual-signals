@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.78
+Version: 1.79
 
 ## Private managed-output failure diagnostics
 
@@ -119,6 +119,13 @@ Native revisions retain their descriptor against inode reuse and use the origina
 expiry remains deadlineExceeded. Shell reads keep a 128-byte C-locale bound and their status contract.
 Shell writes scope cleanup/umask and recheck before rename; metadata checks do not preempt syscalls.
 Schema, resumption and device100ms stay unchanged. Portable marker/policy trust remains separate.
+
+`_tavs_policy_read_data(path)` uses the same shell ancestry/leaf guard for legacy lock/mute data.
+It publishes `_TAVS_POLICY_DATA` only for a complete, NUL-free snapshot of at most 8192 bytes.
+Returns/statuses are 0/present, 1/absent and 2/unavailable; lock reads preserve `_LS_READ_STATUS`.
+CLI status/unlock and schedule edits distinguish unavailable storage from absence. Suspension
+still bypasses challenges and preserves definitions. Shell pathname checks remain separate from
+opening; the byte cap provides neither descriptor binding nor a hard wall-clock deadline.
 
 ## Native runtime directory trust
 

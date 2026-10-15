@@ -93,7 +93,11 @@ _lock_now() {
             return 1
         fi
     else
-        if _tavs_lock_read && [[ "$_LS_LOCKED" == true ]] \
+        if ! _tavs_lock_read && [[ "$_LS_READ_STATUS" != absent ]]; then
+            cli_error "Lock state unavailable; saved lock preserved."
+            return 1
+        fi
+        if [[ "$_LS_LOCKED" == true ]] \
             && [[ -n "$_LS_LOCK_UNTIL" && "$_LS_LOCK_UNTIL" != *[!0-9]* ]] \
             && (( _LS_LOCK_UNTIL > new_until )); then
             new_until="$_LS_LOCK_UNTIL"
@@ -135,6 +139,10 @@ _lock_status() {
         unavailable) echo 'Visual restriction state unavailable; restrictive visuals disabled.' ;;
     esac
     if ! _tavs_lock_read; then
+        if [[ "$_LS_READ_STATUS" != absent ]]; then
+            cli_error "Lock state unavailable; saved lock preserved."
+            return 1
+        fi
         echo "Lock: none (no lock.state)"
         return 0
     fi
@@ -157,6 +165,9 @@ _lock_status() {
 
     if _tavs_lock_effective "$now"; then
         cli_info "Effective: LOCKED"
+    elif [[ "$_LS_READ_STATUS" == unavailable ]]; then
+        cli_error "Lock state unavailable; saved lock preserved."
+        return 1
     else
         cli_info "Effective: not locked"
     fi
@@ -190,7 +201,13 @@ _lock_unlock() {
         case "$_TAVS_VISUAL_RESTRICTIONS_STATUS" in
             suspended) cli_info 'Visual restrictions are suspended; the saved lock is preserved without an unlock.' ;;
             unavailable) cli_info 'Visual restriction state unavailable; restrictive visuals disabled and the saved lock is preserved.' ;;
-            active) cli_info "No effective lock right now. Nothing to unlock." ;;
+            active)
+                if [[ "$_LS_READ_STATUS" == unavailable ]]; then
+                    cli_error "Lock state unavailable; saved lock preserved."
+                    return 1
+                fi
+                cli_info "No effective lock right now. Nothing to unlock."
+                ;;
         esac
         return 0
     fi
