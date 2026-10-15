@@ -664,27 +664,33 @@ final class VisualRecoveryTests: XCTestCase {
         try noBytes(target)
     }
 
-    func testNewIntakeDuringOpenRejectsPrepublishedRenderWithoutReplacingLatestIntent() throws {
+    func testNewIntakeBeforeDeviceAdmissionRejectsPrepublishedRenderWithoutReplacingLatestIntent() throws {
         let target = try terminal(10)
         let value = intent(target)
-        let runner = SystemProcessRunner(openDevice: { path, flags in
-            do {
-                XCTAssertEqual(try self.state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#123456")
-                self.clock.advance(by: 1)
-                try self.state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
-                    producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
-                    event: nil, deliveryID: "newer", responseID: nil, observedAt: 1_001))
-                var newer = value
-                newer.deliveryID = "newer"; newer.background = "#ABCDEF"; newer.updatedAt = 1_001
+        let runner = MockProcessRunner()
+        runner.managedBeforeOpenHandler = { path, lock, beforeOpen, afterWrite, prepare in
+            // Model the competing intake separately from the queued render's device deadline.
+            try SystemProcessRunner.completeDeviceWrite(path: path) { try beforeOpen?($0) }
+            XCTAssertEqual(try self.state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#123456")
+            self.clock.advance(by: 1)
+            try self.state.publishObservation(TerminalObservation(tty: target.tty, device: target.device,
+                producer: target.ttyOwner, provider: "claude", verifiedAgent: false, state: "processing",
+                event: nil, deliveryID: "newer", responseID: nil, observedAt: 1_001))
+            var newer = value
+            newer.deliveryID = "newer"; newer.background = "#ABCDEF"; newer.updatedAt = 1_001
+            try SystemProcessRunner.completeDeviceWrite(path: path) { deadline in
                 try self.state.publishIntent(newer, to: target, synthetic: false, intakeAt: 1_001,
-                    deadline: DispatchTime.now().uptimeNanoseconds + 20_000_000)
-            } catch { XCTFail("New intake failed: \(error)"); errno = EIO; return -1 }
-            return Darwin.open(path, flags)
-        })
+                    deadline: deadline)
+            }
+            return try SystemProcessRunner().writeManagedToDevice(path: path, lockURL: lock,
+                beforeOpen: nil, target: target.physicalTarget, emergency: false,
+                afterWrite: afterWrite, prepare: prepare)
+        }
         XCTAssertThrowsError(try recovery(runner: runner).render(render(), intent: value,
             synthetic: false, intakeAt: 1_000, to: target)) { error in
             guard case TerminalVisualStateError.staleDelivery = error else { return XCTFail("Expected stale delivery, got \(error)") }
         }
+        XCTAssertEqual(runner.managedTargets, [target.physicalTarget])
         XCTAssertEqual(try state.ordinaryBackgroundUnlocked(for: target, deadline: .max), "#ABCDEF")
         try noBytes(target)
     }
@@ -749,6 +755,8 @@ final class VisualRecoveryTests: XCTestCase {
 
     func testMarkerChangeDuringPolicyCheckRejectsPreviewAfterCachingTarget() throws {
         let target = try terminal(10), value = try request()
+        let replacement = root.appendingPathComponent("home/staged-suspension.state")
+        try VisualRestrictionsStateStore(url: replacement).write(suspended: true)
         try MuteStateWriter.write(MuteStateData(muted: true, reason: .masterPaused, untilEpoch: 0,
             writtenEpoch: 1_000, appPID: 80, pauseBg: "#123456", pauseFg: "#EEEEEE", requestedMuted: true),
             to: root.appendingPathComponent("home/mute.state"))
@@ -756,13 +764,13 @@ final class VisualRecoveryTests: XCTestCase {
             muteURL: root.appendingPathComponent("home/mute.state"), lockURL: root.appendingPathComponent("lock.state"),
             clock: clock, pidAlive: { _ in
                 XCTAssertTrue(self.state.cachedRecords().bindings.contains(target))
-                do { try self.restrictions.write(suspended: true) }
-                catch { XCTFail("Marker replacement failed") }
+                XCTAssertEqual(rename(replacement.path, self.restrictions.url.path), 0)
                 return false
             })
         let service = VisualRecovery(runtimeDirectory: root, restrictions: restrictions, state: state,
             policy: policy, processRunner: SystemProcessRunner(), clock: clock, controller: generation(90), nativeSnapshot: { [] })
         XCTAssertFalse(try service.write(.preview(value), to: target))
+        XCTAssertEqual(restrictions.read(), .suspended)
         XCTAssertNil(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max))
         try noBytes(target)
     }
@@ -961,6 +969,8 @@ final class VisualRecoveryTests: XCTestCase {
 
     func testReconciliationQueuedBeforeSuspensionReadsTheMarkerAfterDeviceOpen() throws {
         let target = try terminal(10), service = recovery()
+        let replacement = root.appendingPathComponent("home/staged-suspension.state")
+        try VisualRestrictionsStateStore(url: replacement).write(suspended: true)
         _ = try service.write(.ordinary(intent(target), synthetic: false, intakeAt: 1_000), to: target)
         _ = try read(target)
         try LockStateWriter.write(LockStateData(locked: true, reason: .manual, lockUntilEpoch: 1_500,
@@ -968,11 +978,13 @@ final class VisualRecoveryTests: XCTestCase {
             to: root.appendingPathComponent("lock.state"))
         _ = try service.write(.currentRestriction, to: target); _ = try read(target)
         let runner = SystemProcessRunner(openDevice: { path, flags in
-            do { try self.restrictions.write(suspended: true) }
-            catch { XCTFail("Owned marker write failed: \(error)"); errno = EIO; return -1 }
+            guard rename(replacement.path, self.restrictions.url.path) == 0 else {
+                XCTFail("Owned marker rename failed"); errno = EIO; return -1
+            }
             return Darwin.open(path, flags)
         })
         XCTAssertTrue(try recovery(runner: runner).write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
+        XCTAssertEqual(restrictions.read(), .suspended)
         XCTAssertEqual(try read(target), reset)
         XCTAssertFalse(try service.write(.reconcile(resetLegacy: true, clearSelective: false), to: target))
         try noBytes(target)

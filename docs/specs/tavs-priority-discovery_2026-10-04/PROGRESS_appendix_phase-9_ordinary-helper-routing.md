@@ -75,3 +75,7 @@ S3 fixed; partial failures remain nonzero and nested-hook reruns are idempotent.
 [Source/results](current-codex-review-2026-10-14.md#s3-agent-installer-correction-2026-10-15).
 Scope: three shell files, two suites and docs, including sync delivery. N2 log moved unchanged.
 Next: retained broad-suite failures and Linux after operator-started Docker; native acceptance open.
+
+### Phase 9 portable fixture and suite refresh: 2026-10-15
+One test fixture changed; portable197 pass+8 skips; Swift671/4 assertions. Production unchanged.
+Next: Swift recovery; [source/results](portable-linux-identity-research-2026-10-13.md).

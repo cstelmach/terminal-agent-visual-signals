@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.3
+Version: 1.4
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -122,3 +122,21 @@ portable suite passes 197 host cases, with eight Linux kernel cases skipped. A s
 helper run passes under a `/tmp` runner. Earlier timing failures remain unattributed; a fresh
 Swift run has four assertions failing across three recovery tests. These format checks do not
 establish real Linux process/PTY behavior or native Ghostty acceptance.
+
+## Recovery race fixtures charge competing work to the old writer
+
+Three fixtures performed complete independent marker/intake transactions inside the old writer's
+100 ms budget. One imposed a separate 20 ms intake limit, then turned its failure into a fake
+device-open failure before stale revalidation. Marker fixtures now stage valid private state
+before the writer and rename at their original policy/open boundary. The intake fixture models
+publication, independent newer intake and frozen prepare separately through the existing seam.
+
+The intake name describes its before-device-admission scope. It retains exact stale rejection,
+current intent, physical-target forwarding and PTY silence. Single-budget publish/open/prepare,
+wedged-open locking and publication during an admitted open remain in connected unchanged tests.
+Both marker cases retain real writer timing, cached-target/byte assertions and suspended state.
+
+Three targeted cases pass focused and in the full suite. Full Swift (671 tests) still fails seven
+assertions across three other tests. No production change, widened deadline, blanket stability
+or historical-cause resolution is claimed. See the dated
+[source/results](specs/tavs-priority-discovery_2026-10-04/caller-deadline-source-check-2026-10-14.md).

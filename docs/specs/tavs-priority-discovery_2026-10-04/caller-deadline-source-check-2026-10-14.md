@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
-Last Updated: 2026-10-14
-Version: 1.0
+Last Updated: 2026-10-15
+Version: 1.1
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -398,3 +398,52 @@ physical Ghostty acceptance remain pending; operator availability was requested.
 Full reports, sample, logs and owned backups are retained under
 `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-reset-status-ccm__mfv/`.
 No speedup, whole-suite pass, resolution of the old mismatch or goal completion is claimed.
+
+## Native recovery race fixture correction, 2026-10-15
+
+Baseline `9b16246`; only three tests in `visual-recovery-tests.swift` change. Production source,
+100 ms writer/caller checks, identity validation and cleanup behavior remain unchanged.
+
+X4ovLj's retained four assertions across three cases did not demonstrate wrong output. The intake
+fixture's own 20 ms target publication expired; its catch returned -1 from open, hiding the desired
+stale check behind deviceNotWritable. The marker cases ran complete trusted marker writes inside
+policy/open callbacks; prepare then timed out. No single latency cause was established.
+
+Marker fixtures now prepare real owned mode-0600 suspended files before the operation, then use
+checked same-directory rename at their original pidAlive/open boundary. Preview still verifies
+cached target before policy replacement, rejects the old revision, leaves no preview or pixels,
+and asserts suspended state. Reconciliation retains exact reset bytes and a following no-op.
+The cached-record enumeration remains in pidAlive, so no blanket callback-cost claim is made.
+
+The intake test is renamed BeforeDeviceAdmission. It performs the original beforeOpen publication
+through the existing bounded completion helper, publishes the independent newer observation and
+bound intent, then invokes real SystemProcessRunner with frozen prepare/afterWrite and exact
+physical target. Each bounded operation uses the existing 100 ms helper. It requires exact stale,
+latest background, target forwarding and no PTY bytes. It does not test one combined deadline or
+publication during already-held admission. Those combinations remain covered by unchanged
+ProcessRunner publish/open retry/original-deadline and wedged-open tests, plus VisualRecovery's
+standalone-intent publication during admitted open. Their source assertions were checked directly.
+The read-only source assessor found no uncovered product open-order invariant in this change;
+its assessment did not execute tests or establish native acceptance.
+
+Isolated verification, with the explicit source-built helper and owned scratch build:
+
+- dHx3w2: all three original cases pass alone, 0.109 s. This does not attribute X4ovLj's failures.
+- aeaXdu: three revised cases pass, 0.101 s; test rebuild 7.26 s.
+- EFWqkG: full 671, seven assertions (five unexpected), 33.042 s. All three revised cases pass,
+  including final suspended-state assertions. No whole-suite pass is claimed.
+
+Current failures are `BroadcasterTests.testSystemProcessRunnerDeliversLargePTYWriteWhileReaderDrains`
+(write-stage timeout, read timeout and an unwaited expectation),
+`FocusControllerTests.testMixedCueSourcesRemoveOnlyKnownExitAndContinueThroughAnotherValidSource`
+(missing PTY3 bytes and timeout), and
+`VisualRecoveryTests.testClearRestoresLatestIntentAndCanceledRecordRemainsRetryable`
+(prepare timeout and subsequent read timeout). These are the next evidence targets. The observed
+host load 25.27/28.81/25.02 is context, not causal proof. All failed runs remain recorded independently.
+
+Original files, complete logs and the full source assessment are retained in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-native-race-fixtures-4pnllwsc/`.
+Scope divergence: one existing test file and relevant docs, supporting Phase 9 verification.
+No live app install/sync, real preferences/schedules, native Automation, terminal paint or existing
+session shutdown occurred. Linux kernel and Ghostty physical acceptance remain open; goal and
+Phase 9 remain incomplete. SPEC/PLAN bodies are fixed. Earlier failures remain retained.
