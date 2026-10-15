@@ -181,3 +181,19 @@ The prior staged fixture remains available; production app, schedules and sessio
 **Next:** Phase 8 manual captured working set may proceed from this verified source foundation.
 Keep Phases 2/7 blocked acceptance visible. Read Phase 8 plan/spec and connected state/controller
 callers before tests. One phase per next goal iteration; the master goal remains active.
+
+### Phase 9 native preview diagnostic source checkpoints
+
+**Phase 9 native preview diagnostics, 2026-10-15: 3a579d2.** Expiry retains outcomes; preparation distinguishes colors/mapping. Three new cases pass; real-PTY/full checks remain unstable. [Results](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
+**Next:** fix denied inspection of root-owned login parents in Swift/Python without weakening identity checks. KERN_PROC_PID probe succeeds. Native highlight still fails; staged app remains suspended/Focus Off. Final reviews, full677 and native/Linux acceptance remain open. Goal incomplete.
+
+> [Verified Darwin identity checkpoint](PROGRESS_appendix_phase-2_launch-debugging.md#verified-darwin-identity-checkpoint).
+
+**Phase 9 mapping/recovery, 2026-10-15: 34a838a.** Mapping snapshots omit display reads.
+Catalogue 19/19 passes; full Swift 683 has 88 failures across 41 methods, still unresolved.
+Independent recovery with only the test app stopped restores both panes in 1.829 s, then resumes it.
+Post-recovery 038 preview reports 1/1; the operator visible check on 031 is pending.
+[Results](caller-deadline-source-check-2026-10-14.md#mapping-only-snapshots-and-independent-native-recovery-2026-10-15).
+**Next:** measure queue/native time and device preparation; inspect the saved source map
+`/Volumes/external/agent-data/reports/2026-10-15/tavs-device-prepare-cost-explorer-220300.md`.
+Keep the app open, suspended and Focus Off. Final reviews/native/Linux cases remain; goal incomplete.

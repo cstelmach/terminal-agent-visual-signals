@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.8
+Version: 1.9
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -744,3 +744,83 @@ Docker's two known socket paths are still absent. The visible 031 check remains 
 
 Full logs, measured source variants and the original test file are retained in
 `/Volumes/external/agent-data/retained/terminal-agent-visual-signals/writer-preparation-20261015-221632/`.
+
+## Accepted restoration ownership: 2026-10-15
+
+The [clear dependency source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-preview-clear-dependency-source-check-224000.md)
+found weak controller captures at accepted cleanup dispatch. Controlled PTY tests reproduced
+three gaps: explicit preview clear, queued Focus Off and timer setup/expiry after caller release.
+The original code left active metadata or missing reset bytes in each case. These are ownership
+defects, not proof of an ordinary window-close failure: the application normally retains its model.
+
+`1bfe0b5` retains the controller through accepted cleanup and preview expiry. It preserves target
+checks, clear predecessors, main-thread status projection and the original deadlines. Virtual
+timer fixtures cancel remaining callbacks at teardown. The expiry regression also verifies that
+the controller is released after restoration, avoiding a permanent timer ownership cycle.
+
+| Controlled check | Original behavior | Corrected behavior |
+|---|---|---|
+| Accepted preview clear | 3 failed assertions, 1 unexpected, 2.194 s | Reset and inactive record |
+| Queued Focus Off | 4 failed assertions, 1 unexpected, 2.319 s | Both targets reset; second clear executes |
+| Preview expiry before timer setup | 3 failed assertions, 1 unexpected, 3.801 s | Reset, inactive record and owner released |
+
+The final seven-case selection passes in 0.597 s (0.602 s elapsed). It also covers replacement
+ordering, latest ordinary intent and outstanding predecessor cleanup. Full Swift has 687 tests,
+one opt-in profiler skip and 12 failed assertions across seven methods, eight unexpected,
+37.952 s (38.141 s elapsed). All 77 FocusController tests pass in 6.666 s (6.682 s elapsed),
+including the three new cases. Remaining failures concern Scheduler unmute/replay, one bound
+intent read and five VisualRecovery cases reporting preparation deadlines or consequent missing
+bytes. The initial summary incorrectly counted eight failed methods; the complete log has seven.
+
+An intermediate full run after only the explicit-clear change had 685 tests, one skip,
+69 failed assertions across 35 methods, 45 unexpected, 85.565 s (86.202 s elapsed). The changing
+failure count does not establish that the ownership fix explains historical timeout behavior.
+No unchanged full run was repeated after the final result. The 100 ms writer and two-second
+native query budgets are intact. Per-operation deadline investigation remains necessary.
+
+Full logs, source variants, before copies and wrapper output are now promoted into the retained
+directory above. Scratch/build/cache paths remain external and active; no cleanup was performed.
+
+## Fresh selection and visible acceptance: 2026-10-15
+
+The operator answered the earlier request with `Selected; no highlight`. On reorientation,
+the isolated test process was no longer running; the production app remained open. A Computer
+Use app lookup timed out. The existing guarded launcher then revalidated the original Ghostty
+generation and both native IDs and reopened the same staged bundle. This bundle still contains
+`34a838a`; the ownership fix above has not replaced it during the pending visible check.
+
+Computer Use showed two rows and zero selected. Clicking 031's title cell changed selection,
+showed `Preparing preview`, then `1 of 1 terminals previewed.` after expiry. This is fresh
+reported delivery for 031, not confirmation of its visible background. The app stays open,
+suspended and Focus Off, retaining High 031 and Normal 038. No real installation was changed.
+
+Source confirms that expiry retains the delivery message and leaves the row selected. Clicking
+the unchanged selection does not trigger another preview. The next operator check therefore
+starts with Clear Selection, then selects 031 while watching its pane. The question also asks
+whether a missing tint occurs at a plain prompt or beneath an application painting its own cells.
+That observation is pending; it is not inferred from elapsed time or a writer result.
+
+The [competing-writer source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-native-preview-competing-writers-explorer-232100.md)
+distinguishes actual background writers from metadata-only polling. Independent runtimes can
+overwrite the same TTY, but a running production process alone does not prove interference.
+Suspension permits explicit previews. No writer was stopped and no cross-runtime machinery was
+added from these conditional findings. Visible native acceptance, Linux cases and final reviews
+remain open; the goal is incomplete.
+
+The operator subsequently answered the fresh Clear Selection/reselect check with
+`Yes, a brief tint appears`. Visible highlighting of 031 is now accepted for this attempt.
+The next single question asks whether the original background returned after about two seconds
+while TAVS retained keyboard focus. Restoration timing and focus are still pending. This result
+does not establish the cause of the earlier missing tint or accept other surfaces and modes.
+
+The operator then confirmed `Yes, both happened` for the original-background return after about
+two seconds and TAVS retaining keyboard focus. The basic preview/restoration/focus check passes
+for that attempt. Clicking the separate Go To control on 038 received operator confirmation
+`Yes, tty038 is focused`. Exact pane navigation passes for this dedicated target. These accepted
+cases do not cover multiselection, moved/closed surfaces, changed ordinary intent, other Spaces,
+manual/automatic focus or the remaining recovery scenarios. Phase 2/7/8 and the goal stay open.
+
+The operator clarified the navigation result: a pane/window behind another window was not
+brought to the foreground. The earlier pane-focus confirmation therefore does not accept the
+full Go To contract. Native navigation remains failed for obscured windows. Inspect the command,
+application activation and foreground verification before another visible navigation attempt.

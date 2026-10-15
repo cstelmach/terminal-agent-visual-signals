@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.75
+**Version:** 4.76
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -22,7 +22,7 @@ Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-g
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; operator reports no native preview |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | Python234:6 fail/15 error/8 skip; Swift683:88 failures | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | Python234:6 fail/15 error/8 skip; Swift687:12 failures/1 skip | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -885,16 +885,14 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > [Finished portable policy trust](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-portable-policy-trust-2026-10-15).
 
-**Phase 9 native preview diagnostics, 2026-10-15: 3a579d2.** Expiry retains outcomes; preparation distinguishes colors/mapping. Three new cases pass; real-PTY/full checks remain unstable. [Results](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
-**Next:** fix denied inspection of root-owned login parents in Swift/Python without weakening identity checks. KERN_PROC_PID probe succeeds. Native highlight still fails; staged app remains suspended/Focus Off. Final reviews, full677 and native/Linux acceptance remain open. Goal incomplete.
+> [Finished preview diagnostics and mapping/recovery checkpoint](PROGRESS_appendix_phase-7-renderer-foundation.md#phase-9-native-preview-diagnostic-source-checkpoints).
 
-> [Verified Darwin identity checkpoint](PROGRESS_appendix_phase-2_launch-debugging.md#verified-darwin-identity-checkpoint).
-
-**Phase 9 mapping/recovery, 2026-10-15: 34a838a.** Mapping snapshots omit display reads.
-Catalogue 19/19 passes; full Swift 683 has 88 failures across 41 methods, still unresolved.
-Independent recovery with only the test app stopped restores both panes in 1.829 s, then resumes it.
-Post-recovery 038 preview reports 1/1; the operator visible check on 031 is pending.
-[Results](caller-deadline-source-check-2026-10-14.md#mapping-only-snapshots-and-independent-native-recovery-2026-10-15).
-**Next:** measure queue/native time and device preparation; inspect the saved source map
-`/Volumes/external/agent-data/reports/2026-10-15/tavs-device-prepare-cost-explorer-220300.md`.
-Keep the app open, suspended and Focus Off. Final reviews/native/Linux cases remain; goal incomplete.
+### Phase 9 accepted restoration and native preview: 2026-10-15
+`bd9ac3b` adds opt-in writer timing; `1bfe0b5` retains accepted cleanup and preview expiry.
+Three owner-release PTY REDs now pass; seven focused cases pass. Full Swift 687: one skip,
+12 assertions fail in seven existing methods; all 77 controller tests pass. Goal incomplete.
+The operator confirms a visible tint, two-second restoration and retained TAVS keyboard focus.
+Go To foregrounding fails for obscured windows; the test app remains open, suspended/Focus Off.
+[Full results and retained logs](caller-deadline-source-check-2026-10-14.md#accepted-restoration-ownership-2026-10-15).
+**Next:** fix Go To foregrounding and verification, then trace remaining scheduler/device deadlines.
+Scope: two connected controller source/test paths and existing reference/progress docs.
