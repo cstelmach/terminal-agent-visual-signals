@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.98
+Version: 1.99
+
+## Go To can leave a logically selected window behind
+
+The operator found that an obscured pane/window did not come forward. Go To relied on terminal
+focus alone and skipped that command when logical focus already matched. Its fixture assumed
+one active app/window, so it could not distinguish pane selection from foreground visibility.
+Go To now explicitly activates the freshly identified window, then verifies exact window, tab,
+terminal and TTY. New fixtures cover background and logically focused windows, wrong-tab replies
+and activation denial. This closes the source/test gap; the installed handler's actual behavior
+and physical minimized/other-Space cases still need acceptance. A poll can also replace the
+shared navigation error status; retained navigation diagnostics remain an open follow-up.
 
 ## Accepted visual restoration disappears with its controller
 

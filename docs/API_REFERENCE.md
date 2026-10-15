@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.88
+Version: 1.89
 
 ## Private managed-output failure diagnostics
 
@@ -224,6 +224,16 @@ A late report cannot remove a replacement lease; existing clear workers own thei
 Confirmation emits no terminal output. Fresh ordinary colors and newer effects are preserved.
 Independent headless recovery has no GUI report callback; its obsolete-lease bookkeeping remains
 an open source issue. Marker replacement or inactive metadata is not physical recovery proof.
+
+## Exact Go To window activation
+
+Each deliberate Go To resolves the target's current native window from the fresh catalogue,
+checks its ID and sends Ghostty's window-activation command even when its pane is already
+logically selected. Pane focus follows when needed. Success requires the active Ghostty app,
+the expected front window and selected tab, and the exact terminal ID/TTY. Native command
+errors remain failures; activation has no additional subprocess budget. Cached parent IDs,
+titles and window indices are not used. Minimized and other-Space behavior still needs native
+acceptance; logical properties alone do not prove physical window visibility.
 
 ## Fresh native effect preparation
 

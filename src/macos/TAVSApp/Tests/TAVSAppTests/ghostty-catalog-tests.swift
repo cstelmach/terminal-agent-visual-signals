@@ -240,6 +240,43 @@ final class GhosttyCatalogTests: XCTestCase {
         XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 1)
     }
 
+    func testScriptRaisesTheTargetWindowFromBehindAnotherWindow() throws {
+        let context = try nativeContext()
+        context.evaluateScript("""
+        application.frontmost=false; windowInFront=false;
+        application.frontWindow=object({id:'other-window',selectedTab:object({id:'other-tab',
+            focusedTerminal:object({id:'other-terminal',tty:'/dev/ttys002'})})});
+        """)
+        XCTAssertTrue(try focusReply(context).contains("\"focused\":true"))
+        XCTAssertEqual(context.objectForKeyedSubscript("windowInFront")?.toBool(), true)
+        XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 1)
+    }
+
+    func testScriptRaisesTheWindowEvenWhenItsPaneIsAlreadyLogicallyFocused() throws {
+        let context = try nativeContext()
+        context.evaluateScript("focused=terminal.id; selected=true; windowInFront=false;")
+        XCTAssertTrue(try focusReply(context).contains("\"focused\":true"))
+        XCTAssertEqual(context.objectForKeyedSubscript("windowInFront")?.toBool(), true)
+        XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 0)
+    }
+
+    func testScriptWindowActivationFailureStopsPaneFocus() throws {
+        let context = try nativeContext()
+        context.evaluateScript("""
+        Object.defineProperty(window,'activateWindow',{get:function(){window.lastError={code:-1743};}});
+        """)
+        XCTAssertTrue(try focusReply(context).contains("permissionDenied"))
+        XCTAssertEqual(context.objectForKeyedSubscript("calls")?.toInt32(), 0)
+    }
+
+    func testScriptRejectsFocusReportedUnderTheWrongTab() throws {
+        let context = try nativeContext()
+        context.evaluateScript("""
+        window.selectedTab=object({id:'wrong-tab',focusedTerminal:terminal});
+        """)
+        XCTAssertTrue(try focusReply(context).contains("\"focused\":false"))
+    }
+
     func testScriptBatchesMetadataAndPreservesNativeOrderForManySurfaces() throws {
         let context = try nativeContext()
         context.evaluateScript("""
@@ -372,6 +409,7 @@ final class GhosttyCatalogTests: XCTestCase {
         let context = try XCTUnwrap(JSContext())
         context.evaluateScript("""
         var calls = 0, selected = false, focused = 'other', requestedPID, columnReads=0, columnKeys=[];
+        var windowInFront = true;
         var ObjC = {import: function(){}, unwrap: function(value){return value;},deepUnwrap:function(value){return value;}};
         function object(value) { value.valueForKey=function(key){return this[key];}; return value; }
         function array(values) { return {count:values.length,objectAtIndex:function(i){return values[i];},
@@ -385,6 +423,9 @@ final class GhosttyCatalogTests: XCTestCase {
         var window = object({id:'window',tabs:array([tab]),selectedTab:tab});
         var application = object({isRunning:true,frontmost:true,windows:array([window]),
             terminals:array([terminal]),frontWindow:window});
+        Object.defineProperty(window,'activateWindow',{configurable:true,get:function(){
+            windowInFront=true; application.frontmost=true; application.frontWindow=window;
+        }});
         var $ = {SBApplication:{applicationWithProcessIdentifier:function(pid){requestedPID=pid;return application;}}};
         """)
         context.evaluateScript(GhosttyCatalog.script)

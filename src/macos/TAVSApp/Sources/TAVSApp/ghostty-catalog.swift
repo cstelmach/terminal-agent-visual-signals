@@ -268,11 +268,12 @@ final class GhosttyCatalog {
             if (mapped.length !== ids.length || JSON.stringify(ids) !== JSON.stringify(column(app, all, 'id'))) throw {};
             return result;
         }
-        function isFocused(app, request) {
+        function isFocused(app, request, expected) {
             if (!scalar(app, 'frontmost')) return false;
             var window = read(app, 'frontWindow'), tab = read(window, 'selectedTab');
             var terminal = read(tab, 'focusedTerminal');
-            return scalar(terminal, 'id') === request.terminalID && scalar(terminal, 'tty') === request.tty;
+            return scalar(window, 'id') === expected.windowID && scalar(tab, 'id') === expected.tabID
+                && scalar(terminal, 'id') === request.terminalID && scalar(terminal, 'tty') === request.tty;
         }
         try {
             var request = JSON.parse(argv[0]);
@@ -289,7 +290,13 @@ final class GhosttyCatalog {
                 if (missing(target)) return failure('targetUnavailable');
                 if (scalar(target, 'id') !== request.terminalID || scalar(target, 'tty') !== request.tty)
                     return failure('targetUnavailable');
-                if (!isFocused(app, request)) {
+                var window = read(app, 'windows').objectWithID(matches[0].windowID);
+                if (missing(window) || scalar(window, 'id') !== matches[0].windowID)
+                    return failure('targetUnavailable');
+                // Deliberate navigation must raise even an already-selected terminal's window.
+                window.activateWindow;
+                checkError(window);
+                if (!isFocused(app, request, matches[0])) {
                     target.focus;
                     var error = target.lastError;
                     var code = missing(error) ? 0 : Number(error.code);
@@ -297,7 +304,7 @@ final class GhosttyCatalog {
                 }
             }
             var focused = false;
-            if (request.action === 'focus') focused = isFocused(app, request);
+            if (request.action === 'focus') focused = isFocused(app, request, matches[0]);
             return JSON.stringify({surfaces: rows, focused: focused});
         } catch (error) {
             return failure(error.errorNumber === -1743 ? 'permissionDenied' : 'nativeUnavailable');
