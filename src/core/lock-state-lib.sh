@@ -82,28 +82,21 @@ _tavs_lock_native_update() {
     "$helper" --lock-state-update "$(_tavs_lock_state_file)" "$@"
 }
 
-# Usage: _tavs_lock_write <locked> <reason> <lock_until> <unlock_until> <bg> <fg>
-# Atomic tmp+mv into the runtime dir (created 0700 when missing).
-_tavs_lock_write() {
-    local locked="$1" reason="$2" lock_until="$3" unlock_until="$4" bg="$5" fg="$6"
+# Both platforms merge fresh state while holding the same stable mutation mutex.
+_tavs_lock_update() {
     if [[ "$(uname -s)" == Darwin ]]; then
-        _tavs_lock_native_update replace "$locked" "$reason" "$lock_until" "$unlock_until" "$bg" "$fg" >/dev/null
+        _tavs_lock_native_update "$@"
         return $?
     fi
-    local dir
-    dir=$(_tavs_lock_runtime_dir)
-    [[ -d "$dir" ]] || mkdir -m 0700 -p "$dir" || return 1
-    local tmp
-    tmp=$(mktemp "$dir/.lock.XXXXXX") || return 1
-    {
-        printf 'LOCKED="%s"\n' "$locked"
-        printf 'REASON="%s"\n' "$reason"
-        printf 'LOCK_UNTIL_EPOCH="%s"\n' "$lock_until"
-        printf 'UNLOCK_UNTIL_EPOCH="%s"\n' "$unlock_until"
-        printf 'WRITTEN_EPOCH="%s"\n' "$(date +%s)"
-        printf 'LOCK_BG="%s"\n' "$bg"
-        printf 'LOCK_FG="%s"\n' "$fg"
-        printf 'SCHEMA_VERSION="1"\n'
-    } > "$tmp"
-    mv -f "$tmp" "$(_tavs_lock_state_file)"
+    if ! command -v python3 >/dev/null; then
+        printf 'tavs: portable lock state helper unavailable\n' >&2
+        return 1
+    fi
+    PYTHONDONTWRITEBYTECODE=1 python3 "${BASH_SOURCE[0]%/*}/portable_lock_state.py" \
+        "$(_tavs_lock_state_file)" "$@"
+}
+
+# Usage: _tavs_lock_write <locked> <reason> <lock_until> <unlock_until> <bg> <fg>
+_tavs_lock_write() {
+    _tavs_lock_update replace "$@" >/dev/null
 }

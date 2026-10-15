@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.81
+Version: 1.82
 
 ## Private managed-output failure diagnostics
 
@@ -36,7 +36,7 @@ No deadline, identity check, write ordering, retry or publication behavior chang
 helper stages/results through Bats' existing flags; worker intent must also have rendered status
 and its expected physical PTY color. A passing control does not explain a prior failed run.
 
-## Shared native lock-state transactions
+## Shared lock-state transactions
 
 LockStateWriter.update(at:transform:) holds the stable `lock.state.lock` across a checked
 fresh read, merge, semantic comparison and atomic replacement. The regular mutex must be
@@ -60,9 +60,15 @@ before UI or login startup. These verbs perform rule I/O without terminal enumer
 Darwin CLI mutations require a matching native helper. Explicit test helpers override the
 installed path, including unavailable values. The CLI probes the qualifier and never retries
 an operation through an unlocked writer. Grants acquire after the challenge and preserve the
-current record's end/colors. Non-Darwin writes still lack shared serialization; their post-
-challenge reread only narrows the stale window. Older writers that ignore the mutex do not
-participate. Plain-file deadlines cannot preempt blocked syscalls; ACL/TOCTOU limits remain.
+current record's end/colors. Non-Darwin mutations use `portable_lock_state.py` with the same
+`now END BG FG`, `grant END`, and `replace LOCKED REASON END GRANT BG FG` operations after an
+absolute state path. `update(path, operation, values, now, deadline)` holds the stable mutex
+across trusted read, merge and private replacement; it returns the accepted lock end. Its CLI
+uses one 100 ms transaction budget, excluding Python startup/imports. Missing Python, unsafe
+storage, malformed required state and contention fail without an unchecked retry. Successful
+replacement commits the result even if descriptor cleanup reports an error. Sync copies this
+adjacent dependency. Older writers that ignore the mutex do not participate. Plain-file deadlines
+cannot preempt blocked syscalls; ACL/TOCTOU limits remain.
 
 ## Checked native mute projection I/O
 

@@ -23,7 +23,7 @@ _tavs_copy_ordinary_helper_files() {
     for file in helper-selection.sh portable_helper.py portable_context.py portable_metadata.py \
         portable_observation.py portable_intent.py portable_records.py portable_record_io.py \
         portable_render.py portable_renderer.py portable_ownership.py portable_policy.py \
-        portable_device_writer.py portable_process_identity.py; do
+        portable_device_writer.py portable_process_identity.py portable_lock_state.py; do
         [[ ! -L "$destination/$file" && ! -d "$destination/$file" ]] || return 1
         cp "$TAVS_ROOT/src/core/$file" "$destination/$file" || return 1
     done

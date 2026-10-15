@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.91
+Version: 1.92
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -926,3 +926,17 @@ The shared regular reader also rejects unsafe typed-record leaves as EACCES, pre
 difference between untrusted storage and repairable malformed content. A late I/O failure cannot
 be swallowed as disabled restrictions after the original deadline. Regression details and remaining
 Store-write/ancestor-race limits are in the [source check](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#portable-policy-storage-trust-2026-10-15).
+
+## Portable CLI lock updates overwrite a newer accepted definition
+
+The portable writer replaced complete files atomically but read/merge decisions were outside
+any shared mutex. Two successful commands reproduced an accepted eight-hour lock being replaced
+by a stale four-hour update. Grants had the same post-challenge race. Both operations now use
+one trusted read/merge/replace transaction with the stable lock-state mutex. The native route
+is preserved. A new dependency is also copied into installed CLI trees.
+
+Eleven helper cases cover merge/grant, concurrent writers, contention, unsafe storage and
+cleanup failures. Two injected close failures exposed incorrect failure-after-commit reporting
+and a leftover owned temporary; both are fixed. Real CLI mutex and copied-installation cases
+guard the integration. Verification and preserved failed runs are in the
+[source/results](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#portable-lock-mutation-transactions-2026-10-15).

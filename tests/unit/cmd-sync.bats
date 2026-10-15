@@ -73,6 +73,28 @@ sync_fixture() {
     grep -q '^SUSPENDED="false"$' "$HOME/.tavs/visual-restrictions.state"
 }
 
+@test "copied portable lock CLI keeps its transaction dependency and preserves longer locks" {
+    sync_fixture
+    local target
+    for target in "$CACHE" "$MARKET"; do
+        run env TAVS_RUNTIME_DIR="$TEST_DIR/portable-runtime" /bin/bash -p -c '
+export TAVS_ROOT="$1" CLI_DIR="$1/src/cli"
+source "$CLI_DIR/cmd-lock.sh"
+uname(){ printf "Linux\n"; }
+pgrep(){ return 1; }
+_tavs_challenge_verify(){ return 0; }
+cmd_lock now --for 4h || exit 1
+_tavs_lock_read || exit 1
+first="$_LS_LOCK_UNTIL"
+cmd_lock now --for 1h || exit 1
+_lock_unlock --for 15m || exit 1
+_tavs_lock_read || exit 1
+[[ "$_LS_LOCK_UNTIL" == "$first" && "$_LS_UNLOCK_UNTIL" -gt 0 ]]
+' _ "$target"
+        [ "$status" -eq 0 ]
+    done
+}
+
 @test "copied metadata helper works without an installed native companion" {
     sync_fixture
     local target

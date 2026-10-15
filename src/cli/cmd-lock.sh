@@ -94,26 +94,15 @@ _lock_now() {
     new_until=$(( now + seconds ))
 
     _lock_resolve_colors
-    if [[ "$(uname -s)" == Darwin ]]; then
-        if ! new_until=$(_tavs_lock_native_update now "$new_until" "$_LOCK_BG" "$_LOCK_FG"); then
-            cli_error "Could not write lock state"
-            return 1
-        fi
-    else
+    if [[ "$(uname -s)" != Darwin ]]; then
         if ! _tavs_lock_read && [[ "$_LS_READ_STATUS" != absent ]]; then
             cli_error "Lock state unavailable; saved lock preserved."
             return 1
         fi
-        local previous_until
-        if [[ "$_LS_LOCKED" == true ]] \
-            && previous_until=$(_tavs_policy_decimal "$_LS_LOCK_UNTIL") \
-            && (( previous_until > new_until )); then
-            new_until="$previous_until"
-        fi
-        if ! _tavs_lock_write true manual "$new_until" 0 "$_LOCK_BG" "$_LOCK_FG"; then
-            cli_error "Could not write lock state"
-            return 1
-        fi
+    fi
+    if ! new_until=$(_tavs_lock_update now "$new_until" "$_LOCK_BG" "$_LOCK_FG"); then
+        cli_error "Could not write lock state"
+        return 1
     fi
 
     if _tavs_visual_restrictions_suspended; then
@@ -263,17 +252,9 @@ _lock_unlock() {
     fi
 
     # The challenge may take minutes; merge into the current state after it finishes.
-    if [[ "$(uname -s)" == Darwin ]]; then
-        if ! _LS_LOCK_UNTIL=$(_tavs_lock_native_update grant "$grant_until"); then
-            cli_error "Could not write lock state"
-            return 1
-        fi
-    else
-        if ! _tavs_lock_read || ! _tavs_lock_write "$_LS_LOCKED" "$_LS_REASON" \
-            "$_LS_LOCK_UNTIL" "$grant_until" "$_LS_BG" "$_LS_FG"; then
-            cli_error "Could not write lock state"
-            return 1
-        fi
+    if ! _LS_LOCK_UNTIL=$(_tavs_lock_update grant "$grant_until"); then
+        cli_error "Could not write lock state"
+        return 1
     fi
 
     cli_success "Unlocked until $(_lock_format_until "$grant_until")."

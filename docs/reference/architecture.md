@@ -1,7 +1,16 @@
 # Architecture
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.18
+Version: 1.19
+
+## Lock definition transactions
+
+Legacy lock definitions use a separate stable `lock.state.lock` across checked read, merge
+and private replacement. Darwin CLI routes to `LockStateWriter`; other platforms invoke
+`portable_lock_state.py` through `_tavs_lock_update`. Challenges precede grant transactions.
+Both retain the latest accepted definition and apply one 100 ms budget per mutation. Device writes
+keep their independent deadline and recovery suspension still overrides saved definitions.
+The helper copier supplies the Python dependency to synced CLI installations.
 
 ## Current-invocation render transaction
 

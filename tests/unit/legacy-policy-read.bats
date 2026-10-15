@@ -293,6 +293,30 @@ PY
     [[ "$output" == *'re-engages automatically'* && "$output" != *'value too great'* ]]
 }
 
+@test "portable CLI lock and grant share the stable mutation mutex" {
+    write_lock
+    cp "$TAVS_RUNTIME_DIR/lock.state" "$TEST_DIR/lock-before"
+    python3 - "$REPO_ROOT" "$TAVS_RUNTIME_DIR/lock.state" <<'PY'
+import fcntl, os, pathlib, subprocess, sys
+repo, state = sys.argv[1], pathlib.Path(sys.argv[2])
+before = state.read_bytes()
+fd = os.open(str(state) + '.lock', os.O_CREAT | os.O_RDWR, 0o600)
+try:
+    fcntl.flock(fd, fcntl.LOCK_EX)
+    base = ('source "$1/src/cli/cmd-lock.sh"; uname(){ printf "Linux\\n"; }; '
+            'pgrep(){ return 1; }; _tavs_challenge_verify(){ return 0; }; ')
+    for operation in ['cmd_lock now --for 8h', '_lock_unlock --for 15m']:
+        result = subprocess.run(['/bin/bash', '-p', '-c', base + operation, 'portable-cli', repo],
+                                capture_output=True, timeout=3)
+        assert result.returncode == 1, (operation, result.returncode)
+        assert b'Could not write lock state' in result.stdout + result.stderr
+        assert state.read_bytes() == before
+finally:
+    os.close(fd)
+PY
+    cmp "$TEST_DIR/lock-before" "$TAVS_RUNTIME_DIR/lock.state"
+}
+
 @test "interactive unlock choices retain their finite durations" {
     uname() { printf 'Linux\n'; }
     pgrep() { return 1; }
