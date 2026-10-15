@@ -170,3 +170,8 @@ Portable rules/revisions now reject unsafe storage. [Details](legacy-policy-trus
 
 **Phase 9 portable record trust, 2026-10-15: 8f1756c.** 223 portable pass+8 Linux skip;42 shell/copy;674 Swift. [Results](legacy-policy-trust-source-check-2026-10-15.md#portable-record-publication-trust-2026-10-15); [prior lock checkpoint](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-portable-lock-transactions-2026-10-15).
 **Scope:** four Python modules/two tests plus docs. First Swift run failed three timeout assertions; focused/full reruns pass, cause unproven. Next: native/Linux acceptance, default-locale/debug-path follow-up. Goal incomplete.
+
+### Phase 9 debug sink trust: 2026-10-15
+
+**Phase 9 debug sink trust, 2026-10-15: 11e2486.** Six focused cases pass; system106/109 (three focused reruns pass); C-locale Homebrew10/11. Latest unchanged Swift674 has108 failures across59 methods. [Results](legacy-policy-trust-source-check-2026-10-15.md#optional-debug-sink-trust-2026-10-15).
+**Next:** preserve native preview outcome and diagnose operator-reported missing highlight; [observation](PROGRESS_appendix_phase-2_launch-debugging.md#native-preview-observation-2026-10-15). Full verification, final reviews and native/Linux acceptance remain open. Host load140/12 CPUs; cause of failures unproven. Goal incomplete.

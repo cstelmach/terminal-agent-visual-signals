@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.72
+**Version:** 4.73
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -22,7 +22,7 @@ Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-g
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; operator reports no native preview |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 223 portable pass+8 Linux skip; latest Swift674 with108 failures | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 223 portable pass+8 Linux skip; latest full Swift676 with37 failures;677 built | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -896,5 +896,5 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > [Finished portable policy trust](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-portable-policy-trust-2026-10-15).
 
-**Phase 9 debug sink trust, 2026-10-15: 11e2486.** Six focused cases pass; system106/109 (three focused reruns pass); C-locale Homebrew10/11. Latest unchanged Swift674 has108 failures across59 methods. [Results](legacy-policy-trust-source-check-2026-10-15.md#optional-debug-sink-trust-2026-10-15).
-**Next:** preserve native preview outcome and diagnose operator-reported missing highlight; [observation](PROGRESS_appendix_phase-2_launch-debugging.md#native-preview-observation-2026-10-15). Full verification, final reviews and native/Linux acceptance remain open. Host load140/12 CPUs; cause of failures unproven. Goal incomplete.
+**Phase 9 native preview diagnostics, 2026-10-15: 3a579d2.** Expiry retains outcomes; preparation distinguishes colors/mapping. Three new cases pass; real-PTY/full checks remain unstable. [Results](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
+**Next:** fix denied inspection of root-owned login parents in Swift/Python without weakening identity checks. KERN_PROC_PID probe succeeds. Native highlight still fails; staged app remains suspended/Focus Off. Final reviews, full677 and native/Linux acceptance remain open. Goal incomplete.

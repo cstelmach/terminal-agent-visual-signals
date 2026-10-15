@@ -125,3 +125,12 @@ Source inspection confirms automatic expiry resets the attempt result to No prev
 useful result and investigate the native write failure; the root cause is still unknown. The host
 had load averages above140 on12 logical CPUs and many deadline-sensitive test failures. No other
 sessions were controlled or terminated. Docker remains stopped; Linux kernel acceptance is open.
+
+### Native binding blocker identified: 2026-10-15
+
+`3a579d2` adds retained outcomes and phase-specific errors. The updated dedicated app reports
+native-mapping failure before painting, and the operator again sees no highlight. Scoped PID
+reads match valid foreground zsh processes; their privileged login parents return EPERM to the
+current libproc inspector, causing continuingOwner to reject both bindings. A read-only kernel
+query returns full identities. [Source, probes and remaining checks](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
+No native acceptance is passed by this diagnosis. The owner-inspection fix is next.

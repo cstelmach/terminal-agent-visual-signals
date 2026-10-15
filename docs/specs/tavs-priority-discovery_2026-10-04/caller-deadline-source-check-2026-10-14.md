@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.4
+Version: 1.5
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -580,3 +580,43 @@ All catalogue RED/green/connected/full/final logs, variants and launch results a
 the native-acceptance directory above. The staged app/build/cache trees remain at their native
 external working paths. No cache/build/report purge was performed. Next source work is the
 portable lock transaction described in the already saved mutation recon report.
+
+## Native preview outcome and binding diagnosis: 2026-10-15
+
+`3a579d2` retains the current run's outcome after automatic expiry while clearing active state
+and scheduling existing cleanup. Explicit cancellation resets it; unfinished delivery says
+unconfirmed, and late results cannot overwrite a newer attempt. Preparation errors distinguish
+colors from native mapping; typed device/state deadlines retain finite reasons without raw paths.
+The [source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-preview-outcome-source-check-203000.md)
+confirms exact native enumeration precedes the100 ms device deadline. No budget was widened.
+
+The first four focused tests failed four assertions, then passed4/4 after correction. An added
+preparation-phase case failed both branches, then passed. The latest five-case run passes all
+three new cases; two augmented real-PTY cases fail on device deadlines after previously passing.
+Full676 first has3 failures across3 methods; its focused rerun passes3/3. The subsequent full676
+has37 failures across12 methods,13 unexpected,45.803 s (46.047 s elapsed). Current677-test source
+builds, but a full677 run has not been performed. Broader verification remains open.
+
+The isolated app was updated, signed, relaunched and inspected through Computer Use. Its existing
+launcher now refuses a changed native cohort before rebinding the two approved TTY names. Prior
+executables/launcher were preserved. Focus remains Off with recovery suspended. Selecting031
+through TAVS reproduces native-mapping failure; the operator again reports no visible highlight.
+Private CLI color validation/show completes in0.162/0.105 s with valid colors. No Ghostty UI access,
+navigation, working-session termination or production install/settings change occurred.
+
+Scoped native reads return the correct zsh foreground PIDs for031/038, with matching device/group
+metadata. Both zsh processes have root-owned login parents. PROC_PIDTBSDINFO returns0/EPERM for
+those parents, so continuingOwner rejects the binding. Only count/errno from failed calls are
+meaningful; zero-initialized fields do not establish identity. A read-only KERN_PROC_PID probe
+returns full648-byte records for both parents and children, valid matching start times and TTY
+groups, root UID and no P_WEXIT. This is a concrete owner-inspection blocker, not an implemented
+fix or proof that every native failure has this cause. Preserve identity checks when correcting it.
+The [Darwin inspection report](/Volumes/external/agent-data/reports/2026-10-15/tavs-darwin-parent-inspection-source-check-210000.md)
+recommends one primary KERN_PROC_PID snapshot in Swift/Python. SDK compiler checks agree for
+arm64/x86_64. Kernel P_WEXIT is distinct from the old libproc exit bit. The report supplies
+binding/layout details and RED cases; no product implementation or Intel runtime check is claimed.
+
+Complete logs, private color/native/kernel probes, source and executable backups are retained at
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/preview-outcome-20261015-203300/`.
+The staged app and build/cache remain external. Next: replace the denied parent-inspection path,
+then rerun required acceptance and broader checks. The goal remains incomplete.
