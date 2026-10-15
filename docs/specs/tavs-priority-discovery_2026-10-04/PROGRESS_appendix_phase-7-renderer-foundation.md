@@ -197,3 +197,23 @@ Post-recovery 038 preview reports 1/1; the operator visible check on 031 is pend
 **Next:** measure queue/native time and device preparation; inspect the saved source map
 `/Volumes/external/agent-data/reports/2026-10-15/tavs-device-prepare-cost-explorer-220300.md`.
 Keep the app open, suspended and Focus Off. Final reviews/native/Linux cases remain; goal incomplete.
+
+### Phase 9 accepted restoration and native preview: 2026-10-15
+`bd9ac3b` adds opt-in writer timing; `1bfe0b5` retains accepted cleanup and preview expiry.
+Three owner-release PTY REDs now pass; seven focused cases pass. Full Swift 687: one skip,
+12 assertions fail in seven existing methods; all 77 controller tests pass. Goal incomplete.
+The operator confirms a visible tint, two-second restoration and retained TAVS keyboard focus.
+Go To foregrounding fails for obscured windows; the test app remains open, suspended/Focus Off.
+[Full results and retained logs](caller-deadline-source-check-2026-10-14.md#accepted-restoration-ownership-2026-10-15).
+**Next:** fix Go To foregrounding and verification, then trace remaining scheduler/device deadlines.
+Scope: two connected controller source/test paths and existing reference/progress docs.
+
+### Phase 9 explicit window activation: 2026-10-15
+`c31b822` activates the freshly identified window on Go To and checks exact parent/pane identity.
+Two new cases fail before the fix; catalogue 23/23 passes afterward. Full Swift 691: one skip,
+six assertions fail in four methods; Focus Off setup has missing bytes before owner release.
+The isolated bundle was backed up, signature-verified and relaunched after exact cohort checks.
+It retains priorities, suspension and Focus Off. Obscured-window foreground acceptance is pending.
+[Full source/native results and retained logs](caller-deadline-source-check-2026-10-14.md#explicit-native-window-activation-2026-10-15).
+**Next:** resolve visible foregrounding, retained Go To errors, queue bounds and device deadlines.
+Scope: two native catalogue source/test paths and existing reference/progress docs. Goal incomplete.

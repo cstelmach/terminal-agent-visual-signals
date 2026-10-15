@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.9
+Version: 1.10
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -824,3 +824,64 @@ The operator clarified the navigation result: a pane/window behind another windo
 brought to the foreground. The earlier pane-focus confirmation therefore does not accept the
 full Go To contract. Native navigation remains failed for obscured windows. Inspect the command,
 application activation and foreground verification before another visible navigation attempt.
+
+## Explicit native window activation: 2026-10-15
+
+The [foreground source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-go-to-foreground-explorer-234100.md)
+confirmed that the old script used terminal focus alone, skipping it when logical pane focus
+already matched. The fixture assumed an active app and a single front window. Two new cases
+model an inactive application/background window and a logically focused but obscured window;
+both fail before the correction, with three assertions in 4.262 s (4.267 s elapsed). This
+reproduces a source-contract gap, not the installed handler's precise runtime failure cause.
+
+`c31b822` resolves the window by its fresh catalogue ID and activates it for every deliberate
+Go To. It checks native command errors and verifies the resulting active app, front window,
+selected tab, terminal ID and TTY. It uses no cached parent, guessed title, index or input.
+The existing request timeout and device deadline are unchanged. Additional cases cover a
+wrong-tab reply and activation denial before pane focus. Focused catalogue 23/23 passes in
+2.386 s (2.391 s elapsed). Full Swift 691 has one skip and six failures across four methods,
+four unexpected, 34.565 s (34.677 s elapsed). Its catalogue 23/23 passes in 2.414 s (2.418 s elapsed).
+
+The remaining failures are one Broadcaster preparation timeout and three controller methods:
+Focus Off owner-release setup, preview intent-change expiry and globally masked focus. The
+owner-release case fails at its initial paint/read before the caller releases the controller;
+its later ownership assertions are not reached. This does not establish why the bytes are
+missing, and the earlier 687-run result remains historical. No unchanged full rerun followed.
+
+Only the isolated app was quit. The following AX read returned procNotFound, and a process-path
+check confirmed it had stopped. Its complete previous bundle is preserved. The new executable
+was copied into that bundle, ad-hoc signed, signature-verified and launched only after the
+guard revalidated the original two-surface cohort. Computer Use confirms two rows, retained
+High/Normal priorities, zero selection, suspension and Focus Off. The production app was
+untouched. The new app also contains the previously committed restoration-ownership repair.
+
+The operator has been asked to put the dedicated window behind another window and use Go To
+for 031. Physical foregrounding is pending. Minimized/other-Space and other required native
+cases remain unverified. A catalogue refresh can erase the shared navigation-error text, and
+Go To lacks the snapshot caller's queue-residence deadline; both remain source follow-ups.
+Neither is treated as proof of this particular foreground failure. Goal completion remains open.
+
+Full logs, before source and the prior signed test bundle are retained in
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/go-to-foreground-20261015-234705/`.
+
+Process-volume check before this note, `cfad0db..c31b822` plus owned pending documentation:
+98 production-source additions, 459 test additions, 536 SPEC-package/capture additions and
+72 reference-doc additions. Counting all SPEC/capture lines as process gives 5.47:1. Those
+records produced five production commits: two Darwin-inspector repairs, mapping-only queries,
+accepted cleanup ownership and explicit window activation. The profiler also supported keeping
+guards instead of unmeasured write removal. Next effort belongs to native acceptance and the
+remaining failures; this check adds no workflow machinery or cleanup instruction.
+
+The [bounded AGY lookup failed](/Volumes/external/agent-data/reports/2026-10-15/tavs-ghostty-foreground-agy-research-234200.md)
+at its 600-second print cap. The adapter rejected partial output despite wrapper exit 0; no
+research finding was accepted, retried or substituted. The Ghostty/Apple implementation
+comparison remains unanswered by that run. Its raw diagnostic snapshot is preserved under
+`agy-failed-research/` in the retained foreground directory above, beyond its ephemeral `/tmp`
+producer path. Local dictionary/source checks and physical acceptance remain separate evidence.
+
+Final operator result after the updated bundle: only blue selection tint, no foregrounding and
+no focus change. Go To remains FAILED. This establishes selection activity, not delivery of its
+button action. Navigation status retention, Table hit testing/style/disabled state and native
+failure are the next diagnostic branches. No navigation-status or button-style change was made.
+The operator requested a later-time checkpoint; the goal was already paused. Resume from the
+[Checkpoint Summary](PROGRESS.md#checkpoint-summary-2026-10-15-paused) before further implementation.

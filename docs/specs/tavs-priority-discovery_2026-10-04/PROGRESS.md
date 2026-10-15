@@ -3,10 +3,12 @@
 **Spec:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/SPEC.md
 **Plan:** /Users/cs/local/code/apps/terminal-agent-visual-signals/docs/specs/tavs-priority-discovery_2026-10-04/PLAN.md
 **Status:** In Progress
-**Mode:** Autonomous goal (active after operator resumption)
+**Mode:** Paused at operator-requested checkpoint; native goal already paused
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.76
+**Version:** 4.78
+
+**Resume here:** [Checkpoint Summary](#checkpoint-summary-2026-10-15-paused).
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -20,9 +22,9 @@ Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-g
 | 4: Observations and ordinary background intent | DONE | 2026-10-12 11:41 | 2026-10-12 13:08 | Feature hashes below | 273 Swift; 55 Bats; 230 Python | 87 min | Record-only; fixture UI verified |
 | 5: Persistent suspension and policy readers | DONE | 2026-10-12 13:23 | 2026-10-12 14:04 | Feature hashes below | 288 Swift; 110 Bats; 230 Python | 41 min | Reader/projection foundation; fixture UI |
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
-| 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; operator reports no native preview |
+| 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Basic preview/timing/input-focus passed; broader native cases pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | Python234:6 fail/15 error/8 skip; Swift687:12 failures/1 skip | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | Python234:6 fail/15 error/8 skip; Swift691:6 failures/1 skip | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -33,7 +35,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 ## Appendices
 - [Review source checkpoints](PROGRESS_appendix_phase-9_review-source-checkpoints.md)
-- [PROGRESS_appendix_phase-9_focus-poll-coalescing.md](PROGRESS_appendix_phase-9_focus-poll-coalescing.md): completed polling source fix.
+- [PROGRESS_appendix_phase-9_focus-poll-coalescing.md](PROGRESS_appendix_phase-9_focus-poll-coalescing.md): polling source fix and historical source checkpoint index.
 - [PROGRESS_appendix_phase-9_ordinary-helper-routing.md](PROGRESS_appendix_phase-9_ordinary-helper-routing.md): completed core and standalone routing.
 - [PROGRESS_appendix_phase-2_launch-debugging.md](PROGRESS_appendix_phase-2_launch-debugging.md): finished launch/Dock source corrections.
 - [PROGRESS_appendix_phase-1.md](PROGRESS_appendix_phase-1.md): completed Phase 1 source log.
@@ -666,114 +668,7 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 
 > [Finished occurrence-foundation pointer](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
-### Phase 9 controller and controls
-
-> Finished source/fixture checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 first review corrections
-
-> Finished four-fix checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 final reviews and confirmed closure
-
-> Finished review/empty-catalogue checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 priority-suite correction
-
-> Finished isolated-test repair: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 unknown-cue correction
-
-> Finished availability/renewal correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 delayed restore correction
-
-> Finished synthetic-restore correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 recovery classification
-
-> Finished registry-reporting correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 native device admission
-
-> Finished admission correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 independent preview clear
-
-> Finished queue correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 focus cancellation evidence
-
-> Finished prerequisite: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 per-target focus retirement
-
-> Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 recovery-stable reconciliation
-
-> Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 delivery reporting and retry
-
-> Finished correction: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 helper compatibility diagnostic
-
-> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md). H1 remains open.
-
-### Phase 9 measured helper cost
-
-> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 per-TTY cached lookup
-
-> Finished checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
-### Phase 9 preview preparation and replacement cleanup
-
-> Finished source checkpoints: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-> Historical managed-reset failure attribution remains unproven; current suite evidence is below.
-
-### Phase 9 standalone metadata correction
-
-> Finished metadata/source-sync checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-> H1 rendering and historical deadline attribution remain open in current entries below.
-
-### Phase 9 fixture and identity/device foundations
-
-> Finished source checkpoints: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-> Historical failures and Linux/native acceptance remain unresolved in current entries.
-
-> [Portable reader checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
-
-### Phase 9 portable ownership guard
-
-> Finished source checkpoint: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-> Historical failure attribution, Linux and native acceptance remain open below.
-
-> [Intent publication checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
-
-> [Ordinary transaction checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-> [Forced-reset checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
-
-> [Reconcile checkpoint](PROGRESS_appendix_phase-9-foundation.md). Full goal incomplete.
-
-> [Context/publication checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-> [Caller/no-output checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-> [Dispatcher checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-> [Unbound intent checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-> [Capability/delivery checkpoint](PROGRESS_appendix_phase-9-foundation.md). Goal incomplete.
-
-### Phase 9 ordinary helper routing and delivery
-
-> Finished source checkpoints: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
-> Linux/native acceptance and historical initial-paint attribution remain open below.
+> [Historical Phase 9 source checkpoint index](PROGRESS_appendix_phase-9_focus-poll-coalescing.md#historical-phase-9-source-checkpoint-index).
 
 ### Phase 9 continuing focus color refresh: 2026-10-14 10:52 CEST
 
@@ -804,17 +699,7 @@ approval answer arrived. Native phases 2/7/8 remain Blocked and phase 9 remains 
 
 > Finished checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
 
-### Phase 9 current reviews and schedule-load fix: 2026-10-14 12:46 CEST
-[Codex full review](current-codex-review-2026-10-14.md): three calls, 118 supplied entries.
-[Claude partial review](current-claude-review-2026-10-14.md): eight calls; final delivery/CLI call
-exited 1 with empty diagnostics. No retry/substitute. AGY's developer fingerprint prerequisite
-still blocks provider dispatch; neither source review establishes UAT.
-> Finished source 2: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
-
-> Finished schedule-load scope: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
-Next: fresh native/recovery checks, projection/release retries and compatibility/isolation fixes.
-Linux ordinary code remains incomplete. Native 2/7/8 remain Blocked, 9 In Progress. No real install,
-settings/schedules/native action or shutdown. SPEC/PLAN unchanged; full goal active and incomplete.
+> [Historical review and schedule-load checkpoint](PROGRESS_appendix_phase-9_focus-poll-coalescing.md#phase-9-current-reviews-and-schedule-load-fix-2026-10-14-1246-cest).
 
 ### Phase 9 fresh native effect validation: 2026-10-14 13:45 CEST
 > Finished source 7: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
@@ -887,12 +772,126 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > [Finished preview diagnostics and mapping/recovery checkpoint](PROGRESS_appendix_phase-7-renderer-foundation.md#phase-9-native-preview-diagnostic-source-checkpoints).
 
-### Phase 9 accepted restoration and native preview: 2026-10-15
-`bd9ac3b` adds opt-in writer timing; `1bfe0b5` retains accepted cleanup and preview expiry.
-Three owner-release PTY REDs now pass; seven focused cases pass. Full Swift 687: one skip,
-12 assertions fail in seven existing methods; all 77 controller tests pass. Goal incomplete.
-The operator confirms a visible tint, two-second restoration and retained TAVS keyboard focus.
-Go To foregrounding fails for obscured windows; the test app remains open, suspended/Focus Off.
-[Full results and retained logs](caller-deadline-source-check-2026-10-14.md#accepted-restoration-ownership-2026-10-15).
-**Next:** fix Go To foregrounding and verification, then trace remaining scheduler/device deadlines.
-Scope: two connected controller source/test paths and existing reference/progress docs.
+> [Accepted restoration and basic native preview](PROGRESS_appendix_phase-7-renderer-foundation.md#phase-9-accepted-restoration-and-native-preview-2026-10-15).
+
+> [Window-activation source attempt](PROGRESS_appendix_phase-7-renderer-foundation.md#phase-9-explicit-window-activation-2026-10-15).
+
+## Checkpoint Summary: 2026-10-15, paused
+
+### State, delivered work and decisions
+
+The operator requested this checkpoint to continue later. The native Codex goal is already
+paused. Implementation remains incomplete: phases 2/7/8 need native acceptance; phase 9 has
+unresolved source/test and acceptance work. SPEC body and PLAN remain unchanged. This section
+and [the full results](caller-deadline-source-check-2026-10-14.md) supersede earlier optimism.
+
+- `bd9ac3b`: opt-in owned-PTY writer profiler through existing callbacks. Five focused
+  operations passed; these samples do not establish a timeout distribution or cause.
+- `1bfe0b5`: retained accepted preview clear, queued Focus Off and timer setup/expiry after
+  caller release. Three controlled REDs reproduced missing reset bytes or active metadata.
+  Seven focused cases pass afterward; expiry also releases the controller. Virtual timers
+  cancel at teardown. The app normally retains its model, so ordinary window-close failure
+  is not established. This repair does not explain all historical timeout failures.
+- `520ebd7`: saved restoration/native results and corrected initial Go To acceptance.
+- `c31b822`: explicitly activates the freshly mapped window, including an already-selected
+  pane, then verifies active app/window/tab/terminal/TTY. Four new catalogue cases cover
+  background/already-selected windows, wrong-tab replies and activation denial. This source
+  is committed and loaded in the isolated app; its physical Go To result still FAILS.
+
+Keep D01-D18, exact native identity, visual-only effects and original deadlines. The writer
+caller remains 100 ms; snapshot queue wait and native work share two seconds. Successful timing
+samples and static I/O counts do not justify guard removal or an assumed host-load explanation.
+Go To lacks snapshot's outer queue-residence deadline, and catalogue polling can erase its
+shared navigation error. Both remain source follow-ups; neither proves the live failure cause.
+
+### What worked and what failed
+
+The operator confirmed a brief blue tint after Clear Selection and selecting 031, original
+background restoration after about two seconds, and keyboard focus retained in TAVS. These
+basic preview/timing/input-focus checks pass for that attempt. TAVS also reported fresh 1/1
+delivery. Duplicate titles/directories were distinguishable by TTY, and High/Normal priorities
+survived guarded relaunch. Broader native acceptance is not implied by these results.
+
+Go To FAILED twice. The initial pane-focus confirmation was qualified: an obscured window
+stayed behind. After the updated bundle, the operator reported only blue tint, nothing coming
+forward and no change in focus. The tint proves selection ran; whether Go To ran is UNKNOWN.
+Do not retain the earlier navigation success or add activation calls before checking dispatch.
+`navigationStatus` and explicit Table button styling were considered but NOT implemented.
+Hit testing, a disabled control, native timeout/error and activation behavior remain hypotheses.
+
+The AGY primary-source lookup hit its 600-second print cap. The adapter rejected partial output
+despite wrapper exit 0. No findings were accepted, retried or substituted. The actual Ghostty/
+Apple activation-handler comparison remains unanswered. Installed dictionary declarations and
+fixtures cannot substitute for physical foregrounding. Failure diagnostics are retained.
+
+### Verification and unresolved failures
+
+- Ownership checks: 7/7 pass, 0.597 s. Full Swift 687: one skip, 12 failed assertions across
+  seven methods, eight unexpected. All 77 controller tests pass in that historical run.
+- Foreground RED: two methods, three failed assertions. Corrected catalogue: 23/23 pass,
+  2.386 s. Latest full Swift 691: one skip, six failed assertions across four methods, four
+  unexpected, 34.565 s. Its 23 catalogue cases pass. The full suite is not green.
+- Latest failing methods:
+  Broadcaster: `testCachedPlainClearUsesLatestIntentAndNeverReplaysHistoricalTitleOrAlert`.
+  FocusController: `testAcceptedFocusOffFinishesAfterItsOwnerIsReleased`,
+  `testExpiryRestoresIntentChangedDuringPreview`, and
+  `testGlobalMaskedFocusRenewsItsMetadataWithoutRotatingTheEffect`.
+  Complete logs are retained. The new Focus Off test fails during initial paint/read,
+  before owner release; later ownership assertions are not reached. No unchanged full retry.
+- Linux kernel checks remain unrun. The operator planned to start Docker after jobs. Its two
+  known sockets were absent at the last check; refresh availability when resuming.
+- Native multiselection/Clear/Escape, changed ordinary intent, moved/closed/reused surfaces,
+  Manual/Automatic focus, themes/Spaces/minimization and broader recovery remain unverified.
+  Final independent reviews are incomplete. Historical provider failures are not approvals.
+
+### Learned constraints and failed approaches not to repeat
+
+Clear Selection before repeating a preview on the same row. Expiry retains result text and
+selection, so an old 1/1 is not a fresh request. Suspension permits explicit preview. Another
+runtime can write the same TTY, but a running process or metadata-only polling proves no
+actual overwrite. Do not infer the earlier missing tint's cause from the later success.
+Do not loop native focus, guess titles, inject input, add hooks or cross-runtime arbitration.
+Computer Use denied Ghostty access; obtain physical observations without bypassing the denial.
+A documentation recheck once added a surplus newline and failed, but its shell group continued.
+The corrected reconstruction matched exactly. Keep dependent verification/mutations fail-fast.
+
+### Next concrete actions on resumption
+
+1. Read this checkpoint/results and inspect Git. Source is committed through `c31b822`.
+2. Trace the Table button into `SessionsModel.goTo`, its callback and native request. Make
+   navigation start/result persist separately from catalogue polling, with a focused regression.
+   Through the owned TAVS UI, verify the button action actually fires, rather than selection only.
+3. If dispatch fails, inspect Table hit testing/style/disabled state. An explicitly bordered
+   button is a candidate, not an accepted fix. If dispatch occurs, retain the exact error and
+   investigate activation. Do not treat fixture focus properties as visible window acceptance.
+4. Rebuild only the staged test app, preserve its old bundle and revalidate the cohort. Repeat
+   obscured-window Go To, then remaining native cases. Keep source and physical results distinct.
+5. Trace the latest real-PTY failure's original callback stages. Run affected checks and a full
+   isolated suite after a relevant change. Finish Linux cases and reviews when available.
+
+### Runtime, recovery, evidence and dirty files
+
+Bundle and guarded `Launch TAVS Native Test.command`:
+`/Volumes/external/agent-data/scratch/terminal-agent-visual-signals/native-acceptance/20261015-180639-d93516/`.
+Last launch: exactly `/dev/ttys031` and `/dev/ttys038`, High/Normal, suspension and Focus Off.
+The executable contains `c31b822` plus the ownership repair. Production TAVS, working terminals,
+real installation/settings/schedules are untouched. Private state is `/tmp/tavs-native-uat-af39rot1`;
+allowed-surfaces JSON and launcher pin the original Ghostty generation/native IDs. After a crash,
+paths or TTYs can be stale. Do not bare-launch or silently substitute newly reused surfaces.
+
+Retained diagnostics, source variants, prior bundle and AGY failure snapshot:
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/go-to-foreground-20261015-234705/`.
+Profiler/ownership diagnostics and originals:
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/writer-preparation-20261015-221632/`.
+Read the retained wrappers for complete build/test commands. Use `tests/run-isolated.sh` and
+explicit `TAVS_TEST_HELPER_BIN`. Relative to `/Volumes/external/agent-data/`, owned paths are:
+build `builds/terminal-agent-visual-signals/swift-debug/20261015-174233-bd669d`;
+cache `cache/swift/terminal-agent-visual-signals/20261015-174233-bd669d`;
+config/security parent `scratch/terminal-agent-visual-signals/swift-failure-repro/20261015-174233-bd669d`
+(children `swift-config` and `swift-security`). Helper: build's `arm64-apple-macosx/debug/TAVSApp`.
+Scope compiler TMPDIR externally; actual test roots stay private because external writable
+parents correctly fail trust checks. Never run real-home scheduling E2E or unisolated suites.
+
+The Phase 2 launch appendix and Phase 9 ordinary-helper appendix have unrelated edits (12 and
+five added lines at checkpoint start). Preserve them and exclude them from owned staging.
+No cleanup was performed. Continue only on operator resumption; the goal stays paused/incomplete.
