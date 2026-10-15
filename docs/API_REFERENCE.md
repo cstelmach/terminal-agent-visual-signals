@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.87
+Version: 1.88
 
 ## Private managed-output failure diagnostics
 
@@ -244,6 +244,12 @@ generation/device, revision and automatic-source guards still apply inside outpu
 Native query failure stops new renewal while preserving logical sets/cues and recoverable leases.
 Known producer exit is resolved before requiring a fresh emphasized binding. Extra native IDs
 enter through ordinary catalogue refresh, not through the effect revalidation callback.
+
+An accepted preview retains its controller through timer setup and the two-second expiry or
+explicit cancellation. Preview-clear and Focus Off jobs retain it through the recovery batch.
+Restoration is therefore still attempted if the UI owner releases that object before dispatch
+within a running process. Per-target completion and original writer deadlines remain unchanged;
+the later UI status callback retains its weak ownership.
 
 ## Continuing focus color refresh
 

@@ -70,7 +70,8 @@ final class FocusControllerTests: XCTestCase {
                             clearQueue: DispatchQueue = DispatchQueue(label: "test.preview-clear", attributes: .concurrent),
                             snapshot: (() throws -> [GhosttySurface])? = nil,
                             colors: ((ProcessGeneration) throws -> TerminalRenderer.Colors)? = nil) -> FocusController {
-        FocusController(state: state, recovery: recovery, restrictions: restrictions, timers: timers,
+        addTeardownBlock { timers.cancelAll() }
+        return FocusController(state: state, recovery: recovery, restrictions: restrictions, timers: timers,
             clock: clock, queue: queue, clearQueue: clearQueue, nativeSnapshot: snapshot ?? {
                 if let error = self.nativeError { throw error }
                 return self.nativeRows
@@ -834,6 +835,42 @@ final class FocusControllerTests: XCTestCase {
         XCTAssertEqual(poll(&ready, 1, 20), 0)
     }
 
+    func testAcceptedFocusOffFinishesAfterItsOwnerIsReleased() throws {
+        let a = try surface(10), b = try surface(20)
+        let bindings = Dictionary(uniqueKeysWithValues: try [a,b].map {
+            (try XCTUnwrap($0.tty), try XCTUnwrap(state.captureTarget(for: $0)).physicalTarget)
+        })
+        let bTarget = try XCTUnwrap(state.captureTarget(for: b))
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        let runner = MockProcessRunner(), native = SystemProcessRunner(), lock = NSLock()
+        var bClears = 0
+        runner.managedBeforeOpenHandler = { path, outputLock, beforeOpen, afterWrite, prepare in
+            let binding = try XCTUnwrap(bindings[path])
+            if path == a.tty && beforeOpen != nil { entered.signal(); release.wait() }
+            if path == b.tty && beforeOpen != nil { lock.lock(); bClears += 1; lock.unlock() }
+            return try native.writeManagedToDevice(path: path, lockURL: outputLock,
+                beforeOpen: beforeOpen, target: binding, afterWrite: afterWrite, prepare: prepare)
+        }
+        configureState(runner: runner)
+        let preparation = DispatchQueue(label: "focus.owner-release.preparation")
+        var focus: FocusController? = controller(MockTimerScheduler(), queue: preparation)
+        focus!.focusSelected([b], catalogue: [a,b]); awaitManual(focus!); _ = try read(0)
+        focus!.focusOff()
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        focus!.focusSelected([a], catalogue: [a,b]); awaitManual(focus!); _ = try read(1)
+        preparation.sync {}
+        focus!.focusOff()
+        focus = nil
+        release.signal()
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertEqual(try read(1), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertFalse(try state.currentEffectUnlocked(bTarget, kind: .focus, deadline: .max)?.active ?? false)
+        lock.lock(); let count = bClears; lock.unlock()
+        print("ClearLifetime focus_b_clear_calls=\(count)")
+        XCTAssertEqual(count, 1)
+    }
+
     func testManualRefreshesChangedColorsOncePerUpdateAndRetainsUnchangedLeaseIDs() throws {
         let a = try surface(10), b = try surface(20), c = try surface(30), rows = [a,b,c]
         let guardLock = NSLock()
@@ -1544,6 +1581,56 @@ final class FocusControllerTests: XCTestCase {
         }
         _ = try read(2)
         focus.clearPreview(); _ = try read(2)
+    }
+
+    func testAcceptedPreviewClearFinishesAfterItsOwnerIsReleased() throws {
+        let row = try surface(10), target = try XCTUnwrap(state.captureTarget(for: row))
+        let preparation = DispatchQueue(label: "preview.owner-release.preparation")
+        let clearing = DispatchQueue(label: "preview.owner-release.clear")
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        clearing.async { entered.signal(); release.wait() }
+        defer { release.signal() }
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        var focus: FocusController? = controller(MockTimerScheduler(), queue: preparation, clearQueue: clearing)
+        focus!.preview([row]); awaitPaint(focus!, count: 1); _ = try read(0)
+        preparation.sync {}
+        weak var owner = focus
+        focus!.clearPreview()
+        focus = nil
+        print("ClearLifetime owner_alive_before_dispatch=\(owner != nil)")
+        release.signal()
+        clearing.sync {}
+        XCTAssertFalse(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.active ?? false)
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testPreviewExpiryRestoresAfterItsOwnerIsReleased() throws {
+        let row = try surface(10), target = try XCTUnwrap(state.captureTarget(for: row))
+        let timers = MockTimerScheduler()
+        let preparation = DispatchQueue(label: "preview.expiry-owner.preparation")
+        let clearing = DispatchQueue(label: "preview.expiry-owner.clear")
+        let entered = DispatchSemaphore(value: 0), release = DispatchSemaphore(value: 0)
+        defer { release.signal() }
+        var focus: FocusController? = controller(timers, queue: preparation, clearQueue: clearing, colors: { _ in
+            entered.signal(); release.wait()
+            return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+        })
+        focus!.preview([row])
+        XCTAssertEqual(entered.wait(timeout: .now() + 1), .success)
+        weak var owner = focus
+        focus = nil
+        release.signal(); preparation.sync {}
+        let projected = expectation(description: "Queued UI projection finished")
+        DispatchQueue.main.async { projected.fulfill() }
+        wait(for: [projected], timeout: 1)
+        _ = try read(0)
+        XCTAssertTrue(try XCTUnwrap(state.currentEffectUnlocked(target, kind: .preview, deadline: .max)).active)
+        print("ClearLifetime expiry_owner_alive=\(owner != nil)")
+        clock.advance(by: 2); timers.fireAll()
+        clearing.sync {}
+        XCTAssertFalse(try state.currentEffectUnlocked(target, kind: .preview, deadline: .max)?.active ?? false)
+        XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+        XCTAssertNil(owner)
     }
 
     func testFailedColorPreparationReportsUnavailableWithoutAnExpiryOrPaint() throws {

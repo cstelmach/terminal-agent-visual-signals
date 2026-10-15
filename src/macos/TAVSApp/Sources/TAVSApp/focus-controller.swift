@@ -80,11 +80,12 @@ final class FocusController: ObservableObject {
                 if accepted { run.targets = targets; run.previewStartedAt = startedAt }
                 self.lock.unlock()
                 guard accepted else { return }
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.matchesID(run) else { return }
+                // Keep the accepted preview's undo alive through timer setup and expiry.
+                DispatchQueue.main.async {
+                    guard self.matchesID(run) else { return }
                     let remaining = max(0, startedAt + 2 - self.clock.now().timeIntervalSince1970)
-                    self.timers.scheduleOnce(after: remaining, on: .main) { [weak self] in
-                        guard let self = self, self.matchesID(run) else { return }
+                    self.timers.scheduleOnce(after: remaining, on: .main) {
+                        guard self.matchesID(run) else { return }
                         self.clearPreview(preservingOutcome: true)
                     }
                 }
@@ -162,8 +163,8 @@ final class FocusController: ObservableObject {
             }
             lock.unlock()
             let completions = clears, predecessors = prior
-            clearQueue.async { [weak self] in
-                guard let self = self else { for clear in completions.values { clear.leave() }; return }
+            // Accepted restoration must finish even after its UI owner releases this controller.
+            clearQueue.async {
                 let operation = ManagedVisualOperation.clearPreview(effectID: run.id, revision: run.revision,
                     awaitPriorClear: { target, deadline in
                         if let prior = predecessors[target.physicalTarget],
@@ -613,11 +614,8 @@ final class FocusController: ObservableObject {
         for lease in leases { lease.clearing = true; lease.finished.enter() }
         lock.unlock()
         guard !leases.isEmpty else { return }
-        focusClearQueue.async { [weak self] in
-            guard let self = self else {
-                for lease in leases { lease.finished.leave() }
-                return
-            }
+        // Focus Off restoration also outlives the UI owner's reference.
+        focusClearQueue.async {
             DispatchQueue.concurrentPerform(iterations: leases.count) { index in
                 _ = self.clearFocusLease(leases[index])
             }

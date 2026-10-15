@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.97
+Version: 1.98
+
+## Accepted visual restoration disappears with its controller
+
+Preview timer setup/expiry and both clear queues weakly captured their controller, skipping
+restoration if that object was released. Controlled owned-PTY tests reproduced active
+preview/focus metadata and missing reset bytes after the caller released its owner. The preview
+and queued jobs now retain the controller through expiry/cancellation and bounded recovery.
+The same tests receive reset bytes and inactive metadata. Target validation, predecessor
+ordering and deadlines are preserved. The app normally
+retains its model, so this does not establish an ordinary window-close failure or explain all
+historical suite failures.
 
 ## Effect snapshots spend their mapping budget on display metadata
 
