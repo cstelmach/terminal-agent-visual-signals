@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.73
+**Version:** 4.74
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -22,7 +22,7 @@ Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-g
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; operator reports no native preview |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 223 portable pass+8 Linux skip; latest full Swift676 with37 failures;677 built | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | Python234:6 fail/15 error/8 skip; Swift681:49 failures | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -63,18 +63,7 @@ Checkpoints report hashes without separate self-referencing state commits.
 
 > Finished review: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
-Live checks are unverified. `cua.getApp("Ghostty")` was denied for safety. Selecting the separate
-fixture bundle then failed because the Mac is locked and automatic unlock could not complete.
-The operator was asked to unlock; no response or alternative screen/control route was used.
-The test bundle has fake rows and simulated navigation, so it cannot prove native pane/Space focus.
-Window resizing, GUI multiselection, window-close timer lifecycle, Automation permission, exact
-native pane navigation, hidden/minimized windows and other Spaces still require acceptance.
-
-Next input: manually unlock the Mac for fixture UI checks, then obtain supported Ghostty tool access
-or direct operator observations on dedicated native targets. Do not retry unchanged access failures,
-paint working terminals or substitute title matching. Phase 2 stays Blocked; the master goal is
-incomplete. The sequential plan's dependent phases have not started. Preserve this tested source
-checkpoint and resume acceptance from here rather than rebuilding the feature.
+> Historical native-access checkpoint: [Phase 2 appendix](PROGRESS_appendix_phase-2_launch-debugging.md).
 
 ### Phase 2 started: 2026-10-12 09:25 CEST
 
@@ -898,3 +887,10 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 **Phase 9 native preview diagnostics, 2026-10-15: 3a579d2.** Expiry retains outcomes; preparation distinguishes colors/mapping. Three new cases pass; real-PTY/full checks remain unstable. [Results](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
 **Next:** fix denied inspection of root-owned login parents in Swift/Python without weakening identity checks. KERN_PROC_PID probe succeeds. Native highlight still fails; staged app remains suspended/Focus Off. Final reviews, full677 and native/Linux acceptance remain open. Goal incomplete.
+
+**Phase 9 Darwin identity, 2026-10-15: 66a402f, efe7b98.** Root-parent REDs now pass.
+Swift 8/8 and Python 14/14 pass; exact dedicated login-owner generations verify.
+Full/control runs retain unresolved deadline failures. Native preview now times out in mapping.
+[Results and retained diagnostics](caller-deadline-source-check-2026-10-14.md#public-darwin-identity-and-the-next-native-timeout-2026-10-15).
+**Next:** reduce display-only work in fresh mapping snapshots without weakening validation or
+budgets, then verify native delivery. Final reviews/native/Linux acceptance remain open.

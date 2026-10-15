@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.5
+Version: 1.6
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -620,3 +620,46 @@ Complete logs, private color/native/kernel probes, source and executable backups
 `/Volumes/external/agent-data/retained/terminal-agent-visual-signals/preview-outcome-20261015-203300/`.
 The staged app and build/cache remain external. Next: replace the denied parent-inspection path,
 then rerun required acceptance and broader checks. The goal remains incomplete.
+
+## Public Darwin identity and the next native timeout: 2026-10-15
+
+`66a402f` and `efe7b98` replace Darwin identity inspection with public `KERN_PROC_PID`
+snapshots in Swift and Python. Both preserve birth-time, TTY and strict parent-walk checks.
+Swift uses the SDK structure; Python validates the compiler-checked 648-byte arm64/x86_64
+layout and keeps executable-path lookup independent. Linux code and both deadlines stay fixed.
+The previously failing root-parent regression is GREEN: Swift 8/8 in 0.004 s and Python 14/14
+in 0.052 s, including independent libproc parity and a real Python PTY. A scoped read with the
+new Python implementation verifies both original dedicated shells and their exact retained
+login-owner generations. It does not establish physical delivery.
+
+The full portable run executes 234 cases in 33.785 s: 6 failures, 15 errors, 8 Linux skips.
+Full Swift 681 has 49 failures across 26 methods, 30 unexpected, 61.436 s (61.806 s elapsed).
+All 8 identity cases also pass in that full run. Failures include deadline errors and dependent
+state/byte assertions; they remain unresolved. An isolated prior-libproc renderer control has
+33 cases with 1 deadline error in 3.799 s. The current-inspector renderer control has 33 cases
+with 4 failures and 20 errors in 9.756 s. These runs are not controlled enough to assign cause.
+The first stdin-based control executed no tests because the isolation wrapper closes stdin;
+its empty success is excluded. The corrected controls use a saved script/module selection.
+
+An interleaved own-process comparison makes 200 reads per implementation. Prior-libproc
+median/p95/max are 0.00446/0.02475/1.04729 ms; current-sysctl are 0.02633/0.31592/54.84542 ms.
+One sample does not establish a performance distribution, but its latency tail stays a risk.
+No tests, budgets or guards were relaxed to obtain passing results.
+
+The previous isolated executable is preserved. The updated bundle was signed, signature-
+verified and launched only after the original native cohort matched. Computer Use confirms
+two rows, retained High/Normal priorities, suspension and Focus Off. Selecting 031 reports
+`Preview unavailable: resolving native terminal mapping timed out.` No visible highlight or
+successful writer entry is claimed. No Ghostty UI, navigation or real installation was used.
+
+The [queue source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-native-preview-queue-source-check-213600.md)
+matches current source: a snapshot's 2 s budget includes waiting behind an in-flight refresh,
+then a second complete scan. Display metadata is fetched even for mapping-only consumers.
+This is a possible timeout schedule, not a demonstrated cause of this attempt. Next try the
+smallest mapping-only query, preserving fresh ID/TTY/PID/hierarchy validation and both bounds;
+measure the result before claiming queue contention resolved. Final reviews and required
+native/Linux acceptance remain open. The app stays suspended with Focus Off.
+
+Complete test logs, both controls, timing/owner probes and source/executable backups are in
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/darwin-process-identity-20261015-211800/`.
+Build/cache and active scratch remain at their external native paths. No cleanup was performed.

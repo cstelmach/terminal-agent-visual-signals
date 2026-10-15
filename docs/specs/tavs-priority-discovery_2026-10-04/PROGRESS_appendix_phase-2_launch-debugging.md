@@ -134,3 +134,18 @@ reads match valid foreground zsh processes; their privileged login parents retur
 current libproc inspector, causing continuingOwner to reject both bindings. A read-only kernel
 query returns full identities. [Source, probes and remaining checks](caller-deadline-source-check-2026-10-14.md#native-preview-outcome-and-binding-diagnosis-2026-10-15).
 No native acceptance is passed by this diagnosis. The owner-inspection fix is next.
+
+### Earlier Phase 2 native-access checkpoint
+
+Live checks are unverified. `cua.getApp("Ghostty")` was denied for safety. Selecting the separate
+fixture bundle then failed because the Mac is locked and automatic unlock could not complete.
+The operator was asked to unlock; no response or alternative screen/control route was used.
+The test bundle has fake rows and simulated navigation, so it cannot prove native pane/Space focus.
+Window resizing, GUI multiselection, window-close timer lifecycle, Automation permission, exact
+native pane navigation, hidden/minimized windows and other Spaces still require acceptance.
+
+Next input: manually unlock the Mac for fixture UI checks, then obtain supported Ghostty tool access
+or direct operator observations on dedicated native targets. Do not retry unchanged access failures,
+paint working terminals or substitute title matching. Phase 2 stays Blocked; the master goal is
+incomplete. The sequential plan's dependent phases have not started. Preserve this tested source
+checkpoint and resume acceptance from here rather than rebuilding the feature.
