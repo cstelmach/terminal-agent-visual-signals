@@ -1,7 +1,7 @@
 # macOS Menu Bar Companion App
 
 **Version:** 3.0.0
-**Last Updated:** 2026-10-12
+**Last Updated:** 2026-10-15
 **Requires:** macOS 13+ (Ventura or later)
 
 The TAVS menu bar app adds two capabilities that shell hooks alone cannot provide:
@@ -26,7 +26,7 @@ This command:
 3. Creates a self-signed certificate for codesigning (one-time, you'll see a
    Keychain prompt)
 4. Signs the bundle (falls back to ad-hoc if cert creation fails)
-5. Copies to `/Applications/TAVS.app`
+5. Stages and validates the replacement beside `/Applications/TAVS.app`, preserving the prior app
 6. Launches the app and registers it as a login item
 
 After install, a menu bar icon appears (hexagonal grid when active,
@@ -81,8 +81,17 @@ This preserves:
 ./tavs install macos-app
 ```
 
-The install command replaces any existing installation. Your settings and
-schedule are preserved since they live in `~/.tavs/`.
+The install command validates the copied executable, bundle metadata and signature before
+stopping the existing app. It then moves the prior bundle into a private
+`/Applications/.tavs-install.XXXXXX/previous/TAVS.app` directory and activates the replacement.
+Your settings and schedule remain in `~/.tavs/`.
+
+Copy or validation failure leaves the prior installation and process alone. Activation failure
+restores the prior bundle when the destination is free; otherwise it preserves the conflicting
+destination and prints the retained prior-bundle path. It returns failure before launch.
+The stopped app is not automatically relaunched on failure. The two moves are not crash-atomic:
+after interruption, inspect the printed staging directory for the prior bundle. Successful
+updates also retain that bundle; remove it manually only when you no longer need it.
 
 ---
 

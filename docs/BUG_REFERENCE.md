@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.80
+Version: 1.81
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -889,9 +889,9 @@ Real provider hooks, Ghostty rendering and later recovery/focus ownership remain
 Resolved isolation source work and its remaining Python checks:
 [details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#test-fixtures-escape-their-intended-private-roots).
 
-## Development app runs without showing Sessions
+## Development app launch and replacement failures
 
-Resolved fixture launch work; native acceptance remains pending:
+Resolved fixture launch and app-replacement preservation; native acceptance remains pending:
 [details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#development-app-runs-without-showing-sessions).
 
 ## Isolated launch rejects the valid `/tmp` alias

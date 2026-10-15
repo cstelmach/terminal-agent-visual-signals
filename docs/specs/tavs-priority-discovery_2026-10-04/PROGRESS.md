@@ -6,17 +6,9 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.56
+**Version:** 4.57
 
-## Session Metadata
-
-| Field | Value |
-|---|---|
-| Agent Model | GPT-6 family self-report; exact served variant unobserved |
-| Max Iterations | Not set; manual invocation |
-| Context Strategy | One mode/phase per execute-spec invocation |
-| Initial Source | e113fb8 |
-| State Directory | The dated SPEC package, not the root hard-lock state |
+Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
 ## Phases
 
@@ -898,3 +890,10 @@ Legacy completion: [source/results](release-retry-source-check-2026-10-14.md#leg
 
 Linux ordinary: [source/checks](portable-linux-identity-research-2026-10-13.md#schema-2-integration-2026-10-15).
 Kernel checks await operator-started Docker after current jobs; eight Linux cases remain unrun.
+
+### Phase 9 safe app replacement: 2026-10-15
+N2 fixed: copied bundle validation precedes process handling; guarded moves retain/restore prior app.
+26 isolated Bats cases and real signed private-bundle checks pass; [details](current-codex-review-2026-10-14.md#n2-app-replacement-correction-2026-10-15).
+Scope divergence: existing app installer plus a new isolated suite and relevant docs, for review N2.
+Initial metadata moved unchanged to planning appendix; round trip verified. SPEC/PLAN unchanged.
+Next: S3 child-installer errors or Linux after operator-started Docker; native acceptance remains open.

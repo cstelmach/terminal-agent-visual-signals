@@ -1,7 +1,7 @@
 # Test isolation and development launch bug history
 
-Last Updated: 2026-10-14 (Europe/Vienna)
-Version: 1.0
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.1
 
 > Parent: [Bug Reference](BUG_REFERENCE.md)
 > Earlier source corrections moved unchanged; pending acceptance limits are retained.
@@ -68,3 +68,21 @@ Personal-root and escaping-fixture rejection tests still pass.
 
 Further evidence and remaining acceptance:
 [progress log](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
+
+## App replacement copy removes the prior installation
+
+The installer removed the installed bundle before its final copy. A failed copy could leave
+the app missing or partial. Normal CLI errexit stopped the success print but did not save it.
+The replacement is now copied beside the destination and its executable, plist identity and
+signature validated before process handling. Guarded same-volume moves retain the old bundle;
+failed activation restores it or reports its preserved path without overwriting a conflict.
+Explicit failure propagation prevents launch even when caller errexit is suppressed.
+
+Prevention: eleven isolated cases cover partial/corrupt copies, invalid metadata/signature,
+activation/rollback failure, no-clobber skips, destination types, first install and dry-run.
+All eleven plus fifteen sync regressions pass. A real signed private bundle also passes
+replacement and both static headless capability probes. Process operations were stubbed;
+no production install/launch, login registration or native acceptance was performed.
+The prior app remains retained after success. Two renames are not crash-atomic, and restoring
+its bundle does not relaunch a stopped process.
+See [update recovery](reference/macos-menubar-app.md#update).

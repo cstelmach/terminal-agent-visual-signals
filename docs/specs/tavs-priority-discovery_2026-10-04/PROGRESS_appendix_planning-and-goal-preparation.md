@@ -39,3 +39,15 @@ Do not run shell regression suites before the isolation phase. If interrupted, r
 and PLAN.md, then select the next incomplete phase through execute-spec.
 
 > Current execution: [PROGRESS.md](PROGRESS.md).
+
+## Session Metadata
+
+| Field | Value |
+|---|---|
+| Agent Model | GPT-6 family self-report; exact served variant unobserved |
+| Max Iterations | Not set; manual invocation |
+| Context Strategy | One mode/phase per execute-spec invocation |
+| Initial Source | e113fb8 |
+| State Directory | The dated SPEC package, not the root hard-lock state |
+
+Current execution state: [PROGRESS.md](PROGRESS.md).

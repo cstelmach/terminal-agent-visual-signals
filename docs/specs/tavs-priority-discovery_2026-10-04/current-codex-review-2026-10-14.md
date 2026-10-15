@@ -728,3 +728,29 @@ and hard syscall bounds remain outside this correction. Shell/portable trust, he
 feedback, palette release, Linux ordinary support, final reviews and native acceptance remain
 open. All earlier timing failures, plus i5itEP's four failures, remain unattributed. Goal/Phase9
 remain incomplete; SPEC/PLAN bodies are fixed.
+
+## N2 app replacement correction, 2026-10-15
+
+Current installer source now stages on the destination volume and validates the copied executable,
+plist syntax/identity and strict signature before process handling. Guarded moves retain the prior
+bundle without merging; activation failure restores it only to a free destination. A conflict or
+failed restoration preserves and reports the prior path. Main command propagation also works
+when caller errexit is suppressed. Dry-run stays mutation-free. Two moves are not crash-atomic;
+restoring the bundle does not relaunch the stopped app. Successful updates retain the prior copy.
+
+Verification: 9RvzjJ baseline has 8/9 failures, including actual prior-file loss. X96exD has 9/9
+passing; nlwLvo and final MRnm0e each have 26/26 passing (11 installer, 15 sync). The first O5wldI
+run was invalid evidence: canonical fixture paths did not match an aliased wrapper root, so its
+path guard rejected all calls. Canonicalizing the test root fixed the harness before behavioral RED.
+8HZPkW uses real copy/moves, ad-hoc signing and strict signature verification on an owned private
+bundle with the source-built release helper. Replacement and both static headless capability
+probes pass; process/open commands are stubbed. Bash 3.2 syntax and diff checks pass. A source-only
+Explore follow-up found no further actionable defect after two missing discriminating tests were
+added: real mv-n skip and full-command conditional invocation. This is source assessment, not a
+new provider or physical acceptance verdict. Historical provider VETO remains unchanged.
+
+Reports, original logs and prior files are retained in
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-install-replacement-ngeg6cgh/`.
+No production install/launch, settings/schedule edit, terminal paint or process shutdown occurred.
+N2 is corrected in source; S3 remains a separate child-installer fix. Earlier Swift/portable full
+suite failures and native/Linux acceptance stay unresolved. Goal/Phase 9 remain incomplete.

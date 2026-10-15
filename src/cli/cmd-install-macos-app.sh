@@ -35,7 +35,7 @@ Steps performed:
   2. Assemble .app bundle in /tmp/TAVS-build/
   3. Create/reuse self-signed certificate (TAVS-Local-Signing)
   4. Codesign the bundle (ad-hoc fallback if cert fails)
-  5. Copy to /Applications/TAVS.app
+  5. Stage and validate the replacement; preserve the prior app
   6. Launch and register as login item
 
 Requirements:
@@ -57,7 +57,7 @@ EOF
     _assemble_bundle
     _generate_icon
     _codesign_bundle
-    _install_bundle
+    _install_bundle || return 1
     _launch_and_register
 
     if [[ "$_DRY_RUN" != "true" ]]; then
@@ -356,11 +356,38 @@ _install_bundle() {
     cli_bold "Installing to $_TAVS_APP_DEST..."
 
     if [[ "$_DRY_RUN" == "true" ]]; then
-        echo "  Would kill existing TAVS.app if running"
-        echo "  Would copy: $_TAVS_BUILD_DIR/TAVS.app → $_TAVS_APP_DEST"
+        echo "  Would stage and validate: $_TAVS_BUILD_DIR/TAVS.app beside $_TAVS_APP_DEST"
+        echo "  Would then stop TAVSApp, preserve the prior app, and activate the replacement"
         echo ""
         return
     fi
+
+    if [[ -L "$_TAVS_APP_DEST" || ( -e "$_TAVS_APP_DEST" && ! -d "$_TAVS_APP_DEST" ) ]]; then
+        cli_error "Refusing unexpected app destination: $_TAVS_APP_DEST"
+        return 1
+    fi
+
+    local parent="${_TAVS_APP_DEST%/*}" name="${_TAVS_APP_DEST##*/}" stage staged previous=''
+    stage=$(mktemp -d "$parent/.tavs-install.XXXXXX") || {
+        cli_error "Cannot stage replacement beside $_TAVS_APP_DEST"
+        return 1
+    }
+    staged="$stage/$name"
+    echo "  Staging replacement in $stage"
+    if ! cp -R "$_TAVS_BUILD_DIR/TAVS.app" "$staged"; then
+        cli_error "Replacement copy failed; prior app preserved. Staging retained at $stage"
+        return 1
+    fi
+    if [[ ! -d "$staged" || ! -f "$staged/Contents/MacOS/TAVSApp" ||
+          ! -x "$staged/Contents/MacOS/TAVSApp" ]] ||
+        ! plutil -lint "$staged/Contents/Info.plist" >/dev/null 2>&1 ||
+        [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$staged/Contents/Info.plist" 2>/dev/null)" != "$_TAVS_BUNDLE_ID" ||
+           "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$staged/Contents/Info.plist" 2>/dev/null)" != TAVSApp ]] ||
+        ! codesign --verify --deep --strict "$staged" >/dev/null 2>&1; then
+        cli_error "Staged app validation failed; prior app preserved. Staging retained at $stage"
+        return 1
+    fi
+    mkdir "$stage/previous" || return 1
 
     if pgrep -x TAVSApp &>/dev/null; then
         echo "  Stopping existing TAVS.app..."
@@ -368,12 +395,37 @@ _install_bundle() {
         sleep 1
     fi
 
+    # Same-volume moves preserve the prior bundle without merging app resources.
+    if [[ -L "$_TAVS_APP_DEST" || ( -e "$_TAVS_APP_DEST" && ! -d "$_TAVS_APP_DEST" ) ]]; then
+        cli_error "App destination changed; refusing replacement. Staging retained at $stage"
+        return 1
+    fi
     if [[ -d "$_TAVS_APP_DEST" ]]; then
-        echo "  Replacing existing installation..."
-        rm -rf "$_TAVS_APP_DEST"
+        previous="$stage/previous/$name"
+        if ! mv -n "$_TAVS_APP_DEST" "$stage/previous/" ||
+            [[ -e "$_TAVS_APP_DEST" || -L "$_TAVS_APP_DEST" || ! -d "$previous" ]]; then
+            cli_error "Cannot preserve prior app; inspect $_TAVS_APP_DEST and $stage"
+            return 1
+        fi
+        echo "  Previous app retained at $previous"
     fi
 
-    cp -R "$_TAVS_BUILD_DIR/TAVS.app" "$_TAVS_APP_DEST"
+    # mv -n can skip an occupied destination and return success; check the source too.
+    if ! mv -n "$staged" "$parent/" || [[ -e "$staged" || -L "$staged" ]]; then
+        if [[ -n "$previous" ]]; then
+            if [[ ! -e "$_TAVS_APP_DEST" && ! -L "$_TAVS_APP_DEST" ]] &&
+                mv -n "$previous" "$parent/" && [[ ! -e "$previous" && ! -L "$previous" ]]; then
+                cli_error "Replacement activation failed; previous app restored to $_TAVS_APP_DEST"
+            else
+                cli_error "Replacement activation failed; previous app retained at $previous"
+                cli_error "Inspect $_TAVS_APP_DEST before restoring it; destination was not overwritten"
+            fi
+        else
+            cli_error "Replacement activation failed; staging retained at $stage"
+        fi
+        return 1
+    fi
+
     echo "  Installed to $_TAVS_APP_DEST"
 
     # Remove quarantine if present
