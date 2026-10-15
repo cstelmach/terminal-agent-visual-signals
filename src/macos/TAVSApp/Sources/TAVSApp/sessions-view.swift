@@ -47,7 +47,9 @@ struct SessionsView: View {
                 Text("Saved schedules and locks may apply immediately. Focus stays Off.").font(.caption)
             }
             if model.focusMode == .automatic {
-                Text("Automatic uses observed permission episodes. Go To acknowledges cues present when navigation begins.")
+                Text("Automatic uses newly observed High-priority permission requests and response completions. "
+                     + "Completion means the response ended, without confirming task success. "
+                     + "Successful Go To acknowledges cues present when navigation begins.")
                     .font(.caption)
             }
             if let status = model.recoveryStatus { Text(status).font(.callout) }

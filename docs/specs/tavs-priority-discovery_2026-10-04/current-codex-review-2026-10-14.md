@@ -817,3 +817,10 @@ S4 is corrected in source with Mac shell evidence. Linux kernel acceptance, mixe
 workers and native Ghostty acceptance are unverified. The prior Swift full-suite failures remain;
 Swift source was untouched and was not rerun here. This is a source disposition, not a new final
 provider verdict. Historical VETO and the active/incomplete goal remain unchanged.
+
+## N3 help correction: 2026-10-15
+
+Automatic help now names newly observed High permission requests and response completions,
+states that response completion does not confirm task success, and conditions acknowledgement
+on successful Go To. Isolated source build RqLGWi passes in 10.89 seconds. This text-only change
+adds no behavioral test; native presentation remains unverified. The reducer is unchanged.
