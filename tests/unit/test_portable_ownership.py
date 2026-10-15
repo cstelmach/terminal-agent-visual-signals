@@ -12,11 +12,12 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
-from portable_ownership import Store
+from portable_ownership import Store, _binding, _physical
 from portable_policy import Policy
 from portable_records import key, read_record, target_path
 import portable_device_writer as writer
 from portable_process_identity import inspect
+from test_portable_records import linux_generation
 
 
 def generation(pid, seconds=100):
@@ -40,6 +41,24 @@ class PortableOwnershipTests(unittest.TestCase):
                            process_missing=lambda p: p in self.missing, device=lambda path: 123,
                            descriptor_device=lambda fd: 123, clock=lambda: 1000)
         self.target = {"tty": self.tty, "device": 123, "ttyOwner": self.owner}
+
+    def test_linux_scope_survives_binding_keys_and_cannot_cross_owner_chain(self):
+        for pid, process in self.identities.items():
+            process["generation"] = linux_generation(pid)
+        producer = self.identities[43]["generation"]
+        owner = self.identities[100]["generation"]
+        target = {"tty": "/dev/pts/43", "device": 123, "ttyOwner": owner}
+        other = linux_generation(100)
+        other["linuxScope"]["pidNamespace"][1] += 1
+        changed = dict(target, ttyOwner=other)
+        self.assertNotEqual(_physical(target), _physical(changed))
+        self.assertNotEqual(_binding(target), _binding(changed))
+        self.assertEqual(self.store.status(changed, 2**63-1), "vanished")
+        self.assertEqual(self.store.resolve(target["tty"], producer, 2**63-1), target)
+        self.identities[100]["generation"] = other
+        with self.assertRaises(OSError):
+            self.store.resolve(target["tty"], producer, 2**63-1)
+        self.assertFalse(self.store.directory.exists())
 
     def deadline(self):
         return time.monotonic_ns() + 100_000_000
@@ -261,7 +280,13 @@ class OwnedPTYFixture:
             data.extend(os.read(self.master, 256))
         self.tty = data.decode().strip()
         self.producer_pid = int((self.root / "producer-pid").read_text()) if getattr(self, "child_producer", False) else self.actor
-        self.producer = inspect(self.producer_pid)["generation"]
+        source = inspect(self.producer_pid)
+        until = time.monotonic() + 1
+        while source is None and sys.platform == "linux" and time.monotonic() < until:
+            time.sleep(0.001)
+            source = inspect(self.producer_pid)
+        self.assertIsNotNone(source, "Owned process generation unavailable")
+        self.producer = source["generation"]
         self.runtime = self.root / "runtime"
         self.marker = self.root / "home/visual-restrictions.state"
         self.marker.parent.mkdir()

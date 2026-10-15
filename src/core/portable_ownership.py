@@ -8,7 +8,7 @@ import time
 
 from portable_policy import check_deadline
 from portable_process_identity import continuing_owner, device_number, inspect
-from portable_records import _target as validate_shape, key, read_record, target_path
+from portable_records import _target as validate_shape, generation_key, key, read_record, target_path
 
 
 def _missing(pid):
@@ -34,7 +34,7 @@ def _device_missing(path):
 
 def _physical(target):
     owner = target["ttyOwner"]
-    return target["tty"], target["device"], owner["pid"], owner["startSeconds"], owner["startMicroseconds"]
+    return target["tty"], target["device"], generation_key(owner)
 
 
 def _binding(target):
@@ -197,7 +197,8 @@ class Store:
                         raise OSError(errno.EINVAL, "Unbound visual intent")
                     target = saved["target"]
                     if (record["tty"] != target["tty"] or record.get("device") != target["device"]
-                            or record.get("producer") is None):
+                            or record.get("producer") is None or record["schema"] != saved["schema"]
+                            or record["producer"].get("linuxScope") != target["ttyOwner"].get("linuxScope")):
                         raise OSError(errno.EINVAL, "Unbound visual intent")
                 else:
                     target = record["target"]

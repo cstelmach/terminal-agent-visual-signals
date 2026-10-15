@@ -1,7 +1,7 @@
 # Finished Phase 9 source checkpoints
 
 Last Updated: 2026-10-15
-Version: 1.17
+Version: 1.18
 
 `52102fe` replaces indefinite Run.colors reuse with one fresh lookup per prepared focus update.
 Only an accepted changed pair retires same-run leases; existing ownership cleanup/replacement
@@ -880,3 +880,10 @@ plus existing docs. No native acceptance, provider final approval or latency res
 ### Phase 9 record-read preparation: 2026-10-15
 
 Six reader cases pass; [results](caller-deadline-source-check-2026-10-14.md#record-buffer-checkpoint).
+
+### Phase 9 occurrence foundation
+
+> Finished reducer/classifier log: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
+
+
+Current Linux source: [integration/results](portable-linux-identity-research-2026-10-13.md).

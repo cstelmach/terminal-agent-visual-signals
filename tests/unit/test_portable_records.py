@@ -10,7 +10,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
-from portable_records import decode, read_record, target_path
+from portable_records import decode, generation_key, read_record, target_path
 
 
 GENERATION = {"pid": 43, "startSeconds": 100, "startMicroseconds": 123}
@@ -20,11 +20,93 @@ EFFECT = {"schema": 1, "target": TARGET, "controller": GENERATION,
           "heartbeatAt": 990, "active": True, "revision": {"device": 0, "inode": 0}}
 
 
+LINUX_SCOPE = {"bootID": "00000000-0000-0000-0000-000000000043",
+               "pidNamespace": [4, 4026531836], "timeNamespace": [4, 4026531834],
+               "timeOffsets": [[0, 0], [0, 0]]}
+
+
+def linux_generation(pid=43, scope=None):
+    return {"pid": pid, "startSeconds": 2_000_000_000, "startMicroseconds": 123,
+            "linuxScope": copy.deepcopy(LINUX_SCOPE if scope is None else scope)}
+
+
 def parse(value, kind="effect"):
     return decode(json.dumps(value).encode(), kind, now=1000)
 
 
 class PortableRecordTests(unittest.TestCase):
+    def test_linux_schema_two_keeps_scoped_birth_separate_from_wall_time(self):
+        producer = linux_generation()
+        target = {"tty": "/dev/pts/43", "device": 123, "ttyOwner": producer}
+        self.assertEqual(parse({"schema": 2, "target": target}, "target")["target"], target)
+        intent = {"schema": 2, "tty": target["tty"], "device": 123, "producer": producer,
+                  "deliveryID": "delivery-43", "updatedAt": 990, "background": "#123456"}
+        self.assertEqual(parse(intent, "intent"), intent)
+        observation = {k: v for k, v in intent.items() if k not in {"updatedAt", "background"}}
+        observation.update(provider="claude", verifiedAgent=False, state="complete", observedAt=990)
+        self.assertEqual(parse(observation, "observation"), observation)
+        effect = dict(EFFECT, schema=2, target=target, controller=linux_generation(44))
+        self.assertEqual(parse(effect), effect)
+        with self.assertRaises(ValueError):
+            parse(dict(intent, updatedAt=1001), "intent")
+
+    def test_linux_scopes_and_schema_mixes_reject_before_authority(self):
+        base = {"schema": 2, "target": {"tty": "/dev/pts/43", "device": 123,
+                                       "ttyOwner": linux_generation()}}
+        invalid_scopes = [{}, dict(LINUX_SCOPE, unknown=1), dict(LINUX_SCOPE, bootID="not-a-boot"),
+                          dict(LINUX_SCOPE, pidNamespace=[True, 1]),
+                          dict(LINUX_SCOPE, timeNamespace=[4, 0]),
+                          dict(LINUX_SCOPE, pidNamespace=[4, 2**64]),
+                          dict(LINUX_SCOPE, timeOffsets=[[0, 0]]),
+                          dict(LINUX_SCOPE, timeOffsets=[[0, 10**9], [0, 0]]),
+                          dict(LINUX_SCOPE, timeOffsets=[[2**63, 0], [0, 0]])]
+        for scope in invalid_scopes:
+            invalid = copy.deepcopy(base); invalid["target"]["ttyOwner"]["linuxScope"] = scope
+            with self.subTest(scope=scope), self.assertRaises(ValueError):
+                parse(invalid, "target")
+        for invalid in (dict(base, schema=1), dict(base, schema=True),
+                        {"schema": 2, "target": TARGET},
+                        dict(base, target=dict(base["target"], nativeSurface=None))):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                parse(invalid, "target")
+        controller = linux_generation(44)
+        controller["linuxScope"]["timeOffsets"][0][0] = 1
+        with self.assertRaises(ValueError):
+            parse(dict(EFFECT, schema=2, target=base["target"], controller=controller))
+        for tty in ("/dev/pts/00", "/dev/pts/-1", "/dev//pts/43", "/dev/pts/4/3", "/dev/tty"):
+            with self.subTest(tty=tty), self.assertRaises(ValueError):
+                parse(dict(base, target=dict(base["target"], tty=tty)), "target")
+
+    def test_linux_generation_keys_include_every_scope_field_and_fit_a_component(self):
+        values = [linux_generation()]
+        paths = [("bootID",), ("pidNamespace", 0), ("pidNamespace", 1),
+                 ("timeNamespace", 0), ("timeNamespace", 1),
+                 ("timeOffsets", 0, 0), ("timeOffsets", 0, 1),
+                 ("timeOffsets", 1, 0), ("timeOffsets", 1, 1)]
+        for path in paths:
+            changed = linux_generation()
+            parent = changed["linuxScope"]
+            for part in path[:-1]:
+                parent = parent[part]
+            if path == ("bootID",):
+                parent[path[-1]] = LINUX_SCOPE["bootID"][:-2] + "44"
+            else:
+                parent[path[-1]] += 1
+            values.append(changed)
+        keys = [generation_key(value) for value in values]
+        self.assertEqual(len(set(keys)), len(values))
+        reordered = linux_generation()
+        reordered["linuxScope"] = dict(reversed(list(reordered["linuxScope"].items())))
+        self.assertEqual(generation_key(reordered), keys[0])
+        large = linux_generation(2**31-1)
+        large.update(startSeconds=2**64-1, startMicroseconds=999999)
+        large["linuxScope"].update(pidNamespace=[2**64-1, 2**64-1],
+                                   timeNamespace=[2**64-1, 2**64-1],
+                                   timeOffsets=[[-2**63, 999999999], [-2**63, 999999999]])
+        self.assertLessEqual(len(generation_key(large).encode("ascii")), 255)
+        target = {"tty": "/dev/pts/43", "device": 123, "ttyOwner": values[0]}
+        self.assertIn(keys[0], target_path(Path("/runtime/organizer"), target, "target.json").parts)
+
     def test_native_target_effect_shapes_and_canonical_placement(self):
         self.assertEqual(parse(EFFECT), EFFECT)
         target = copy.deepcopy(TARGET)

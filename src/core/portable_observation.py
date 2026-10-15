@@ -13,7 +13,7 @@ from portable_records import StaleRecordError, decode, key
 def publish_observation(store, context, tty, state):
     deadline = time.monotonic_ns() + 100_000_000
     validate_context(context, store.clock())
-    record = {"schema": 1, "tty": tty, "provider": context["provider"],
+    record = {"schema": context["schema"], "tty": tty, "provider": context["provider"],
               "verifiedAgent": context["verifiedAgent"], "state": state,
               "deliveryID": context["deliveryID"], "observedAt": context["observedAt"]}
     for field in ("device", "producer", "event", "responseID"):

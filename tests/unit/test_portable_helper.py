@@ -16,9 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
 import portable_helper as helper
 import portable_metadata as metadata
 from portable_context import encode_context, decode_context
-from portable_records import StaleRecordError, key
+from portable_records import StaleRecordError, generation_schema, key
 import portable_record_io as records
 import test_portable_ownership as fixture
+from test_portable_records import linux_generation
 
 
 def render_input(color="#123456"):
@@ -30,7 +31,8 @@ def render_input(color="#123456"):
 class PortableHelperTests(unittest.TestCase):
     def test_distinct_ordinary_capability_claims_no_native_control_or_recovery(self):
         args = ["helper", "--validate-config", "--portable-ordinary-capabilities"]
-        with patch("portable_helper.capture") as capture, patch("portable_helper.read_input") as read:
+        with patch("portable_helper.capture") as capture, patch("portable_helper.read_input") as read, \
+                patch("portable_helper.inspect", return_value={"generation": fixture.generation(43)}):
             self.assertEqual(helper.run(args, self.environment), (0, b"tavs-portable-ordinary-schema=1\n", b""))
         capture.assert_not_called()
         read.assert_not_called()
@@ -38,14 +40,54 @@ class PortableHelperTests(unittest.TestCase):
         self.assertEqual(helper.run([], self.environment)[0], 1)
         env = dict(self.environment, TAVS_SESSIONS_TEST_ROOT="")
         self.assertEqual(helper.run(args, env)[0], 1)
-        with patch("portable_helper.sys.platform", "linux"):
+        with patch("portable_helper.sys.platform", "unsupported"):
             self.assertEqual(helper.run(args, self.environment)[0], 1)
         with patch("portable_helper.inspect", return_value=None):
             self.assertEqual(helper.run(args, self.environment)[0], 1)
         self.assertFalse(Path(self.runtime).exists())
         self.assertFalse(Path(self.marker).exists())
 
+    def test_linux_capability_requires_current_scoped_identity(self):
+        args = ["helper", "--validate-config", "--portable-ordinary-capabilities"]
+        with patch("portable_helper.sys.platform", "linux"), \
+                patch("portable_helper.inspect", return_value={"generation": linux_generation()}):
+            self.assertEqual(helper.run(args, self.environment),
+                             (0, b"tavs-portable-ordinary-schema=1\n", b""))
+        with patch("portable_helper.sys.platform", "linux"), \
+                patch("portable_helper.inspect", return_value={"generation": fixture.generation(43)}):
+            self.assertEqual(helper.run(args, self.environment)[0], 1)
+        self.assertFalse(Path(self.runtime).exists())
+
+    def test_linux_dispatch_keeps_schema_two_and_avoids_darwin_temp_api(self):
+        producer = linux_generation()
+        context = dict(self.context, schema=2, producer=producer, device=123)
+        token = encode_context(context, time.time())
+        args = ["helper", "--managed-render", self.marker, self.runtime, "/dev/pts/43", token, "0"]
+        with patch("portable_helper.sys.platform", "linux"), \
+                patch("portable_helper.os.confstr", side_effect=AssertionError("Darwin-only API")), \
+                patch("portable_helper.device_number", return_value=123), \
+                patch("portable_helper.inspect", return_value={"generation": producer, "device": 123}), \
+                patch("portable_helper.caller_ancestor", return_value=producer), \
+                patch("portable_helper.read_input", return_value=render_input()), \
+                patch("portable_helper.Renderer") as renderer:
+            renderer.return_value.render.return_value = True
+            self.assertEqual(helper.run(args, self.environment), (0, b"rendered\n", b""))
+            record = renderer.return_value.render.call_args.args[1]
+            self.assertEqual(record["schema"], 2)
+            self.assertEqual(record["producer"], producer)
+        native_token = encode_context(dict(self.context, producer=fixture.generation(43), device=123), time.time())
+        with patch("portable_helper.sys.platform", "linux"), \
+                patch("portable_helper.Renderer") as renderer:
+            self.assertEqual(helper.run(args[:5] + [native_token, "0"], self.environment)[0], 1)
+            renderer.assert_not_called()
+        self.assertFalse(Path(self.runtime).exists())
+
     def setUp(self):
+        # Native-format unit fixtures; real platform/process behavior has separate PTY classes.
+        platform = patch("portable_helper.sys.platform", "darwin")
+        platform.start(); self.addCleanup(platform.stop)
+        temporary = patch("portable_helper.os.confstr", return_value=str(Path(os.environ["TAVS_TEST_ROOT"]).parent))
+        temporary.start(); self.addCleanup(temporary.stop)
         self.root = Path(tempfile.mkdtemp(prefix="helper-", dir=os.environ["TAVS_TEST_ROOT"]))
         self.environment = dict(os.environ, HOME=str(self.root / "home"), TAVS_RUNTIME_DIR=str(self.root / "runtime"))
         self.marker = str(self.root / "home/.tavs/visual-restrictions.state")
@@ -236,7 +278,10 @@ _tavs_render_flush
 
     def test_installed_shell_startup_registers_owned_pty_without_checkout_in_bash_and_zsh(self):
         repo = Path(__file__).resolve().parents[2]
-        for shell in ("/bin/bash", "/bin/zsh"):
+        shells = ("/bin/bash", "/bin/zsh") if sys.platform == "darwin" else tuple(
+            shell for shell in ("/bin/bash", "/bin/zsh") if Path(shell).is_file())
+        self.assertIn("/bin/bash", shells)
+        for shell in shells:
             for suspended in (False, True):
                 with self.subTest(shell=shell, suspended=suspended):
                     root = Path(tempfile.mkdtemp(prefix="shell-startup-", dir=os.environ["TAVS_TEST_ROOT"]))
@@ -304,7 +349,7 @@ class PortableHelperPTYTests(fixture.OwnedPTYFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.helper_path = Path(__file__).resolve().parents[2] / "src/core/portable_helper.py"
-        self.context = {"schema": 1, "deliveryID": "delivery-43", "observedAt": time.time(),
+        self.context = {"schema": generation_schema(self.producer), "deliveryID": "delivery-43", "observedAt": time.time(),
                         "provider": "claude", "verifiedAgent": False, "device": self.store.device(self.tty),
                         "producer": self.producer, "event": "Stop"}
         self.token = encode_context(self.context, time.time())
@@ -403,6 +448,16 @@ class PortableHelperPTYTests(fixture.OwnedPTYFixture, unittest.TestCase):
         self.assertEqual(saved["background"], "#123456")
         self.assertFalse((self.store.directory / "targets").exists())
         self.assertFalse(select.select([self.master], [], [], 0.05)[0])
+
+
+class LinuxPortableHelperPTYTests(PortableHelperPTYTests):
+    __unittest_skip__ = sys.platform != "linux"
+    __unittest_skip_why__ = "Requires a real Linux kernel and owned PTY"
+
+
+class LinuxPortableHookRoutingTests(PortableHookRoutingTests):
+    __unittest_skip__ = sys.platform != "linux"
+    __unittest_skip_why__ = "Requires real Linux standalone helper and hook routing"
 
 
 if __name__ == "__main__":

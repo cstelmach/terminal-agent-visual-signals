@@ -12,11 +12,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
 from portable_intent import Intents
 from portable_ownership import Store
 from portable_policy import Policy
+from test_portable_records import linux_generation
 import portable_record_io as records
 from portable_records import StaleRecordError, key, target_path
 
 
 class PortableIntentTests(unittest.TestCase):
+    def test_linux_publication_keeps_schema_two_binding_and_rejects_mixed_scope(self):
+        self.producer, self.owner = linux_generation(43), linux_generation(100)
+        self.identities[43]["generation"] = self.producer
+        self.identities[100]["generation"] = self.owner
+        target = {"tty": "/dev/pts/43", "device": 123, "ttyOwner": self.owner}
+        record = dict(self.record, schema=2, tty=target["tty"], producer=self.producer)
+        deadline = 2**63-1
+        result = self.intents.publish_unlocked(target, record, False, 900, deadline)
+        cached = records.read(self.store.directory, target_path(self.store.directory, target, "target.json"),
+                              "target", 1000, deadline)
+        self.assertEqual(cached, {"schema": 2, "target": target})
+        self.assertEqual(self.intents.ordinary_background_unlocked(target, deadline), "#112233")
+        changed = linux_generation(43)
+        changed["linuxScope"]["timeOffsets"][1][0] = 1
+        self.identities[43]["generation"] = changed
+        with self.assertRaises(OSError):
+            self.intents.publish_unlocked(target, dict(record, producer=changed), False, 900, deadline)
+        bound = target_path(self.store.directory, target, "bound-intent.json")
+        records.write(self.store.directory, bound, dict(result, producer=changed), "intent", 1000, deadline)
+        with self.assertRaises(OSError):
+            self.intents.ordinary_background_unlocked(target, deadline)
+
     def test_ordinary_provider_synthetic_updates_keep_observation_and_reject_supersession(self):
         for provider in ("gemini", "opencode", "unknown"):
             with self.subTest(provider=provider):

@@ -1,5 +1,5 @@
-Last Updated: 2026-10-13
-Version: 1.0
+Last Updated: 2026-10-15
+Version: 1.1
 
 # Linux terminal writer identity: adversarial limits
 
@@ -402,3 +402,94 @@ Two attempted ancillary source fetches (`kernel/time/namespace.c` and
 `include/linux/proc_ns.h`) timed out; the frozen-offset condition is supported by the
 retrieved time namespace header. Namespace inode allocation/reuse was not independently
 established here, so continuity after namespace destruction remains an explicit limitation.
+
+
+## Schema 2 integration: 2026-10-15
+
+Current implementation baseline: `efbaf3f`. The historical research above is retained. This
+checkpoint describes local source and host tests, not newly performed Linux kernel acceptance.
+
+The existing Linux inspector already emitted boot-relative births with complete linuxScope.
+The helper still refused Linux, every constructor emitted schema 1, and native validators/keys
+rejected or discarded that scope. The ordinary path now accepts explicit Linux context/record
+schema 2. Native schema-1 data, birth semantics and path spellings keep their existing behavior.
+The command protocol marker remains tavs-portable-ordinary-schema=1: verbs, argument counts,
+NUL metadata, Base64 contexts and finite render packets have not changed.
+
+Strict Linux generations contain boot UUID, PID/time namespace device/inode pairs, and ordered
+monotonic/boottime offsets. All nested fields and integer bounds are validated. The full scope
+participates in keys, physical bindings, foreground/ancestor/continuing-owner checks, and bound
+intent admission. Keys use fixed ordered decimal fields in one component, at most 228 ASCII
+bytes, without truncation or a hash. Linux targets allow canonical /dev/pts/N; native surfaces and
+adoption remain schema-1-only. Identity-free data stays ineligible to authorize device output.
+
+Linux births are not compared with wall-clock observation timestamps. Occurrence timestamps
+still receive their existing bounds/order checks, and managed output requires current whole
+process generation, concrete TTY/device and continuing owner. Capture, observation, intent,
+registration and completed-global target reconstruction propagate the correct explicit schema.
+The helper refuses a context from the other platform before mutation. Provider executable
+verification on Linux remains unavailable; ordinary foreground correlation stays unverified.
+
+Linux private test roots avoid Darwin confstr. A separate saved-source reproduction on this Mac
+showed the old non-strict resolver accepting a cyclic marker path; the new strict-prefix/missing-
+suffix resolver refuses it at roots with OSError 62. It also refuses dangling links and retains
+private-root containment. This resolver is used only for injected test roots, not production
+path repair. A stale generic-helper test was made explicitly native-format with platform/temp-
+API doubles, while real Linux subclasses reuse unmocked owned-PTY/helper/hook cases.
+
+All paths were backed up before changes under
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-linux-ordinary-tp0ui9u8/`.
+Scope: eight existing core Python modules and eight test modules, plus existing docs/capture.
+This Phase 9 review correction repairs the existing ordinary-platform regression outside the
+attention-specific file list. No SPEC/PLAN body or phase status was changed. Writer, ancestry
+and input deadlines were not widened. No terminal/app/settings installation or Docker startup
+was performed. Swift source is unchanged; prior Swift acceptance/failures remain as recorded.
+
+### Verification
+
+Commands used tests/run-isolated.sh and an explicit source-built helper. Mac-side format/dispatch
+runs used private /tmp roots; injected identities are distinct from kernel/PTY acceptance.
+Retained command logs:
+
+- Vl6Wv1: three expected RED errors before schema/key/context implementation, 0.020 s.
+- rS9IRg: 19 records/context checks pass, 0.019 s, including existing native path/shape checks.
+- UZwOnL: 20 cases/one existing root-loop diagnostic failure, subsequently reproduced and fixed.
+- QyaIxm: 19 helper/publication/completed-target checks pass, 0.460 s.
+- HP3VrH: full 205 portable/one failure and five timeout errors, 33.010 s; eight Linux cases skip.
+- cA6u1j: 41 focused/one observation-publication failure, 0.566 s; generic error hides its cause.
+- Iubcmh: that observation case passes with only the expected stale-record exception captured;
+  this does not attribute the earlier missing error.
+- Q1JXDQ: final 41 focused checks pass, 2.149 s. Covers native compatibility and Linux format,
+  dispatch, scope/key/copy guards, observation/intent publication and completed target rebuilding.
+- MmLhLM: original roots returned a cyclic path; current roots explicitly refuse it. No device
+  action was invoked by this saved-source reproduction.
+- keFjsW: final full 205 portable/seven failures and 13 errors, 55.189 s, eight Linux skips.
+  Broader timeout/status and owned-hook lifetime failures remain open; no all-green claim.
+
+The independent source checker found no confirmed production admission defect and caught stale
+Darwin assumptions in generic helper tests. That finding was checked and corrected; its report
+was not runtime execution or final provider approval. Reports and full logs are retained with
+owned backups. Native foreground/visual acceptance and historical timing causes remain open.
+
+### Next Linux run
+
+The operator chose to start Docker after current jobs finish. Docker was inspected read-only and
+was stopped; no automatic start/poll loop is authorized or needed. Eight real Linux cases remain
+unrun. After the operator starts it, use an isolated local Linux container/host with private test
+roots and readonly source. The existing acceptance slice is:
+
+```bash
+TAVS_TEST_HELPER_BIN="$PWD/src/core/portable_helper.py" TMPDIR=/tmp \
+  tests/run-isolated.sh env PYTHONPATH=tests/unit python3 -m unittest \
+  test_portable_process_identity \
+  test_portable_helper.LinuxPortableHelperPTYTests \
+  test_portable_helper.LinuxPortableHookRoutingTests
+```
+
+Here the launcher's executable prerequisite uses the source ordinary helper. Hook cases supply
+a missing native candidate explicitly, so no native app is needed. Verify actual /proc scope,
+PTY rdev/process association, fresh helper birth-tick startup, real selection/intake/render,
+synthetic/stale refusal and unchanged deadlines. A warmed fixture producer does not prove fresh
+production-helper startup. Missing kernel namespace/clock properties remain unavailable; do not
+remove the completed-birth-tick guard to manufacture a pass. Linux support and the full goal
+remain unverified until this runtime evidence exists.

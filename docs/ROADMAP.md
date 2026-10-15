@@ -1,7 +1,12 @@
 # Organizer and reversible focus roadmap
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.51
+Version: 1.52
+
+Linux ordinary signaling now carries scoped schema-2 identity through the existing helper path.
+Native schema-1 records and keys keep their semantics. Focused format/dispatch checks pass;
+real Linux startup/PTY/kernel acceptance awaits operator-started Docker after current jobs finish.
+The organizer and selective focus remain macOS/Ghostty features.
 
 Successful legacy resets now retire their exact global effect records under the output lock.
 Fresh hooks clear owed palette/foreground restrictions before applying current style; automatic

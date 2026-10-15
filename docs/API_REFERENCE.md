@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.73
+Version: 1.74
 
 ## Private managed-output failure diagnostics
 
@@ -294,10 +294,10 @@ Owned macOS PTY tests verify real hook intake/render bytes, not visible Ghostty 
 ## Portable ordinary capability and copied delivery
 
 The exact query `--validate-config --portable-ordinary-capabilities` returns
-`tavs-portable-ordinary-schema=1` only on macOS with current process inspection available and
-without native Sessions test scope. It consumes no stdin and creates no state. Extra operands,
-Linux, missing inspection and native managed/recovery capability requests remain unavailable.
-This distinct marker describes ordinary operations; it does not claim native focus/recovery.
+`tavs-portable-ordinary-schema=1` on macOS/Linux with current platform process inspection and
+no native Sessions test scope. This versions the command protocol; native records stay schema 1,
+Linux records use schema 2. Missing identity, extra operands and native recovery remain unavailable.
+The query consumes no stdin and creates no state; it grants no native focus/recovery capability.
 
 Source sync copies all 13 existing portable helper modules together and makes the entry executable.
 The copied helper probes without importing files from the source checkout. Fake installation
@@ -337,9 +337,9 @@ its 1 MiB/two-second phase. Ancestry, input and device phases do not renew the d
 a pre-open render revision. Unavailable suspension disables restrictions for this ordinary route;
 live native control still refuses output. Full render/reset retain frozen revision, and initial
 replacement returns unaffected without paint. Reconcile retains its after-open strict revision.
-Symlink-loop failures remain private. Native capabilities/recovery and Linux schema remain
-unsupported. Core hooks and standalone shell startup use this entry after its distinct ordinary
-capability check.
+Private test-root checks reject cyclic/dangling links and allow missing child paths. Native
+capabilities/recovery remain unsupported. Linux schema 2 uses the same ordinary request protocol;
+core hooks and standalone startup select it before intake. Linux kernel acceptance remains open.
 
 ## Portable record failure categories
 
@@ -411,7 +411,7 @@ Optional event/response strings preserve native intake's length/NUL contract; ob
 validation remains separate. Context data alone grants no live rendering or attention authority.
 
 Owned macOS PTYs verify native foreground agreement and cross-language context/observation
-compatibility. Helper verbs and hook routing are connected; Linux scope/executable support remains pending.
+compatibility. Linux scope is integrated; agent executable verification is unavailable, kernel tests open.
 
 ## Portable reconcile transaction
 
@@ -429,7 +429,7 @@ No title/image/alert is replayed. Matching state removal uses the original 100 m
 The current TTY's pending OSC slot is invalidated through held parent descriptors without reading
 its body. Linked/nonregular paths fail; other slots remain intact. Failed writes retain unfinished
 cleanup records for retry. Unavailable suspension state remains an explicit failure. Owned macOS
-PTYs verify these branches; helper/hook routing is connected and Linux scope remains pending.
+PTYs verify these branches; Linux scoped records are integrated but kernel acceptance is pending.
 
 ## Portable forced-reset transaction
 
@@ -463,7 +463,7 @@ After successful output, exact global records are removed; selective records bec
 Native pre-output cancellation also retains global debt until its reset actually completes.
 Completion failure reports delivered bytes accurately and retains unfinished
 records. All steps share the original 100 ms budget. Owned Mac PTYs verify this transaction;
-helper verbs, hook routing and Linux record integration remain pending.
+helper verbs/hook routing are connected. Linux schema 2 runtime acceptance remains pending.
 
 ## Portable worker completion
 
@@ -486,8 +486,8 @@ Binding requires full latest-record equality. A matching bound copy can restore 
 after producer exit; unbound native intent additionally requires exact existing adoption.
 `Store.resolve`/`_current` have an internal `targets_only` publication mode that excludes bound
 and effect contents while preserving directory/link checks. It grants no rendering authority:
-`ordinary_ownership` always reads all control records. Helper verbs, hook routing and Linux scope
-integration remain pending.
+`ordinary_ownership` reads all control records. Helper verbs and hook routing are connected;
+Linux scoped-record integration still needs actual kernel acceptance.
 
 ## Portable record replacement
 
@@ -512,23 +512,23 @@ release obsolete ownership. A current suspended preview may still own the backgr
 The method returns obsolete active records for cancellation; it does not cancel or paint them.
 The caller must handle residual global foreground/palette reset before ordinary rendering.
 Actual owned macOS PTYs verify current output and recovery rejection. Publication, cleanup and
-hook routing use this guard. Linux scope remains pending; the guard itself advertises no capability.
+hook routing use this guard. Linux uses versioned scope; the guard itself advertises no capability.
 
 ## Portable record decoder
 
-`portable_records.decode` validates native schema-1 target, effect, observation, intent and
-adoption records, including nested allowlists, required fields, scalar types, generation bounds,
-timestamps, focus recipes and suspension revisions. Focus colors are canonicalized as native
-`Colors` does. Unknown/duplicate keys, boolean integers and nonfinite timestamps are rejected.
-Integer identity fields require canonical JSON integer tokens; exponent or decimal forms are
-outside this internal reader's accepted subset. Linux scope-bearing generations are rejected.
+`portable_records.decode` retains native schema 1 and accepts Linux schema 2 for ordinary data.
+Both reject unknown/duplicate fields, boolean integers, invalid types and nonfinite timestamps.
+Native birth fields retain epoch checks; Linux boot-relative birth is not compared with wall time.
+Linux generations require boot UUID, PID/time namespace device/inode pairs and both time offsets.
+Namespace devices are uint64, inodes positive uint64; offsets are [int64 seconds, 0..999999999 ns].
+Full scope agrees across participating generations. Native surfaces/adoption remain schema-1-only.
+Native keys keep their spelling; Linux fixed-order keys retain all scope fields within 228 bytes.
+Concrete Linux targets admit canonical /dev/pts/N as well as TTY names; live device checks remain.
 
-`read_record` uses bounded 8 KiB regular-file reads and checks the original deadline after JSON
-decoding. Missing data is distinct from invalid or unreadable data. `target_path` reproduces
-native base64/owner/surface placement; decoding does not establish liveness or attention authority.
-Live ownership, placement checks and writer integration remain required for every backend operation.
-An optional held parent `dir_fd` anchors record and sibling reads during directory enumeration;
-an absolute path is used for canonical placement, not to reopen a previously verified parent.
+`read_record` bounds regular reads to 8 KiB and checks the original deadline after decoding.
+Missing, invalid and unreadable records stay distinct. Colors/recipes and suspension revisions
+retain strict typed validation. Held parent descriptors anchor record/sibling reads; canonical
+placement is checked separately. Data decoding alone establishes no live output authority.
 
 ## Portable policy reader
 
@@ -557,8 +557,8 @@ reset remain separate. It does not interpret arbitrary OSC streams or advertise 
 Linux uses boot-relative tick parts with a +1 seconds offset, plus `linuxScope` containing boot
 ID, PID/time namespace device/inode pairs and time offsets. It requires one self NSpid, matching
 candidate namespaces, complete supported tick intervals and two matching reads from a held proc
-directory. Unknown data is unavailable. Linux scope is not native schema-1 generation JSON;
-integration must version its records explicitly. Actual Linux kernel acceptance remains pending.
+directory. Unknown data is unavailable. Schema 2 propagates this complete scope through context,
+records, cache keys and owner/producer comparisons. Actual Linux kernel acceptance remains pending.
 
 `portable_device_writer.write_managed` accepts trusted typed-caller callbacks, not an OSC stream.
 One 100 ms deadline covers fork, pre-open work, device open, lock, preparation and output. The

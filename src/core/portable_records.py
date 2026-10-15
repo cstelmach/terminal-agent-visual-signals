@@ -1,4 +1,4 @@
-"""Strict native schema-1 visual records and their canonical target paths."""
+"""Strict native schema-1 and Linux schema-2 records and canonical target paths."""
 
 import base64
 import errno
@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import posixpath
 import re
+import sys
 import unicodedata
 
 from portable_policy import check_deadline, read_regular
@@ -42,11 +43,45 @@ def _id(value):
         raise ValueError("Invalid visual record identity")
 
 
-def _generation(value):
-    _object(value, ("pid", "startSeconds", "startMicroseconds"))
+def current_schema():
+    return 2 if sys.platform == "linux" else 1
+
+
+def _linux_scope(value):
+    _object(value, ("bootID", "pidNamespace", "timeNamespace", "timeOffsets"))
+    if (not isinstance(value["bootID"], str)
+            or re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", value["bootID"]) is None):
+        raise ValueError("Invalid Linux boot scope")
+    for name in ("pidNamespace", "timeNamespace"):
+        pair = value[name]
+        if type(pair) is not list or len(pair) != 2:
+            raise ValueError("Invalid Linux namespace scope")
+        _integer(pair[0], 0, 2**64-1)
+        _integer(pair[1], 1, 2**64-1)
+    offsets = value["timeOffsets"]
+    if type(offsets) is not list or len(offsets) != 2:
+        raise ValueError("Invalid Linux time scope")
+    for pair in offsets:
+        if type(pair) is not list or len(pair) != 2:
+            raise ValueError("Invalid Linux time offset")
+        _integer(pair[0], -2**63, 2**63-1)
+        _integer(pair[1], 0, 999_999_999)
+
+
+def _generation(value, schema=1):
+    _integer(schema, 1, 2)
+    _object(value, ("pid", "startSeconds", "startMicroseconds") + (("linuxScope",) if schema == 2 else ()))
     _integer(value["pid"], 1, 2**31 - 1)
     _integer(value["startSeconds"], 1, 2**64 - 1)
     _integer(value["startMicroseconds"], 0, 999_999)
+    if schema == 2:
+        _linux_scope(value["linuxScope"])
+
+
+def generation_schema(value):
+    schema = 2 if isinstance(value, dict) and "linuxScope" in value else 1
+    _generation(value, schema)
+    return schema
 
 
 def _surface(value):
@@ -55,19 +90,23 @@ def _surface(value):
     _text(value["terminalID"], 128)
 
 
-def _tty(value, concrete=False):
+def _tty(value, concrete=False, linux=False):
     _text(value, 128)
     if (not value.startswith("/") or posixpath.normpath(value) == "/dev/tty"
             or any(c in {".", ".."} for c in value.split("/"))
-            or (concrete and re.fullmatch(r"/dev/tty[A-Za-z0-9]+", value) is None)):
+            or (concrete and re.fullmatch(r"/dev/tty[A-Za-z0-9]+" +
+                (r"|/dev/pts/(?:0|[1-9][0-9]*)" if linux else ""), value) is None)):
         raise ValueError("Invalid visual record TTY")
 
 
-def _target(value):
+def _target(value, schema=None):
     _object(value, ("tty", "device", "ttyOwner"), ("nativeSurface",))
-    _tty(value["tty"], concrete=True)
+    schema = generation_schema(value["ttyOwner"]) if schema is None else schema
+    _tty(value["tty"], concrete=True, linux=schema == 2)
     _integer(value["device"], 0, 2**32 - 2)
-    _generation(value["ttyOwner"])
+    _generation(value["ttyOwner"], schema)
+    if schema == 2 and "nativeSurface" in value:
+        raise ValueError("Linux ordinary target has no native surface")
     if value.get("nativeSurface") is not None:
         _surface(value["nativeSurface"])
 
@@ -86,8 +125,9 @@ def _common(value, timestamp, now):
         _integer(value["device"], 0, 2**32 - 2)
     producer = value.get("producer")
     if producer is not None:
-        _generation(producer)
-        if producer["startSeconds"] + producer["startMicroseconds"] / 1_000_000 > value[timestamp]:
+        _generation(producer, value["schema"])
+        if (value["schema"] == 1
+                and producer["startSeconds"] + producer["startMicroseconds"] / 1_000_000 > value[timestamp]):
             raise ValueError("Visual record predates producer")
 
 
@@ -107,14 +147,20 @@ def decode(data, kind, now):
         value = json.loads(data.decode("utf-8"), object_pairs_hook=_pairs)
     except (UnicodeError, RecursionError) as error:
         raise ValueError("Invalid visual record JSON") from error
+    if not isinstance(value, dict):
+        raise ValueError("Invalid visual record")
+    _integer(value.get("schema"), 1, 2)
+    schema = value["schema"]
     if kind == "target":
         _object(value, ("schema", "target"))
-        _target(value["target"])
+        _target(value["target"], schema)
     elif kind == "effect":
         _object(value, ("schema", "target", "controller", "effectID", "kind", "background", "heartbeatAt", "active"),
                 ("focusColors", "revision"))
-        _target(value["target"])
-        _generation(value["controller"])
+        _target(value["target"], schema)
+        _generation(value["controller"], schema)
+        if (schema == 2 and value["controller"]["linuxScope"] != value["target"]["ttyOwner"]["linuxScope"]):
+            raise ValueError("Mismatched Linux effect scope")
         _id(value["effectID"])
         _timestamp(value["heartbeatAt"], now)
         if type(value["active"]) is not bool or not isinstance(value["kind"], str) or value["kind"] not in {
@@ -136,7 +182,8 @@ def decode(data, kind, now):
                 colors[component] = normalized_hex(color)
         if revision is not None:
             _object(revision, ("device", "inode"))
-            _integer(revision["device"], -2**31, 2**31 - 1)
+            _integer(revision["device"], -2**31 if schema == 1 else 0,
+                     2**31-1 if schema == 1 else 2**64-1)
             _integer(revision["inode"], 0, 2**64 - 1)
             if revision["inode"] == 0 and revision["device"] != 0:
                 raise ValueError("Invalid suspension revision")
@@ -165,6 +212,8 @@ def decode(data, kind, now):
                 _id(value["responseID"])
             _common(value, "observedAt", now)
     elif kind == "adoption":
+        if schema != 1:
+            raise ValueError("Native adoption requires schema 1")
         _object(value, ("schema", "tty", "device", "producer", "surface"),
                 ("observationDeliveryID", "intentDeliveryID"))
         _tty(value["tty"], concrete=True)
@@ -176,7 +225,6 @@ def decode(data, kind, now):
                 _id(value[key])
     else:
         raise ValueError("Unknown visual record kind")
-    _integer(value["schema"], 1, 1)
     return value
 
 
@@ -192,8 +240,14 @@ def key(value):
 
 
 def generation_key(value):
-    _generation(value)
-    return "%(pid)d-%(startSeconds)d-%(startMicroseconds)d" % value
+    if generation_schema(value) == 1:
+        return "%(pid)d-%(startSeconds)d-%(startMicroseconds)d" % value
+    scope = value["linuxScope"]
+    # Fixed decimal fields retain every scope discriminator within a 228-byte component.
+    fields = [value["pid"], value["startSeconds"], value["startMicroseconds"], scope["bootID"]]
+    fields += scope["pidNamespace"] + scope["timeNamespace"]
+    fields += scope["timeOffsets"][0] + scope["timeOffsets"][1]
+    return "linux2_" + "_".join(map(str, fields))
 
 
 def target_path(directory, target, filename):

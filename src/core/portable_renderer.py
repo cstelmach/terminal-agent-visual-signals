@@ -10,7 +10,7 @@ from portable_intent import Intents
 from portable_policy import check_deadline
 from portable_ownership import _binding
 import portable_record_io as records
-from portable_records import _text, key, target_path
+from portable_records import _text, generation_schema, key, target_path
 from portable_render import Render
 
 
@@ -55,7 +55,7 @@ class Renderer:
                 path = target_path(self.store.directory, binding, "target.json")
                 cached = records.read(self.store.directory, path, "target", self.store.clock(), deadline)
                 if cached is None:
-                    records.write(self.store.directory, path, {"schema": 1, "target": binding},
+                    records.write(self.store.directory, path, {"schema": generation_schema(binding["ttyOwner"]), "target": binding},
                                   "target", self.store.clock(), deadline)
                 elif _binding(cached["target"]) != _binding(binding):
                     raise OSError(errno.ESTALE, "Cached target changed")
@@ -165,7 +165,7 @@ class Renderer:
                     cached = records.read_record("target.json", "target", self.store.clock(), deadline, dir_fd=parent)
                     if cached is None:
                         records.write(self.store.directory, path.with_name("target.json"),
-                                      {"schema": 1, "target": old["target"]}, "target", self.store.clock(), deadline)
+                                      {"schema": old["schema"], "target": old["target"]}, "target", self.store.clock(), deadline)
                     elif cached["target"] != old["target"]:
                         raise OSError(errno.ESTALE, "Completed effect binding changed")
                     check_deadline(deadline)

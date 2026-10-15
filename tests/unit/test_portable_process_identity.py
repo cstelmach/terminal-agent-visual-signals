@@ -13,9 +13,22 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src/core"))
 import portable_process_identity as identity
+from test_portable_records import linux_generation
 
 
 class PortableProcessIdentityTests(unittest.TestCase):
+    def test_linux_foreground_and_ancestry_cannot_bridge_namespace_scopes(self):
+        first, second = linux_generation(43), linux_generation(100)
+        second["linuxScope"]["timeNamespace"][1] += 1
+        values = {43: {"generation": first, "parentPID": 100, "device": 123,
+                       "group": 100, "foregroundGroup": 100},
+                  100: {"generation": second, "parentPID": 1, "device": 123,
+                        "group": 100, "foregroundGroup": 100}}
+        self.assertFalse(identity.foreground_family_contains(first, second, 123, values.get))
+        self.assertIsNone(identity.continuing_owner(first, 123, values.get))
+        with self.assertRaises(OSError):
+            identity.caller_ancestor(100, 123, lookup=values.get, start=43, deadline=2**63-1)
+
     def test_caller_ancestor_requires_actual_chain_and_current_generation_device(self):
         def process(pid, parent, device=43):
             return {"generation": {"pid": pid, "startSeconds": 100, "startMicroseconds": 1},

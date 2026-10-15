@@ -15,6 +15,7 @@ from portable_render import Render
 import portable_record_io as records
 from portable_records import key, target_path
 import test_portable_ownership as ownership_fixture
+from test_portable_records import linux_generation
 
 
 def style(background="#123456", title=None, bell=False):
@@ -478,6 +479,20 @@ class PortableLegacyCompletionTests(unittest.TestCase):
         self.store = self.fixture.store
         self.renderer = Renderer(self.store)
         self.deadline = 2**63 - 1
+
+    def test_linux_effect_only_completion_retains_schema_two_target(self):
+        owner = linux_generation(100)
+        target = {"tty": "/dev/pts/43", "device": 123, "ttyOwner": owner}
+        path = target_path(self.store.directory, target, "effect.json")
+        old = {"schema": 2, "target": target, "controller": linux_generation(80),
+               "kind": "globalRestriction", "effectID": "linux-global", "background": "#123456",
+               "heartbeatAt": 999, "active": False}
+        records.write(self.store.directory, path, old, "effect", 1000, self.deadline)
+        self.renderer._complete_effects([(path, old)], self.deadline)
+        self.assertFalse(path.exists())
+        saved = records.read(self.store.directory, path.with_name("target.json"),
+                             "target", 1000, self.deadline)
+        self.assertEqual(saved, {"schema": 2, "target": target})
 
     def test_canceled_global_owes_reset_until_completion_and_keeps_binding(self):
         path = self.fixture.save(self.fixture.target, "effect.json", kind="globalRestriction", active=False)

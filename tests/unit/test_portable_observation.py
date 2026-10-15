@@ -15,6 +15,7 @@ from portable_observation import publish_observation
 import portable_record_io as records
 from portable_records import key
 from portable_device_writer import output_lock
+from test_portable_records import linux_generation
 
 
 class PortableObservationTests(unittest.TestCase):
@@ -29,6 +30,16 @@ class PortableObservationTests(unittest.TestCase):
 
     def publish(self, value=None, state="complete"):
         return publish_observation(self.store, self.context if value is None else value, self.tty, state)
+
+    def test_linux_publication_preserves_explicit_context_schema_and_scope(self):
+        self.tty = "/dev/pts/43"
+        self.path = self.store.directory / ("observation-"+key(self.tty)+".json")
+        context = dict(self.context, schema=2, device=123, producer=linux_generation())
+        self.publish(context)
+        saved = records.read(self.store.directory, self.path, "observation", 1000, 2**63-1)
+        self.assertEqual(saved["schema"], 2)
+        self.assertEqual(saved["producer"], context["producer"])
+        self.assertFalse((self.store.directory / "targets").exists())
 
     def test_publication_retains_only_observation_and_rejects_older_delivery(self):
         self.publish()

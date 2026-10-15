@@ -9,7 +9,7 @@ from portable_device_writer import output_lock
 from portable_policy import InvalidRegularFileError, check_deadline
 from portable_process_identity import continuing_owner
 import portable_record_io as records
-from portable_records import StaleRecordError, _timestamp, decode, generation_key, key, target_path
+from portable_records import StaleRecordError, _timestamp, decode, generation_key, generation_schema, key, target_path
 from portable_render import normalized_background
 
 
@@ -42,7 +42,8 @@ class Intents:
             raise OSError(errno.ESTALE, "Intent target unavailable")
         producer = record.get("producer")
         if (record["tty"] != target["tty"] or record.get("device") != target["device"]
-                or producer is None):
+                or producer is None or record["schema"] != generation_schema(target["ttyOwner"])
+                or producer.get("linuxScope") != target["ttyOwner"].get("linuxScope")):
             raise OSError(errno.ESTALE, "Intent target unavailable")
         current = self.store._lookup(producer["pid"], deadline)
         if current is None or current["generation"] != producer or current["device"] != target["device"]:
@@ -134,10 +135,13 @@ class Intents:
             bound = records.read(self.store.directory, bound_path, "intent", self.store.clock(), deadline)
         except ValueError as error:
             raise OSError(errno.EINVAL, "Bound intent unavailable") from error
-        if cached is not None and _binding(cached["target"]) != _binding(target):
+        if cached is not None and (cached["schema"] != normalized["schema"]
+                or _binding(cached["target"]) != _binding(target)):
             raise OSError(errno.ESTALE, "Bound target changed")
         if bound is not None and (cached is None or bound["tty"] != target["tty"]
-                or bound.get("device") != target["device"] or bound.get("producer") is None):
+                or bound.get("device") != target["device"] or bound.get("producer") is None
+                or bound["schema"] != normalized["schema"]
+                or bound["producer"].get("linuxScope") != target["ttyOwner"].get("linuxScope")):
             raise OSError(errno.EINVAL, "Bound intent unavailable")
         self._require_producer(target, normalized, deadline)
         latest = records.read(self.store.directory, self._path("intent", record["tty"]),
@@ -145,7 +149,7 @@ class Intents:
         if latest != normalized:
             raise StaleRecordError("Intent changed before binding")
         if cached is None:
-            records.write(self.store.directory, cached_path, {"schema": 1, "target": target},
+            records.write(self.store.directory, cached_path, {"schema": normalized["schema"], "target": target},
                           "target", self.store.clock(), deadline)
         records.write(self.store.directory, bound_path, normalized, "intent", self.store.clock(), deadline)
         check_deadline(deadline)

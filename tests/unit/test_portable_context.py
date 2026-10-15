@@ -14,6 +14,7 @@ import portable_context as context
 import portable_metadata as metadata
 from portable_records import decode, key
 import test_portable_ownership as fixture
+from test_portable_records import linux_generation
 
 
 def generation(pid):
@@ -31,6 +32,16 @@ class PortableContextTests(unittest.TestCase):
                        commands=[], clock=lambda: 1000)
         options.update(changes)
         return context.capture(provider, 44, **options)
+
+    def test_linux_context_capture_and_round_trip_retains_schema_and_full_scope(self):
+        for pid, process in self.values.items():
+            process["generation"] = linux_generation(pid)
+        value = self.capture()
+        self.assertEqual(value["schema"], 2)
+        self.assertEqual(value["producer"], linux_generation(43))
+        self.assertEqual(context.decode_context(context.encode_context(value, 1000), 1000), value)
+        with self.assertRaises(ValueError):
+            context.validate_context(dict(value, schema=1), 1000)
 
     def test_foreground_fallback_is_not_verified_agent(self):
         first, second = self.capture(), self.capture()

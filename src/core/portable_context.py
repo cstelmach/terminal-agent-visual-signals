@@ -1,4 +1,4 @@
-"""Finite organizer correlation and observed macOS foreground/provider identity."""
+"""Finite organizer correlation and current foreground/provider identity."""
 
 import base64
 import json
@@ -9,13 +9,13 @@ import uuid
 
 from portable_metadata import PROVIDERS
 from portable_process_identity import executable_path, foreground_family_contains, inspect
-from portable_records import _generation, _id, _integer, _object, _pairs, _timestamp
+from portable_records import _generation, _id, _integer, _object, _pairs, _timestamp, current_schema, generation_schema
 
 
 def validate_context(value, now):
     _object(value, ("schema", "deliveryID", "observedAt", "provider", "verifiedAgent"),
             ("producer", "device", "event", "responseID"))
-    _integer(value["schema"], 1, 1)
+    _integer(value["schema"], 1, 2)
     _id(value["deliveryID"])
     _timestamp(value["observedAt"], now)
     if not isinstance(value["provider"], str) or value["provider"] not in PROVIDERS:
@@ -26,8 +26,9 @@ def validate_context(value, now):
         _integer(value["device"], 0, 2**32-2)
     producer = value.get("producer")
     if producer is not None:
-        _generation(producer)
-        if producer["startSeconds"] + producer["startMicroseconds"] / 1_000_000 > value["observedAt"]:
+        _generation(producer, value["schema"])
+        if (value["schema"] == 1
+                and producer["startSeconds"] + producer["startMicroseconds"] / 1_000_000 > value["observedAt"]):
             raise ValueError("Context predates producer")
     for field, limit in (("event", 128), ("responseID", 256)):
         if value.get(field) is not None:
@@ -96,7 +97,8 @@ def capture(provider, caller, event=None, response_id=None, lookup=inspect, exec
         if not 0 < parent <= 2**31-1 or parent == pid:
             break
         pid = parent
-    value = {"schema": 1, "deliveryID": str(uuid.uuid4()), "observedAt": clock(),
+    schema = generation_schema(owner["generation"]) if owner is not None else current_schema()
+    value = {"schema": schema, "deliveryID": str(uuid.uuid4()), "observedAt": clock(),
              "provider": provider, "verifiedAgent": verified}
     if owner is not None:
         value.update(producer=owner["generation"], device=owner["device"])

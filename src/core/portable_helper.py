@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Finite macOS ordinary helper entry; no native control or recovery capability."""
+"""Finite macOS/Linux ordinary helper entry; no native control or recovery capability."""
 
 import os
 from pathlib import Path
@@ -14,7 +14,7 @@ from portable_metadata import PROVIDERS, decode_intake, read_input
 from portable_observation import publish_observation
 from portable_policy import Policy
 from portable_process_identity import caller_ancestor, device_number, inspect
-from portable_records import StaleRecordError, _text
+from portable_records import StaleRecordError, _text, current_schema, generation_schema
 from portable_ownership import Store
 from portable_render import Render, normalized_background
 from portable_renderer import Renderer
@@ -35,16 +35,31 @@ def _path(value):
     return path
 
 
+def _resolved_test_path(path):
+    missing = []
+    while True:
+        try:
+            return Path(os.path.normpath(path.resolve(strict=True).joinpath(*reversed(missing))))
+        except FileNotFoundError:
+            if path.is_symlink() or path.parent == path:
+                raise ValueError("Helper test path unavailable") from None
+            missing.append(path.name)
+            path = path.parent
+
+
 def _roots(marker, runtime, environment):
     marker, runtime = _path(marker), _path(runtime)
     if "TAVS_TEST_ROOT" in environment:
-        root = _path(environment["TAVS_TEST_ROOT"]).resolve()
+        root = _path(environment["TAVS_TEST_ROOT"]).resolve(strict=True)
         # Installed Darwin SDK: _CS_DARWIN_USER_TEMP_DIR is 65537, independent of test TMPDIR.
-        temporary = [_path(os.confstr(65537)).resolve(), Path("/tmp").resolve()]
+        temporary = [Path("/tmp").resolve()]
+        if sys.platform == "darwin":
+            temporary.insert(0, _path(os.confstr(65537)).resolve())
         info = root.stat()
         if (not any(base in root.parents for base in temporary) or not stat.S_ISDIR(info.st_mode)
                 or info.st_uid != os.geteuid() or info.st_mode & 0o077
-                or root not in marker.resolve().parents or root not in runtime.resolve().parents):
+                or root not in _resolved_test_path(marker).parents
+                or root not in _resolved_test_path(runtime).parents):
             raise ValueError("Helper test roots unavailable")
     return marker, runtime
 
@@ -83,12 +98,13 @@ def run(args, environment=None):
     organizer = verb.startswith("--organizer-")
     stage = "request"
     try:
-        if (sys.platform == "darwin" and not _SCOPE_KEYS.intersection(environment) and len(args) == 3
+        if (sys.platform in {"darwin", "linux"} and not _SCOPE_KEYS.intersection(environment) and len(args) == 3
                 and args[1:] == ["--validate-config", "--portable-ordinary-capabilities"]):
-            if inspect(os.getpid()) is None:
+            identity = inspect(os.getpid())
+            if identity is None or generation_schema(identity["generation"]) != current_schema():
                 raise ValueError("Process identity unavailable")
             return 0, b"tavs-portable-ordinary-schema=1\n", b""
-        if (sys.platform != "darwin" or _SCOPE_KEYS.intersection(environment)
+        if (sys.platform not in {"darwin", "linux"} or _SCOPE_KEYS.intersection(environment)
                 or verb not in _COUNTS or len(args) != _COUNTS[verb]):
             raise ValueError("Unsupported helper request")
         if verb in {"--organizer-intake", "--organizer-context"}:
@@ -110,11 +126,13 @@ def run(args, environment=None):
             marker, runtime = _roots(str(_path(environment["HOME"]) / ".tavs/visual-restrictions.state"),
                                      environment.get("TAVS_RUNTIME_DIR", "/tmp/tavs-"+str(os.getuid())), environment)
             context = decode_context(args[3], time.time())
+            if context["schema"] != current_schema():
+                raise ValueError("Context platform unavailable")
             store = Store(runtime, Policy(marker, runtime))
             if verb == "--organizer-observe":
                 publish_observation(store, context, args[2], args[4])
             else:
-                record = {"schema": 1, "tty": args[2], "deliveryID": context["deliveryID"],
+                record = {"schema": context["schema"], "tty": args[2], "deliveryID": context["deliveryID"],
                           "updatedAt": time.time(), "background": args[4]}
                 for field in ("device", "producer"):
                     if context.get(field) is not None:
@@ -140,6 +158,8 @@ def run(args, environment=None):
         else:
             stage = "context"
             context = decode_context(args[5], time.time())
+            if context["schema"] != current_schema():
+                raise ValueError("Context platform unavailable")
             producer = context.get("producer")
             if producer is None or context.get("device") is None:
                 raise ValueError("Context identity unavailable")
@@ -156,7 +176,7 @@ def run(args, environment=None):
                 _text(args[6], 512, nonempty=False)
             if not synthetic and caller_ancestor(producer["pid"], device) != producer:
                 raise StaleRecordError("Caller generation stale")
-            record = {"schema": 1, "tty": tty, "device": device, "producer": producer,
+            record = {"schema": context["schema"], "tty": tty, "device": device, "producer": producer,
                       "deliveryID": context["deliveryID"], "updatedAt": time.time(), "background": background}
             intake = context["observedAt"]
             stage = "input"

@@ -78,6 +78,7 @@ def foreground_family_contains(producer, foreground, device, lookup=inspect):
     source, current = lookup(producer["pid"]), lookup(foreground["pid"])
     return (device != 2**32-1 and source is not None and current is not None
             and source["generation"] == producer and current["generation"] == foreground
+            and producer.get("linuxScope") == foreground.get("linuxScope")
             and source["device"] == device and current["device"] == device
             and 0 < current["foregroundGroup"] <= 2**31-1
             and current["group"] == current["foregroundGroup"]
@@ -227,6 +228,8 @@ def continuing_owner(seed, device, lookup=None):
             return None
         if parent["device"] != device:
             break
+        if parent["generation"].get("linuxScope") != seed.get("linuxScope"):
+            return None
         visited.add(parent_pid)
         owner = parent
     generation = owner["generation"].copy()
@@ -241,6 +244,7 @@ def caller_ancestor(caller, device=None, lookup=None, start=None, deadline=None)
     if type(caller) is not int or not 0 < caller <= 2**31-1:
         raise OSError(errno.EINVAL, "Invalid helper caller")
     seen = set()
+    origin = None
     for _ in range(16):
         check_deadline(deadline)
         if current in seen:
@@ -253,6 +257,10 @@ def caller_ancestor(caller, device=None, lookup=None, start=None, deadline=None)
                 or type(generation["startSeconds"]) is not int or not 0 < generation["startSeconds"] < 2**64
                 or type(generation["startMicroseconds"]) is not int or not 0 <= generation["startMicroseconds"] < 1_000_000):
             raise OSError(errno.EINVAL, "Helper ancestry unavailable")
+        if origin is None:
+            origin = generation
+        elif generation.get("linuxScope") != origin.get("linuxScope"):
+            raise OSError(errno.EINVAL, "Helper ancestry scope changed")
         if current == caller:
             again = lookup(caller)
             check_deadline(deadline)

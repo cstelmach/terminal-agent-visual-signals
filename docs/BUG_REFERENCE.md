@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.79
+Version: 1.80
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -289,20 +289,20 @@ regression confirmed unrelated preference overwrite. Guarded helper delivery now
 
 ## Core ordinary routing still requires the native companion
 
-After the portable helper and its dependencies shipped, separate native-only organizer and managed
-selectors still prevented standalone hooks from using them. They could also choose a native helper
-with only half the required capability pair. One shared selector now prefers a fully compatible
-native helper, otherwise selecting the portable ordinary helper before intake. The adapter carries
-that choice through exec; operations never switch backend after a failure or strip portable scope.
-The first routing draft exported selection only on successful intake. A copied-adapter regression
-confirmed backend replacement after failed intake and disappearing native capability. Intake `0`
-now carries that failed attempt's selection without context authority; core unexports it on import.
+Separate native-only selectors originally prevented standalone hooks from using the portable
+helper. The shared selector now chooses a complete native capability pair or portable ordinary
+protocol before intake and retains that choice through exec, including failed intake.
 
-Prevention: Bash/zsh selector tests cover both capabilities, partial native support, explicit empty
-or missing candidates, scope changes, cache privacy and failed-operation retention. Adapter and
-copied-installation tests cover intake reuse and body privacy. A real owned macOS PTY verifies
-the complete shell bridge through current render. Standalone shell startup, Linux and visible
-Ghostty acceptance remain pending; this closes only core hook routing.
+Linux still rejected every request. Its scoped generations also failed native schema-1 parsing,
+and keys discarded namespace identity. Explicit schema 2 now carries boot/namespace/time-offset
+identity through context, records, binding, publication and cleanup. Linux birth uses boot time;
+observation wall time stays separately validated. Full scope participates in keys and admission.
+
+Linux roots avoid the Darwin-only temp API. A host reproduction also showed non-strict path
+resolution accepting a cyclic private marker path; strict existing-prefix resolution now refuses
+cycles/dangling links while allowing missing children. Generic native-format unit fixtures use
+explicit platform/identity doubles; separate Linux PTY/hook classes require a real Linux kernel.
+Focused format/dispatch checks pass. Broader failures and Linux/native acceptance remain open.
 
 ## Portable intent supersession includes a mis-keyed TTY field
 

@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.55
+**Version:** 4.56
 
 ## Session Metadata
 
@@ -30,7 +30,7 @@
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 9 Swift pass; full671/15 failures; portable51/8 failures | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 41 host pass; portable205/20 failures+8 Linux skip; Swift historical | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -683,10 +683,7 @@ two-second previews and recovery controls, using this writer foundation; PLAN an
 > Finished source/fixture history: [Phase 8 appendix](PROGRESS_appendix_phase-8-foundations.md).
 > Native salience/readability, close/reopen and recovery-in-Manual acceptance remain unverified.
 
-### Phase 9 occurrence foundation
-
-> Finished reducer/classifier log: [Phase 9 appendix](PROGRESS_appendix_phase-9-foundation.md).
-
+> [Finished occurrence-foundation pointer](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
 ### Phase 9 controller and controls
 
@@ -898,3 +895,6 @@ Both full616 runs fail (2/12 assertions); isolated controls pass. Goal/Phase9 re
 > [Finished record-read preparation](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
 
 Legacy completion: [source/results](release-retry-source-check-2026-10-14.md#legacy-completion-correction-2026-10-15).
+
+Linux ordinary: [source/checks](portable-linux-identity-research-2026-10-13.md#schema-2-integration-2026-10-15).
+Kernel checks await operator-started Docker after current jobs; eight Linux cases remain unrun.
