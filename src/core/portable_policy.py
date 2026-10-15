@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import sys
 import time
 
 
@@ -17,6 +18,10 @@ def check_deadline(deadline):
         raise OSError(errno.ETIMEDOUT, "Policy deadline exceeded")
 
 
+def _owned(info):
+    return info.st_uid == os.geteuid() and not info.st_mode & 0o022
+
+
 def open_regular(path, deadline, limit, dir_fd=None):
     check_deadline(deadline)
     try:
@@ -24,13 +29,17 @@ def open_regular(path, deadline, limit, dir_fd=None):
     except FileNotFoundError:
         check_deadline(deadline)
         return None
+    check_deadline(deadline)
+    if not _owned(before):
+        raise OSError(errno.EACCES, "Untrusted policy file")
     if not stat.S_ISREG(before.st_mode) or not 0 <= before.st_size <= limit:
         raise InvalidRegularFileError(errno.EINVAL, "Unavailable policy file")
-    check_deadline(deadline)
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC, dir_fd=dir_fd)
     try:
         current = os.fstat(fd)
         check_deadline(deadline)
+        if not _owned(current):
+            raise OSError(errno.EACCES, "Untrusted policy file")
         if (not stat.S_ISREG(current.st_mode) or not 0 <= current.st_size <= limit
                 or (before.st_dev, before.st_ino) != (current.st_dev, current.st_ino)):
             raise InvalidRegularFileError(errno.EINVAL, "Changed policy file")
@@ -66,21 +75,46 @@ def read_regular(path, deadline, limit=1_048_576, dir_fd=None):
         os.close(fd)
 
 
-def _missing_accessible(path, deadline):
-    parent = Path(path).parent
-    while True:
+def _policy_path(path, deadline):
+    check_deadline(deadline)
+    path = Path(path)
+    if (not path.is_absolute() or ".." in path.parts or len(path.parts) < 3
+            or len(str(path).encode("utf-8")) > 4096):
+        raise OSError(errno.EINVAL, "Unavailable policy path")
+    parts, current = path.parts[1:-1], Path("/")
+    temporary = {Path("/private/tmp"), Path("/private/var/tmp")} if sys.platform == "darwin" else {
+        Path("/tmp"), Path("/var/tmp")}
+    for index, part in enumerate(parts):
         check_deadline(deadline)
+        current = current / part
         try:
-            os.lstat(parent)
-            available = stat.S_ISDIR(os.stat(parent).st_mode) and os.access(parent, os.X_OK)
-            check_deadline(deadline)
-            if not available:
-                raise OSError(errno.EACCES, "Unavailable suspension directory")
-            return
+            info = os.lstat(current)
         except FileNotFoundError:
-            if parent == parent.parent:
-                raise OSError(errno.EACCES, "Unavailable suspension directory")
-            parent = parent.parent
+            check_deadline(deadline)
+            return current.joinpath(*parts[index + 1:], path.name)
+        check_deadline(deadline)
+        leaf = index == len(parts) - 1
+        if stat.S_ISLNK(info.st_mode):
+            if (leaf or sys.platform != "darwin" or current not in {Path("/tmp"), Path("/var")}
+                    or info.st_uid != 0):
+                raise OSError(errno.EACCES, "Linked policy directory")
+            target = "/private" + str(current)
+            if os.readlink(current) not in {target, target[1:]}:
+                raise OSError(errno.EACCES, "Changed system policy alias")
+            private = os.lstat("/private")
+            if (not stat.S_ISDIR(private.st_mode) or private.st_uid != 0
+                    or private.st_mode & 0o022 or not os.access("/private", os.X_OK)):
+                raise OSError(errno.EACCES, "Unavailable system policy directory")
+            current = Path(target)
+            info = os.lstat(current)
+            check_deadline(deadline)
+        owner = info.st_uid == os.geteuid() if leaf else info.st_uid in {0, os.geteuid()}
+        sticky = (not leaf and info.st_uid == 0 and info.st_mode & stat.S_ISVTX and current in temporary)
+        if (not stat.S_ISDIR(info.st_mode) or not owner or (info.st_mode & 0o022 and not sticky)
+                or not os.access(current, os.X_OK)):
+            raise OSError(errno.EACCES, "Unavailable policy directory")
+        check_deadline(deadline)
+    return current / path.name
 
 
 class Revision:
@@ -140,11 +174,9 @@ class Policy:
         self.clock, self.pid_alive = clock, pid_alive
 
     def capture(self, deadline):
-        fd = open_regular(self.marker, deadline, 127)
+        fd = open_regular(_policy_path(self.marker, deadline), deadline, 127)
         try:
-            if fd is None:
-                _missing_accessible(self.marker, deadline)
-            elif read_fd(fd, deadline, 127) not in (self._marker(False), self._marker(True)):
+            if fd is not None and read_fd(fd, deadline, 127) not in (self._marker(False), self._marker(True)):
                 raise OSError(errno.EINVAL, "Unavailable suspension state")
             # Pin the inode until the transaction ends, including same-value atomic replacement.
             return Revision(self.marker, fd)
@@ -165,20 +197,20 @@ class Policy:
 
     def matches_identity(self, identity, deadline):
         check_deadline(deadline)
+        path = _policy_path(self.marker, deadline)
         try:
-            info = os.lstat(self.marker)
+            info = os.lstat(path)
         except FileNotFoundError:
-            _missing_accessible(self.marker, deadline)
+            check_deadline(deadline)
             return identity == (0, 0)
-        if not stat.S_ISREG(info.st_mode):
+        if not stat.S_ISREG(info.st_mode) or not _owned(info):
             raise OSError(errno.EINVAL, "Unavailable suspension state")
         check_deadline(deadline)
         return identity[1] != 0 and identity == (info.st_dev, info.st_ino)
 
     def suspended(self, deadline):
-        data = read_regular(self.marker, deadline, 127)
+        data = read_regular(_policy_path(self.marker, deadline), deadline, 127)
         if data is None:
-            _missing_accessible(self.marker, deadline)
             return False
         if data not in (self._marker(False), self._marker(True)):
             raise OSError(errno.EINVAL, "Unavailable suspension state")
@@ -189,12 +221,13 @@ class Policy:
             try:
                 return not self.suspended(deadline)
             except OSError as error:
+                check_deadline(deadline)
                 if not unavailable_disabled or error.errno == errno.ETIMEDOUT:
                     raise
                 return False
         if not enabled():
             return False
-        data = read_regular(self.runtime / "lock.state", deadline, 8192)
+        data = read_regular(_policy_path(self.runtime / "lock.state", deadline), deadline, 8192)
         fields = _fields(data) if data is not None else None
         now = int(self.clock())
         selected = False
@@ -205,7 +238,7 @@ class Policy:
             if None not in (until, unlock, written):
                 selected = fields["LOCKED"] == "true" and now < until and not now < unlock
         if not selected:
-            data = read_regular(self.marker.parent / "mute.state", deadline, 8192)
+            data = read_regular(_policy_path(self.marker.parent / "mute.state", deadline), deadline, 8192)
             fields = _fields(data) if data is not None else None
             selected = bool(fields and self._soft(fields, deadline))
         check_deadline(deadline)

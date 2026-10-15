@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.80
+Version: 1.81
 
 ## Private managed-output failure diagnostics
 
@@ -552,8 +552,15 @@ quoted rule selects no rule, matching the native predicate. Suspension must rema
 
 `capture(deadline)` holds an open marker descriptor to prevent inode reuse. `matches` compares
 its filesystem device/inode, detecting atomic replacement even when the boolean is unchanged.
-Missing markers require an accessible directory. `read_regular` validates a no-follow regular
-file before bounded reads. All operations share the caller's original monotonic deadline.
+Missing markers require an accessible, trusted existing directory prefix. Policy acquisition and
+revision matching validate root/EUID ancestors, an EUID leaf directory and no group/other writes.
+Only verified Darwin system aliases and exact root-owned sticky system-temp ancestors are exempt.
+`read_regular` checks EUID/no-write metadata before opening and on the opened regular file;
+this shared leaf guard also applies to typed-record readers. Unsafe metadata raises EACCES,
+so canonical malformed-content repair cannot replace an untrusted regular record.
+All operations share the caller's original monotonic deadline. Unavailable-marker fallback
+rechecks expiry even after an I/O error. Directory checks are not held across ancestor changes.
+Behavior change: unsafe existing storage is unavailable and is never permission-repaired.
 These readers do not publish rules or repaint terminals; the standalone helper uses them.
 
 ## Portable render decoder

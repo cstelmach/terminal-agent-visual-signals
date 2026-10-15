@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.2
+Version: 1.3
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -407,3 +407,40 @@ The existing pre-challenge clock baseline can shorten a requested grant after a 
 it is outside this arithmetic correction. Portable storage/serialization, pathname races,
 debug writes, Bash compatibility and required native/Linux acceptance remain open. No device
 deadline, live terminal, installed setting, production locale or real schedule was changed.
+
+## Portable policy storage trust: 2026-10-15
+
+The [native/shell rule inspection](/Volumes/external/agent-data/reports/2026-10-15/tavs-native-policy-trust-explorer-172500.md)
+found no reusable complete Python checker without a dependency cycle. The existing policy
+module now checks ancestry for capture, revision matching and marker/lock/mute reads. It
+requires root/EUID ancestors and an EUID leaf directory, rejects group/other writes and arbitrary
+links, and permits only verified Darwin system aliases and exact root-owned sticky system-temp
+ancestors. Existing prefixes must be searchable. Trusted missing parents remain absent without
+creation; no permissions are repaired. Path objects retain their prior normalization behavior.
+
+The shared regular-file reader checks EUID/write bits before open and again on fstat, retaining
+type, size, no-follow/nonblocking flags and device/inode checks. Typed records also receive this
+leaf check; it does not validate all their parent directories or secure every Store write.
+
+Six new methods initially fail22 subtest assertions on unsafe storage. The first13 policy
+tests and connected212 pass (204 pass, eight Linux skip). A subsequent expired malformed-path
+case reproduces timeout being swallowed by unavailable-state fallback; entry expiry now wins.
+The [final source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-portable-policy-trust-source-check-173300.md)
+then confirms two connected interactions: late syscall failure can mask expiry, and EINVAL
+ownership errors can enter read_latest's malformed-content repair path. Separate regressions
+reproduce both. The fallback catch rechecks the original deadline; ownership/mode errors are
+plain EACCES before repairable content categories, including after fstat. This also preserves
+unavailable storage rather than synthetic stale-observation classification.
+
+Final connected214 passes: 206 pass and eight Linux-only skips. The final focused15 also pass,
+including both ownership and write-mode changes on an opened file, descriptor cleanup, revision
+metadata changes, absent unsafe prefixes and read-only group access. Python AST and diff checks
+pass. No Swift source changed; prior full Swift671/60 and Homebrew Bash failures stay open.
+Reports verify source only; these runtime counts come from the retained isolated runs.
+
+Logs and failed attempts remain under
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/portable-policy-trust-20261015-171903-da5022/`.
+Policy directory validation is separate from opening; no descriptor-bound ancestor guarantee or
+hard syscall deadline is claimed. Store write ancestry/ownership, debug paths, legacy portable
+mutation serialization and native/Linux acceptance remain open. No live configuration, terminal,
+schedule, installed backend or machine permissions were changed.

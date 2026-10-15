@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.90
+Version: 1.91
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -902,7 +902,7 @@ Raw legacy policy reads also accepted links/writable files and could block on a 
 unbounded content. The shared checked reader rejects these static cases and NUL bodies, and
 retains trusted absence separately. CLI errors preserve definitions instead of claiming no lock
 or allowing a schedule edit. Recovery bypass and missing-final-newline compatibility are tested.
-Path/open races, debug writes, portable policy trust and portable write serialization remain open.
+Path/open races, debug writes and portable write serialization remain open.
 Isolated Homebrew Bash 5.3.15 runs also expose exit139 after valid marker reads. A matching-time
 SIGSEGV report reaches locale restoration through libintl/CoreFoundation. System Bash and an
 explicit C-locale control pass; a minimal locale-only probe does not reproduce the crash.
@@ -916,3 +916,13 @@ ends are checked, and remaining-minute display avoids adding59 near Int64.max.
 A source check caught the new invalid-clock branch bypassing the schedule gate. Its regression
 reproduced a changed schedule; failed normalization now reports unavailable after recovery's
 bypass. Numeric boundary, grant, merge, display and interactive-duration checks cover these cases.
+
+## Portable policy accepts unsafe storage or loses error meaning
+
+Bounded no-follow reads omitted UID/write-bit and directory ancestry checks; marker absence and
+revision identity could therefore accept unsafe storage. Policy checks now enforce native-style
+trust, including checked aliases, without repairing existing objects or creating missing parents.
+The shared regular reader also rejects unsafe typed-record leaves as EACCES, preserving the
+difference between untrusted storage and repairable malformed content. A late I/O failure cannot
+be swallowed as disabled restrictions after the original deadline. Regression details and remaining
+Store-write/ancestor-race limits are in the [source check](specs/tavs-priority-discovery_2026-10-04/legacy-policy-trust-source-check-2026-10-15.md#portable-policy-storage-trust-2026-10-15).

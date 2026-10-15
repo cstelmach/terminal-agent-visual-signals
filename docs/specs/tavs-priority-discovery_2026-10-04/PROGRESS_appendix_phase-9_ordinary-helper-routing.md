@@ -148,3 +148,10 @@ System Bash and explicit-C Homebrew Bash: 84/84 each; ordinary Homebrew runs rem
 **Scope:** five rule/CLI modules and four test files; API/bug/architecture/capture updated.
 Current exit139 has SIGSEGV/locale-stack evidence; older failures are not all attributed.
 Next: Bash compatibility, decimal/portable/debug trust and native/Linux acceptance. Goal incomplete.
+
+### Phase 9 decimal policy arithmetic: 2026-10-15
+
+Decimal fields, durations, portable merge and remaining-time display now validate before arithmetic.
+Eight RED groups; review clock-gate fix; final95 passes in system and explicit-C Homebrew Bash.
+[Source/results](legacy-policy-trust-source-check-2026-10-15.md#checked-decimal-policy-arithmetic-2026-10-15).
+**Scope:** four modules/one test, docs/capture. Next: portable trust. Goal/Phase9 remain incomplete.
