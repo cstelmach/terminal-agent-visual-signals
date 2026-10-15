@@ -1,7 +1,18 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.95
+Version: 1.96
+
+## Native preview rejects a valid shell's root-owned login parent
+
+Selecting either dedicated Ghostty pane produced a native-mapping failure before painting.
+The foreground shell had valid PID/generation/TTY evidence, but `PROC_PIDTBSDINFO` returned
+`EPERM` for its root-owned login parent. The strict owner walk correctly refused that missing
+identity. Both inspectors now use public `sysctl(KERN_PROC_PID)` metadata, preserving the
+complete parent walk, generation checks and unsigned TTY sentinels. Kernel exit flags use
+`P_WEXIT`, distinct from libproc's old exit bit. Root-process, independent own-process parity,
+malformed-snapshot and owned-PTY regressions cover the change. Required visible acceptance
+and broader test results remain in the dated SPEC package's progress log.
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 

@@ -16,17 +16,29 @@ struct ProcessIdentity {
 
     static func inspect(_ pid: Int32) -> ProcessIdentity? {
         guard pid > 0 else { return nil }
-        var info = proc_bsdinfo()
-        let size = MemoryLayout<proc_bsdinfo>.size
-        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, Int32(size)) == size,
-              info.pbi_pid == UInt32(pid), info.pbi_start_tvsec > 0,
-              info.pbi_start_tvusec < 1_000_000, info.pbi_status != SZOMB,
-              info.pbi_flags & UInt32(PROC_FLAG_INEXIT) == 0 else { return nil }
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.size
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        // Public kernel metadata also covers root-owned login ancestors of user shells.
+        guard sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0) == 0 else { return nil }
+        return fromKernel(info, pid: pid, byteCount: size)
+    }
+
+    static func fromKernel(_ info: kinfo_proc, pid: Int32, byteCount: Int) -> ProcessIdentity? {
+        let start = info.kp_proc.p_un.__p_starttime
+        guard pid > 0, byteCount == MemoryLayout<kinfo_proc>.size,
+              info.kp_proc.p_pid == pid, start.tv_sec > 0,
+              start.tv_usec >= 0, start.tv_usec < 1_000_000,
+              [Int8(SRUN), Int8(SSLEEP), Int8(SSTOP)].contains(info.kp_proc.p_stat),
+              info.kp_proc.p_flag & P_WEXIT == 0,
+              info.kp_eproc.e_ppid >= 0, info.kp_eproc.e_pgid >= 0,
+              info.kp_eproc.e_tpgid >= -1 else { return nil }
         return ProcessIdentity(
-            generation: ProcessGeneration(pid: pid, startSeconds: info.pbi_start_tvsec,
-                                          startMicroseconds: info.pbi_start_tvusec),
-            parentPID: info.pbi_ppid, group: info.pbi_pgid, device: info.e_tdev,
-            foregroundGroup: info.e_tpgid
+            generation: ProcessGeneration(pid: pid, startSeconds: UInt64(start.tv_sec),
+                                          startMicroseconds: UInt64(start.tv_usec)),
+            parentPID: UInt32(info.kp_eproc.e_ppid), group: UInt32(info.kp_eproc.e_pgid),
+            device: UInt32(bitPattern: info.kp_eproc.e_tdev),
+            foregroundGroup: UInt32(bitPattern: info.kp_eproc.e_tpgid)
         )
     }
 
