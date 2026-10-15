@@ -1,7 +1,7 @@
 # Legacy shell policy and registry trust gaps
 
 Last Updated: 2026-10-15
-Version: 1.5
+Version: 1.6
 Initial inspected source: clean HEAD `780995b`,
 `/Users/cs/local/code/apps/terminal-agent-visual-signals`.
 The parent subsequently committed copy-only help change `8a12cc9`; no S2 source/test change was
@@ -528,3 +528,32 @@ aliases remain supported. No permission repair, deadline extension, raw-output r
 configuration change or terminal effect was introduced. Ancestor changes after the final check,
 hard syscall deadlines, separate debug paths, Homebrew default-locale behavior and required
 native/Linux acceptance remain open. This is a bounded Phase9 correction; the goal is incomplete.
+
+## Optional debug sink trust: 2026-10-15
+
+`11e2486` routes mute, invocation and title diagnostics through one shared shell append helper.
+Private fixtures reproduced symbolic/hard-link target mutation, FIFO waiting and a newly created
+0644 log under umask022. The first title fixture was inactive because defaults disabled logging;
+supplying the private user config made the actual core append reproduce the target mutation.
+The [source check](/Volumes/external/agent-data/reports/2026-10-15/tavs-debug-sink-source-check-200700.md)
+identified the append-specific hard-link case. Its rejection stays local to debug sinks.
+Existing ancestry/owner/mode checks, checked parent creation and umask077 cover static storage
+admission. Formats, metadata redaction, append behavior and optional failure handling remain.
+No new module, dependency, permission repair or device deadline change was added. Same-user
+check/open races and earlier unrelated initialization are outside this correction.
+
+Six focused cases pass, including the shared helper in system Bash3.2.57, Homebrew Bash5.3.15
+and zsh. The system connected run passes106/109; three existing managed-render cases hit deadlines
+and all three pass on a focused rerun. The explicit-C Homebrew control passes10/11, with the
+portable idle-worker case failing after timed-out writes and a later rendered result. All debug
+cases pass in both controls. Shell syntax passes; ShellCheck has zero touched-line diagnostics.
+The final unchanged Swift binary executes674 tests with108 failures across59 methods,70 unexpected,
+in93.255 s (94.355 s elapsed). Host load averages were140.77/108.43/80.55 on12 logical CPUs;
+this coincides with the failures but does not establish their cause. Full verification remains open.
+Do not widen the100 ms deadline or claim an all-green slice from the focused checks.
+
+Complete RED, corrected fixture, focused, connected, control, Swift and ShellCheck logs:
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/debug-log-storage-20261015-200552/`.
+The operator also reports no visible native preview on selection; the app shows a selected row
+but its private runtime has mutexes and no published effect. Automatic expiry clears the displayed
+attempt result. Diagnose that native failure and retain a useful outcome before further acceptance.

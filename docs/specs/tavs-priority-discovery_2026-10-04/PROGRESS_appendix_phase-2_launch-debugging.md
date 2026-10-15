@@ -113,3 +113,15 @@ Current acceptance and unverified cases remain in [PROGRESS.md](PROGRESS.md).
 
 **Phase 9 native catalogue, 2026-10-15: 674/674 pass; 39bed38.** [Results](caller-deadline-source-check-2026-10-14.md#native-selector-batching-2026-10-15); [prior checkpoint](PROGRESS_appendix_phase-2_launch-debugging.md#swift-and-scoped-launch-checkpoint-2026-10-15).
 **Scope:** one source/test and bug docs; native031/038 app open, suspended. Next: portable lock transaction; native/Linux acceptance.
+
+### Native preview observation: 2026-10-15
+
+Computer Use on TAVS Native Test confirms the Dedicated native catalogue banner, exactly031/038,
+retained High/Normal priorities and suspended restrictions with Focus Off. Ghostty access remains
+denied; it was not retried. The operator selected a row but saw no highlighting. The subsequent
+AX inspection showed038 selected, and the private runtime had writer mutexes but no target/effect
+records. This is failed visible acceptance, not proof of correct preview or restoration.
+Source inspection confirms automatic expiry resets the attempt result to No preview. Preserve a
+useful result and investigate the native write failure; the root cause is still unknown. The host
+had load averages above140 on12 logical CPUs and many deadline-sensitive test failures. No other
+sessions were controlled or terminated. Docker remains stopped; Linux kernel acceptance is open.
