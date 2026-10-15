@@ -3,6 +3,7 @@
 import ctypes
 import errno
 import os
+import platform
 import re
 import stat
 import sys
@@ -11,28 +12,46 @@ import time
 from portable_policy import check_deadline
 
 
-class _BSDInfo(ctypes.Structure):
-    _fields_ = [(name, ctypes.c_uint32) for name in (
-        "pbi_flags", "pbi_status", "pbi_xstatus", "pbi_pid", "pbi_ppid", "pbi_uid",
-        "pbi_gid", "pbi_ruid", "pbi_rgid", "pbi_svuid", "pbi_svgid", "rfu_1"
-    )] + [
-        ("pbi_comm", ctypes.c_char * 16), ("pbi_name", ctypes.c_char * 32)
-    ] + [(name, ctypes.c_uint32) for name in (
-        "pbi_nfiles", "pbi_pgid", "pbi_pjobc", "e_tdev", "e_tpgid"
-    )] + [
-        ("pbi_nice", ctypes.c_int32), ("pbi_start_tvsec", ctypes.c_uint64),
-        ("pbi_start_tvusec", ctypes.c_uint64)
+class _Timeval(ctypes.Structure):
+    _fields_ = [("seconds", ctypes.c_long), ("microseconds", ctypes.c_int32)]
+
+
+class _KernelProcess(ctypes.Structure):
+    # Public kinfo_proc on Darwin arm64/x86_64; unrelated fields stay opaque.
+    _fields_ = [
+        ("start", _Timeval), ("unused_before_flags", ctypes.c_byte * 16),
+        ("flags", ctypes.c_int32), ("status", ctypes.c_int8),
+        ("status_padding", ctypes.c_byte * 3), ("pid", ctypes.c_int32),
+        ("unused_before_parent", ctypes.c_byte * 516),
+        ("parent", ctypes.c_int32), ("group", ctypes.c_int32),
+        ("unused_job_control", ctypes.c_byte * 4),
+        ("device", ctypes.c_int32), ("foreground", ctypes.c_int32),
+        ("unused_tail", ctypes.c_byte * 68)
     ]
 
 
+_KERNEL_LAYOUT_SUPPORTED = (
+    platform.machine() in {"arm64", "x86_64"} and sys.byteorder == "little"
+    and ctypes.sizeof(ctypes.c_void_p) == 8 and ctypes.sizeof(_Timeval) == 16
+    and _Timeval.microseconds.offset == 8
+    and ctypes.sizeof(_KernelProcess) == 648 and ctypes.alignment(_KernelProcess) == 8
+    and all(getattr(_KernelProcess, name).offset == offset for name, offset in {
+        "start": 0, "flags": 32, "status": 36, "pid": 40,
+        "parent": 560, "group": 564, "device": 572, "foreground": 576
+    }.items())
+)
+_sysctl = None
 _libproc = None
 if sys.platform == "darwin":
     try:
+        _sysctl = ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True).sysctl
+        _sysctl.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_uint, ctypes.c_void_p,
+                           ctypes.POINTER(ctypes.c_size_t), ctypes.c_void_p, ctypes.c_size_t]
+        _sysctl.restype = ctypes.c_int
+    except (OSError, AttributeError):
+        _sysctl = None
+    try:
         _libproc = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
-        _libproc.proc_pidinfo.argtypes = [
-            ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64, ctypes.c_void_p, ctypes.c_int32
-        ]
-        _libproc.proc_pidinfo.restype = ctypes.c_int32
         _libproc.proc_pidpath.argtypes = [ctypes.c_int32, ctypes.c_void_p, ctypes.c_uint32]
         _libproc.proc_pidpath.restype = ctypes.c_int32
     except (OSError, AttributeError):
@@ -44,21 +63,24 @@ def inspect(pid):
         return None
     if sys.platform == "linux":
         return _linux_inspect(pid)
-    if _libproc is None:
+    if sys.platform != "darwin" or _sysctl is None or not _KERNEL_LAYOUT_SUPPORTED:
         return None
-    value = _BSDInfo()
-    size = ctypes.sizeof(value)
-    if size != 136 or _libproc.proc_pidinfo(pid, 3, 0, ctypes.byref(value), size) != size:
+    value = _KernelProcess()
+    size = ctypes.c_size_t(ctypes.sizeof(value))
+    mib = (ctypes.c_int * 4)(1, 14, 1, pid)  # CTL_KERN, KERN_PROC, KERN_PROC_PID
+    if (_sysctl(mib, len(mib), ctypes.byref(value), ctypes.byref(size), None, 0) != 0
+            or size.value != ctypes.sizeof(value)):
         return None
-    if (value.pbi_pid != pid or value.pbi_start_tvsec == 0
-            or value.pbi_start_tvusec >= 1_000_000 or value.pbi_status == 5
-            or value.pbi_flags & 4):
+    if (value.pid != pid or value.start.seconds <= 0
+            or not 0 <= value.start.microseconds < 1_000_000 or value.status not in {2, 3, 4}
+            or value.flags & 0x2000 or value.parent < 0 or value.group < 0
+            or value.foreground < -1):  # P_WEXIT; bit 4 is the ordinary P_LP64 flag.
         return None
     return {
-        "generation": {"pid": pid, "startSeconds": value.pbi_start_tvsec,
-                       "startMicroseconds": value.pbi_start_tvusec},
-        "parentPID": value.pbi_ppid, "group": value.pbi_pgid,
-        "device": value.e_tdev, "foregroundGroup": value.e_tpgid,
+        "generation": {"pid": pid, "startSeconds": value.start.seconds,
+                       "startMicroseconds": value.start.microseconds},
+        "parentPID": value.parent, "group": value.group,
+        "device": value.device & 0xFFFFFFFF, "foregroundGroup": value.foreground & 0xFFFFFFFF,
     }
 
 

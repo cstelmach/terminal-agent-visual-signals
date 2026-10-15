@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.85
+Version: 1.86
 
 ## Private managed-output failure diagnostics
 
@@ -583,7 +583,15 @@ reset remain separate. It does not interpret arbitrary OSC streams or advertise 
 
 ## Portable primitives
 
-`portable_process_identity.inspect` reads macOS libproc with the existing generation fields.
+Native `ProcessIdentity.inspect` and `portable_process_identity.inspect` read macOS public
+`sysctl(KERN_PROC_PID)` snapshots, including root-owned login ancestors. A complete snapshot
+must match the requested PID, contain a valid birth time and live state, and lack `P_WEXIT`.
+Parent/group fields stay nonnegative; device and foreground values retain unsigned sentinel
+bits. Unknown or denied metadata remains unavailable. Parent walks and later generation/TTY
+revalidation still apply. Python accepts only the verified 64-bit little-endian arm64/x86_64
+648-byte layout. Native Swift uses the SDK structure. Libproc remains a separate executable-
+path source for Python; its availability does not gate identity inspection.
+
 Linux uses boot-relative tick parts with a +1 seconds offset, plus `linuxScope` containing boot
 ID, PID/time namespace device/inode pairs and time offsets. It requires one self NSpid, matching
 candidate namespaces, complete supported tick intervals and two matching reads from a held proc

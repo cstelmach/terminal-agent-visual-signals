@@ -17,6 +17,14 @@ from test_portable_records import linux_generation
 
 
 class PortableProcessIdentityTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == "darwin", "Public Darwin kernel identity")
+    def test_public_kernel_identity_includes_privileged_system_parent(self):
+        value = identity.inspect(1)
+        self.assertIsNotNone(value)
+        self.assertEqual(value["generation"]["pid"], 1)
+        self.assertGreater(value["generation"]["startSeconds"], 0)
+        self.assertEqual(value, identity.inspect(1))
+
     def test_linux_foreground_and_ancestry_cannot_bridge_namespace_scopes(self):
         first, second = linux_generation(43), linux_generation(100)
         second["linuxScope"]["timeNamespace"][1] += 1
@@ -96,17 +104,89 @@ class PortableProcessIdentityTests(unittest.TestCase):
         for pid in [0, -1, True, 2**31, "43"]:
             self.assertIsNone(identity.inspect(pid))
 
-    @unittest.skipUnless(sys.platform == "darwin", "macOS libproc bridge")
-    def test_libproc_layout_and_current_generation(self):
-        self.assertEqual(ctypes.sizeof(identity._BSDInfo), 136)
-        self.assertEqual(identity._BSDInfo.pbi_start_tvsec.offset, 120)
-        self.assertEqual(identity._BSDInfo.pbi_start_tvusec.offset, 128)
+    def test_kernel_layout_matches_the_compiler_verified_64_bit_darwin_abi(self):
+        self.assertEqual(ctypes.sizeof(identity._KernelProcess), 648)
+        self.assertEqual(ctypes.alignment(identity._KernelProcess), 8)
+        for name, offset in {"start": 0, "flags": 32, "status": 36, "pid": 40,
+                             "parent": 560, "group": 564, "device": 572,
+                             "foreground": 576}.items():
+            self.assertEqual(getattr(identity._KernelProcess, name).offset, offset)
+        self.assertEqual(identity._Timeval.microseconds.offset, 8)
+
+    @unittest.skipUnless(sys.platform == "darwin", "Independent macOS libproc oracle")
+    def test_kernel_identity_matches_independent_own_libproc_snapshot(self):
+        # Only the test oracle uses libproc, which denies some root-owned ancestors.
+        class BSDInfo(ctypes.Structure):
+            _fields_ = [("prefix", ctypes.c_uint32 * 4), ("parent", ctypes.c_uint32),
+                        ("unused", ctypes.c_byte * 80), ("group", ctypes.c_uint32),
+                        ("jobc", ctypes.c_uint32), ("device", ctypes.c_uint32),
+                        ("foreground", ctypes.c_uint32), ("nice", ctypes.c_int32),
+                        ("seconds", ctypes.c_uint64), ("microseconds", ctypes.c_uint64)]
+        oracle = ctypes.CDLL("/usr/lib/libproc.dylib").proc_pidinfo
+        oracle.argtypes = [ctypes.c_int32, ctypes.c_int32, ctypes.c_uint64,
+                           ctypes.c_void_p, ctypes.c_int32]
+        oracle.restype = ctypes.c_int32
+        info = BSDInfo()
+        self.assertEqual(ctypes.sizeof(info), 136)
+        self.assertEqual(oracle(os.getpid(), 3, 0, ctypes.byref(info), 136), 136)
         value = identity.inspect(os.getpid())
         self.assertEqual(value["generation"]["pid"], os.getpid())
         self.assertGreater(value["generation"]["startSeconds"], 0)
         self.assertLessEqual(value["generation"]["startSeconds"], time.time())
         self.assertEqual(value["parentPID"], os.getppid())
         self.assertEqual(value, identity.inspect(os.getpid()))
+        self.assertEqual(value["generation"]["startSeconds"], info.seconds)
+        self.assertEqual(value["generation"]["startMicroseconds"], info.microseconds)
+        for name, expected in (("parentPID", info.parent), ("group", info.group),
+                               ("device", info.device), ("foregroundGroup", info.foreground)):
+            self.assertEqual(value[name], expected)
+
+    def test_kernel_query_rejects_failures_incomplete_counts_and_invalid_metadata(self):
+        value = identity._KernelProcess()
+        value.start.seconds, value.start.microseconds = 100, 123
+        value.pid, value.parent, value.group = 43, 1, 43
+        value.status, value.device, value.foreground = 3, 123, 43
+
+        def query(mib, count, output, size, new, new_size):
+            self.assertEqual(list(mib), [1, 14, 1, 43])
+            self.assertEqual(count, 4)
+            self.assertIsNone(new)
+            self.assertEqual(new_size, 0)
+            ctypes.memmove(output, ctypes.byref(value), ctypes.sizeof(value))
+            size._obj.value = returned_size
+            return result
+
+        with patch.object(identity.sys, "platform", "darwin"), \
+                patch.object(identity, "_sysctl", query), \
+                patch.object(identity, "_KERNEL_LAYOUT_SUPPORTED", True):
+            result, returned_size = 0, 648
+            self.assertEqual(identity.inspect(43), {
+                "generation": {"pid": 43, "startSeconds": 100, "startMicroseconds": 123},
+                "parentPID": 1, "group": 43, "device": 123, "foregroundGroup": 43})
+            for result, returned_size in [(-1, 648), (0, 0), (0, 647), (0, 649)]:
+                self.assertIsNone(identity.inspect(43))
+            result, returned_size = 0, 648
+            for obj, name, invalids in [
+                (value, "pid", [0, 44]), (value.start, "seconds", [0, -1]),
+                (value.start, "microseconds", [-1, 1_000_000]),
+                (value, "status", [0, 1, 5, 99]), (value, "flags", [0x2000]),
+                (value, "parent", [-1]), (value, "group", [-1]),
+                (value, "foreground", [-2])
+            ]:
+                original = getattr(obj, name)
+                for invalid in invalids:
+                    setattr(obj, name, invalid)
+                    self.assertIsNone(identity.inspect(43), (name, invalid))
+                setattr(obj, name, original)
+            value.flags, value.device, value.foreground = 4, -1, -1
+            for state in [2, 3, 4]:
+                value.status = state
+                self.assertEqual(identity.inspect(43)["device"], 2**32-1)
+                self.assertEqual(identity.inspect(43)["foregroundGroup"], 2**32-1)
+            with patch.object(identity, "_KERNEL_LAYOUT_SUPPORTED", False):
+                self.assertIsNone(identity.inspect(43))
+            with patch.object(identity, "_sysctl", None):
+                self.assertIsNone(identity.inspect(43))
 
     def test_continuing_owner_rejects_reuse_and_preserves_top_same_device_ancestor(self):
         def process(pid, parent, device=43):
