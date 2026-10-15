@@ -597,6 +597,13 @@ final class VisualRecovery {
             catch VisualRecoveryError.focusUnavailable {
                 status = .failed; reason = "Focus unavailable: no safe configured-color dimming."
             }
+            catch ProcessRunnerError.deviceWriteTimedOut(_, let stage) {
+                status = .failed
+                reason = "Terminal update timed out" + (stage.map { " (\($0.rawValue))." } ?? ".")
+            }
+            catch TerminalVisualStateError.deadlineExceeded {
+                status = .failed; reason = "Terminal state update timed out."
+            }
             catch { status = .failed; reason = "Managed restoration unavailable." }
             lock.lock()
             items.append(VisualRecoveryItem(target: target, tty: target.tty, status: status, reason: reason))

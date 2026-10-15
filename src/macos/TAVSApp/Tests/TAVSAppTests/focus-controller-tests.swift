@@ -1588,7 +1588,91 @@ final class FocusControllerTests: XCTestCase {
         focus.$cleanupError.dropFirst().first().sink { _ in cleared.fulfill() }.store(in: &subscriptions)
         clock.advance(by: 0.75); timers.fireAll(); wait(for: [cleared], timeout: 2)
         XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertEqual(focus.previewStatus, "1 of 1 terminals previewed.")
         XCTAssertEqual(try read(0), Data("\u{1B}]111\u{1B}\\".utf8))
+    }
+
+    func testPreparationFailureIdentifiesColorsOrNativeMapping() throws {
+        let row = try surface(10)
+        for failColors in [true, false] {
+            let focus = controller(MockTimerScheduler(), snapshot: {
+                throw GhosttyCatalogError.nativeUnavailable
+            }, colors: { _ in
+                if failColors { throw TerminalConfigurationError.unavailable }
+                return TerminalRenderer.Colors(background: "#171717", foreground: "#EEEEEE")!
+            })
+            let failed = expectation(description: "Preparation failure identified")
+            focus.$previewStatus.first { $0.contains("unavailable") }
+                .sink { _ in failed.fulfill() }.store(in: &subscriptions)
+            focus.preview([row]); wait(for: [failed], timeout: 2)
+            let phase = failColors ? "configured colors" : "native terminal mapping"
+            XCTAssertTrue(focus.previewStatus.contains(phase + " could not be resolved"), focus.previewStatus)
+            focus.clearPreview()
+        }
+    }
+
+    func testFailedPreviewResultSurvivesAutomaticExpiryUntilExplicitClear() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), runner = MockProcessRunner()
+        let firstWrite = DispatchSemaphore(value: 1)
+        runner.managedBeforeOpenHandler = { path, _, _, _, _ in
+            if firstWrite.wait(timeout: .now()) == .success {
+                throw ProcessRunnerError.deviceWriteTimedOut(path, .prepare)
+            }
+            return false
+        }
+        configureState(runner: runner)
+        let clearQueue = DispatchQueue(label: "preview.failed-outcome-clear")
+        let focus = controller(timers, clearQueue: clearQueue)
+        defer {
+            let cleared = expectation(description: "Failed preview cleanup drained")
+            clearQueue.async { DispatchQueue.main.async { cleared.fulfill() } }
+            wait(for: [cleared], timeout: 2)
+        }
+        let failed = expectation(description: "Preview failure reported")
+        focus.$previewStatus.first { $0.contains("0 of 1") }
+            .sink { _ in failed.fulfill() }.store(in: &subscriptions)
+        focus.preview([row]); wait(for: [failed], timeout: 2)
+        XCTAssertTrue(focus.previewStatus.contains("timed out"), focus.previewStatus)
+        let result = focus.previewStatus
+        clock.advance(by: 2); timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertEqual(focus.previewStatus, result)
+        XCTAssertTrue(state.cachedRecords().effects.isEmpty)
+        focus.clearPreview()
+        XCTAssertEqual(focus.previewStatus, "No preview.")
+    }
+
+    func testExpiryBeforePreviewCompletionReportsUnconfirmedDeliveryAndIgnoresLateResult() throws {
+        let row = try surface(10), timers = MockTimerScheduler(), runner = MockProcessRunner()
+        let entered = expectation(description: "Preview write entered")
+        let release = DispatchSemaphore(value: 0), firstWrite = DispatchSemaphore(value: 1)
+        runner.managedBeforeOpenHandler = { _, _, _, _, _ in
+            if firstWrite.wait(timeout: .now()) == .success { entered.fulfill(); release.wait() }
+            return false
+        }
+        configureState(runner: runner)
+        let queue = DispatchQueue(label: "preview.outcome-delayed")
+        let clearQueue = DispatchQueue(label: "preview.outcome-clear")
+        clearQueue.suspend()
+        let focus = controller(timers, queue: queue, clearQueue: clearQueue)
+        defer {
+            release.signal(); clearQueue.resume()
+            let cleared = expectation(description: "Delayed preview cleanup drained")
+            clearQueue.async { DispatchQueue.main.async { cleared.fulfill() } }
+            wait(for: [cleared], timeout: 2)
+        }
+        focus.preview([row]); wait(for: [entered], timeout: 2)
+        let scheduled = expectation(description: "Expiry timer installed")
+        DispatchQueue.main.async { scheduled.fulfill() }; wait(for: [scheduled], timeout: 2)
+        clock.advance(by: 2); timers.fireAll()
+        XCTAssertFalse(focus.isPreviewActive)
+        XCTAssertTrue(focus.previewStatus.contains("not confirmed"), focus.previewStatus)
+        let outcome = focus.previewStatus
+        let finished = expectation(description: "Late preview result drained")
+        release.signal()
+        queue.async { DispatchQueue.main.async { finished.fulfill() } }
+        wait(for: [finished], timeout: 2)
+        XCTAssertEqual(focus.previewStatus, outcome)
     }
 
     func testExpiredPreparedStartStillSchedulesCleanupWithoutPainting() throws {
@@ -1630,8 +1714,10 @@ final class FocusControllerTests: XCTestCase {
         focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
         let oldHandler = try XCTUnwrap(timers.scheduledTimers.first?.handler)
         clock.advance(by: 1); focus.preview([row]); awaitPaint(focus, count: 1); _ = try read(0)
+        let status = focus.previewStatus
         oldHandler()
         XCTAssertTrue(focus.isPreviewActive)
+        XCTAssertEqual(focus.previewStatus, status)
         var ready = pollfd(fd: ptys[0].master, events: Int16(POLLIN), revents: 0)
         XCTAssertEqual(poll(&ready, 1, 20), 0)
         focus.clearPreview(); _ = try read(0)

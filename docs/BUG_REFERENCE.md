@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.94
+Version: 1.95
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -454,6 +454,17 @@ now queues exact-ID expiry before the paint-age check. Five new tests cover slow
 replacement, failure, delayed setup and already expired starts; existing cancellation checks remain.
 The clock fixture serializes its boundary so concurrent worker/main reads cannot defeat the test.
 Fresh configuration validation remains intact. No persistent cache or native timing claim is added.
+
+## Preview expiry erases delivery feedback
+
+Automatic expiry used the normal Clear path, replacing successful or failed delivery results with
+No preview. A selected row could therefore appear to have done nothing after a failed write.
+Expiry now retains its run's result while ending the effect and scheduling the existing cleanup.
+An unfinished result is reported as unconfirmed; late completion cannot overwrite it. Explicit
+cancellation resets the text. Typed timeouts retain finite reasons without exposing raw paths.
+Mocked failures, delayed completion, successful expiry and obsolete timer tests cover the change.
+Native acceptance also exposed denied inspection of a privileged login parent. That binding defect
+remains open; feedback retention is not its fix.
 
 ## Per-terminal lookup scans unrelated cache records
 

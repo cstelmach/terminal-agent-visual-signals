@@ -60,13 +60,16 @@ final class FocusController: ObservableObject {
         isPreviewActive = true; previewStatus = "Preparing preview."
         queue.async { [weak self] in
             guard let self = self, self.isCurrent(run) else { return }
+            var preparation = "selected terminals"
             do {
                 let applications = Set(rows.map { $0.id.application })
                 guard applications.count == 1, let application = applications.first else {
                     throw VisualRecoveryError.targetUnavailable
                 }
+                preparation = "configured colors"
                 let colors = try self.colors(application)
                 guard self.isCurrent(run) else { return }
+                preparation = "native terminal mapping"
                 let fresh = try self.validatedNativeRows(rows)
                 guard self.isCurrent(run) else { return }
                 let targets = fresh.compactMap { self.state.captureTarget(for: $0) }
@@ -82,7 +85,7 @@ final class FocusController: ObservableObject {
                     let remaining = max(0, startedAt + 2 - self.clock.now().timeIntervalSince1970)
                     self.timers.scheduleOnce(after: remaining, on: .main) { [weak self] in
                         guard let self = self, self.matchesID(run) else { return }
-                        self.clearPreview()
+                        self.clearPreview(preservingOutcome: true)
                     }
                 }
                 guard self.isCurrent(run) else { return }
@@ -100,17 +103,21 @@ final class FocusController: ObservableObject {
                 let items = self.recovery.apply(.preview(request), to: targets)
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, self.isCurrent(run) else { return }
-                    self.previewed = Set(items.filter { $0.status == .restored }.compactMap { $0.target?.nativeSurface })
-                    self.previewStatus = "\(self.previewed.count) of \(rows.count) terminals previewed."
+                    let previewed = Set(items.filter { $0.status == .restored }.compactMap { $0.target?.nativeSurface })
+                    var outcome = "\(previewed.count) of \(rows.count) terminals previewed."
                     if let reason = items.first(where: { $0.status == .failed })?.reason {
-                        self.previewStatus += " \(reason)"
+                        outcome += " \(reason)"
                     }
+                    run.previewOutcome = outcome
+                    self.previewed = previewed; self.previewStatus = outcome
                 }
             } catch {
                 let reason: String
                 if case TerminalConfigurationError.unresolvedAppearance = error {
                     reason = "Preview unavailable: Ghostty's CLI cannot resolve the selected dual-theme appearance."
-                } else { reason = "Preview unavailable: configured colors or native mapping cannot be resolved." }
+                } else if case ProcessRunnerError.processTimedOut = error {
+                    reason = "Preview unavailable: resolving \(preparation) timed out."
+                } else { reason = "Preview unavailable: \(preparation) could not be resolved." }
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self, self.isCurrent(run) else { return }
                     self.isPreviewActive = false
@@ -133,10 +140,13 @@ final class FocusController: ObservableObject {
         }
     }
 
-    func clearPreview() {
+    func clearPreview(preservingOutcome: Bool = false) {
         lock.lock(); let old = current; current = nil; lock.unlock()
         timers.cancelAll()
-        isPreviewActive = false; previewed.removeAll(); previewStatus = "No preview."
+        isPreviewActive = false; previewed.removeAll()
+        previewStatus = preservingOutcome
+            ? old?.previewOutcome ?? "Preview ended; terminal delivery was not confirmed before expiry."
+            : "No preview."
         var runs = pendingClear; pendingClear.removeAll()
         if let old = old { runs.append(old) }
         for run in runs {
@@ -642,6 +652,7 @@ final class FocusController: ObservableObject {
     private final class Run {
         let id = UUID().uuidString
         var previewStartedAt: Double?
+        var previewOutcome: String?
         let revision: VisualRestrictionsRevision
         var targets: [TerminalTargetBinding] = []
         var lastFocusColors: TerminalRenderer.Colors?

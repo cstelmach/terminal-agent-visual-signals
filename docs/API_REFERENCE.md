@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.84
+Version: 1.85
 
 ## Private managed-output failure diagnostics
 
@@ -899,13 +899,20 @@ Selection immediately pins the suspension revision and remains cancellable while
 prepare. A successful current preparation establishes one display-start timestamp immediately
 before bounded paint. `TerminalPreviewRequest`, its record and the expiry timer use that timestamp;
 configuration delay does not consume the two-second lease. Late timer setup uses the remaining
-duration, including zero for an already expired accepted start. Failure leaves explicit unavailable
+duration, including zero for an already expired accepted start. Preparation failure leaves unavailable
 status without an active preview or expiry timer. Fresh validated colors are queried once per
 multiselection, without reuse between previews. The revision holds a read-only descriptor, preventing
 inode reuse. A preview caches its validated target before comparing that revision inside the
 existing writer lock. Recovery's atomic replacement rejects queued starts even if the Boolean
 value is unchanged; later accepted writes are discoverable by recovery. Exact-ID clear uses the
 same revision so an old clear cannot reapply ordinary color after emergency reset.
+
+Automatic expiry clears active preview state and schedules cleanup while retaining the attempt's
+result. If completion was not confirmed before expiry, the status says so. Late results cannot
+overwrite that status or a newer attempt. Clear, selection changes, window close and recovery use
+normal cancellation and reset the text. Device timeouts retain a finite stage without raw error paths;
+state-deadline expiry has a separate finite reason. These messages do not identify the timeout's cause.
+Preparation errors distinguish configured colors from native mapping and identify subprocess timeout.
 
 GUI replacement previews wait only for their physical target's prior cleanup.
 `FocusController` accepts its existing concurrent cleanup queue as an initializer dependency.
