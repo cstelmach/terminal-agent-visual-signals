@@ -1,7 +1,7 @@
 # Recovery and managed output API
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.75
+Version: 1.76
 
 ## Private managed-output failure diagnostics
 
@@ -896,5 +896,5 @@ diagnostics that ordinary output can omit. Queries reload configuration rather t
 running colors. Concurrent deletion and optional-file loading remain native CLI limitations;
 path preflight does not make configured queries transactional. No live query ran in development.
 
-See [hard-lock reference](reference/hard-lock.md), [bug reference](BUG_REFERENCE.md) and
-[implementation progress](specs/tavs-priority-discovery_2026-10-04/PROGRESS.md).
+See [session tables](reference/architecture.md#session-statesh-state-management),
+[hard-lock reference](reference/hard-lock.md) and [bug reference](BUG_REFERENCE.md).

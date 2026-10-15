@@ -1,7 +1,7 @@
 # Bug Reference
 
 Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.85
+Version: 1.86
 
 ## Delivery failures lose their diagnostic stage and physical oracle
 
@@ -884,16 +884,16 @@ Verification: 273 Swift tests, 55 isolated Bats cases and 230 audited Python cas
 Computer Use confirmed coverage labels and failed-refresh retention in the private fixture app.
 Real provider hooks, Ghostty rendering and later recovery/focus ownership remain unverified.
 
-## Test fixtures escape their intended private roots
+## Test and development failures
 
-Isolation, PTY lifetime and recovery fixture corrections, with remaining checks:
-[details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md).
+Isolation, PTY lifetime, recovery fixtures, app replacement, installer status and launch corrections:
+[details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md). Native acceptance is pending.
+The [valid `/tmp` alias correction](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#isolated-launch-rejects-the-valid-tmp-alias)
+is resolved.
 
-## Installer and development app failures
+## Concurrent shell state updates lose other terminals
 
-Resolved launch, app replacement and agent-installer status defects; native acceptance is pending:
-[details](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md).
-
-## Isolated launch rejects the valid `/tmp` alias
-
-[Resolved alias correction](BUG_REFERENCE_appendix_test-isolation-and-development-launch.md#isolated-launch-rejects-the-valid-tmp-alias).
+Whole-table snapshots lost unrelated TTY updates; inherited `$$` temporary names also collided.
+[Stable table locks](reference/architecture.md#session-statesh-state-management) now cover read,
+filter and rename, using unique staging files, ancestor admission and checked failures. Twelve
+Bash/zsh groups cover races, timeout, crash release and cleanup. Old lockless workers remain outside.

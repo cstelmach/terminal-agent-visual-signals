@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.61
+**Version:** 4.62
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -811,24 +811,9 @@ approval answer arrived. Native phases 2/7/8 remain Blocked and phase 9 remains 
 > Finished source checkpoint: [focus poll appendix](PROGRESS_appendix_phase-9_focus-poll-coalescing.md).
 > Native/Linux acceptance and historical timing attribution remain open in current entries.
 
-### Phase 9 paint outcome diagnostics and revision fixtures: 2026-10-14 11:32 CEST
+### Phase 9 paint outcome diagnostics and revision fixtures
 
-> Finished source 5: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
-
-Seven fresh instrumented pairs pass: 8x3WjO, MNZYMg, lAxPbf, EKuMHz, nNohET, O3FRsJ, HbNQcQ.
-No initial-paint failure reproduced; historical rEYbJl/9IKEE0 and EPERM attribution stay open.
-Full TJMEY4 retained **570 tests, 3 unexpected failures**: forced-reset queued result timed out;
-queued-render's later fresh render exceeded organizer deadline and its following read timed out.
-The revision fixtures' paused-open barrier required full independent recovery/reset assertions
-inside 100 ms. They now publish once under a bounded call, gate outside the device transaction,
-then use the original prepare with exact target and a fresh real writer deadline. Captured revision
-still must reject old style/title after full recover/resume. This changes test scope, not production
-budgets. It does not explain the subsequent fresh-render timeout, which remains unattributed.
-> Finished source 6: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
-
-Next: scoped final review of current source, or Linux kernel checks after the pending host/Docker
-answer. Capture original initial/fresh writer failures if they recur; passing retries cannot close
-attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and incomplete.
+> Finished checkpoint: [ordinary helper appendix](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
 
 ### Phase 9 current reviews and schedule-load fix: 2026-10-14 12:46 CEST
 [Codex full review](current-codex-review-2026-10-14.md): three calls, 118 supplied entries.
@@ -898,3 +883,17 @@ Kernel checks await operator-started Docker after current jobs; eight Linux case
 > [Finished portable fixture refresh](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-portable-fixture-and-suite-refresh-2026-10-15).
 Prior native fixture: [details](PROGRESS_appendix_phase-9_ordinary-helper-routing.md).
 PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: session/color race.
+
+### Phase 9 shared session/color transactions: 2026-10-15
+
+S4: stable per-table FD locks now cover read/filter/rename; unique staging preserves other rows.
+ILtZl2 reproduced four concurrent-write failures. G0PFko: 12 Bash/zsh groups pass; zReAgt: 52 Bats.
+Checked failure paths preserve data, caller traps/FDs and lock reuse. Timestamp follows admission.
+The source check found a conditional ancestor/FIFO opening; local physical-ancestor admission fixes it.
+Explicit octal masks and BSD full-mode stat fix zsh/sticky portability; failed logs are retained.
+[Source findings and correction](session-table-source-check-2026-10-15.md); API/bug/architecture updated.
+Backups/logs: `/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-session-table-transactions-v4uzunle/`.
+Moved 19 finished diagnostic lines unchanged to the existing appendix; round-trip verified.
+**Scope:** one shared module, concurrency tests and connected docs/capture; no live changes.
+Swift unchanged; last full671/60 assertions remains open. Linux awaits operator-started Docker.
+Next: N3 help text, remaining S2 readers and required native acceptance. Goal/Phase 9 incomplete.

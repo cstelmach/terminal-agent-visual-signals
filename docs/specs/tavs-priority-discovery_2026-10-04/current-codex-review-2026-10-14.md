@@ -790,3 +790,30 @@ both corrected scripts, Gemini trigger/hooks and the Codex template through the 
 list, with required script execute permissions. tYeAUf reproduced two failures: stale copied
 bytes and Gemini CLI exit127. Final YiNtUz passes36/36 (9 child, 11 app, 16 sync), including copied
 Gemini/unified preview rejection in both plugin roots. Original logs are retained above.
+
+## S4 source disposition: 2026-10-15
+
+Confirmed: atomic rename did not serialize the shared state/color table snapshot. ILtZl2
+reproduced four lost-update failures across real Bash 3.2/zsh. All existing mutation APIs now
+hold one stable per-table descriptor through fresh read, filter, unique staging and rename.
+Color write/clear also return explicit success instead of inheriting the disabled-debug status.
+State timestamps follow admission. No row schema, reader layout or device deadline changed.
+
+The [independent source check](session-table-source-check-2026-10-15.md) found a conditional
+ancestor/FIFO opening before lock acquisition. Its private substitution results and source seam
+were checked; a new four-subcase red reproduced missing ancestor rejection (EwS9ed). Physical
+path use and local root/EUID ancestor admission fix it. Explicit base-8 masks avoid zsh's decimal
+leading-zero interpretation; BSD `%Op` retains sticky bits omitted by `%Lp`. Further tests cover
+safe aliases, actual sticky ancestry and read permissions. Separate S2 policy/reader paths remain.
+
+G0PFko: **12/12 groups pass**; zReAgt: **52/52 connected Bats pass**. Held-lock, crash, filter/
+backend/rename failure, unchanged old data, empty clear and caller trap/FD checks are included.
+Bash/zsh syntax passes. ShellCheck reports the same six existing SC2034 exports as the backup;
+excluding that category passes. The first extra `/dev/fd` equality guard failed on Bash and was
+removed before final testing. Earlier failures and final logs are retained under
+`/Volumes/external/data/archive/tmp-by-day/2026-10-15/tavs-session-table-transactions-v4uzunle/`.
+
+S4 is corrected in source with Mac shell evidence. Linux kernel acceptance, mixed old lockless
+workers and native Ghostty acceptance are unverified. The prior Swift full-suite failures remain;
+Swift source was untouched and was not rerun here. This is a source disposition, not a new final
+provider verdict. Historical VETO and the active/incomplete goal remain unchanged.

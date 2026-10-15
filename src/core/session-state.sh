@@ -82,23 +82,99 @@ read_session_state() {
     return 0
 }
 
-# Write session state to consolidated file (atomic update)
+# Existing private roots and leaves must not permit another user to replace lock/state files.
+_tavs_session_table_private_path() {
+    local metadata owner mode
+    [[ ! -L "$1" ]] || return 1
+    case "$OSTYPE" in
+        darwin*) metadata=$(stat -f '%u:%Op' "$1") || return 1 ;;
+        linux*)  metadata=$(stat -c '%u:%a' "$1") || return 1 ;;
+        *) return 1 ;;
+    esac
+    owner="${metadata%%:*}" mode="${metadata#*:}"
+    [[ "$owner" == "$EUID" || ( "${2:-}" == ancestor && "$owner" == 0 ) ]] || return 1
+    [[ -n "$mode" && "$mode" != *[!0-7]* ]] || return 1
+    (( (8#$mode & 8#22) == 0 )) && return 0
+    # A trusted sticky ancestor protects the next owned directory, as /tmp does.
+    [[ "${2:-}" == ancestor ]] && (( (8#$mode & 8#1000) != 0 ))
+}
+
+# Keep the descriptor and cleanup scoped to this invocation, preserving caller traps/FDs.
+_tavs_update_session_table() (
+    local db="$1" operation="$2"
+    shift 2
+    local lock_file tmp_file="" row priority now_ms directory parent
+    [[ -n "$TTY_SAFE" && "$TTY_SAFE" != *[[:space:]]* ]] || return 1
+    [[ -d "${db%/*}" && ! -L "${db%/*}" ]] || return 1
+    directory=$(cd -P -- "${db%/*}" && pwd -P) || return 1
+    parent="$directory"
+    while :; do
+        _tavs_session_table_private_path "$parent" ancestor || return 1
+        [[ "$parent" == / ]] && break
+        parent="${parent%/*}"
+        [[ -n "$parent" ]] || parent=/
+    done
+    _tavs_session_table_private_path "$directory" || return 1
+    db="${directory}/${db##*/}" lock_file="${directory}/${db##*/}.lock"
+    umask 077
+
+    # Never unlink this stable inode. Kernel ownership ends when the shell's FD closes.
+    if [[ ! -e "$lock_file" ]]; then
+        (set -C; : > "$lock_file") 2>/dev/null || [[ -f "$lock_file" ]] || return 1
+    fi
+    [[ -f "$lock_file" ]] && _tavs_session_table_private_path "$lock_file" || return 1
+    exec 9>> "$lock_file" || return 1
+    case "$OSTYPE" in
+        darwin*) lockf -s -t 1 9 || return 1 ;;
+        linux*)
+            python3 -c 'import fcntl, signal
+def expired(*_):
+    raise SystemExit(75)
+signal.signal(signal.SIGALRM, expired)
+signal.alarm(1)
+fcntl.flock(9, fcntl.LOCK_EX)
+signal.alarm(0)' || return 1
+            ;;
+        *) return 1 ;;
+    esac
+
+    trap '[[ -z "$tmp_file" ]] || rm -f -- "$tmp_file"' EXIT
+    trap 'exit 1' HUP INT TERM
+    if [[ -e "$db" || -L "$db" ]]; then
+        [[ -f "$db" ]] && _tavs_session_table_private_path "$db" || return 1
+    elif [[ "$operation" == clear ]]; then
+        return 0
+    fi
+    tmp_file=$(mktemp "${db}.tmp.XXXXXX") || return 1
+    if [[ -f "$db" ]]; then
+        TAVS_TABLE_TTY="$TTY_SAFE" awk '$1 != ENVIRON["TAVS_TABLE_TTY"]' "$db" > "$tmp_file" || return 1
+    fi
+    case "$operation" in
+        state)
+            priority=$(get_state_priority "$1") || return 1
+            now_ms=$(get_time_ms) || return 1
+            row="${TTY_SAFE} $1 ${priority} ${now_ms} $2"
+            ;;
+        colors) row="${TTY_SAFE} $1" ;;
+        clear) ;;
+        *) return 1 ;;
+    esac
+    if [[ "$operation" != clear ]]; then
+        printf '%s\n' "$row" >> "$tmp_file" || return 1
+    fi
+    mv -- "$tmp_file" "$db" || return 1
+    tmp_file=""
+    return 0
+)
+
+# Serialize the full read/modify/rename; atomic rename alone loses concurrent TTY updates.
 write_session_state() {
     local state="$1"
     local timer_pid="${2:-}"
-    local priority
-    priority=$(get_state_priority "$state")
-    local now_ms
-    now_ms=$(get_time_ms)
-
+    [[ -n "$state" && "$state" != *[[:space:]]* && "$timer_pid" != *[[:space:]]* ]] || return 1
+    _tavs_update_session_table "$STATE_DB" state "$state" "$timer_pid" || return 1
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_state: tty=$TTY_SAFE state=$state timer_pid='$timer_pid'" >> "$IDLE_DEBUG_LOG"
-
-    local tmp_file="${STATE_DB}.tmp.$$"
-    {
-        grep -v "^${TTY_SAFE} " "$STATE_DB" 2>/dev/null
-        echo "${TTY_SAFE} ${state} ${priority} ${now_ms} ${timer_pid}"
-    } > "$tmp_file" 2>/dev/null
-    mv "$tmp_file" "$STATE_DB" 2>/dev/null
+    return 0
 }
 
 # Check if state change should proceed based on priority
@@ -169,16 +245,10 @@ write_session_colors() {
     local color_idle="${8:-}"
     local color_compact="${9:-}"
 
-    [[ -z "$TTY_SAFE" ]] && return 1
-
-    local tmp_file="${SESSION_COLORS_DB}.tmp.$$"
-    {
-        grep -v "^${TTY_SAFE} " "$SESSION_COLORS_DB" 2>/dev/null
-        echo "${TTY_SAFE} ${agent} ${base_color} ${is_dark} ${system_mode} ${color_proc} ${color_perm} ${color_comp} ${color_idle} ${color_compact}"
-    } > "$tmp_file" 2>/dev/null
-    mv "$tmp_file" "$SESSION_COLORS_DB" 2>/dev/null
-
+    _tavs_update_session_table "$SESSION_COLORS_DB" colors \
+        "${agent} ${base_color} ${is_dark} ${system_mode} ${color_proc} ${color_perm} ${color_comp} ${color_idle} ${color_compact}" || return 1
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] write_session_colors: tty=$TTY_SAFE agent=$agent base=$base_color" >> "$IDLE_DEBUG_LOG"
+    return 0
 }
 
 # Read session colors for the current TTY
@@ -220,14 +290,9 @@ has_session_colors() {
 
 # Clear session colors for the current TTY
 clear_session_colors() {
-    [[ ! -f "$SESSION_COLORS_DB" ]] && return 0
-    [[ -z "$TTY_SAFE" ]] && return 1
-
-    local tmp_file="${SESSION_COLORS_DB}.tmp.$$"
-    grep -v "^${TTY_SAFE} " "$SESSION_COLORS_DB" > "$tmp_file" 2>/dev/null
-    mv "$tmp_file" "$SESSION_COLORS_DB" 2>/dev/null
-
+    _tavs_update_session_table "$SESSION_COLORS_DB" clear || return 1
     [[ "$IDLE_DEBUG" == "1" ]] && echo "[$(date)] clear_session_colors: tty=$TTY_SAFE" >> "$IDLE_DEBUG_LOG"
+    return 0
 }
 
 # Get a specific color from session storage, with fallback to theme default

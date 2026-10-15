@@ -1,7 +1,7 @@
 # Architecture
 
-Last Updated: 2026-10-12 (Europe/Vienna)
-Version: 1.14
+Last Updated: 2026-10-15 (Europe/Vienna)
+Version: 1.15
 
 ## Current-invocation render transaction
 
@@ -353,10 +353,28 @@ Random face selection from per-agent face pools:
 
 ### session-state.sh (State Management)
 
-Session state tracking:
-- Records current state to file
-- Manages state transitions
-- Prevents duplicate signals
+`write_session_state state [timer_pid]` and `record_state state` retain the shared `state`
+table's TTY, state, priority, millisecond timestamp and timer PID fields. Color APIs retain the
+separate `colors` table and its existing agent/base/appearance/state-color fields.
+`write_session_colors` and `clear_session_colors` return zero only after successful publication
+or a valid absent-table clear. Tables live under `TAVS_TMP_DIR`, defaulting to `/tmp/tavs`.
+
+Each complete read/filter/build/rename holds a stable per-table `.lock` descriptor. macOS uses
+`lockf`; Linux uses the existing Python 3 dependency's `fcntl.flock`. Both allow one second for
+acquisition, separately from the unchanged 100 ms device caller deadline. Startup/scheduling and
+ordinary filesystem calls are not preempted by that acquisition limit. State timestamps are
+computed after acquisition. Readers continue seeing whole snapshots through atomic replacement.
+
+The transaction uses private unique temporary files, compares TTY fields literally and returns
+failure without publishing after lock, read, staging or rename errors. Subshell scope preserves
+the caller's traps and FD 9. Lock files remain in place; the kernel releases ownership after the
+last inherited descriptor closes, including after a crash. No PID-based stale-lock deletion runs.
+The final directory and regular leaves must be owned and reject links/other-user write bits.
+Ancestor aliases are resolved before use. Physical ancestors must belong to root or the current
+UID and reject group/other writes unless sticky; this prevents another UID substituting a FIFO
+between the lock check and open. Separate policy/registry trust gaps remain. Old lockless workers
+do not participate, and same-TTY admission/render ordering is outside this table transaction.
+Twelve isolated groups exercise real Bash 3.2 and zsh on macOS; Linux kernel acceptance is pending.
 
 ### terminal-osc-sequences.sh (OSC Functions)
 

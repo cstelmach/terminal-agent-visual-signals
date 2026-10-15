@@ -70,6 +70,25 @@ correction and a confirmed color-freshness finding. Keep required reports; short
 
 Current source and acceptance status remain in [PROGRESS.md](PROGRESS.md).
 
+### Phase 9 paint outcome diagnostics and revision fixtures: 2026-10-14 11:32 CEST
+
+> Finished source 5: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
+Seven fresh instrumented pairs pass: 8x3WjO, MNZYMg, lAxPbf, EKuMHz, nNohET, O3FRsJ, HbNQcQ.
+No initial-paint failure reproduced; historical rEYbJl/9IKEE0 and EPERM attribution stay open.
+Full TJMEY4 retained **570 tests, 3 unexpected failures**: forced-reset queued result timed out;
+queued-render's later fresh render exceeded organizer deadline and its following read timed out.
+The revision fixtures' paused-open barrier required full independent recovery/reset assertions
+inside 100 ms. They now publish once under a bounded call, gate outside the device transaction,
+then use the original prepare with exact target and a fresh real writer deadline. Captured revision
+still must reject old style/title after full recover/resume. This changes test scope, not production
+budgets. It does not explain the subsequent fresh-render timeout, which remains unattributed.
+> Finished source 6: [review appendix](PROGRESS_appendix_phase-9_review-source-checkpoints.md).
+
+Next: scoped final review of current source, or Linux kernel checks after the pending host/Docker
+answer. Capture original initial/fresh writer failures if they recur; passing retries cannot close
+attribution. Native 2/7/8 remain Blocked, 9 In Progress, full goal active and incomplete.
+
 ### Phase 9 agent-installer status correction: 2026-10-15
 S3 fixed; partial failures remain nonzero and nested-hook reruns are idempotent. 36 Bats cases pass.
 [Source/results](current-codex-review-2026-10-14.md#s3-agent-installer-correction-2026-10-15).
