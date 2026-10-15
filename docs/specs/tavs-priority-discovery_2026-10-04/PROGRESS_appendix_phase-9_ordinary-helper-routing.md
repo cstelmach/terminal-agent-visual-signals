@@ -155,3 +155,8 @@ Decimal fields, durations, portable merge and remaining-time display now validat
 Eight RED groups; review clock-gate fix; final95 passes in system and explicit-C Homebrew Bash.
 [Source/results](legacy-policy-trust-source-check-2026-10-15.md#checked-decimal-policy-arithmetic-2026-10-15).
 **Scope:** four modules/one test, docs/capture. Next: portable trust. Goal/Phase9 remain incomplete.
+
+### Phase 9 portable policy trust: 2026-10-15
+
+Portable rules/revisions now reject unsafe storage. [Details](legacy-policy-trust-source-check-2026-10-15.md).
+**Scope:** one module/test, docs/capture. 206 pass+8 Linux skip. Next: Swift failures. Goal incomplete.

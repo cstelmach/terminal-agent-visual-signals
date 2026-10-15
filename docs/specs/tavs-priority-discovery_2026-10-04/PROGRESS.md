@@ -6,7 +6,7 @@
 **Mode:** Autonomous goal (active after operator resumption)
 **Started:** 2026-10-07 22:46 CEST
 **Last Updated:** 2026-10-15 (Europe/Vienna)
-**Version:** 4.67
+**Version:** 4.68
 
 Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-goal-preparation.md#session-metadata).
 
@@ -22,7 +22,7 @@ Initial execution metadata: [planning appendix](PROGRESS_appendix_planning-and-g
 | 6: Bounded independent recovery | DONE | 2026-10-12 14:23 | 2026-10-12 20:57 | 818fe5e, 0704512; earlier hashes below | 405 Swift; 100 selected Bats; 230 audited Python | 394 min | Source/owned PTYs verified; native acceptance stays in Phase 2 |
 | 7: Safe previews and recovery controls | Blocked | 2026-10-12 21:07 | | Feature hashes below | 439 Swift; 62 selected Bats | | Source/fixture/copies verified; physical Ghostty pending |
 | 8: Manual captured working set | Blocked | 2026-10-12 23:17 | | c7151ff, a982b9f; earlier hashes below | 466 Swift; 43 selected Bats | | Source and partial fixture verified; native acceptance pending |
-| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 206 portable pass+8 Linux skip; Swift671/60 failed assertions | | Historical reviews retained; source fixes and native acceptance open |
+| 9: Automatic attention focus | In Progress | 2026-10-13 00:48 | | 6e0aaee; earlier below/appendix | 206 portable pass+8 Linux skip; Swift672/672 pass | | Historical reviews retained; source fixes and native acceptance open |
 
 Status values: Not Started, In Progress, DONE, Blocked. Test counts are entered only after runs.
 SPEC tracking is `in-progress`, phase 9. Four implementation phases remain incomplete.
@@ -894,7 +894,7 @@ PTY checks: 2 focused pass; full671/60 assertions. Scope: tests/docs. Next: sess
 
 > [Finished decimal checkpoint](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-decimal-policy-arithmetic-2026-10-15).
 
-### Phase 9 portable policy trust: 2026-10-15
+> [Finished portable policy trust](PROGRESS_appendix_phase-9_ordinary-helper-routing.md#phase-9-portable-policy-trust-2026-10-15).
 
-Portable rules/revisions now reject unsafe storage. [Details](legacy-policy-trust-source-check-2026-10-15.md).
-**Scope:** one module/test, docs/capture. 206 pass+8 Linux skip. Next: Swift failures. Goal incomplete.
+**Phase 9 Swift/launch, 2026-10-15: 672/672 pass; guard b44727f.** [Results](caller-deadline-source-check-2026-10-14.md#fresh-isolated-swift-verification-2026-10-15).
+**Scope:** one source/test and bug docs; native031/038 bootstrap timed out at 8s; next: bulk catalogue reads.

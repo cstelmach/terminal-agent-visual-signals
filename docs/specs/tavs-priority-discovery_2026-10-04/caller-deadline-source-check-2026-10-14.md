@@ -1,7 +1,7 @@
 # Native ready-result deadline source check
 
 Last Updated: 2026-10-15
-Version: 1.2
+Version: 1.3
 Base: HEAD da1f029 plus current ProcessRunner.swift and process-runner-tests.swift diff.
 The final GREEN guard was retrieved after the parent confirmed restoration.
 Read-only source check. No edits, test runs, live/native actions or provider review.
@@ -498,3 +498,45 @@ Next independent source work is review S4: session-state still does unlocked sha
 its atomic rename cannot prevent stale snapshots losing another TTY row. Source recon is saved
 at `/tmp/explorer-tavs-shared-session-color-races-20261015.md`. Linux kernel and Ghostty physical
 acceptance, runtime timing validation and the full goal remain incomplete.
+
+## Fresh isolated Swift verification: 2026-10-15
+
+At `3ef11af`, a new external debug build completed in 37.63 s without warnings. Seven
+representative previously failing tests pass in 0.121 s. The full isolated XCTest run passes
+671/671, zero failures, in 16.375 s. The 100 ms writer deadline and source were not changed
+to obtain this pass. Host load before/after was 5.93/7.03/7.00 and 8.64/7.55/7.18, respectively.
+These observations do not identify the cause of the earlier nGQwrj failures; retain that history.
+
+The focused source inspection found no confirmed load-independent semantic defect explaining
+those failures. It identified a conditional fixture teardown hazard after caller timeout and
+existing prepare/read seams for any recurrence. No speculative instrumentation was added.
+Full source assessment:
+`/Volumes/external/agent-data/reports/2026-10-15/tavs-native-prepare-deadline-explorer-174500.md`.
+Complete build/selected/full logs and load snapshots are retained under
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/swift-failure-repro-20261015-174233-bd669d/`.
+
+The separately verified `b44727f` launch guard requires private settings for the exact test
+bundle even when opened without environment keys. Its test failed compilation before the new
+policy, then passed. Full isolated XCTest: 672/672, zero failures/warnings, 18.949 s. The signed
+staged bundle also exits 1 before UI or private preference writes when settings are absent.
+Red/green/full and bare-bundle logs plus launcher sources are retained under
+`/Volumes/external/agent-data/retained/terminal-agent-visual-signals/native-acceptance-20261015-180639-d93516/`.
+
+The operator supplied only `/dev/ttys031` and `/dev/ttys038` for native checks. The prepared
+launcher resolves exact native IDs, uses private roots and copies only configured background/
+foreground guides into its private Ghostty config. Five offline color-guide cases pass.
+The native catalogue, UI and device effects have not been exercised by the parent. Computer
+Use access to `com.mitchellh.ghostty` is denied for safety; no alternate control route was used.
+The operator was asked to run the launcher. Docker's socket is still absent, so eight real
+Linux cases remain unrun. Native acceptance and the full goal remain incomplete.
+
+The operator subsequently explicitly instructed the parent to run that exact launcher. Its
+property-only bootstrap timed out after 8 s before launch or paint. A bounded instrumented read
+confirmed native properties return, distinguishing this failure from a permission rejection.
+A Scripting Bridge column-read probe obtains 37 IDs/TTYs and the two dedicated matches in
+0.538 s, within the unchanged 2 s product budget. The next slice should eliminate repeated
+per-property/per-loop catalogue requests, then retry the scoped app. Complete launch/diagnostic
+logs and scripts were copied to the same native-acceptance retained directory above.
+Portable mutation source recon is also available for the next independent correction:
+`/Volumes/external/agent-data/reports/2026-10-15/tavs-portable-mutation-trust-explorer-182507.md`.
+It distinguishes a whole-transaction lost-update defect from conditional pathname races.
