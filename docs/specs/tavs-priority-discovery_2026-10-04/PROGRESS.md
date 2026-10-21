@@ -917,3 +917,9 @@ Operator-requested pass before pushing main; the SPEC goal stays paused. A rebui
   unproven. Deadline cases in `background-intent` remain the open SPEC item; cause unproven.
 - Cleanup pending: locked worktree `/Volumes/external/agent-data/worktrees/git/tavs-bisect-20261021`
   and scratch `/Volumes/external/agent-data/scratch/tavs-lbi-probe/`.
+
+Operator decision 2026-10-21: `baseline-regression.bats`, its `tests/bench/baseline-capture.sh`
+and the eight `tests/bench/baseline-bytes/*.bytes` goldens are retired. They asserted raw bytes
+written into a plain file, which managed output forbids by design; typed-render fixtures and the
+owned-PTY suites (lock-gate, priority-pinning, background-intent) cover current output.
+`tests/bench/hot-path.sh` and `baseline.txt` (performance) stay.
