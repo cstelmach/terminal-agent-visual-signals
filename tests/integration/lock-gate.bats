@@ -125,6 +125,44 @@ assert_painted() { [[ "$output" == *$'\033]11;#112233'* ]]; }
     assert_suppressed
 }
 
+@test "malformed LOCK_UNTIL releases (no indefinite locks, D3)" {
+    cat > "$TAVS_RUNTIME_DIR/lock.state" <<EOF
+LOCKED="true"
+LOCK_UNTIL_EPOCH="whenever"
+SCHEMA_VERSION="1"
+EOF
+    run_trigger
+    assert_painted
+}
+
+@test "dead-PID mute WITHOUT a lock stays fail-open (regression guard)" {
+    write_mute "$NOW" 999999
+    run_trigger
+    assert_painted
+}
+
+@test "TAVS_STATUS=false wins over an unexpired lock for agent signals" {
+    write_lock $(( NOW + 300 )) 0
+    TAVS_STATUS=false run_trigger
+    [ -z "$output" ]
+}
+
+@test "idle-worker check honors the lock (_tavs_check_mute_state)" {
+    write_lock $(( NOW + 300 )) 0
+    source "$REPO_ROOT/src/core/mute-gate.sh"
+    _tavs_check_mute_state
+    [ "$_TAVS_SUPPRESS_OUTPUT" = "1" ]
+}
+
+@test "idle-worker check releases on expired lock without mute.state" {
+    write_lock $(( NOW - 10 )) 0
+    source "$REPO_ROOT/src/core/mute-gate.sh"
+    if _tavs_check_mute_state; then
+        false
+    fi
+    [ "$_TAVS_SUPPRESS_OUTPUT" = "0" ]
+}
+
 @test "no lock paints ordinary processing (control)" {
     run_trigger
     assert_painted
