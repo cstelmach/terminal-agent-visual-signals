@@ -895,3 +895,25 @@ parents correctly fail trust checks. Never run real-home scheduling E2E or uniso
 The Phase 2 launch appendix and Phase 9 ordinary-helper appendix have unrelated edits (12 and
 five added lines at checkpoint start). Preserve them and exclude them from owned staging.
 No cleanup was performed. Continue only on operator resumption; the goal stays paused/incomplete.
+
+## Release-readiness test pass: 2026-10-21 (outside the paused goal)
+
+Operator-requested pass before pushing main; the SPEC goal stays paused. A rebuilt debug helper
+(the Oct 3 build was stale) took bats from 65 to 24 failures; Swift 691: 0 failed, 1 skip.
+
+- Runner isolation (`23eb10c`): in-session runs bound owned PTYs to the caller's terminal
+  (`expected=ttys013 number=ttys021`, "Managed output stale"). The runner now double-forks the
+  command and kills its process group on timeout. Background-intent: 20/20 three times.
+- `lock-gate.bats` (`0f41c4f`, `5d1500e`): all eleven cases ported to an owned PTY with the real
+  helper, plus control and target-cache cases (13/13). A lock paints `#3A3A3A` and its title.
+- `emit-osc` registry case: updated to add5f3a (no raw `active-ttys` write). A real dispatch
+  caches `organizer/targets/<tty>/.../target.json` instead.
+- `idle-worker-mute` 6 (`ba05171`): failing since add5f3a stopped the shell creating the runtime
+  dir that its fixture writes. Fixed in setup, bounded wait: 8/8.
+- Still open: `baseline-regression.bats` asserts golden raw bytes into a plain file (obsolete
+  by design; retire or recapture on an owned PTY, operator decision). Intermittent `cmd-lock`,
+  `legacy-policy-read` and `mute-gate` cases: Homebrew bash dies with SIGSEGV in
+  `termsig_sighandler`/`kill_shell` inside os_log/CFPrefs (25 reports today). Trigger signal
+  unproven. Deadline cases in `background-intent` remain the open SPEC item; cause unproven.
+- Cleanup pending: locked worktree `/Volumes/external/agent-data/worktrees/git/tavs-bisect-20261021`
+  and scratch `/Volumes/external/agent-data/scratch/tavs-lbi-probe/`.
