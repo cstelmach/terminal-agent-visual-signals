@@ -25,37 +25,41 @@ Only needed after modifying source code. user.conf changes apply immediately.
 Sync does not build/install the native helper. Missing render/metadata
 capabilities are reported separately from successful source copying.
 
-Sync targets:
-  ~/.claude/plugins/cache/terminal-agent-visual-signals/tavs/<version>/
-  ~/.claude/plugins/marketplaces/terminal-agent-visual-signals/
+Sync targets, in every Claude config dir that has TAVS installed
+(~/.claude, ~/.claude-* such as ~/.claude-team, and $CLAUDE_CONFIG_DIR):
+  <config>/plugins/cache/terminal-agent-visual-signals/tavs/<version>/
+  <config>/plugins/marketplaces/terminal-agent-visual-signals/
 EOF
         return 0
     fi
 
-    local synced_any=false
+    local synced_any=false config_dir label
 
-    # --- Target 1: Plugin cache ---
-    local cache_base="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs"
-    local cache_dir=""
-    if [[ -d "$cache_base/$TAVS_VERSION" ]]; then
-        cache_dir="$cache_base/$TAVS_VERSION"
-    elif [[ -d "$cache_base" ]]; then
-        local latest
-        latest=$(ls -1d "$cache_base"/*/ 2>/dev/null | tail -1) || true
-        [[ -n "$latest" ]] && cache_dir="${latest%/}"
-    fi
+    # --- Targets 1+2: Plugin cache and marketplace of every Claude account ---
+    while IFS= read -r config_dir; do
+        label="${config_dir/#$HOME/~}"
 
-    if [[ -n "$cache_dir" && -d "$cache_dir" ]]; then
-        _sync_to_target "$cache_dir" "plugin cache" || return 1
-        synced_any=true
-    fi
+        local cache_base="$config_dir/plugins/cache/terminal-agent-visual-signals/tavs"
+        local cache_dir=""
+        if [[ -d "$cache_base/$TAVS_VERSION" ]]; then
+            cache_dir="$cache_base/$TAVS_VERSION"
+        elif [[ -d "$cache_base" ]]; then
+            local latest
+            latest=$(ls -1d "$cache_base"/*/ 2>/dev/null | tail -1) || true
+            [[ -n "$latest" ]] && cache_dir="${latest%/}"
+        fi
 
-    # --- Target 2: Marketplace installation ---
-    local market_dir="$HOME/.claude/plugins/marketplaces/terminal-agent-visual-signals"
-    if [[ -d "$market_dir/src/core" ]]; then
-        _sync_to_target "$market_dir" "marketplace" || return 1
-        synced_any=true
-    fi
+        if [[ -n "$cache_dir" && -d "$cache_dir" ]]; then
+            _sync_to_target "$cache_dir" "plugin cache ($label)" || return 1
+            synced_any=true
+        fi
+
+        local market_dir="$config_dir/plugins/marketplaces/terminal-agent-visual-signals"
+        if [[ -d "$market_dir/src/core" ]]; then
+            _sync_to_target "$market_dir" "marketplace ($label)" || return 1
+            synced_any=true
+        fi
+    done < <(_tavs_claude_config_dirs)
 
     if [[ "$synced_any" != "true" ]]; then
         cli_error "No plugin installation found"
@@ -84,6 +88,21 @@ EOF
         cli_info "Sync copies sources only; it does not build/install a compatible helper."
         cli_success "Plugin cache synced."
     fi
+}
+
+# Internal: print each Claude config dir once, physically resolved.
+# Claude Code accounts live in ~/.claude (default) and in sibling dirs selected
+# through CLAUDE_CONFIG_DIR (e.g. ~/.claude-team for claude-lbi); each keeps its
+# own plugins/ copy, so every one of them must receive the synced sources.
+_tavs_claude_config_dirs() {
+    local dir resolved seen=$'\n'
+    for dir in "$HOME/.claude" "$HOME"/.claude-* ${CLAUDE_CONFIG_DIR:+"$CLAUDE_CONFIG_DIR"}; do
+        [[ -d "$dir" ]] || continue
+        resolved=$(cd -P "$dir" 2>/dev/null && pwd) || continue
+        [[ "$seen" == *$'\n'"$resolved"$'\n'* ]] && continue
+        seen+="$resolved"$'\n'
+        printf '%s\n' "$resolved"
+    done
 }
 
 # Internal: sync source files to a target directory

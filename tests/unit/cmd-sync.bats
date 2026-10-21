@@ -8,6 +8,8 @@ setup() {
     export HOME="$TEST_DIR/home" CFFIXED_USER_HOME="$TEST_DIR/home" ZDOTDIR="$TEST_DIR/home"
     export TAVS_RUNTIME_DIR="$TEST_DIR/runtime" TAVS_TMP_DIR="$TEST_DIR/state" _TAVS_TMP_DIR="$TEST_DIR/state"
     export XDG_RUNTIME_DIR="$TEST_DIR/xdg" XDG_CONFIG_HOME="$TEST_DIR/config"
+    # Sync honours CLAUDE_CONFIG_DIR; never let it point at a real account during tests.
+    unset CLAUDE_CONFIG_DIR
     CACHE="$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0"
     MARKET="$HOME/.claude/plugins/marketplaces/terminal-agent-visual-signals"
     FILES=(tavs src/agents/claude/trigger.sh src/agents/codex/trigger.sh
@@ -57,6 +59,51 @@ sync_fixture() {
     [ "$(cat "$HOME/.tavs/user.conf")" = 'user preferences 43' ]
     [ "$(cat "$HOME/.tavs/schedule.json")" = 'saved schedule 43' ]
     [ "$(cat "$TAVS_RUNTIME_DIR/lock.state")" = 'saved lock 43' ]
+}
+
+# Create stale cache + marketplace installations under another Claude config dir.
+stale_account() {
+    local config_dir="$1" target file
+    for target in "$config_dir/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0" \
+        "$config_dir/plugins/marketplaces/terminal-agent-visual-signals"; do
+        mkdir -p "$target/src/core" "$target/src/cli"
+        for file in "${FILES[@]}" src/core/trigger.sh; do
+            mkdir -p "$(dirname "$target/$file")"
+            printf 'stale\n' > "$target/$file"
+            chmod 644 "$target/$file"
+        done
+    done
+}
+
+@test "sync updates every Claude account that has TAVS installed" {
+    stale_account "$HOME/.claude-team"
+    sync_fixture
+    local target file
+    for target in "$CACHE" "$MARKET" \
+        "$HOME/.claude-team/plugins/cache/terminal-agent-visual-signals/tavs/3.0.0" \
+        "$HOME/.claude-team/plugins/marketplaces/terminal-agent-visual-signals"; do
+        for file in "${FILES[@]}" src/core/trigger.sh src/core/terminal-osc-sequences.sh; do
+            cmp "$REPO_ROOT/$file" "$target/$file"
+        done
+        [ -x "$target/src/agents/claude/trigger.sh" ]
+        [ -x "$target/src/core/trigger.sh" ]
+    done
+}
+
+@test "sync leaves Claude config dirs without TAVS untouched" {
+    mkdir -p "$HOME/.claude-other/plugins/cache"
+    sync_fixture
+    [ ! -e "$HOME/.claude-other/plugins/cache/terminal-agent-visual-signals" ]
+    [ ! -e "$HOME/.claude-other/plugins/marketplaces" ]
+}
+
+@test "sync counts an account reached through CLAUDE_CONFIG_DIR or a symlink once" {
+    stale_account "$HOME/.claude-team"
+    ln -s "$HOME/.claude-team" "$HOME/.claude-alias"
+    CLAUDE_CONFIG_DIR="$HOME/.claude-team" sync_fixture
+    [ "$(grep -c 'To:.*claude-team/plugins/cache' <<< "$output")" -eq 1 ]
+    [ "$(grep -c 'To:.*claude-team/plugins/marketplaces' <<< "$output")" -eq 1 ]
+    [ "$(grep -c 'To:' <<< "$output")" -eq 4 ]
 }
 
 @test "copied CLI recovery uses the explicit native helper and private fixture scope" {
