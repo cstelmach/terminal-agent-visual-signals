@@ -16,7 +16,9 @@ setup() {
     export TAVS_RUNTIME_DIR="$RUNTIME_DIR"
     export TAVS_TMP_DIR="$TEST_HOME/state"
     export XDG_RUNTIME_DIR="$TEST_HOME/xdg"
-    mkdir -p "$TEST_HOME/.tavs" "$TAVS_TMP_DIR" "$XDG_RUNTIME_DIR"
+    # The fixture helper records into the runtime dir; the real helper creates its own storage
+    # and the shell no longer does (add5f3a).
+    mkdir -p "$TEST_HOME/.tavs" "$TAVS_TMP_DIR" "$XDG_RUNTIME_DIR" "$RUNTIME_DIR"
     export TAVS_TEST_HELPER_BIN="$TEST_HOME/helper" IDLE_TEST_CORE="$REPO_ROOT/src/core"
     cat > "$TAVS_TEST_HELPER_BIN" <<'HELPER'
 #!/bin/bash
@@ -157,8 +159,11 @@ SCRIPT
     bash "$worker_script" "$TEST_HOME" "$tty_file" "$REPO_ROOT/src/core" 2>/dev/null &
     _WORKER_PID=$!
 
-    # Wait for worker to process at least 1 state transition
-    sleep 3
+    # Wait (bounded) for the worker to hand at least one transition to the helper.
+    local waited=0
+    while [[ ! -s "$RUNTIME_DIR/fixture-background" && "$waited" -lt 75 ]]; do
+        sleep 0.2; waited=$((waited + 1))
+    done
 
     kill "$_WORKER_PID" 2>/dev/null || true
     wait "$_WORKER_PID" 2>/dev/null || true
