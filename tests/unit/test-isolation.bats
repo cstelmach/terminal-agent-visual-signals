@@ -36,6 +36,25 @@ SCRIPT
     [[ "$(cat "$log")" == *"owned failure"* ]]
 }
 
+@test "runner detaches its child from the caller's process ancestry" {
+    # Producer discovery walks parent PIDs; the caller's terminal must not be reachable.
+    run bash -c 'echo "caller=$$"; exec bash "$1/tests/run-isolated.sh" bash -c '"'"'
+p=$PPID; chain=""
+while [[ "$p" -gt 1 ]]; do chain+=" $p"; p=$(ps -o ppid= -p "$p" | tr -d " "); done
+echo "chain=$chain"'"'" _ "$REPO_ROOT"
+    [ "$status" -eq 0 ]
+    local caller="${lines[0]#caller=}" chain_line
+    chain_line=$(printf '%s\n' "${lines[@]}" | grep '^chain=')
+    [[ -n "$chain_line" && " ${chain_line#chain=} " != *" $caller "* ]]
+}
+
+@test "runner terminates the detached child when it is interrupted" {
+    run perl -e 'alarm 2; exec @ARGV' bash "$REPO_ROOT/tests/run-isolated.sh" sleep 43210
+    [ "$status" -eq 130 ]
+    sleep 0.5
+    ! pgrep -f 'sleep 43210'
+}
+
 @test "Python clean environments and shell helpers retain the private roots" {
     cat > "$CASE_DIR/check.py" <<'PY'
 import importlib.util

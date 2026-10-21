@@ -3,6 +3,17 @@
 Last Updated: 2026-10-21 (Europe/Vienna)
 Version: 2.00
 
+## Isolated tests bind owned PTYs to the caller's terminal
+
+Run from inside an interactive agent session, 24 bats cases failed with "Managed output stale",
+while the same cases passed detached. Producer discovery walks parent PIDs; above the tests'
+owned PTYs it reached the caller's agent on its own terminal, so the context named that device
+(`expected=ttys013 number=ttys021`) and the renderer correctly refused. `tests/run-isolated.sh`
+now double-forks the command so it is re-parented to launchd, leads its own process group and is
+terminated with it on timeout or interrupt. `tests/unit/test-isolation.bats` checks both. The
+old runner's child chain contained the caller and the agent PIDs. Prevention: run suites only
+through the runner; a detached and an in-session run must give the same results.
+
 ## claude-lbi sessions show no signals at all
 
 `claude-lbi` runs Claude Code with `CLAUDE_CONFIG_DIR=~/.claude-team`, whose `plugins/` is its
