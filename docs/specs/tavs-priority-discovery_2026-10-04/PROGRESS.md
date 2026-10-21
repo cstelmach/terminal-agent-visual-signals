@@ -927,3 +927,9 @@ owned-PTY suites (lock-gate, priority-pinning, background-intent) cover current 
 Cleanup 2026-10-21: the bisect worktree was removed after verification (detached at 666c950,
 contained in origin/main, no changes or untracked files; only the ignored Swift .build). The
 scratch dir `/Volumes/external/agent-data/scratch/tavs-lbi-probe/` is kept as evidence.
+
+Cleanup 2026-10-21 (later): merged Codex worktree `codex/validate-loaded-schedules` removed
+(clean, contained in main; branch kept). This session's 114 isolated test dirs (276 MB) moved to
+`~/.Trash/tavs-isolated-2026-10-21/` (space freed only when Trash is emptied). Pending, not
+reviewed: 143 older `tavs-isolated.*` dirs from earlier sessions in the user TMPDIR
+(`/var/folders/sc/3sxw5lhd5hs05l8sr8tc1lqc0000gn/T/`); the runner retains them by design.
