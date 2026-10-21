@@ -1,7 +1,20 @@
 # Bug Reference
 
-Last Updated: 2026-10-15 (Europe/Vienna)
-Version: 1.99
+Last Updated: 2026-10-21 (Europe/Vienna)
+Version: 2.00
+
+## claude-lbi sessions show no signals at all
+
+`claude-lbi` runs Claude Code with `CLAUDE_CONFIG_DIR=~/.claude-team`, whose `plugins/` is its
+own directory. TAVS there was a 2026-10-08 GitHub clone (`ddfcbb7`) that `tavs sync` never
+reached, because sync hardcoded `~/.claude`. Debug logs showed its hooks ran; a `bash -x` trace
+of a live hook showed the old core exiting at `[[ -z "$TTY_DEVICE" ]]`. That version resolved
+the TTY from its direct parent only, and its adapter ran the core as a child instead of `exec`,
+so the parent was a detached async-hook shell (`??`). Current code walks the ancestry and
+`exec`s the core. Sync now updates every account with TAVS installed (`~/.claude`,
+`~/.claude-*`, `$CLAUDE_CONFIG_DIR`, deduplicated after symlink resolution), covered by
+`tests/unit/cmd-sync.bats`. Prevention: run `./tavs sync` after changes; its output names each
+account it updated.
 
 ## Go To can leave a logically selected window behind
 

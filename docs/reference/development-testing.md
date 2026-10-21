@@ -14,6 +14,16 @@ CACHE=$(ls -d "$HOME/.claude/plugins/cache/terminal-agent-visual-signals/tavs/"*
 cp src/core/*.sh "$CACHE/src/core/" && cp src/config/*.conf "$CACHE/src/config/" 2>/dev/null; echo "Cache updated"
 ```
 
+Prefer `./tavs sync`: the one-liner only reaches the default account.
+
+### Multiple Claude Accounts (claude-lbi)
+
+Every Claude Code account (`CLAUDE_CONFIG_DIR`) has its own `plugins/` copy of TAVS, e.g.
+`~/.claude-team/plugins/...` for `claude-lbi` next to `~/.claude/plugins/...`. `./tavs sync`
+updates the cache and marketplace copies in `~/.claude`, every `~/.claude-*` dir and
+`$CLAUDE_CONFIG_DIR` that has TAVS installed, each named in its output. Running sessions pick
+up shell changes on their next hook; `hooks/hooks.json` changes need a session restart.
+
 ### Test Immediately
 
 ```bash
