@@ -923,3 +923,7 @@ and the eight `tests/bench/baseline-bytes/*.bytes` goldens are retired. They ass
 written into a plain file, which managed output forbids by design; typed-render fixtures and the
 owned-PTY suites (lock-gate, priority-pinning, background-intent) cover current output.
 `tests/bench/hot-path.sh` and `baseline.txt` (performance) stay.
+
+Cleanup 2026-10-21: the bisect worktree was removed after verification (detached at 666c950,
+contained in origin/main, no changes or untracked files; only the ignored Swift .build). The
+scratch dir `/Volumes/external/agent-data/scratch/tavs-lbi-probe/` is kept as evidence.
