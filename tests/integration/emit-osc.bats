@@ -95,10 +95,12 @@ EOF
     [ -z "$(find "$RUNTIME_DIR/pending" -type f -print)" ]
 }
 
-@test "active-tty remains a candidate on managed dispatch" {
+@test "managed dispatch leaves terminal registration to the typed helper" {
+    # Raw registry writes were removed as unsafe (add5f3a); the helper caches the target.
     run bash "$REPO_ROOT/src/core/trigger.sh" reset
     [ "$status" -eq 0 ]
-    [ -f "$RUNTIME_DIR/active-ttys/${TTY_DEVICE//\//_}" ]
+    [ ! -e "$RUNTIME_DIR/active-ttys" ]
+    [ "$(wc -l < "$RENDER_TEST_CALLS" | tr -d ' ')" -eq 1 ]
 }
 
 @test "muted invocation retains current typed request without retaining OSC bytes" {
